@@ -9,6 +9,18 @@ rest on. **The repositories under the FlickrGroupAddr GitHub org are stale refer
 requirements** — they record what was tried between roughly 2016 and 2022, under constraints
 that no longer apply. Mine them for domain facts; do not inherit their architecture.
 
+## Revision history
+
+**Recorded because the git history under-describes itself.** Commit `b47c982` carries a message
+about the Workers Paid plan but actually contains the whole v1 rewrite, which was authored earlier
+and left uncommitted while an unrelated domain emergency was handled.
+
+| Commit | What actually changed |
+|---|---|
+| `82288e1` | First draft. Per-user Durable Objects with alarms as the work engine; master key in Secrets Store. |
+| `77cb9a6` | Added the argument against that alarm engine. Confirmed the Workers Paid plan. |
+| `b47c982` | **The v1 rewrite.** Work engine changed to a nightly cron over D1 (D4). Master key moved from Secrets Store to Worker secrets (D3). Session decision added (D6). Flickr's read/write/delete-only scope recorded and its consequence folded into D1. Diagram redrawn to match. Plus the plan allowances this message describes. |
+
 ## Verified facts
 
 **Every row below was established by measurement or by reading a primary source on the date
