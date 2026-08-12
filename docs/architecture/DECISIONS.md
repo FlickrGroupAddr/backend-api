@@ -103,5 +103,37 @@ a correctness requirement, not a defensive nicety.
   a Durable-Object-backed opaque session would allow instant revocation. Not yet decided.
 - **D1 (the database) may not be needed for v1.** It is drawn as a group-metadata cache. If group
   rules are read from Flickr on demand, it can be dropped.
-- **Whether Durable Objects require a paid Workers plan** for the storage backend intended here.
-  This has not been verified and **MUST** be checked before committing to the design.
+- **Whether the alarm-driven engine in D4 is justified at this project's scale.** See the
+  reconsideration below. This is the largest open question in this document.
+- **Secrets Store is in open beta.** D3 puts the master encryption key there. Plain Worker secrets
+  are GA and adequate for three values, so the beta dependency **SHOULD** be weighed against the
+  better management story before this is treated as settled.
+
+**Closed 2026-08-12:** the account is on the Workers Paid plan, so the Durable Object storage
+backend this design assumes is available. That assumption is no longer open.
+
+## Reconsideration — is D4 too clever for this project?
+
+**Recorded because the argument for the simpler design is strong and MUST NOT be lost.**
+
+D4 chose per-user Durable Object alarms over a nightly Cron Trigger reading a table. The stated
+benefits were avoiding a global scan and avoiding a burst of Flickr traffic at 00:01 UTC. **Both
+are scale benefits, and this project has no evidence it operates at that scale.** Against them:
+
+- **A `SELECT` beats a fan-out.** With pending requests in one D1 table, "what is stuck and why"
+  is a query. With state sharded across one object per user, the same question needs a fan-out or
+  a separate aggregate that must be kept correct.
+- **Failure history scatters.** These failures are intermittent and unfold over weeks. One cron
+  run writes one log; ten thousand alarms write ten thousand fragments.
+- **Durable Objects are the deepest lock-in on the platform.** Workers are close to portable
+  Web-standard code. An application whose stateful core is DO-shaped is not.
+
+**The narrower use of Durable Objects in D2 is not in question** — the OAuth dance genuinely
+requires strong consistency, no simpler correct option exists, and the object is small and
+short-lived.
+
+**A defensible v1 therefore MAY be: D1 table plus a nightly Cron Trigger, keeping D2 as written,
+and promoting to the D4 alarm design when a real second case appears** — a measurably slow scan,
+or Flickr rate-limiting the midnight burst. This follows the project owner's own standing
+preference to start with the simple flat thing and promote it only when something forces the
+issue.
