@@ -133,25 +133,25 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="n1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="299" y="546" width="46" height="46" as="geometry" />
+          <mxGeometry x="304" y="553" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="297" y="716" width="46" height="46" as="geometry" />
+          <mxGeometry x="299" y="654" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n3" value="3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="537" y="712" width="46" height="46" as="geometry" />
+          <mxGeometry x="597" y="721" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1362" y="789" width="46" height="46" as="geometry" />
+          <mxGeometry x="1362" y="780" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1067" y="547" width="46" height="46" as="geometry" />
+          <mxGeometry x="1058" y="547" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n6" value="6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="777" y="1242" width="46" height="46" as="geometry" />
+          <mxGeometry x="777" y="1251" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="537" y="822" width="46" height="46" as="geometry" />
+          <mxGeometry x="597" y="813" width="46" height="46" as="geometry" />
         </mxCell>
 
         <mxCell id="journey" value="&lt;b&gt;User journey&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;br&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;br&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;br&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker asks Flickr for a request token&lt;br&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth DO&lt;br&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret out of the DO and trades it for the long-lived access token &#8212; the return legs of 4 and 5&lt;br&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; /api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
@@ -483,7 +483,7 @@ BADGE_ON_EDGE = {
     "n5": "e3",    # API Worker <-> OAuth DO, stash the secret (read back on the return)
     "n7": "e13",   # users -> API Worker, authenticated calls
 }
-NEAR_MIN, NEAR_MAX = 25.0, 50.0   # badge radius is 23, so 25 just clears the line
+NEAR_MIN, NEAR_MAX = 24.0, 32.0   # badge radius is 23; 24 clears the line by a hair, 32 still reads as attached
 
 
 def point_to_segment(pt, a, b):
@@ -601,6 +601,32 @@ for cid in ["justification", "key", "journey"]:
     print(f"    {cid:14} box {have:>4.0f}px  text ~{need:>4.0f}px  slack {slack:>4.0f}px  {verdict}")
     if verdict != "ok":
         problems += 1
+
+
+# Badges are excluded from the edge/box collision check because they are meant to
+# sit beside their arrow, which means NOTHING was checking them against tiles. A
+# badge overlapping a tile went unnoticed for several commits after a column
+# shift moved the tile under it.
+BADGES = ["n1", "n2", "n3", "n4", "n5", "n6", "n7"]
+TILES = ["dns", "pages", "secrets", "cron", "oauthdo", "api", "retry",
+         "d1replica", "d1", "users", "flickr", "journey", "key", "justification"]
+
+
+def overlaps(a, b):
+    ax, ay, aw, ah = a
+    bx, by, bw, bh = b
+    return not (ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay)
+
+
+print("  badges clear of every tile:")
+clashes = [
+    (n, t) for n in BADGES for t in TILES
+    if t in boxes and overlaps(boxes[n], boxes[t])
+]
+for n, t in clashes:
+    print(f"    {n} OVERLAPS {t}")
+print(f"    -> {'all clear' if not clashes else f'{len(clashes)} overlap(s)'}")
+problems += len(clashes)
 
 if problems:
     raise SystemExit("Diagram geometry check failed -- fix the layout before committing.")
