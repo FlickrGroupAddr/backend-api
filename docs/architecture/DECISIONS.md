@@ -55,6 +55,11 @@ every file listing, heading index, and grep result the moment a tenth decision e
 costs one character now and cannot be retrofitted cheaply once the labels are referenced from
 commit messages and code comments.
 
+**The REST API version is padded for the same reason, to three digits: `/api/v001/*`.** This
+carries over from the 2022 API, which used the same form. A path version is harder to change than
+a document label, not easier — it is baked into every client that has ever called it — so the
+padding **MUST** be right from the first route.
+
 ### ADR-01 — The Flickr account is the identity
 
 FGA **MUST NOT** run its own identity service and **MUST NOT** store an email address, a display

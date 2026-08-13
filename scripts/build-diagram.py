@@ -56,9 +56,6 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="date" value="{DATE}" style="text;html=1;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="50" y="62" width="300" height="24" as="geometry" />
         </mxCell>
-        <mxCell id="subtitle" value="Cloudflare-native &#183; the Flickr account is the identity &#183; no PII held beyond the Flickr NSID" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
-          <mxGeometry x="50" y="88" width="800" height="22" as="geometry" />
-        </mxCell>
 
         <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
           <mxGeometry x="220" y="150" width="1300" height="950" as="geometry" />
@@ -95,7 +92,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="d1" value="&lt;b&gt;D1 (SQLite)&lt;/b&gt;&lt;br&gt;&lt;i&gt;users &#183; pending requests&lt;br&gt;per-group counters&lt;br&gt;encrypted Flickr tokens&lt;/i&gt;" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=12;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="1240" y="620" width="210" height="150" as="geometry" />
+          <mxGeometry x="1240" y="670" width="210" height="110" as="geometry" />
         </mxCell>
 
         <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
@@ -118,10 +115,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e1" value="HTTPS" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="pages">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e2" value="fetch /api/v1/*&lt;br&gt;session cookie" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="pages" target="api">
+        <mxCell id="e2" value="fetch /api/v001/*&lt;br&gt;session cookie" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="pages" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e3" value="stash / retrieve&lt;br&gt;request-token secret" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
+        <mxCell id="e3" value="request-token secret" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;" edge="1" parent="1" source="secrets" target="api">
@@ -133,10 +130,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e6" value="nightly sweep" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e7" value="queue requests&lt;br&gt;read status" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="d1">
+        <mxCell id="e7" value="queue &#183; status" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e8" value="claim due requests&lt;br&gt;record outcome" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="retry" target="d1">
+        <mxCell id="e8" value="claim &#183; record" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="retry" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e9" value="request_token &#183; access_token" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.41;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
@@ -178,6 +175,7 @@ print(f"  total file         : {OUT.stat().st_size} bytes")
 # box it is not attached to.
 # --------------------------------------------------------------------------
 
+import math
 import re
 import xml.etree.ElementTree as ET
 
@@ -298,6 +296,43 @@ for eid, label in MUST_BE_HORIZONTAL.items():
     status = "level" if drop < 0.001 else f"OFF BY {drop:.2f}px"
     print(f"  {eid:4} {label:18} y={p[1]:.0f} -> {q[1]:.0f}  {status}")
     if drop >= 0.001:
+        problems += 1
+
+
+# A label wider than the arrow it sits on hides that arrow: the white label
+# background masks the line, and on a short segment the text covers all of it.
+# Measured against the VISIBLE segment -- the part between the two box edges --
+# not the centre-to-centre distance, which is what makes short hops deceptive.
+def visible_span(a, b, box):
+    """Walk from a toward b until leaving box; returns where the line emerges."""
+    x, y, w, h = box
+    lo, hi = 0.0, 1.0
+    for _ in range(60):
+        m = (lo + hi) / 2
+        px, py = a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m
+        if x <= px <= x + w and y <= py <= y + h:
+            lo = m
+        else:
+            hi = m
+    return a[0] + (b[0] - a[0]) * lo, a[1] + (b[1] - a[1]) * lo
+
+
+CHAR_PX = 6.0  # approx width per character at the 11px label font
+edge_by_id = {e.get("id"): e for e in edges}
+print("  label fit (widest line vs visible arrow):")
+for eid, (src, tgt, p, q) in segments.items():
+    style = edge_by_id[eid].get("style") or ""
+    a = p if "exitX=" in style else visible_span(p, q, boxes[src])
+    b = q if "entryX=" in style else visible_span(q, p, boxes[tgt])
+    length = math.hypot(b[0] - a[0], b[1] - a[1])
+    raw = edge_by_id[eid].get("value") or ""
+    if not raw:
+        continue
+    widest = max(len(line) for line in re.split(r"&lt;br&gt;|<br>", raw))
+    est = widest * CHAR_PX
+    verdict = "ok" if est <= length else "TOO WIDE"
+    print(f"    {eid:4} arrow {length:>5.0f}px  label ~{est:>4.0f}px  {verdict}")
+    if est > length:
         problems += 1
 
 if problems:
