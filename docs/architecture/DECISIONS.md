@@ -515,6 +515,72 @@ no instant feedback, even when the group has plenty of headroom that minute. Tha
 never starving the request that was there first, and it is worth paying. The interface **SHOULD**
 say where in the queue a request sits, so the wait is visible rather than mysterious.
 
+### ADR-11 — Every `(photo, group)` pair that reached a moderator is remembered permanently
+
+When an add resolves with code **6** or **7**, FGA **MUST** record the `(photo, group)` pair in a
+permanent table, and that record **MUST** outlive the request row, the queue, and any later cleanup.
+When a user submits a request for a pair already in that table, the interface **MUST** warn them
+prominently before the request is queued.
+
+**FGA MUST NOT block the resubmission.** The warning informs; the person decides. Owner's framing,
+2026-08-13: *"We won't hard block them but are giving them the data to be a good community member
+and say 'oh shit thank you yeah cancel let's not try again'."*
+
+**Why not block, given ADR-08 usually resolves ambiguity by stopping:** because the ambiguity here
+belongs to the user, not to FGA. They may have re-tagged the photo, the group's rules may have
+changed, or they may have spoken to a moderator. **A block would be FGA overriding a human's
+judgment about their own photo, which is the same disrespect ADR-08 exists to prevent, pointed the
+other way.** FGA's obligation is to make sure the decision is *informed*, not to make it.
+
+#### Name it for what is known, not what is suspected
+
+The table records that a request **reached a human's queue**, which code 6 states outright. It does
+not record a rejection, because **no such signal exists** — see the verified-facts row on moderator
+decisions being invisible to the API. Naming it for the arrival rather than the suspicion keeps the
+schema honest, keeps the user-facing copy honest, and stays correct in the common case where the
+moderator in fact approved.
+
+**What goes in, and nothing else:**
+
+| Outcome | Recorded? |
+|---|---|
+| **6** — Added to the Pending Queue | **Yes.** The request is demonstrably in front of a person. |
+| **7** — Already in the Pending Queue | **Yes.** Same, and it also confirms an earlier one is still undecided. |
+| **8** — Content not allowed | No. A policy rejection, not a queue — nobody is reviewing it. |
+| Any other terminal failure, including unrecognized codes | No. ADR-07 stops retrying them, but nothing suggests a human saw them, and a warning that fires on ordinary errors is a warning nobody reads. |
+
+**Record the code alongside the pair**, so the interface can distinguish these cases later without
+a schema change. The cost is one integer.
+
+#### Current pool membership resolves most of the ambiguity, after the fact
+
+**Before warning, the interface SHOULD check whether the photo is in the pool now.** ADR-05 already
+requires `flickr.photos.getAllContexts` for idempotency, and the same call answers this: **a pair in
+this table whose photo is now in the pool was approved, not rejected.** The record stays — it is a
+permanent log of what reached a moderator — but the warning **MUST NOT** fire, because re-adding an
+approved photo pesters nobody and a false alarm here spends exactly the credibility the real warning
+needs.
+
+**This is the one way the invisible decision becomes visible, and it only works in one direction.**
+Presence in the pool proves approval. Absence still cannot separate *rejected* from *never decided*,
+so the honest warning is about what is known — this reached a moderator and did not land — rather
+than about a rejection FGA cannot see.
+
+**A resubmission that returns code 7 is itself information:** the original is still sitting in the
+queue undecided, which means nobody has been pestered and nobody has said no. The interface
+**SHOULD** say so rather than repeating the original warning.
+
+#### Two smaller obligations
+
+**Reads MUST be scoped to the requesting user's own photos.** Flickr photo IDs are global and carry
+their owner, so `(photo, group)` needs no user column — but that also means an unscoped lookup would
+answer questions about other people's moderation history. Same class of leak as the queue-view
+scoping above, and it needs closing the same way.
+
+**The cost is negligible and worth stating so nobody optimizes it away.** One row written per pair
+that ever reaches a moderator, and one indexed read on submission. Against ADR-09's write budget it
+does not register.
+
 ### The queue view — where ADR-08 becomes visible
 
 Not yet an ADR, because the scoping is undecided. Recorded now because the requirement is settled
