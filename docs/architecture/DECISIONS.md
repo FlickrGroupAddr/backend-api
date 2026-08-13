@@ -94,6 +94,12 @@ developer's machine.
 deliberate** — see ADR-04. The object **SHOULD** set an alarm to delete itself after roughly 15
 minutes, so abandoned login attempts expire without a cleanup job.
 
+**It is one object per login attempt, NOT one per user, and the distinction MUST be preserved in
+any diagram or document that names it.** At this point in the flow there is no user yet — the
+person has not authorized, so FGA holds no identity for them; the key is the ephemeral
+`oauth_token`. Calling it a per-user object would also read as adopting the per-user Durable
+Object design that ADR-04 explicitly rejected, which is the opposite of what this is.
+
 ### ADR-03 — Per-user Flickr tokens are AES-GCM encrypted in D1
 
 Each user's Flickr access token and token secret **MUST** be encrypted with AES-GCM and stored in

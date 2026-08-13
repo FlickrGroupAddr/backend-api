@@ -92,7 +92,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="320" y="1010" width="190" height="100" as="geometry" />
         </mxCell>
 
-        <mxCell id="oauthdo" value="&lt;b&gt;OAuth Dance DO&lt;/b&gt;&lt;br&gt;&lt;i&gt;one Durable Object per oauth_token&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+        <mxCell id="oauthdo" value="&lt;b&gt;OAuth Request Token&lt;/b&gt;&lt;br&gt;&lt;i&gt;one Durable Object&lt;br&gt;per login attempt&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="940" y="300" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="api" value="&lt;b&gt;API Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;backend-api&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
