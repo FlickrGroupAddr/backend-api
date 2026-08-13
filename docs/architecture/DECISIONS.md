@@ -24,6 +24,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `8b09cb1` | **Decisions renumbered `D1`–`D6` to `ADR-1`–`ADR-6`** to end the collision with Cloudflare D1. Any external reference to the old labels is now stale. |
 | `ab88b96` | Filled in the SHA this table had left as "this commit". |
 | `18c8813` | Zero-padded the labels to `ADR-01`–`ADR-06` so they sort correctly past nine. |
+| `1822e3d` | **ADR-10 added: FIFO per (user, group), and the queue is never jumped.** Settles that the API Worker attempts a new request immediately only when its queue is otherwise empty, and that the nightly sweep stops a queue at its first retryable failure. ADR-05 gained the `photos.getAllContexts` check. The Flickr API surface and OAuth 1.0a's signing of the request-token call were recorded as verified facts. |
 
 ## Verified facts
 
