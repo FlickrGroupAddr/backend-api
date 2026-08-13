@@ -41,6 +41,8 @@ beta-era numbers that will move.
 | Flickr OAuth offers only three permission levels | Flickr API docs: the `perms` parameter accepts `read`, `write`, or `delete`. **There is no narrower scope** — no way to request permission to add photos to groups without also granting full write access to the account. | 2026-08-12 |
 | `flickr.groups.pools.add` returns a numeric error code | Flickr API docs. Relevant codes: **1** photo not found, **2** group not found, **3** photo already in pool, **4** photo in maximum number of pools, **5** photo limit reached, **6** photo added to the Pending Queue for this pool, **7** photo already in the Pending Queue, **8** content not allowed, **10** maximum number of photos in group pool, **11** group pool is disabled. Transient: **105** service unavailable, **106** write operation failed. | 2026-08-13 |
 | A moderator's decision on a queued photo is invisible to the API | There is no error code, callback, or endpoint that reports a rejection. After code **6** the photo sits in the pool's pending queue; if a moderator rejects it, it simply never appears in the pool. `flickr.photos.getAllContexts` can show whether a photo landed, but "not in the pool" cannot distinguish *still pending* from *rejected*. | 2026-08-13 |
+| D1 bills reads at $0.001/M rows and writes at $1.00/M — writes cost 1,000× more | Cloudflare pricing. Workers Paid includes **25 billion rows read** and **50 million rows written** per month, plus 5 GB storage, then $0.001/M read, $1.00/M written, $0.75/GB-mo. | 2026-08-13 |
+| D1 read replication is free and automatic in six regions | Cloudflare docs: *"Read replication does not charge extra for read replicas. You incur the same usage billing based on `rows_read` and `rows_written` by your queries."* No per-replica storage charge, and a write is not billed once per replica. Replicas are placed automatically in **ENAM, WNAM, WEUR, EEUR, APAC, OC** — the count is not configurable. Enabled with `read_replication.mode: auto`; reads must go through the Sessions API (`withSession()`) or they hit the primary regardless. | 2026-08-13 |
 | Durable Objects have no TTL, and an idle one is free | Cloudflare docs: there is no automatic expiry, but "inactive objects receiving no requests do not incur any duration charges." Storage is metered separately and "Durable Objects will be billed for stored data until the data is removed"; once deleted through the Storage API the object is cleaned up and stops incurring storage fees. **There is no runtime API to enumerate the objects in a namespace** — a Worker cannot list them. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, DO requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
@@ -337,6 +339,31 @@ That is genuinely shared data, which is exactly what a shared cache is for.
 without a per-user key, which serves one member's pending list to another. It is an easy mistake,
 it is silent, and on a product whose whole security model is a signed cookie identifying a Flickr
 account, it would be the worst bug in the system.
+
+**Worked against real rates, there is nothing for a read cache to save.** At 1,000 users holding
+100 pending requests each — 100,000 rows — the nightly sweep and the dashboard together read on
+the order of 6 million rows a month, against 25 **billion** included. That is 0.02% of the
+allowance. A read cache would be optimizing four orders of magnitude below the point where cost
+becomes visible.
+
+### The cost lever is write volume, and it is a schema decision
+
+**Writes cost 1,000× what reads cost — $1.00 per million against $0.001 — and the included
+allowance is 500× smaller.** That inverts the usual instinct. Reads are the thing you would
+naturally try to reduce, and they are free; writes are the thing nobody thinks about, and they are
+the entire bill.
+
+The driver is **how much gets written per attempt**. Recording one attempt row for every pending
+request every night, at 100,000 pending rows, is 3 million writes a month — 6% of the included
+50 million. The same design at 1 million pending rows is 30 million writes a month, 60% of the
+allowance, and the next step past that is a real invoice.
+
+**Anyone extending the schema MUST check this before adding a per-attempt write.** The obvious
+mitigations — write only when the outcome *changes* rather than on every attempt, or roll several
+nights of no-change attempts into one row — are cheap to design in and awkward to retrofit once a
+history table has a shape people depend on. **This is recorded now because it is obvious today and
+invisible later**, when someone reasonably adds "just one more column, written every run" to a
+table that is already the most expensive thing in the system.
 
 ## Considered and rejected
 
