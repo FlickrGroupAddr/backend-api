@@ -104,7 +104,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="api" value="&lt;b&gt;api.flickrgroupaddr.com&lt;br&gt;REST API Endpoint&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Worker&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="940" y="740" width="230" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="retry" value="&lt;b&gt;Retry Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;Drains due requests&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+        <mxCell id="retry" value="&lt;b&gt;Nightly Retry Logic&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Worker&lt;br&gt;Attempt to flush every queue with&lt;br&gt;pending requests. Stop a queue at&lt;br&gt;its first throttle status&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="940" y="1040" width="230" height="100" as="geometry" />
         </mxCell>
 
@@ -901,6 +901,8 @@ LOWERCASE_OPENERS = {
 LOWERCASE_CONTINUATIONS = {
     "per login attempt": "continuation of 'One Durable Object'",
     "consistency": "continuation of 'Eventual'",
+    "pending requests. Stop a queue at": "continuation of 'Attempt to flush every queue with'",
+    "its first throttle status": "continuation of the same sentence",
 }
 
 bad_case = []
