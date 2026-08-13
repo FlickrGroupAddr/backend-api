@@ -83,7 +83,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="320" y="480" width="190" height="90" as="geometry" />
         </mxCell>
         <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="320" y="660" width="190" height="90" as="geometry" />
+          <mxGeometry x="320" y="640" width="190" height="90" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;consumer key + secret,&lt;br&gt;master encryption key&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="640" y="880" width="220" height="90" as="geometry" />
@@ -123,14 +123,33 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1600" y="520" width="205" height="125" as="geometry" />
         </mxCell>
 
-        <mxCell id="e1" value="1 &#183; DNS query" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="dns">
+        <mxCell id="n1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="245" y="636" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="245" y="716" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n3" value="3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="537" y="747" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="777" y="1277" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="757" y="787" width="46" height="46" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" value="DNS query" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="dns">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e2" value="2 &#183; static assets" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="pages">
+        <mxCell id="e2" value="static assets" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="pages">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e12" value="3 &#183; fetch /api/v001/*" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="api">
-          <mxGeometry x="0.3" relative="1" as="geometry" />
+        <mxCell id="e12" value="begin login" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="api">
+          <mxGeometry x="0.45" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="/api/v001/* &#183; session cookie" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="api">
+          <mxGeometry x="0.55" relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e3" value="request-token secret" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
@@ -198,8 +217,10 @@ import xml.etree.ElementTree as ET
 
 # Frames, labels, and the pieces that sit inside the Flickr card on purpose.
 NOT_OBSTACLES = {
-    "cfframe", "netb", "cflogo", "title", "date", "subtitle",
+    "cfframe", "netb", "cflogo", "title", "date",
     "flickrlogo", "flickrtext", "aflickr",
+    # Step badges sit ON their arrows by design, so they are not obstacles.
+    "n1", "n2", "n3", "n4", "n5",
 }
 
 root = ET.parse(OUT).getroot()
@@ -299,7 +320,8 @@ print(f"  collisions             : {problems if problems else 'none'}")
 # both ends land on the same y; a later box move silently breaks that, and a
 # nearly-horizontal arrow looks like a mistake rather than a decision.
 MUST_BE_HORIZONTAL = {
-    "e12": "users -> api",
+    "e12": "users -> api (begin login)",
+    "e13": "users -> api (authenticated)",
     "e6": "cron -> retry",
     "e9": "api -> flickr",
     "e10": "retry -> flickr",
@@ -397,6 +419,44 @@ for t in RIGHT_COLUMN:
     print(f"    {t:9} x {lefts[t]:.0f}-{lefts[t]+widths[t]:.0f}  width {widths[t]:.0f}")
 print(f"    -> {'aligned' if aligned else 'RAGGED'}")
 if not aligned:
+    problems += 1
+
+
+# Each step badge must sit ON the arrow it numbers. A badge floating even 20px
+# clear of its line reads as an unrelated blob, and nothing else here would catch
+# it -- badges are excluded from the collision check precisely because they are
+# meant to overlap their edge.
+BADGE_ON_EDGE = {"n1": "e1", "n2": "e2", "n3": "e12", "n5": "e13"}
+TOLERANCE_PX = 8.0
+
+
+def point_to_segment(pt, a, b):
+    ax, ay, bx, by = a[0], a[1], b[0], b[1]
+    dx, dy = bx - ax, by - ay
+    if dx == 0 and dy == 0:
+        return math.hypot(pt[0] - ax, pt[1] - ay)
+    t = max(0.0, min(1.0, ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(pt[0] - (ax + t * dx), pt[1] - (ay + t * dy))
+
+
+print("  step badges on their arrows:")
+for badge, eid in BADGE_ON_EDGE.items():
+    bx, by, bw, bh = boxes[badge]
+    centre = (bx + bw / 2, by + bh / 2)
+    _, _, p, q = segments[eid]
+    d = point_to_segment(centre, p, q)
+    print(f"    {badge} on {eid:4} offset {d:>5.1f}px  {'ok' if d <= TOLERANCE_PX else 'OFF THE LINE'}")
+    if d > TOLERANCE_PX:
+        problems += 1
+
+# n4 rides the orthogonal Users-to-Flickr route, whose long leg is the horizontal
+# run between its two waypoints; the straight-edge machinery above cannot model it.
+n4x, n4y, n4w, n4h = boxes["n4"]
+n4c = (n4x + n4w / 2, n4y + n4h / 2)
+run_y, run_x0, run_x1 = 1300.0, 120.0, 1540.0
+on_run = abs(n4c[1] - run_y) <= TOLERANCE_PX and run_x0 <= n4c[0] <= run_x1
+print(f"    n4 on e11  offset {abs(n4c[1]-run_y):>5.1f}px  {'ok' if on_run else 'OFF THE LINE'}")
+if not on_run:
     problems += 1
 
 if problems:
