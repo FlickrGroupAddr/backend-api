@@ -302,6 +302,42 @@ front of a person who did not ask for it — a report, a message, a notification
 falls under the same rule. If FGA cannot tell whether a person already said no, it MUST assume
 they did.
 
+### ADR-09 — Read latency is answered with D1 read replication, not an application cache
+
+Reads **SHOULD** go through the D1 Sessions API with `read_replication.mode: auto`. Per-user API
+responses **MUST NOT** be written to the shared edge cache (`caches.default`) unless the cache key
+includes the user; `Cache-Control: private` is the default for anything behind a session.
+
+**Cost is not the reason to cache here.** D1 bills reads at $0.001 per million rows. At any scale
+this project plausibly reaches, the query volume is free, and a cache built to save money would be
+saving nothing.
+
+**Latency is the real cost, and it comes from a fact already recorded in ADR-02's neighbourhood:
+the D1 primary lives in one location, outside the edge PoP.** A user in Sydney reaches a Worker in
+Sydney in a few milliseconds, and that Worker then crosses the planet to the primary. The
+anycast win is spent on the first query.
+
+**Read replication fixes that at the source.** Replicas exist in every region at no extra cost,
+and the Sessions API provides sequential consistency **including read-your-own-writes**. That last
+property is the one that matters: an application cache would have to be invalidated the instant a
+user submits a request, because a user who adds a photo and does not see it appear concludes the
+product is broken. Cloudflare has solved the hard half of the problem already; reimplementing it
+in cache-invalidation logic would be strictly worse.
+
+**The premise that state changes only once a day is true of the nightly sweep and false of the
+user.** The cron mutates each `(photo, group)` row at most daily, but a person can submit at any
+moment, and their own change is the one they watch for. Any caching scheme MUST treat the user's
+own mutation as the common case rather than the edge case.
+
+**Where a cache still earns its place:** group metadata — name, icon, rules — is identical for
+every user and changes rarely, so it **MAY** be held in the shared edge cache with a normal TTL.
+That is genuinely shared data, which is exactly what a shared cache is for.
+
+**The trap this decision exists to prevent** is caching a per-user response in `caches.default`
+without a per-user key, which serves one member's pending list to another. It is an easy mistake,
+it is silent, and on a product whose whole security model is a signed cookie identifying a Flickr
+account, it would be the worst bug in the system.
+
 ## Considered and rejected
 
 | Option | Why not |
