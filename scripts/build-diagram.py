@@ -599,6 +599,14 @@ for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1"]
 # Boxed text tiles are sized by hand, and by hand is how you get a box that
 # either crowds its last line or trails 50px of dead space. This estimates the
 # wrapped text height and keeps the slack inside a band.
+# CHANGING EITHER TABLE BELOW INVALIDATES EVERY HAND-SET BOX HEIGHT ON THE CANVAS.
+# The heights are literals in the template, chosen against whatever these values
+# said at the time. Correct a constant and every box sized under the old one is
+# now wrong by the size of the error -- and nothing fails, because the slack check
+# only catches boxes that are too SMALL. That is exactly how justification and the
+# legend ended up 14px loose after the line heights were fixed: not a bad box, a
+# stale one. After touching these, re-run and re-tighten every tile in the boxed
+# text check below.
 CHAR_W = {20: 11.0, 15: 7.6, 14: 7.1, 13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
 # Line heights are 1.2x the font size, which is what a browser renders for
 # line-height:normal and what draw.io therefore produces. The earlier table was
@@ -664,10 +672,12 @@ def text_height(cid, pad_left=10.0, pad_right=8.0):
 
 
 print("  boxed text fits its tile:")
+slacks = {}
 for cid in ["justification", "key", "journey"]:
     need = text_height(cid)
     have = boxes[cid][3]
     slack = have - need
+    slacks[cid] = slack
     if slack < SLACK_MIN:
         verdict = "CRAMPED"
     elif slack > SLACK_MAX:
@@ -677,6 +687,15 @@ for cid in ["justification", "key", "journey"]:
     print(f"    {cid:14} box {have:>4.0f}px  text ~{need:>4.0f}px  slack {slack:>4.0f}px  {verdict}")
     if verdict != "ok":
         problems += 1
+
+# Reported, not asserted. These boxes are read side by side, so the eye compares
+# their bottom gaps and an outlier looks like a mistake even when every one is
+# individually legal -- which is how a 9px spread got noticed by a human after
+# passing a check whose band is 33px wide. Any threshold tight enough to have
+# caught that would be a number chosen to catch that, so this prints the figure
+# and leaves the judgement where it belongs.
+print(f"    spread across the three: {max(slacks.values()) - min(slacks.values()):.0f}px"
+      f"  ({', '.join(f'{c} {s:.0f}' for c, s in slacks.items())})")
 
 
 # The Flickr mark sits directly above the word "Flickr", and the gap between them
