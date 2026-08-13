@@ -66,13 +66,13 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="220" y="150" width="1300" height="1050" as="geometry" />
+          <mxGeometry x="220" y="150" width="1300" height="1080" as="geometry" />
         </mxCell>
         <mxCell id="cflogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={CF}" vertex="1" parent="1">
           <mxGeometry x="238" y="166" width="182" height="60" as="geometry" />
         </mxCell>
         <mxCell id="netb" value="Lowest-latency Cloudflare edge PoP (anycast routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="260" y="440" width="950" height="710" as="geometry" />
+          <mxGeometry x="260" y="440" width="950" height="740" as="geometry" />
         </mxCell>
         <mxCell id="asingle" value="&lt;i&gt;Outside the edge PoP on purpose. The Durable Object and the D1 primary each live in ONE location, and every write crosses to them. If a write looks like it did not persist, check whether the read came from a replica that has not caught up yet.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="1240" y="570" width="250" height="120" as="geometry" />
@@ -89,10 +89,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="380" y="640" width="210" height="90" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;FGA Flickr API credentials&lt;br&gt;Token key (encryption)&lt;br&gt;Session key (signing)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="640" y="878" width="220" height="105" as="geometry" />
+          <mxGeometry x="640" y="908" width="220" height="105" as="geometry" />
         </mxCell>
         <mxCell id="cron" value="&lt;b&gt;Cron Trigger&lt;/b&gt;&lt;br&gt;&lt;i&gt;Nightly&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="1010" width="210" height="100" as="geometry" />
+          <mxGeometry x="380" y="1040" width="210" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="oauthdo_b2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
@@ -108,24 +108,24 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="940" y="740" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="retry" value="&lt;b&gt;Retry Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;Drains due requests&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="940" y="1010" width="230" height="100" as="geometry" />
+          <mxGeometry x="940" y="1040" width="230" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="d1replica" value="&lt;b&gt;D1 Read Replica&lt;/b&gt;&lt;br&gt;&lt;i&gt;ALL reads&lt;br&gt;Served from nearest region&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4FC3E8;strokeColor=none;fontColor=#0B2E3D;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="950" y="885" width="210" height="80" as="geometry" />
+          <mxGeometry x="950" y="915" width="210" height="80" as="geometry" />
         </mxCell>
         <mxCell id="d1" value="&lt;b&gt;D1 Primary&lt;/b&gt;&lt;br&gt;&lt;i&gt;ALL writes&lt;br&gt;Users &#183; requests &#183; tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="1300" y="870" width="200" height="110" as="geometry" />
+          <mxGeometry x="1300" y="900" width="200" height="110" as="geometry" />
         </mxCell>
 
         <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="581" width="205" height="569" as="geometry" />
+          <mxGeometry x="1600" y="581" width="205" height="599" as="geometry" />
         </mxCell>
         <mxCell id="flickrtitle" value="Flickr" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
           <mxGeometry x="1625" y="686" width="155" height="28" as="geometry" />
         </mxCell>
         <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;div style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:30px&quot;&gt;&lt;b&gt;OAuth Endpoints&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px;margin-top:7px&quot;&gt;oauth/request_token&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/authorize&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/access_token&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:30px&quot;&gt;&lt;b&gt;API Functions&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px;margin-top:7px&quot;&gt;groups.pools.getGroups&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;photos.getAllContexts&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;groups.pools.add&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
-          <mxGeometry x="1625" y="740" width="155" height="370" as="geometry" />
+          <mxGeometry x="1625" y="740" width="155" height="400" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
           <mxGeometry x="1625" y="606" width="155" height="73" as="geometry" />
@@ -148,7 +148,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="727" y="721" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="891" y="861" width="46" height="46" as="geometry" />
+          <mxGeometry x="869" y="828" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1537" y="728" width="46" height="46" as="geometry" />
@@ -157,7 +157,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1058" y="547" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="777" y="1251" width="46" height="46" as="geometry" />
+          <mxGeometry x="777" y="1281" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="452" y="813" width="46" height="46" as="geometry" />
@@ -211,20 +211,20 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
             <mxPoint x="25" y="-18" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e9" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
+        <mxCell id="e9" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.0925;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e17" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.74;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
+        <mxCell id="e17" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.74;exitDx=0;exitDy=0;entryX=0;entryY=0.185;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.63;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickrapi">
+        <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.63;exitDx=0;exitDy=0;entryX=0;entryY=0.9075;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickrapi">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="120" y="1300" />
-              <mxPoint x="1702.5" y="1300" />
+              <mxPoint x="120" y="1330" />
+              <mxPoint x="1702.5" y="1330" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -539,7 +539,7 @@ for badge, eid in BADGE_ON_EDGE.items():
 # run between its two waypoints; the straight-edge machinery above cannot model it.
 n7x, n7y, n7w, n7h = boxes["n7"]
 n7c = (n7x + n7w / 2, n7y + n7h / 2)
-run_y, run_x0, run_x1 = 1300.0, 120.0, 1702.5
+run_y, run_x0, run_x1 = 1330.0, 120.0, 1702.5
 n7_off = abs(n7c[1] - run_y)
 on_run = NEAR_MIN <= n7_off <= NEAR_MAX and run_x0 <= n7c[0] <= run_x1
 print(f"    n7 beside e11  offset {n7_off:>5.1f}px  {'ok' if on_run else 'BADLY PLACED'}")
