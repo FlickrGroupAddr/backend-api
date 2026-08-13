@@ -229,3 +229,6 @@ node_modules/
 # and stale bindings typecheck clean right up until they fail at runtime.
 .dev.vars
 .dev.vars.*
+# ...but the template MUST be committed. It documents which secrets exist and
+# how to generate them, and it holds no real values.
+!.dev.vars.example

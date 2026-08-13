@@ -11,6 +11,14 @@
 	// ADR-13 requires naming that dependency in the same commit.
 	"compatibility_flags": [],
 
+	// Public configuration, not secrets. ADR-12: the UI and the API are separate
+	// origins, and the CORS allowlist is compared against this exact value --
+	// never against the request's own Origin header.
+	"vars": {
+		"UI_ORIGIN": "https://flickrgroupaddr.com",
+		"API_BASE_URL": "https://api.flickrgroupaddr.com"
+	},
+
 	"observability": {
 		"enabled": true,
 		"head_sampling_rate": 1

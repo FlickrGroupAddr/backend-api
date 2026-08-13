@@ -1,0 +1,21 @@
+# Copy to .dev.vars for local development. .dev.vars is gitignored -- the repo is
+# public, and these are the four values ADR-03 names.
+#
+# In production these are Worker secrets, set with `wrangler secret put NAME`.
+# They are NOT in wrangler.jsonc, which is committed.
+
+# From https://www.flickr.com/services/apps/create/
+FLICKR_CONSUMER_KEY="local-development-placeholder"
+FLICKR_CONSUMER_SECRET="local-development-placeholder"
+
+# AES-GCM, encrypts each user's Flickr token before it reaches D1 (ADR-03).
+# Generate with: openssl rand -base64 32
+# MUST decode to exactly 32 bytes -- the code refuses anything else.
+TOKEN_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+
+# HMAC-SHA256, signs the session cookie (ADR-06). MUST be a different value from
+# TOKEN_KEY: rotating this one logs everyone out and costs nothing, while
+# rotating TOKEN_KEY means re-encrypting every stored Flickr token. Sharing a key
+# makes the cheap rotation as expensive as the dear one, so neither ever happens.
+# Generate with: openssl rand -base64 32
+SESSION_KEY="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
