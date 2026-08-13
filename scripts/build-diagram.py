@@ -24,9 +24,15 @@ system actually depends on.
 import base64
 import pathlib
 
+# Dates are versions on this project -- there is no v1/v2 numbering. The
+# filename and the title block MUST carry the same date, so both come from this
+# one constant. Bump it when the diagram's content changes, and git mv the
+# existing file to match before running.
+DATE = "2026-08-13"
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SVG = ROOT / "docs" / "architecture" / "logos"
-OUT = ROOT / "docs" / "architecture" / "FlickrGroupAddr-Architecture-2026-08-12.drawio"
+OUT = ROOT / "docs" / "architecture" / f"FlickrGroupAddr-Architecture-{DATE}.drawio"
 
 
 def embed(name: str) -> str:
@@ -38,16 +44,16 @@ CF = embed("cloudflare-mark.svg")
 FLICKR = embed("flickr-mark.svg")
 
 TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
-  <diagram id="fga-arch-2026-08-12" name="FlickrGroupAddr Architecture">
+  <diagram id="fga-architecture" name="FlickrGroupAddr Architecture">
     <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1260" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
 
-        <mxCell id="title" value="FlickrGroupAddr Architecture &#8212; v1" style="text;html=1;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="title" value="FlickrGroupAddr Architecture" style="text;html=1;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="50" y="24" width="700" height="34" as="geometry" />
         </mxCell>
-        <mxCell id="date" value="2026-08-12" style="text;html=1;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="date" value="{DATE}" style="text;html=1;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="50" y="62" width="300" height="24" as="geometry" />
         </mxCell>
         <mxCell id="subtitle" value="Cloudflare-native &#183; the Flickr account is the identity &#183; no PII held beyond the Flickr NSID" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
@@ -154,7 +160,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
 </mxfile>
 """
 
-OUT.write_text(TEMPLATE.replace("{CF}", CF).replace("{FLICKR}", FLICKR), encoding="utf-8")
+OUT.write_text(
+    TEMPLATE.replace("{CF}", CF).replace("{FLICKR}", FLICKR).replace("{DATE}", DATE),
+    encoding="utf-8",
+)
 print(f"Wrote {OUT}")
 print(f"  cloudflare payload : {len(CF)} chars")
 print(f"  flickr payload     : {len(FLICKR)} chars")
