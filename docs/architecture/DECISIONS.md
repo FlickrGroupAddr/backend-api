@@ -39,6 +39,7 @@ beta-era numbers that will move.
 | Durable Object alarms deliver at-least-once | Cloudflare docs: guaranteed at-least-once execution, automatic retry with exponential backoff from 2 seconds, up to 6 retries, and `alarmInfo.retryCount` / `alarmInfo.isRetry` exposed to the handler. | 2026-08-12 |
 | Cloudflare Secrets Store caps at 100 secrets | Open beta limits: 100 secrets per account, one store per account, 1024 bytes per secret value. | 2026-08-12 |
 | Flickr OAuth offers only three permission levels | Flickr API docs: the `perms` parameter accepts `read`, `write`, or `delete`. **There is no narrower scope** — no way to request permission to add photos to groups without also granting full write access to the account. | 2026-08-12 |
+| Durable Objects have no TTL, and an idle one is free | Cloudflare docs: there is no automatic expiry, but "inactive objects receiving no requests do not incur any duration charges." Storage is metered separately and "Durable Objects will be billed for stored data until the data is removed"; once deleted through the Storage API the object is cleaned up and stops incurring storage fees. **There is no runtime API to enumerate the objects in a namespace** — a Worker cannot list them. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, DO requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
 ## Decisions
@@ -91,8 +92,18 @@ intermittent, dependent on which PoP the user transited, and effectively unrepro
 developer's machine.
 
 **This is the only place in the v1 design where a Durable Object is used, and the narrow scope is
-deliberate** — see ADR-04. The object **SHOULD** set an alarm to delete itself after roughly 15
-minutes, so abandoned login attempts expire without a cleanup job.
+deliberate** — see ADR-04.
+
+**The object MUST set an alarm on creation that calls `deleteAll()` on its storage after roughly
+15 minutes.** This is not tidiness; it is the entire cleanup strategy. Durable Objects have no
+TTL, so nothing expires on its own, and stored data is billed until it is removed. An object whose
+storage has been deleted costs nothing, because an inactive object receiving no requests accrues
+no duration charges either. Most login attempts are abandoned — the user closes the tab at
+Flickr's authorize page — so this path is the common case, not the exception.
+
+**The alarm handler MUST catch its own exceptions and reschedule.** Alarm delivery is
+at-least-once with a bounded six retries; past that, a handler that never succeeds leaks its
+storage forever with nothing to notice.
 
 **It is one object per login attempt, NOT one per user, and the distinction MUST be preserved in
 any diagram or document that names it.** At this point in the flow there is no user yet — the
@@ -181,6 +192,7 @@ else.
 | Cloudflare Secrets Store | Correct product, wrong maturity and wrong ceiling. See ADR-03. |
 | Cloudflare Queues | Verified as available with dead-letter queues, retries, delays, and batching. Not needed while a nightly sweep does the work. Revisit alongside ADR-04's promotion criteria. |
 | Workers KV for session or OAuth state | Consistency model is wrong for the login path. See ADR-02. |
+| A nightly cron reaper for abandoned OAuth objects | **Not possible as imagined, and not needed.** A Worker cannot enumerate the Durable Objects in a namespace at runtime, so a reaper would need its own index in D1 — one extra write on every login attempt, purely to clean up what the object's own alarm already deletes. It would add a moving part, a cost, and a new failure mode to replace a mechanism that is strictly better: the alarm fires per object, exactly when that object is due, with no global scan. See ADR-02. |
 
 ## Open questions
 

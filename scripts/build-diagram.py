@@ -92,7 +92,13 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="320" y="1010" width="190" height="100" as="geometry" />
         </mxCell>
 
-        <mxCell id="oauthdo" value="&lt;b&gt;OAuth Request Token&lt;/b&gt;&lt;br&gt;&lt;i&gt;one Durable Object&lt;br&gt;per login attempt&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+        <mxCell id="oauthdo_b2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="956" y="284" width="230" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="oauthdo_b1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="948" y="292" width="230" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="oauthdo" value="&lt;b&gt;OAuth Request Token&lt;/b&gt;&lt;br&gt;&lt;i&gt;one Durable Object&lt;br&gt;per login attempt&lt;br&gt;self-deletes after ~15 min&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="940" y="300" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="api" value="&lt;b&gt;API Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;backend-api&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
@@ -231,6 +237,9 @@ NOT_OBSTACLES = {
     "flickrlogo", "flickrtext", "aflickr",
     # Step badges sit ON their arrows by design, so they are not obstacles.
     "n1", "n2", "n3", "n4", "n5", "n6", "n7",
+    # Cascade cards behind the OAuth tile: decoration showing there are many,
+    # and the edge legitimately terminates on the tile stacked in front of them.
+    "oauthdo_b1", "oauthdo_b2",
 }
 
 root = ET.parse(OUT).getroot()
