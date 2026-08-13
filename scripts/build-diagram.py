@@ -860,6 +860,29 @@ for c in cells:
         problems += 1
 
 
+# The replication arrow's label is load-bearing, and its removal has already been
+# considered and rejected. Every other arrow on this canvas gets its meaning from
+# the two tiles it joins; this one cannot. Both ends are D1, both hold the same
+# rows, and the entire difference between them is the lag this label names. It is
+# also the only dashed edge, so the label doubles as the explanation of a line
+# style used nowhere else. ADR-09 exists because that lag produces a specific
+# failure -- a write that appears not to have persisted -- which is close to
+# undiagnosable unless the reader knows replication is in play.
+#
+# Settled deliberately on 2026-08-13 after the other sixteen labels were removed
+# as redundant. A later pass tidying up "the last stray label" would be undoing a
+# decision rather than finishing a cleanup, which is why this fails the build
+# rather than living in a comment alone.
+REQUIRED_EDGE_LABEL = {"e16": "Eventual"}
+print("  Load-bearing edge labels still present:")
+for eid, needle in REQUIRED_EDGE_LABEL.items():
+    label = (edge_by_id[eid].get("value") or "").strip()
+    ok = needle.lower() in label.lower()
+    print(f"    {eid:4} {label!r} {'ok' if ok else 'MISSING -- read the comment above this check'}")
+    if not ok:
+        problems += 1
+
+
 # "DO" is banned on this project. Terry is a long-time DigitalOcean customer and
 # the abbreviation collides with that in his head at exactly the moment he is
 # skimming. Write "Durable Object" every time, however verbose it feels.
