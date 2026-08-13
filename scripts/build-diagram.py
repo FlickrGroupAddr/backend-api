@@ -151,7 +151,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="891" y="861" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1362" y="728" width="46" height="46" as="geometry" />
+          <mxGeometry x="1537" y="728" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n6" value="6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1058" y="547" width="46" height="46" as="geometry" />
@@ -163,7 +163,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="452" y="813" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1362" y="817" width="46" height="46" as="geometry" />
+          <mxGeometry x="1537" y="817" width="46" height="46" as="geometry" />
         </mxCell>
 
         <mxCell id="journey" value="&lt;b&gt;User Journey&lt;/b&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker signs with them and asks Flickr for a request token&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&amp;nbsp; REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&amp;nbsp; Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
