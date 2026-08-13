@@ -162,9 +162,12 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="452" y="813" width="46" height="46" as="geometry" />
         </mxCell>
+        <mxCell id="n9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="780" width="46" height="46" as="geometry" />
+        </mxCell>
 
-        <mxCell id="journey" value="&lt;b&gt;User Journey&lt;/b&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker signs with them and asks Flickr for a request token&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&amp;nbsp; REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="280" y="238" width="500" height="196" as="geometry" />
+        <mxCell id="journey" value="&lt;b&gt;User Journey&lt;/b&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker signs with them and asks Flickr for a request token&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&amp;nbsp; REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&amp;nbsp; Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="238" width="500" height="211" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
@@ -259,7 +262,7 @@ NOT_OBSTACLES = {
     "cfframe", "netb", "cflogo", "title", "date",
     "flickrlogo", "flickr", "flickrtitle",
     # Step badges sit ON their arrows by design, so they are not obstacles.
-    "n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8",
+    "n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9",
     # Cascade cards behind the OAuth tile: decoration showing there are many,
     # and the edge legitimately terminates on the tile stacked in front of them.
     "oauthdo_b1", "oauthdo_b2",
@@ -494,6 +497,12 @@ BADGE_ON_EDGE = {
     "n5": "e9",    # API Worker <-> Flickr, request token (access token on the return)
     "n6": "e3",    # API Worker <-> OAuth Durable Object, stash the secret (read back on return)
     "n8": "e13",   # users -> API Worker, authenticated calls
+    # n9 shares e9 with n5 on purpose. That arrow is the channel between the API
+    # Worker and Flickr, and it is used at two different moments -- once to get a
+    # request token during login, and again on every authenticated call after. One
+    # badge on it described only the first, leaving the tile's API Functions list
+    # with nothing in the journey pointing at it.
+    "n9": "e9",    # API Worker -> Flickr, acting as the user after login
 }
 NEAR_MIN, NEAR_MAX = 24.0, 32.0   # badge radius is 23; 24 clears the line by a hair, 32 still reads as attached
 
@@ -716,7 +725,7 @@ if abs(tx - lx) > 0.5 or abs(tw - lw) > 0.5:
 # sit beside their arrow, which means NOTHING was checking them against tiles. A
 # badge overlapping a tile went unnoticed for several commits after a column
 # shift moved the tile under it.
-BADGES = ["n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"]
+BADGES = ["n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9"]
 TILES = ["dns", "pages", "secrets", "cron", "oauthdo", "api", "retry",
          "d1replica", "d1", "users", "flickrapi", "journey", "key", "justification"]
 
@@ -725,6 +734,22 @@ def overlaps(a, b):
     ax, ay, aw, ah = a
     bx, by, bw, bh = b
     return not (ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay)
+
+
+# Badges are checked against tiles and against their own arrow, but until step 9
+# no two of them could plausibly meet. Now that n5 and n9 share e9, two badges on
+# one arrow can be slid into each other by any change to that arrow's ends -- and
+# nothing above would notice, because each would still measure a correct 26px
+# offset from the line they both sit on.
+print("  badges clear of each other:")
+badge_clashes = [
+    (a, b) for i, a in enumerate(BADGES) for b in BADGES[i + 1:]
+    if a in boxes and b in boxes and overlaps(boxes[a], boxes[b])
+]
+for a, b in badge_clashes:
+    print(f"    {a} OVERLAPS {b}")
+print(f"    -> {'all clear' if not badge_clashes else f'{len(badge_clashes)} overlap(s)'}")
+problems += len(badge_clashes)
 
 
 print("  badges clear of every tile:")
