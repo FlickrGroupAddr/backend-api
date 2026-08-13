@@ -121,8 +121,8 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="flickrtext" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;i&gt;flickr.com&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;OAuth 1.0a&lt;br&gt;HMAC-SHA1 signed&lt;/i&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="1610" y="935" width="185" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="aflickr" value="&lt;i&gt;Per-group daily add limits are why this system exists &#8212; a single request may retry for weeks.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="1140" width="205" height="90" as="geometry" />
+        <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="330" width="205" height="165" as="geometry" />
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
@@ -234,7 +234,7 @@ import xml.etree.ElementTree as ET
 # Frames, labels, and the pieces that sit inside the Flickr card on purpose.
 NOT_OBSTACLES = {
     "cfframe", "netb", "cflogo", "title", "date",
-    "flickrlogo", "flickrtext", "aflickr",
+    "flickrlogo", "flickrtext",
     # Step badges sit ON their arrows by design, so they are not obstacles.
     "n1", "n2", "n3", "n4", "n5", "n6", "n7",
     # Cascade cards behind the OAuth tile: decoration showing there are many,
@@ -429,7 +429,7 @@ for tile, expected in IN_EDGE_POP.items():
 # The right-hand column is deliberately flush: legend, Flickr tile, and the note
 # beneath it share a left edge and a width. Ragged edges there read as sloppiness
 # rather than as meaning, and a resize elsewhere is what would quietly break it.
-RIGHT_COLUMN = ["key", "flickr", "aflickr"]
+RIGHT_COLUMN = ["justification", "key", "flickr"]
 lefts = {t: boxes[t][0] for t in RIGHT_COLUMN}
 widths = {t: boxes[t][2] for t in RIGHT_COLUMN}
 aligned = len(set(lefts.values())) == 1 and len(set(widths.values())) == 1
