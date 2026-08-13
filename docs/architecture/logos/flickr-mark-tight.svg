@@ -1,0 +1,8 @@
+<!-- Cropped from File:Flickr logo - SuperTinyIcons.svg (Wikimedia Commons).
+     The original is a 512x512 square: a white rounded rect plus two dots at
+     cy=256, r=79. The dots occupy only y 177-335, so roughly 60% of the height
+     is invisible padding on a white canvas, and any tile placing it against a
+     title inherits that as a gap nothing can close.
+     This viewBox crops to the dots' bounding box plus 10 units, and drops the
+     white backing rect, which was invisible anyway. -->
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="Flickr" role="img" viewBox="68 167 376 178"><circle cx="157" cy="256" fill="#0063dc" r="79"/><circle cx="355" cy="256" fill="#ff0084" r="79"/></svg>

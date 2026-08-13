@@ -16,7 +16,10 @@ silently corrupt image.
 Artwork comes from Wikimedia Commons and lives in docs/architecture/logos/ so the
 build has no network dependency:
   cloudflare-mark.svg  File:Cloudflare Logo.svg
-  flickr-mark.svg      File:Flickr logo - SuperTinyIcons.svg
+  flickr-mark-tight.svg  File:Flickr logo - SuperTinyIcons.svg, cropped to the
+                         two dots. The 512x512 original is ~60% invisible white
+                         padding, which renders as an uncloseable gap above the
+                         title no matter what spacingTop says. See that file.
   users.svg            File:Font Awesome 5 solid users.svg
 
 The first two are company trademarks used nominatively, to identify the services
@@ -45,7 +48,7 @@ def embed(name: str) -> str:
 
 
 CF = embed("cloudflare-mark.svg")
-FLICKR = embed("flickr-mark.svg")
+FLICKR = embed("flickr-mark-tight.svg")
 USERS = embed("users.svg")
 
 TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
@@ -115,14 +118,14 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1300" y="870" width="200" height="110" as="geometry" />
         </mxCell>
 
-        <mxCell id="flickr" value="&lt;b&gt;Flickr&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;verticalAlign=top;spacingTop=95;fontSize=16;fontColor=#1A1A1A;" vertex="1" parent="1">
+        <mxCell id="flickr" value="&lt;b&gt;Flickr&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;verticalAlign=top;spacingTop=96;fontSize=22;fontColor=#1A1A1A;" vertex="1" parent="1">
           <mxGeometry x="1600" y="595" width="205" height="555" as="geometry" />
         </mxCell>
-        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=8;" vertex="1" parent="1">
+        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="1625" y="740" width="155" height="370" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
-          <mxGeometry x="1658" y="600" width="88" height="88" as="geometry" />
+          <mxGeometry x="1618" y="602" width="169" height="80" as="geometry" />
         </mxCell>
                 <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
           <mxGeometry x="1600" y="150" width="205" height="140" as="geometry" />
@@ -154,8 +157,8 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="452" y="813" width="46" height="46" as="geometry" />
         </mxCell>
 
-        <mxCell id="journey" value="&lt;b&gt;User Journey&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;br&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;br&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;br&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker asks Flickr for a request token&lt;br&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;br&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 4 and 5&lt;br&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; REST API endpoints: /api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="280" y="238" width="620" height="180" as="geometry" />
+        <mxCell id="journey" value="&lt;b&gt;User Journey&lt;/b&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker asks Flickr for a request token&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 4 and 5&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; REST API endpoints: /api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="238" width="500" height="180" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
@@ -573,11 +576,20 @@ SLACK_MIN, SLACK_MAX = 12.0, 45.0
 def text_height(cid, pad_left=10.0, pad_right=8.0):
     raw = next(c.get("value") or "" for c in cells if c.get("id") == cid)
     # ElementTree has already unescaped one level, so real tags are present.
-    if "<br>" not in raw and "<b>" not in raw:
-        raise SystemExit(f"Text estimator found no markup in '{cid}' -- it would measure blind.")
+    # Prove the separator actually matches rather than trusting that it does: a
+    # split that silently finds nothing measures a six-line block as one line and
+    # reports a comfortable fit. That has happened twice -- once when <br> was
+    # unescaped out from under the token, and once when the steps moved from <br>
+    # separators to <div> wrappers and left the old check satisfied by <b>.
+    chunks = re.split(r"<br\s*/?>|</div>", raw)
+    breaks = len(re.findall(r"<br\s*/?>|</div>", raw))
+    if breaks == 0:
+        raise SystemExit(f"Text estimator found no line breaks in '{cid}' -- it would measure blind.")
+    if len(chunks) != breaks + 1:
+        raise SystemExit(f"Text estimator split '{cid}' into {len(chunks)} for {breaks} breaks.")
     usable = boxes[cid][2] - pad_left - pad_right
     size, total = 12, 8.0  # spacingTop
-    for chunk in raw.split("<br>"):
+    for chunk in chunks:
         m = re.search(r"font-size:(\d+)px", chunk)
         if m:
             size = int(m.group(1))
@@ -603,6 +615,41 @@ for cid in ["justification", "key", "journey"]:
     print(f"    {cid:14} box {have:>4.0f}px  text ~{need:>4.0f}px  slack {slack:>4.0f}px  {verdict}")
     if verdict != "ok":
         problems += 1
+
+
+# The Flickr mark sits directly above the word "Flickr", and the gap between them
+# is deliberate. It is also the one gap on this canvas that geometry alone cannot
+# predict: the Commons original is a 512x512 square whose dots occupy only the
+# middle third, so ~30px of the tile's apparent gap was invisible SVG padding and
+# no spacingTop could close it. The artwork is now cropped, which means a future
+# session swapping in an uncropped file would silently reopen the gap.
+LOGO_GAP_MIN, LOGO_GAP_MAX = 8.0, 10.0
+lx, ly, lw, lh = boxes["flickrlogo"]
+fx, fy, fw, fh = boxes["flickr"]
+flickr_style = next(c.get("style") for c in cells if c.get("id") == "flickr")
+spacing_top = float(re.search(r"spacingTop=(\d+)", flickr_style).group(1))
+gap = (fy + spacing_top) - (ly + lh)
+print("  Flickr mark locked to its title:")
+print(f"    mark {lw:.0f}x{lh:.0f} at y {ly:.0f}-{ly + lh:.0f}, title top {fy + spacing_top:.0f}  gap {gap:.0f}px")
+if not LOGO_GAP_MIN <= gap <= LOGO_GAP_MAX:
+    print(f"    -> gap {gap:.0f}px is outside {LOGO_GAP_MIN:.0f}-{LOGO_GAP_MAX:.0f}px")
+    problems += 1
+
+# A squashed logo is a subtle, permanent embarrassment. Hold the rendered box to
+# the artwork's own viewBox ratio rather than trusting draw.io's aspect flag.
+vb = (SVG / "flickr-mark-tight.svg").read_text(encoding="utf-8")
+vw, vh = (float(v) for v in re.search(r'viewBox="\S+ \S+ (\S+) (\S+)"', vb).groups())
+skew = abs((lw / lh) - (vw / vh)) / (vw / vh)
+print(f"    aspect {lw / lh:.3f} vs artwork {vw / vh:.3f}  ({skew * 100:.1f}% distortion)")
+if skew > 0.01:
+    print("    -> mark is visibly stretched")
+    problems += 1
+
+# Centred under the card, not merely near the middle.
+off = (lx + lw / 2) - (fx + fw / 2)
+print(f"    centred in the Flickr card: off by {off:.1f}px")
+if abs(off) > 0.5:
+    problems += 1
 
 
 # Badges are excluded from the edge/box collision check because they are meant to
@@ -661,7 +708,7 @@ LOWERCASE_ALLOWED = {
 bad_case = []
 for c in cells:
     raw = c.get("value") or ""
-    for chunk in raw.split("<br>"):
+    for chunk in re.split(r"<br\s*/?>|</div>", raw):
         line = re.sub(r"<[^>]*>", "", chunk).replace("&nbsp;", " ").strip()
         if not line or line in LOWERCASE_ALLOWED:
             continue
