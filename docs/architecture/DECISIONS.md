@@ -427,6 +427,12 @@ request every night, at 100,000 pending rows, is 3 million writes a month — 6%
 50 million. The same design at 1 million pending rows is 30 million writes a month, 60% of the
 allowance, and the next step past that is a real invoice.
 
+**ADR-10 has since capped this, and the cap is structural rather than a mitigation.** Because only
+the head of each queue is ever attempted, attempt records scale with the number of active
+`(user, group)` queues rather than with the number of pending requests. The 3-million-writes figure
+above assumed every pending row is touched nightly, which ADR-10 makes impossible. See "The queue
+view" for where that interacts with what the interface promises.
+
 **Anyone extending the schema MUST check this before adding a per-attempt write.** The obvious
 mitigations — write only when the outcome *changes* rather than on every attempt, or roll several
 nights of no-change attempts into one row — are cheap to design in and awkward to retrofit once a
@@ -503,6 +509,55 @@ no instant feedback, even when the group has plenty of headroom that minute. Tha
 never starving the request that was there first, and it is worth paying. The interface **SHOULD**
 say where in the queue a request sits, so the wait is visible rather than mysterious.
 
+### The queue view — where ADR-08 becomes visible
+
+Not yet an ADR, because the scoping is undecided. Recorded now because the requirement is settled
+and it constrains the schema.
+
+**The web app MUST show a user the state of their outstanding requests.** ADR-08's standing order
+is that where a person may have declined, FGA stops *and the user can find out*. Every decision in
+this document implements the stopping; **this view is the only place the second half is delivered**,
+and without it fail-polite is a promise the product never keeps.
+
+Per request, the view **SHOULD** carry: when it was queued, how long it has been queued, when it
+was last attempted, and what came back. Owner's list, 2026-08-13.
+
+**Add the request's position in its queue.** ADR-10 makes ordering the thing that determines when a
+request will be tried, so position is the only field that describes the *future*. "Queued 6 days
+ago" invites the question; "third in line for this group" answers it.
+
+**A terminally-resolved request MUST NOT be presented as pending.** A code **6** request is in the
+group's own moderation queue, FGA is deliberately finished with it, and per the verified-facts table
+a moderator's decision is invisible to the API forever. Listing it beside requests genuinely waiting
+for tonight's sweep misrepresents FGA's behavior at precisely the point ADR-08 exists to make
+honest. Terminal outcomes **MUST** read as closed, and **SHOULD** say why in plain language;
+the numeric code **MAY** be shown alongside, never instead.
+
+#### Two consequences for the schema, both cheap if taken now
+
+**"Last attempted" is usually "not yet", and that is correct.** Under ADR-10 only the head of a
+queue is attempted, so a request sitting fifth in line has never been tried and may not be for a
+week. The view **MUST NOT** imply otherwise — an absent attempt is information, not a gap.
+
+**This bounds the write volume ADR-09 warns about.** That section's worst case is a per-attempt
+write for every pending request: 3 million writes a month at 100,000 pending rows. Because ADR-10
+attempts only queue heads, **attempt records scale with the number of active `(user, group)` queues,
+not with the number of pending requests** — one per queue per night, whether that queue holds one
+photo or four hundred. The expensive version of this feature is the one ADR-10 already prevents.
+
+**Durations MUST be computed at render from stored timestamps.** Storing "8 hours ago" in any form
+means updating every pending row on a schedule, which reinvents exactly the per-row nightly write
+the paragraph above avoids.
+
+#### Scoping, with a recommendation but no decision
+
+**Per group is the real view**, because it matches ADR-10's queue key: position means something,
+and a capped head explains every row beneath it at a glance. **Per user is a useful roll-up** for
+"what is the state of my stuff", but it **MUST** group by group rather than presenting one flat
+list sorted by submission time. A flat list looks like a single queue when there are many
+independent ones, which makes correct FIFO behavior read as a bug the first time a later request
+lands before an earlier one in a different group.
+
 ## Considered and rejected
 
 | Option | Why not |
@@ -522,6 +577,5 @@ say where in the queue a request sits, so the wait is visible rather than myster
   **SHOULD** be established from the API before the schema is fixed.
 - **Whether D1 needs a separate group-metadata cache.** Currently assumed not: group rules can be
   read from Flickr on demand. Revisit if that read turns out to be slow or rate-limited.
-- **Whether a queue should be shown to the user, and how.** ADR-10 makes a request's position
-  meaningful and the wait explicable, which is only useful if the interface says so. The decision
-  there is a product one, not an architectural one, and it does not block the schema.
+- **How the queue is shown to the user.** *That* it is shown is settled — see "The queue view" below.
+  The open part is scoping, and the shape of the terminal-state copy.
