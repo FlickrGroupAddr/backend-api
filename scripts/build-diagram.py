@@ -154,7 +154,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="597" y="813" width="46" height="46" as="geometry" />
         </mxCell>
 
-        <mxCell id="journey" value="&lt;b&gt;User journey&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;br&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;br&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;br&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker asks Flickr for a request token&lt;br&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth DO&lt;br&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret out of the DO and trades it for the long-lived access token &#8212; the return legs of 4 and 5&lt;br&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; /api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+        <mxCell id="journey" value="&lt;b&gt;User journey&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;br&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;br&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;br&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker asks Flickr for a request token&lt;br&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;br&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 4 and 5&lt;br&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; /api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
           <mxGeometry x="280" y="238" width="620" height="180" as="geometry" />
         </mxCell>
 
@@ -482,7 +482,7 @@ BADGE_ON_EDGE = {
     "n2": "e2",    # users -> Cloudflare Pages
     "n3": "e12",   # users -> API Worker, begin login
     "n4": "e9",    # API Worker <-> Flickr, request token (access token on the return)
-    "n5": "e3",    # API Worker <-> OAuth DO, stash the secret (read back on the return)
+    "n5": "e3",    # API Worker <-> OAuth Durable Object, stash the secret (read back on return)
     "n7": "e13",   # users -> API Worker, authenticated calls
 }
 NEAR_MIN, NEAR_MAX = 24.0, 32.0   # badge radius is 23; 24 clears the line by a hair, 32 still reads as attached
@@ -539,7 +539,7 @@ for badge, eid in list(BADGE_ON_EDGE.items()) + [("n6", "e11")]:
 
 
 # The step badges are a distinct visual language and MUST NOT be confusable with
-# any tile. The OAuth DO was originally #0051C3 against badges at #003087 -- only
+# any tile. The OAuth Durable Object was originally #0051C3 against badges at
 # 68 units apart in RGB, close enough to read as the same thing at a glance.
 BADGE_FILL = "#003087"
 MIN_COLOUR_DISTANCE = 90.0
@@ -629,6 +629,15 @@ for n, t in clashes:
     print(f"    {n} OVERLAPS {t}")
 print(f"    -> {'all clear' if not clashes else f'{len(clashes)} overlap(s)'}")
 problems += len(clashes)
+
+
+# "DO" is banned on this project. Terry is a long-time DigitalOcean customer and
+# the abbreviation collides with that in his head at exactly the moment he is
+# skimming. Write "Durable Object" every time, however verbose it feels.
+banned = re.findall(r"\bDOs?\b", re.sub(r"image=data:image/svg\+xml,[A-Za-z0-9+/=]+", "", OUT.read_text(encoding="utf-8")))
+print(f"  no 'DO' abbreviation on the canvas: {'clean' if not banned else f'FOUND {len(banned)}'}")
+if banned:
+    problems += 1
 
 if problems:
     raise SystemExit("Diagram geometry check failed -- fix the layout before committing.")

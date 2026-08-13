@@ -44,7 +44,7 @@ beta-era numbers that will move.
 | D1 bills reads at $0.001/M rows and writes at $1.00/M — writes cost 1,000× more | Cloudflare pricing. Workers Paid includes **25 billion rows read** and **50 million rows written** per month, plus 5 GB storage, then $0.001/M read, $1.00/M written, $0.75/GB-mo. | 2026-08-13 |
 | D1 read replication is free and automatic in six regions | Cloudflare docs: *"Read replication does not charge extra for read replicas. You incur the same usage billing based on `rows_read` and `rows_written` by your queries."* No per-replica storage charge, and a write is not billed once per replica. Replicas are placed automatically in **ENAM, WNAM, WEUR, EEUR, APAC, OC** — the count is not configurable. Enabled with `read_replication.mode: auto`; reads must go through the Sessions API (`withSession()`) or they hit the primary regardless. | 2026-08-13 |
 | Durable Objects have no TTL, and an idle one is free | Cloudflare docs: there is no automatic expiry, but "inactive objects receiving no requests do not incur any duration charges." Storage is metered separately and "Durable Objects will be billed for stored data until the data is removed"; once deleted through the Storage API the object is cleaned up and stops incurring storage fees. **There is no runtime API to enumerate the objects in a namespace** — a Worker cannot list them. | 2026-08-13 |
-| The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, DO requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
+| The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, Durable Object requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
 ## Decisions
 
@@ -184,7 +184,7 @@ Against them, at the scale it actually has:
 - **Failure history stays in one place.** These failures are intermittent and unfold over weeks.
   One cron run writes one log; ten thousand alarms write ten thousand fragments.
 - **Durable Objects are the deepest lock-in Cloudflare offers.** Workers are close to portable
-  Web-standard code. An application whose stateful core is DO-shaped is not.
+  Web-standard code. An application whose stateful core is shaped around Durable Objects is not.
 
 **Plan cost is not, and never was, an argument in this decision.** The account now carries the
 Workers Paid plan with a Durable Object allowance far larger than this project will use, and that
