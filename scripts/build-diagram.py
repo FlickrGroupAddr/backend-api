@@ -117,7 +117,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="320" y="965" width="255" height="95" as="geometry" />
+          <mxGeometry x="1560" y="300" width="255" height="95" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="HTTPS" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="pages">
@@ -351,8 +351,10 @@ for eid, (src, tgt, p, q) in segments.items():
 # Workers run at the nearest anycast PoP, while a Durable Object and a D1 primary
 # each live in exactly one location. Drag a box across that line and the diagram
 # starts asserting something false, so the build checks it.
+# Components only. The legend is diagram furniture -- its position claims nothing
+# about where code runs, so it is deliberately not asserted here.
 IN_EDGE_POP = {
-    "pages": True, "secrets": True, "cron": True, "api": True, "retry": True, "key": True,
+    "pages": True, "secrets": True, "cron": True, "api": True, "retry": True,
     "oauthdo": False,  # single Durable Object instance, not edge-replicated
     "d1": False,       # single primary, not edge-replicated
 }
