@@ -52,6 +52,10 @@ SQLite database is named **D1**, and this document refers to it constantly — "
 is a collision that reads fine to whoever wrote it and confuses everyone else. These labels
 **MUST NOT** be shortened back to `D-n`.
 
+**ADR-08 is the governing principle and outranks the others.** Where any decision here would have
+FGA repeat an action that a person may already have declined, ADR-08 wins. Read it before
+resolving a conflict between the rest.
+
 **New decisions MUST continue the sequence and MUST be zero-padded to two digits.** `ADR-07`, not
 `ADR-7`. Unpadded numbers sort lexically as `ADR-1, ADR-10, ADR-2`, which scrambles the order in
 every file listing, heading index, and grep result the moment a tenth decision exists. Padding
@@ -227,6 +231,35 @@ confirm whether a photo landed in a pool, and **MAY** be used to update what the
 But absence from the pool is ambiguous — still pending, or rejected — and no amount of resubmitting
 resolves it. The correct behavior on ambiguity is to report the state honestly to the user and
 stop.
+
+### ADR-08 — Fail-polite: ambiguity about a person's decision resolves to "stop"
+
+**Where an outcome could mean that a human declined, FGA MUST treat it as terminal** — even where
+the same outcome could also mean something retryable. **This rule outranks every retry rule in
+this document, including ADR-07's allowlist.** When they disagree, this one wins.
+
+**Why, and the reasoning is the asymmetry rather than the courtesy:**
+
+| Getting it wrong this way | Costs |
+|---|---|
+| Wrongly terminal | One request does not complete. The user sees why, and can resubmit deliberately. Bounded, visible, and paid by the person who chose to use FGA. |
+| Wrongly retried | A volunteer moderator reviews and declines the same photo again, and again. Unbounded, invisible to the user, compounding nightly, and paid by someone who owes FGA nothing. |
+
+**These costs are not comparable, so the decision is not a judgment call.** The failure mode that
+lands on a stranger is the one to design against, and it is the one nobody will report — a
+moderator has no way to tell FGA to stop, and no reason to believe the pestering is a bug rather
+than a person.
+
+**The user MUST be told, in plain language, when a request stopped for this reason** — that FGA
+will not resubmit, and why. This is not politeness to the user; it is what stops the harm from
+being recreated by hand. **A silent stop reads as a bug**, and a user who believes FGA is broken
+will go and add the photo themselves, repeatedly, which is precisely the outcome this rule exists
+to prevent. Explaining the refusal is load-bearing.
+
+**Scope: this is not only about group moderation.** Any future capability that can put work in
+front of a person who did not ask for it — a report, a message, a notification, an invitation —
+falls under the same rule. If FGA cannot tell whether a person already said no, it MUST assume
+they did.
 
 ## Considered and rejected
 
