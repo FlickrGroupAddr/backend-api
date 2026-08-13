@@ -69,7 +69,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="220" y="150" width="1300" height="1080" as="geometry" />
         </mxCell>
         <mxCell id="cflogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={CF}" vertex="1" parent="1">
-          <mxGeometry x="238" y="166" width="182" height="60" as="geometry" />
+          <mxGeometry x="238" y="166" width="300" height="99" as="geometry" />
         </mxCell>
         <mxCell id="netb" value="Lowest-latency Cloudflare edge PoP (anycast routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
           <mxGeometry x="260" y="440" width="950" height="740" as="geometry" />
@@ -164,7 +164,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="journey" value="&lt;b&gt;User Journey&lt;/b&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker signs with them and asks Flickr for a request token&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&amp;nbsp; REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&amp;nbsp; Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="1228" y="290" width="275" height="340" as="geometry" />
+          <mxGeometry x="1228" y="180" width="275" height="300" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
@@ -600,7 +600,14 @@ for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1"]
 # either crowds its last line or trails 50px of dead space. This estimates the
 # wrapped text height and keeps the slack inside a band.
 CHAR_W = {20: 11.0, 15: 7.6, 14: 7.1, 13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
-LINE_H = {20: 26, 15: 20, 14: 18, 13: 18, 12: 17, 11: 15, 10: 14}
+# Line heights are 1.2x the font size, which is what a browser renders for
+# line-height:normal and what draw.io therefore produces. The earlier table was
+# hand-written per size and drifted between 1.29x and 1.42x, which made every
+# estimate high -- the journey box measured 310px against roughly 248px of real
+# text, so a box with 90px of visible dead space reported a comfortable 30px of
+# slack and passed. An estimator that is wrong in the generous direction is worse
+# than none, because it certifies the thing it should be catching.
+LINE_H = {size: round(size * 1.2) for size in CHAR_W}
 SLACK_MIN, SLACK_MAX = 12.0, 45.0
 
 
@@ -688,15 +695,21 @@ if not LOGO_GAP_MIN <= gap <= LOGO_GAP_MAX:
     print(f"    -> gap {gap:.0f}px is outside {LOGO_GAP_MIN:.0f}-{LOGO_GAP_MAX:.0f}px")
     problems += 1
 
-# A squashed logo is a subtle, permanent embarrassment. Hold the rendered box to
-# the artwork's own viewBox ratio rather than trusting draw.io's aspect flag.
-vb = (SVG / "flickr-mark-tight.svg").read_text(encoding="utf-8")
-vw, vh = (float(v) for v in re.search(r'viewBox="\S+ \S+ (\S+) (\S+)"', vb).groups())
-skew = abs((lw / lh) - (vw / vh)) / (vw / vh)
-print(f"    aspect {lw / lh:.3f} vs artwork {vw / vh:.3f}  ({skew * 100:.1f}% distortion)")
-if skew > 0.01:
-    print("    -> mark is visibly stretched")
-    problems += 1
+# A squashed logo is a subtle, permanent embarrassment -- the only cue is that it
+# looks faintly wrong, and nobody can say why. Hold every rendered mark to its own
+# artwork's viewBox ratio rather than trusting draw.io's aspect flag. Both marks
+# are sized by hand, so both need this.
+LOGO_ART = {"flickrlogo": "flickr-mark-tight.svg", "cflogo": "cloudflare-mark.svg"}
+for cid, art in LOGO_ART.items():
+    bw, bh = boxes[cid][2], boxes[cid][3]
+    vb = (SVG / art).read_text(encoding="utf-8")
+    vw, vh = (float(v) for v in re.search(r'viewBox="\S+ \S+ (\S+) (\S+)"', vb).groups())
+    skew = abs((bw / bh) - (vw / vh)) / (vw / vh)
+    print(f"    {cid:11} {bw:.0f}x{bh:.0f}  aspect {bw / bh:.3f} vs artwork {vw / vh:.3f}"
+          f"  ({skew * 100:.1f}% distortion)")
+    if skew > 0.01:
+        print(f"    -> {cid} is visibly stretched")
+        problems += 1
 
 # Centred under the card, not merely near the middle.
 off = (lx + lw / 2) - (fx + fw / 2)
