@@ -860,26 +860,40 @@ for c in cells:
         problems += 1
 
 
-# The replication arrow's label is load-bearing, and its removal has already been
-# considered and rejected. Every other arrow on this canvas gets its meaning from
-# the two tiles it joins; this one cannot. Both ends are D1, both hold the same
-# rows, and the entire difference between them is the lag this label names. It is
-# also the only dashed edge, so the label doubles as the explanation of a line
-# style used nowhere else. ADR-09 exists because that lag produces a specific
-# failure -- a write that appears not to have persisted -- which is close to
-# undiagnosable unless the reader knows replication is in play.
+# Two properties settled deliberately on 2026-08-13 and protected here because
+# both are easy to undo while believing you are tidying up.
 #
-# Settled deliberately on 2026-08-13 after the other sixteen labels were removed
-# as redundant. A later pass tidying up "the last stray label" would be undoing a
-# decision rather than finishing a cleanup, which is why this fails the build
-# rather than living in a comment alone.
+# THE LABEL. "Eventual consistency" is the only arrow label left, after sixteen
+# others were removed the same afternoon as redundant -- which is exactly what
+# will make a later pass reach for it. It is not a leftover. Every other arrow
+# takes its meaning from the two tiles it joins; this one cannot, because both
+# ends are D1 and both hold the same rows, so the entire difference between them
+# is the lag this label names. ADR-09 exists because that lag produces a specific
+# failure -- a write that appears not to have persisted -- which is close to
+# undiagnosable unless the reader knows replication is in play. Without the label
+# the primary/replica split is decoration.
+#
+# THE DASHED STYLE. Both dashed edges are dashed on purpose, and the legend's
+# "Scheduled or async" row is written against them. Making either one solid does
+# not merely change a line: it orphans a legend entry that then explains nothing.
 REQUIRED_EDGE_LABEL = {"e16": "Eventual"}
+MUST_BE_DASHED = {
+    "e6": "cron -> retry, a scheduled sweep",
+    "e16": "d1 -> replica, asynchronous replication",
+}
 print("  Load-bearing edge labels still present:")
 for eid, needle in REQUIRED_EDGE_LABEL.items():
     label = (edge_by_id[eid].get("value") or "").strip()
     ok = needle.lower() in label.lower()
     print(f"    {eid:4} {label!r} {'ok' if ok else 'MISSING -- read the comment above this check'}")
     if not ok:
+        problems += 1
+
+print("  Edges the legend's dashed entry describes are still dashed:")
+for eid, why in MUST_BE_DASHED.items():
+    dashed = "dashed=1" in (edge_by_id[eid].get("style") or "")
+    print(f"    {eid:4} {why:<42} {'dashed' if dashed else 'NOW SOLID -- orphans the legend'}")
+    if not dashed:
         problems += 1
 
 
