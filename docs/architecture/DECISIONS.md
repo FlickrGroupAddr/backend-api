@@ -361,6 +361,28 @@ just written.** Nothing is broken. The guarantee simply was not asked for.
 reads.** This is cheap to build in and unpleasant to retrofit, because by then the symptom has been
 misdiagnosed at least once as a caching bug or a phantom write.
 
+#### This MUST be made unreachable rather than remembered
+
+A rule of the form "remember to carry the bookmark" fails the moment anyone writes a query without
+thinking about it, and it fails **silently** — no error, no warning, just an occasional missing
+row that reproduces for nobody. A convention is the wrong instrument for a failure mode with no
+symptom at the point of the mistake.
+
+**The D1 binding MUST NOT be reachable from request-handling code.** All database access **MUST**
+go through a single accessor that takes the incoming `Request`, extracts the bookmark, opens the
+session, and hands back a session-scoped handle. Writing a query that skips the bookmark then
+stops being a thing a person could forget, because there is no un-sessioned handle to reach for.
+
+**The response layer MUST attach the resulting bookmark on the way out**, in the same one place, so
+returning it is not a per-endpoint decision either.
+
+Both halves belong in one module, and **a build check SHOULD assert that the raw binding name
+appears nowhere outside it.** That converts the whole class of bug from a runtime surprise into a
+failed build — the outcome this project prefers wherever it is available.
+
+**Recorded before any code exists, deliberately.** Wrapping the binding costs nothing today and is
+a refactor across every handler once the direct calls are written.
+
 **Where a cache still earns its place:** group metadata — name, icon, rules — is identical for
 every user and changes rarely, so it **MAY** be held in the shared edge cache with a normal TTL.
 That is genuinely shared data, which is exactly what a shared cache is for.
