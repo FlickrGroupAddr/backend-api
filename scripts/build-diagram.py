@@ -124,7 +124,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="flickrtitle" value="Flickr" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
           <mxGeometry x="1625" y="686" width="155" height="28" as="geometry" />
         </mxCell>
-        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;Login&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;oauth/request_token&lt;br&gt;oauth/authorize&lt;br&gt;oauth/access_token&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;Runtime&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;groups.pools.getGroups&lt;br&gt;photos.getAllContexts&lt;br&gt;groups.pools.add&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
+        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;div style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/div&gt;&lt;div style=&quot;font-size:13px;text-decoration:underline;margin-top:14px&quot;&gt;&lt;b&gt;Login&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/request_token&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/authorize&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/access_token&lt;/div&gt;&lt;div style=&quot;font-size:13px;text-decoration:underline;margin-top:14px&quot;&gt;&lt;b&gt;API Endpoints&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;groups.pools.getGroups&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;photos.getAllContexts&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;groups.pools.add&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="1625" y="740" width="155" height="370" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
@@ -148,20 +148,23 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="727" y="721" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1362" y="728" width="46" height="46" as="geometry" />
+          <mxGeometry x="891" y="861" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1058" y="547" width="46" height="46" as="geometry" />
+          <mxGeometry x="1362" y="728" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n6" value="6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="777" y="1251" width="46" height="46" as="geometry" />
+          <mxGeometry x="1058" y="547" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="777" y="1251" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="452" y="813" width="46" height="46" as="geometry" />
         </mxCell>
 
-        <mxCell id="journey" value="&lt;b&gt;User Journey&lt;/b&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker signs with the FGA credentials and asks Flickr for a request token&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 4 and 5&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="280" y="238" width="500" height="180" as="geometry" />
+        <mxCell id="journey" value="&lt;b&gt;User Journey&lt;/b&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker signs with them and asks Flickr for a request token&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth Durable Object&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/div&gt;&lt;div style=&quot;font-size:11px;margin-left:18px;text-indent:-18px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&amp;nbsp; REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="238" width="500" height="196" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
@@ -179,10 +182,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;" edge="1" parent="1" source="secrets" target="api">
+        <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;" edge="1" parent="1" source="secrets" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e5" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="secrets" target="retry">
+        <mxCell id="e5" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="secrets" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e6" value="Nightly sweep" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
@@ -256,7 +259,7 @@ NOT_OBSTACLES = {
     "cfframe", "netb", "cflogo", "title", "date",
     "flickrlogo", "flickr", "flickrtitle",
     # Step badges sit ON their arrows by design, so they are not obstacles.
-    "n1", "n2", "n3", "n4", "n5", "n6", "n7",
+    "n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8",
     # Cascade cards behind the OAuth tile: decoration showing there are many,
     # and the edge legitimately terminates on the tile stacked in front of them.
     "oauthdo_b1", "oauthdo_b2",
@@ -487,9 +490,10 @@ BADGE_ON_EDGE = {
     "n1": "e1",    # users -> Cloudflare DNS
     "n2": "e2",    # users -> Cloudflare Pages
     "n3": "e12",   # users -> API Worker, begin login
-    "n4": "e9",    # API Worker <-> Flickr, request token (access token on the return)
-    "n5": "e3",    # API Worker <-> OAuth Durable Object, stash the secret (read back on return)
-    "n7": "e13",   # users -> API Worker, authenticated calls
+    "n4": "e4",    # Worker Secrets -> API Worker, read the FGA credentials
+    "n5": "e9",    # API Worker <-> Flickr, request token (access token on the return)
+    "n6": "e3",    # API Worker <-> OAuth Durable Object, stash the secret (read back on return)
+    "n8": "e13",   # users -> API Worker, authenticated calls
 }
 NEAR_MIN, NEAR_MAX = 24.0, 32.0   # badge radius is 23; 24 clears the line by a hair, 32 still reads as attached
 
@@ -519,14 +523,14 @@ for badge, eid in BADGE_ON_EDGE.items():
     if verdict != "ok":
         problems += 1
 
-# n6 rides the orthogonal Users-to-Flickr route, whose long leg is the horizontal
+# n7 rides the orthogonal Users-to-Flickr route, whose long leg is the horizontal
 # run between its two waypoints; the straight-edge machinery above cannot model it.
-n6x, n6y, n6w, n6h = boxes["n6"]
-n6c = (n6x + n6w / 2, n6y + n6h / 2)
+n7x, n7y, n7w, n7h = boxes["n7"]
+n7c = (n7x + n7w / 2, n7y + n7h / 2)
 run_y, run_x0, run_x1 = 1300.0, 120.0, 1702.5
-n6_off = abs(n6c[1] - run_y)
-on_run = NEAR_MIN <= n6_off <= NEAR_MAX and run_x0 <= n6c[0] <= run_x1
-print(f"    n6 beside e11  offset {n6_off:>5.1f}px  {'ok' if on_run else 'BADLY PLACED'}")
+n7_off = abs(n7c[1] - run_y)
+on_run = NEAR_MIN <= n7_off <= NEAR_MAX and run_x0 <= n7c[0] <= run_x1
+print(f"    n7 beside e11  offset {n7_off:>5.1f}px  {'ok' if on_run else 'BADLY PLACED'}")
 if not on_run:
     problems += 1
 
@@ -536,7 +540,7 @@ if not on_run:
 # the first badged version shipped unreadable. The descriptions live in the
 # "User journey" key instead, where they have room to be sentences.
 print("  badged arrows carry no competing label:")
-for badge, eid in list(BADGE_ON_EDGE.items()) + [("n6", "e11")]:
+for badge, eid in list(BADGE_ON_EDGE.items()) + [("n7", "e11")]:
     label = (edge_by_id[eid].get("value") or "").strip()
     clean = "clear" if not label else f"HAS LABEL {label!r}"
     print(f"    {eid:4} ({badge}) {clean}")
@@ -576,20 +580,37 @@ LINE_H = {20: 26, 14: 18, 13: 18, 12: 17, 11: 15, 10: 14}
 SLACK_MIN, SLACK_MAX = 12.0, 45.0
 
 
+def text_lines(raw):
+    """One entry per rendered line, each still carrying its own style tag.
+
+    A div is a block element, so its OPENING tag ends the previous line just as
+    surely as its closing tag does. Splitting on </div> alone silently glues a
+    heading onto the item below it -- which is how both the journey box and the
+    Flickr API tile were being measured a full line short while reporting a
+    comfortable fit. Breaking *before* each opening div keeps the font-size
+    declaration with the text it governs, which splitting on the tag would throw
+    away.
+    """
+    s = re.sub(r"</div>", "", raw)            # closing tags carry no style info
+    s = re.sub(r"<br\s*/?>", "\x00", s)
+    s = re.sub(r"(<div[^>]*>)", "\x00\\1", s)
+    parts = s.split("\x00")
+    if parts and not re.sub(r"<[^>]*>", "", parts[0]).strip():
+        parts.pop(0)                          # value opened with a div
+    return parts
+
+
 def text_height(cid, pad_left=10.0, pad_right=8.0):
     raw = next(c.get("value") or "" for c in cells if c.get("id") == cid)
     # ElementTree has already unescaped one level, so real tags are present.
-    # Prove the separator actually matches rather than trusting that it does: a
-    # split that silently finds nothing measures a six-line block as one line and
-    # reports a comfortable fit. That has happened twice -- once when <br> was
-    # unescaped out from under the token, and once when the steps moved from <br>
-    # separators to <div> wrappers and left the old check satisfied by <b>.
-    chunks = re.split(r"<br\s*/?>|</div>", raw)
-    breaks = len(re.findall(r"<br\s*/?>|</div>", raw))
-    if breaks == 0:
+    # Prove the split actually found lines rather than trusting that it did: one
+    # that silently matches nothing measures a whole block as a single line and
+    # reports it comfortably inside its box. That has happened three times now --
+    # <br> unescaped out from under the token, steps moving from <br> to <div>,
+    # and opening div tags not counting as breaks.
+    chunks = text_lines(raw)
+    if len(chunks) < 2:
         raise SystemExit(f"Text estimator found no line breaks in '{cid}' -- it would measure blind.")
-    if len(chunks) != breaks + 1:
-        raise SystemExit(f"Text estimator split '{cid}' into {len(chunks)} for {breaks} breaks.")
     usable = boxes[cid][2] - pad_left - pad_right
     size, total = 12, 8.0  # spacingTop
     for chunk in chunks:
@@ -695,7 +716,7 @@ if abs(tx - lx) > 0.5 or abs(tw - lw) > 0.5:
 # sit beside their arrow, which means NOTHING was checking them against tiles. A
 # badge overlapping a tile went unnoticed for several commits after a column
 # shift moved the tile under it.
-BADGES = ["n1", "n2", "n3", "n4", "n5", "n6", "n7"]
+BADGES = ["n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"]
 TILES = ["dns", "pages", "secrets", "cron", "oauthdo", "api", "retry",
          "d1replica", "d1", "users", "flickrapi", "journey", "key", "justification"]
 
@@ -724,8 +745,12 @@ problems += len(clashes)
 # asserting, and it is asserted per line.
 api_box = boxes["flickrapi"]
 api_usable = api_box[2] - 18.0
+api_raw = next(c.get("value") for c in cells if c.get("id") == "flickrapi")
+api_chunks = text_lines(api_raw)
+if len(api_chunks) < 2:
+    raise SystemExit("Flickr API tile parsed to fewer than 2 lines -- the width check is blind.")
 api_size, api_wide = 20, []
-for chunk in re.split(r"<br\s*/?>", next(c.get("value") for c in cells if c.get("id") == "flickrapi")):
+for chunk in api_chunks:
     m = re.search(r"font-size:(\d+)px", chunk)
     if m:
         api_size = int(m.group(1))
