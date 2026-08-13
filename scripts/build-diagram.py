@@ -104,20 +104,20 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="520" width="200" height="410" as="geometry" />
+          <mxGeometry x="1600" y="520" width="205" height="410" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
-          <mxGeometry x="1655" y="610" width="90" height="90" as="geometry" />
+          <mxGeometry x="1658" y="610" width="90" height="90" as="geometry" />
         </mxCell>
         <mxCell id="flickrtext" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;i&gt;flickr.com&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;OAuth 1.0a&lt;br&gt;HMAC-SHA1 signed&lt;/i&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1610" y="715" width="180" height="120" as="geometry" />
+          <mxGeometry x="1610" y="715" width="185" height="120" as="geometry" />
         </mxCell>
         <mxCell id="aflickr" value="&lt;i&gt;Per-group daily add limits are why this system exists &#8212; a single request may retry for weeks.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="945" width="240" height="80" as="geometry" />
+          <mxGeometry x="1600" y="945" width="205" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1560" y="300" width="205" height="125" as="geometry" />
+          <mxGeometry x="1600" y="300" width="205" height="125" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="HTTPS" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="pages">
@@ -377,6 +377,21 @@ for tile, expected in IN_EDGE_POP.items():
     print(f"    {tile:9} {where:30} {'ok' if ok else 'WRONG SIDE'}")
     if not ok:
         problems += 1
+
+
+# The right-hand column is deliberately flush: legend, Flickr tile, and the note
+# beneath it share a left edge and a width. Ragged edges there read as sloppiness
+# rather than as meaning, and a resize elsewhere is what would quietly break it.
+RIGHT_COLUMN = ["key", "flickr", "aflickr"]
+lefts = {t: boxes[t][0] for t in RIGHT_COLUMN}
+widths = {t: boxes[t][2] for t in RIGHT_COLUMN}
+aligned = len(set(lefts.values())) == 1 and len(set(widths.values())) == 1
+print("  right column flush:")
+for t in RIGHT_COLUMN:
+    print(f"    {t:9} x {lefts[t]:.0f}-{lefts[t]+widths[t]:.0f}  width {widths[t]:.0f}")
+print(f"    -> {'aligned' if aligned else 'RAGGED'}")
+if not aligned:
+    problems += 1
 
 if problems:
     raise SystemExit("Diagram geometry check failed -- fix the layout before committing.")
