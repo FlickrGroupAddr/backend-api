@@ -35,7 +35,7 @@
         <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="320" y="640" width="190" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;Flickr consumer key + secret&lt;br&gt;token-encryption key (AES-GCM)&lt;br&gt;session-signing key (HMAC)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+        <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;FGA Flickr API credentials&lt;br&gt;token-encryption key (AES-GCM)&lt;br&gt;session-signing key (HMAC)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="640" y="878" width="220" height="105" as="geometry" />
         </mxCell>
         <mxCell id="cron" value="&lt;b&gt;Cron Trigger&lt;/b&gt;&lt;br&gt;&lt;i&gt;nightly&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=12;arcSize=12;" vertex="1" parent="1">

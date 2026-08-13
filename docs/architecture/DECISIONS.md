@@ -140,6 +140,13 @@ because "the secrets" as a single blob is what makes their roles hard to reason 
 | **Token-encryption key** | AES-GCM. Encrypts each user's Flickr access token before it is written to D1, and decrypts it when a Worker needs to act as that user | Storing the token after login; every group-add attempt |
 | **Session-signing key** | HMAC-SHA256. Signs the session cookie, and verifies it on the way back in | Minting the cookie after login; every authenticated request |
 
+**The consumer key and secret together are the FGA Flickr API credentials** — the pair that marks a
+call as coming from *this application*, and the name the diagram uses for them. They are
+per-application and identical for every user. **The per-user half of a signed call is separate**:
+the user's own access token, held AES-GCM encrypted in D1. Every authenticated Flickr request is
+signed with both — app credentials and user token — which is why a leak of these two alone lets
+someone impersonate the application but act as nobody.
+
 **The session cookie is the only thing making a browser request trustworthy, and this key is the
 only thing making the cookie unforgeable.** Nothing about a session is stored server-side — that
 is the whole point of ADR-06 — so there is no session record to look up and no session table to
