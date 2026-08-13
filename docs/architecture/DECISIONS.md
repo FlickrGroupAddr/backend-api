@@ -44,6 +44,8 @@ beta-era numbers that will move.
 | D1 bills reads at $0.001/M rows and writes at $1.00/M — writes cost 1,000× more | Cloudflare pricing. Workers Paid includes **25 billion rows read** and **50 million rows written** per month, plus 5 GB storage, then $0.001/M read, $1.00/M written, $0.75/GB-mo. | 2026-08-13 |
 | D1 read replication is free and automatic in six regions | Cloudflare docs: *"Read replication does not charge extra for read replicas. You incur the same usage billing based on `rows_read` and `rows_written` by your queries."* No per-replica storage charge, and a write is not billed once per replica. Replicas are placed automatically in **ENAM, WNAM, WEUR, EEUR, APAC, OC** — the count is not configurable. Enabled with `read_replication.mode: auto`; reads must go through the Sessions API (`withSession()`) or they hit the primary regardless. | 2026-08-13 |
 | Durable Objects have no TTL, and an idle one is free | Cloudflare docs: there is no automatic expiry, but "inactive objects receiving no requests do not incur any duration charges." Storage is metered separately and "Durable Objects will be billed for stored data until the data is removed"; once deleted through the Storage API the object is cleaned up and stops incurring storage fees. **There is no runtime API to enumerate the objects in a namespace** — a Worker cannot list them. | 2026-08-13 |
+| The Flickr API surface FGA needs is six calls | Read from the 2022 code in the old repos, which is working precedent rather than a guess. Login: `oauth/request_token`, then `oauth/authorize` with `perms=write` in the browser, then `oauth/access_token`. Runtime: `flickr.groups.pools.getGroups` for the groups a user may post to, `flickr.photos.getAllContexts` for the pools a photo is already in, and `flickr.groups.pools.add` for the add. Mined for the domain facts only — the architecture around them is not inherited. | 2026-08-13 |
+| OAuth 1.0a signs the request-token call itself | RFC 5849 §3.4: the signing key is `consumer_secret&token_secret`, with an empty token secret for the temporary-credentials request, and `oauth_consumer_key` travels in the parameters. **The first call of a login therefore already needs the FGA Flickr API credentials** — there is no unauthenticated leg anywhere in the flow. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, Durable Object requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
 ## Decisions
@@ -205,6 +207,13 @@ not already succeeded.
 half-done. Without a guard, the next run submits a duplicate add. This is a correctness
 requirement, not a defensive nicety. It survives unchanged if ADR-04 is ever promoted to alarms,
 where at-least-once delivery makes it mandatory for a second reason.
+
+**Flickr can be asked directly, and that answer beats the local one.** `flickr.photos.getAllContexts`
+returns the pools a photo already belongs to, which is how the 2022 CLI did this check. The D1
+guard is the cheap first pass and catches the common case without a network call; the remote check
+is authoritative, because it also sees adds FGA did not make — the user adding the photo by hand,
+or a second FGA session. A handler **SHOULD** consult it before an add it believes is the first
+attempt, and **MUST** treat "already in the pool" as success rather than as an error.
 
 ### ADR-06 — Sessions are a backend-signed cookie
 
@@ -424,6 +433,75 @@ history table has a shape people depend on. **This is recorded now because it is
 invisible later**, when someone reasonably adds "just one more column, written every run" to a
 table that is already the most expensive thing in the system.
 
+### ADR-10 — Requests are FIFO per (user, group), and the queue is never jumped
+
+**This governs ordering the way ADR-08 governs ambiguity, and it yields to ADR-08 where the two
+ever meet.** Where a design choice would let a later request be attempted before an earlier one in
+the same queue, that choice is wrong, however much faster or more convenient it looks.
+
+They do not currently conflict, and it is worth saying why rather than leaving it to be
+rediscovered: a request that fails terminally under ADR-08 **resolves** and leaves the queue, so
+being polite to a moderator never holds the queue up. If a future change makes a fail-polite
+outcome something a request can sit in rather than exit through, that change **MUST** resolve in
+ADR-08's favor, and this paragraph is wrong and needs rewriting.
+
+Every add request **MUST** be appended to a queue keyed by `(user, group)` and **MUST** be
+attempted in the order it was appended. **No request MAY be attempted while an earlier unresolved
+request sits ahead of it in the same queue.** A request leaves the queue only by resolving —
+succeeding, or failing terminally under ADR-07 and ADR-08.
+
+**The API Worker MUST attempt a new request immediately if, and only if, it is the sole unresolved
+request in its queue.** Otherwise it **MUST** be appended and left for the nightly sweep.
+
+**Why the condition is exactly "the queue is empty", and not "try it and see":** a greedy attempt
+can succeed for the wrong reason. Groups change their add throttling dynamically, and an attempt
+made now may roll into a fresh day's allowance and consume a slot that belonged to a request that
+had been waiting since last week. The greedy request wins precisely because it arrived last. **A
+queue of length one is the only case where an immediate attempt cannot take anything from
+anybody** — which is what makes the instant path safe rather than merely usually-safe.
+
+The owner's framing, recorded because it is the reason and not decoration: *"Groups can change add
+throttling dynamically and I don't ever want someone jumping the queue — I spent enough time in the
+UK to respect the queue!"*
+
+**The nightly sweep MUST walk each queue from the head, and MUST stop at the first retryable
+failure.**
+
+| Outcome at the head of a queue | What the sweep does next |
+|---|---|
+| Succeeded | Head resolves. The next request becomes head, and the sweep **MAY** continue in this queue. |
+| Failed terminally (ADR-07, ADR-08) | Head resolves. The next request becomes head, and the sweep **MAY** continue in this queue. |
+| Failed retryably — the daily cap | **This queue is done for the night.** The sweep **MUST NOT** attempt anything behind it. |
+
+**That last row is the whole decision in miniature, and it is the one a future optimization will
+attack.** When the head is blocked by a group's daily cap, everything behind it in that queue is
+blocked by the same cap — so trying the next one is not merely wasted, it is the queue-jump this
+decision exists to forbid. It reads like an efficiency win because it saves nothing and costs an
+API call; it is actually a correctness rule wearing an efficiency costume.
+
+#### Three mechanisms this rule needs, each of which fails silently if missed
+
+**The append and the "am I alone?" test MUST be atomic.** Two submissions to the same
+`(user, group)` arriving together can each read an empty queue, each append, each conclude it is
+alone, and both attempt. That is the forbidden queue-jump arriving by race rather than by design,
+and it will be rare enough to survive testing.
+
+**The queue-position read MUST NOT be served by a read replica.** Determining position straight
+after appending is a read-your-own-writes operation, and ADR-09 records that replicas are
+eventually consistent. A stale replica returns a count of zero, the Worker concludes the queue is
+empty, and it authorizes an immediate attempt in front of a queue that is not empty. **This is the
+exact trap ADR-09's binding wrapper exists to make unreachable** — it must be unreachable here too.
+
+**Wall-clock time MUST NOT be the ordering key.** Timestamps collide at the resolution they are
+stored, and clocks move backwards. Order **MUST** come from a monotonic insert sequence, and rows
+**SHOULD** be resolved in place rather than deleted, so the sequence stays stable and the history
+survives.
+
+**What this costs, stated honestly:** a user's second and later submissions to the same group get
+no instant feedback, even when the group has plenty of headroom that minute. That is the price of
+never starving the request that was there first, and it is worth paying. The interface **SHOULD**
+say where in the queue a request sits, so the wait is visible rather than mysterious.
+
 ## Considered and rejected
 
 | Option | Why not |
@@ -443,3 +521,6 @@ table that is already the most expensive thing in the system.
   **SHOULD** be established from the API before the schema is fixed.
 - **Whether D1 needs a separate group-metadata cache.** Currently assumed not: group rules can be
   read from Flickr on demand. Revisit if that read turns out to be slow or rate-limited.
+- **Whether a queue should be shown to the user, and how.** ADR-10 makes a request's position
+  meaningful and the wait explicable, which is only useful if the interface says so. The decision
+  there is a product one, not an architectural one, and it does not block the schema.
