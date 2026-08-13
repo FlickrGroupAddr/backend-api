@@ -82,17 +82,17 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="70" y="750" width="100" height="80" as="geometry" />
         </mxCell>
 
-        <mxCell id="dns" value="&lt;b&gt;Cloudflare DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Authoritative&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="480" width="190" height="90" as="geometry" />
+        <mxCell id="dns" value="&lt;b&gt;flickrgroupaddr.com DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Authoritative DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="380" y="480" width="210" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="640" width="190" height="90" as="geometry" />
+        <mxCell id="pages" value="&lt;b&gt;flickrgroupaddr.com&lt;br&gt;Frontend UI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Pages&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="380" y="640" width="210" height="90" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;FGA Flickr API credentials&lt;br&gt;Token key (encryption)&lt;br&gt;Session key (signing)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="640" y="878" width="220" height="105" as="geometry" />
         </mxCell>
         <mxCell id="cron" value="&lt;b&gt;Cron Trigger&lt;/b&gt;&lt;br&gt;&lt;i&gt;Nightly&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="1010" width="190" height="100" as="geometry" />
+          <mxGeometry x="380" y="1010" width="210" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="oauthdo_b2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
@@ -761,11 +761,19 @@ if banned:
 # because a clever regex here would silently excuse a real lapse:
 #   - identifiers, paths and domains, where changing case changes meaning
 #   - continuation lines of a sentence wrapped across two rows
-LOWERCASE_ALLOWED = {
+# The two exceptions need different tests, and conflating them was hiding a gap.
+# An identifier is lowercase because its case carries meaning, and it may be
+# followed by ordinary words: "flickrgroupaddr.com DNS" is a line that OPENS with
+# a domain, not a sentence someone forgot to capitalize. A continuation is the
+# second row of a wrapped sentence and only ever matches whole. Matching both
+# exactly meant any identifier with a word after it read as a lapse.
+LOWERCASE_OPENERS = {
     "flickrgroupaddr.com": "domain",
     "backend-api": "repository name",
     "flickr.groups.pools.add": "API method",
     "docs/architecture/DECISIONS.md": "path",
+}
+LOWERCASE_CONTINUATIONS = {
     "per login attempt": "continuation of 'One Durable Object'",
     "consistency": "continuation of 'Eventual'",
 }
@@ -775,7 +783,9 @@ for c in cells:
     raw = c.get("value") or ""
     for chunk in re.split(r"<br\s*/?>|</div>", raw):
         line = re.sub(r"<[^>]*>", "", chunk).replace("&nbsp;", " ").strip()
-        if not line or line in LOWERCASE_ALLOWED:
+        if not line or line in LOWERCASE_CONTINUATIONS:
+            continue
+        if any(line.startswith(tok) for tok in LOWERCASE_OPENERS):
             continue
         first = next((ch for ch in line if ch.isalpha()), None)
         if first and first.islower():
