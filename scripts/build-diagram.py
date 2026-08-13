@@ -157,10 +157,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="727" y="1281" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="452" y="813" width="46" height="46" as="geometry" />
+          <mxGeometry x="502" y="813" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="600" y="773" width="46" height="46" as="geometry" />
+          <mxGeometry x="422" y="773" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1300" y="780" width="46" height="46" as="geometry" />
@@ -571,6 +571,16 @@ sx, _, sw, _ = boxes["secrets"]
 drift = n7c[0] - (sx + sw / 2)
 print(f"    n7 centred under App Secrets Store: off by {drift:.1f}px")
 if abs(drift) > 0.5:
+    problems += 1
+
+# Badges 8 and 10 both sit on browser-to-Worker arrows and are read as a pair, so
+# they straddle the centre line of the DNS / Pages / Cron column rather than each
+# landing wherever its own arrow allowed. Symmetry about a shared axis is the
+# thing the eye checks; an equality, not a band, for the same reason as n7 above.
+col_mid = boxes["dns"][0] + boxes["dns"][2] / 2
+pair_mid = (boxes["n8"][0] + boxes["n10"][0]) / 2 + 23
+print(f"    n8 and n10 straddle the DNS column centre: axis {pair_mid:.1f} vs {col_mid:.1f}")
+if abs(pair_mid - col_mid) > 0.5:
     problems += 1
 
 
