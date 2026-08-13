@@ -19,7 +19,9 @@ and left uncommitted while an unrelated domain emergency was handled.
 |---|---|
 | `82288e1` | First draft. Per-user Durable Objects with alarms as the work engine; master key in Secrets Store. |
 | `77cb9a6` | Added the argument against that alarm engine. Confirmed the Workers Paid plan. |
-| `b47c982` | **The v1 rewrite.** Work engine changed to a nightly cron over D1 (D4). Master key moved from Secrets Store to Worker secrets (D3). Session decision added (D6). Flickr's read/write/delete-only scope recorded and its consequence folded into D1. Diagram redrawn to match. Plus the plan allowances this message describes. |
+| `b47c982` | **The v1 rewrite.** Work engine changed to a nightly cron over D1 (ADR-4). Master key moved from Secrets Store to Worker secrets (ADR-3). Session decision added (ADR-6). Flickr's read/write/delete-only scope recorded and its consequence folded into ADR-1. Diagram redrawn to match. Plus the plan allowances this message describes. |
+| `361a188` | Decision markers removed from the diagram. It now carries the shape only and points here for the reasoning. |
+| *this commit* | **Decisions renumbered `D1`–`D6` to `ADR-1`–`ADR-6`** to end the collision with Cloudflare D1. Any external reference to the old labels is now stale. |
 
 ## Verified facts
 
@@ -39,7 +41,14 @@ beta-era numbers that will move.
 
 ## Decisions
 
-### D1 — The Flickr account is the identity
+**Labelled `ADR-n` for Architecture Decision Record, deliberately not `D-n`.** Cloudflare's
+SQLite database is named **D1**, and this document refers to it constantly — "rows in D1",
+"encrypted in D1", "costs no D1 read". A decision numbered D1 sitting beside a database named D1
+is a collision that reads fine to whoever wrote it and confuses everyone else. These labels
+**MUST NOT** be shortened back to `D-n`, and new decisions **MUST** continue the `ADR-n`
+sequence.
+
+### ADR-1 — The Flickr account is the identity
 
 FGA **MUST NOT** run its own identity service and **MUST NOT** store an email address, a display
 name, or any other contact detail. The Flickr NSID is the user key.
@@ -54,10 +63,10 @@ risk rather than removing it, and Flickr's coarse permission model makes the rel
 than it first appears: because there is no scope narrower than `write`, the token FGA holds
 grants edit access to the user's entire Flickr account, when the only capability the product
 needs is "add this photo to that group." **FGA therefore holds a credential far more powerful
-than its own feature set.** Token handling is the security crux of this design, and D3 governs
+than its own feature set.** Token handling is the security crux of this design, and ADR-3 governs
 it.
 
-### D2 — OAuth 1.0a intermediate state lives in a Durable Object, never in KV
+### ADR-2 — OAuth 1.0a intermediate state lives in a Durable Object, never in KV
 
 The request-token secret **MUST** be held in a Durable Object keyed by `oauth_token` for the
 duration of the redirect, and **MUST NOT** be written to Workers KV.
@@ -70,10 +79,10 @@ intermittent, dependent on which PoP the user transited, and effectively unrepro
 developer's machine.
 
 **This is the only place in the v1 design where a Durable Object is used, and the narrow scope is
-deliberate** — see D4. The object **SHOULD** set an alarm to delete itself after roughly 15
+deliberate** — see ADR-4. The object **SHOULD** set an alarm to delete itself after roughly 15
 minutes, so abandoned login attempts expire without a cleanup job.
 
-### D3 — Per-user Flickr tokens are AES-GCM encrypted in D1
+### ADR-3 — Per-user Flickr tokens are AES-GCM encrypted in D1
 
 Each user's Flickr access token and token secret **MUST** be encrypted with AES-GCM and stored in
 D1 beside that user's row. The master key **MUST** be held as a Worker secret. Per-user tokens
@@ -89,7 +98,7 @@ values need storing, and Secrets Store is in open beta while Worker secrets are 
 dependency is not worth the better management story when the value being protected is the key to
 every user's Flickr credential. **Revisit once Secrets Store leaves beta.**
 
-### D4 — The v1 work engine is a nightly Cron Trigger over a D1 table
+### ADR-4 — The v1 work engine is a nightly Cron Trigger over a D1 table
 
 Pending requests **MUST** be rows in D1. A Cron Trigger **MUST** be the primary work engine for
 v1. Per-user Durable Object alarms **MUST NOT** be introduced without meeting the promotion
@@ -111,7 +120,7 @@ Against them, at the scale it actually has:
 
 **Plan cost is not, and never was, an argument in this decision.** The account now carries the
 Workers Paid plan with a Durable Object allowance far larger than this project will use, and that
-**MUST NOT** be read as reopening D4. The case for the cron was debuggability, failure-history
+**MUST NOT** be read as reopening ADR-4. The case for the cron was debuggability, failure-history
 locality, and lock-in — none of which a billing change touches.
 
 **Promotion criteria.** Move to the alarm design when **any** of the following is *measured*, not
@@ -119,17 +128,17 @@ anticipated: the nightly scan takes long enough to threaten the Worker's limits;
 or rejects the concentrated midnight burst; or per-user scheduling becomes a product requirement
 rather than an implementation preference.
 
-### D5 — The retry handler MUST be idempotent per (photo, group)
+### ADR-5 — The retry handler MUST be idempotent per (photo, group)
 
 Before calling `flickr.groups.pools.add`, the handler **MUST** confirm from D1 that the pair has
 not already succeeded.
 
 **Why:** sweeps can overlap or be re-run, and a handler that throws part-way through leaves work
 half-done. Without a guard, the next run submits a duplicate add. This is a correctness
-requirement, not a defensive nicety. It survives unchanged if D4 is ever promoted to alarms,
+requirement, not a defensive nicety. It survives unchanged if ADR-4 is ever promoted to alarms,
 where at-least-once delivery makes it mandatory for a second reason.
 
-### D6 — Sessions are a backend-signed cookie
+### ADR-6 — Sessions are a backend-signed cookie
 
 After the Flickr callback completes, the API Worker **SHOULD** mint a signed token carrying the
 NSID and set it as an `HttpOnly; Secure; SameSite=Lax` cookie. It **MUST NOT** send the Flickr
@@ -149,11 +158,11 @@ else.
 | Option | Why not |
 |---|---|
 | AWS (the shape of the 2022 `fga-api`) | Workable, but every piece it needed has a simpler Cloudflare equivalent here, and the frontend is already Cloudflare Pages. Splitting across two providers buys nothing. |
-| Cognito, or Google logins with a JWKS cache | Both exist to supply an identity FGA has decided not to hold. See D1. |
-| Per-user Durable Objects with alarms | **Deferred, not rejected.** The right answer at a scale this project has not reached. See D4 for the promotion criteria. |
-| Cloudflare Secrets Store | Correct product, wrong maturity and wrong ceiling. See D3. |
-| Cloudflare Queues | Verified as available with dead-letter queues, retries, delays, and batching. Not needed while a nightly sweep does the work. Revisit alongside D4's promotion criteria. |
-| Workers KV for session or OAuth state | Consistency model is wrong for the login path. See D2. |
+| Cognito, or Google logins with a JWKS cache | Both exist to supply an identity FGA has decided not to hold. See ADR-1. |
+| Per-user Durable Objects with alarms | **Deferred, not rejected.** The right answer at a scale this project has not reached. See ADR-4 for the promotion criteria. |
+| Cloudflare Secrets Store | Correct product, wrong maturity and wrong ceiling. See ADR-3. |
+| Cloudflare Queues | Verified as available with dead-letter queues, retries, delays, and batching. Not needed while a nightly sweep does the work. Revisit alongside ADR-4's promotion criteria. |
+| Workers KV for session or OAuth state | Consistency model is wrong for the login path. See ADR-2. |
 
 ## Open questions
 
