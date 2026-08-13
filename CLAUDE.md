@@ -56,11 +56,22 @@ next build.
 python scripts/build-diagram.py
 ```
 
-builds and validates in one step. It runs twelve geometry and consistency assertions — collisions,
-arrow levelness, label fit, edge-PoP containment, badge placement, colour distance, text fit,
-column alignment, and the `DO` ban — and **refuses to write a diagram that fails any of them**.
-Most of those checks exist because a defect got past everything already there, so when one fires it
-is usually right.
+builds and validates in one step, and **refuses to write a diagram that fails any assertion**. It
+prints every check and its verdict as it goes, so **the run itself is the list** — around thirty as
+of 2026-08-13, covering collisions, arrow levelness, label fit, edge-PoP containment, badge
+placement and pairing, colour distance, boxed-text fit, column alignment, logo aspect and inset,
+line styles the legend depends on, the `DO` ban, and capitalisation. Read the output rather than
+this paragraph; a count written down here goes stale the first time a check is added.
+
+**Most of those checks exist because a defect got past everything already there**, so when one
+fires it is usually right.
+
+**The text estimator is the part to distrust.** It models what a browser does to wrapped text, and
+on 2026-08-13 five separate things it did not represent at all were found by looking at a render —
+line height, vertical CSS, word boundaries, the hanging indent, and space width. It is much better
+now and it is still a model. **When a box looks wrong on screen, the screen is right.** See the
+warning above `CHAR_W` in the script: changing those constants invalidates every hand-set box
+height on the canvas, and nothing fails, because a box that is too large passes.
 
 ## ADR-08 outranks every other decision
 
