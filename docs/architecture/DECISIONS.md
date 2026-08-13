@@ -29,6 +29,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `ffc5ffa` | **ADR-11 added: pairs that reached a moderator are remembered permanently.** A `(photo, group)` pair resolving with code 6 or 7 is recorded for good, and a later resubmission warns the user without blocking them. Establishes that current pool membership proves approval after the fact, which is the only way the invisible moderator decision becomes partly visible. |
 | `28d40c6` | The queue view scoped to the `(user, group)` tuple, not "per group". Recorded that ADR-07 makes the queues fully disjoint — code 5 is the only retryable condition and it is per-user — so the nightly sweep is parallel across queues. |
 | `596579a` | **The queue view recorded**, where ADR-08's "the user can find out" half is finally delivered. Noted that ADR-10 caps the write volume ADR-09 warned about, since only queue heads are ever attempted. |
+| *this commit* | **ADR-15 added: which store holds what, and ADR-02 corrected.** The owner could not derive the D1-versus-Durable-Object split from the diagram, and the split turned out to rest on an argument ADR-02 never made: it compared the Durable Object against KV and never against D1, which would also have worked. Consistency does not distinguish them; lifecycle does. Both now say so. |
 | `ad0b864` | **ADR-14 added: integrate when feasible, innovate otherwise.** The owner's standing order against reinventing wheels, with the four tests that permit hand-written code and a full survey of the OAuth 1.0a packages showing why the signer is the exception. Records `hono` and `zod` as the only runtime dependencies, both with zero transitive dependencies. |
 | `93c455a` | **ADR-13 added: the implementation language is TypeScript.** Rust and Python were each argued for and rejected — Rust on the `workers-rs` maintenance numbers, Python because it is in open beta and ADR-03 already refused a beta dependency for a smaller surface. Carries the version policy, the TypeScript 7 / `typescript-eslint` tradeoff, and a checkable list of the idioms that separate current Workers code from dated Workers code. |
 | `1822e3d` | **ADR-10 added: FIFO per (user, group), and the queue is never jumped.** Settles that the API Worker attempts a new request immediately only when its queue is otherwise empty, and that the nightly sweep stops a queue at its first retryable failure. ADR-05 gained the `photos.getAllContexts` check. The Flickr API surface and OAuth 1.0a's signing of the request-token call were recorded as verified facts. |
@@ -166,20 +167,54 @@ needs is "add this photo to that group." **FGA therefore holds a credential far 
 than its own feature set.** Token handling is the security crux of this design, and ADR-03 governs
 it.
 
-### ADR-02 — OAuth 1.0a intermediate state lives in a Durable Object, never in KV
+### ADR-02 — OAuth 1.0a intermediate state lives in a Durable Object
 
 The request-token secret **MUST** be held in a Durable Object keyed by `oauth_token` for the
 duration of the redirect, and **MUST NOT** be written to Workers KV.
 
-**Why:** the login flow writes the secret, bounces the user to flickr.com for 5 to 30 seconds,
-and then must read that secret back when the callback lands. KV offers no read-after-write
+**Why not KV:** the login flow writes the secret, bounces the user to flickr.com for 5 to 30
+seconds, and then must read that secret back when the callback lands. KV offers no read-after-write
 guarantee and can take 60 seconds or more to propagate between locations, so the callback can
 arrive at a point of presence that cannot yet see the write. The resulting failure is
 intermittent, dependent on which PoP the user transited, and effectively unreproducible on a
 developer's machine.
 
 **This is the only place in the v1 design where a Durable Object is used, and the narrow scope is
-deliberate** — see ADR-04.
+deliberate** — see ADR-04 for why the work engine is not one, and ADR-15 for the rule that decides
+which store holds what.
+
+#### Why not D1, which is the question this decision originally failed to ask
+
+**Corrected 2026-08-13, after the owner read the diagram and could not derive the rule.** The
+paragraphs above argue against **KV** and stop there. D1 was never evaluated for this job despite
+already being in the design, and the omission mattered: a reader would reasonably conclude D1 had
+been rejected on consistency grounds, **which is false.**
+
+**D1 does not have KV's problem.** Reads go to the primary unless the Sessions API is used to opt
+into a replica — see the verified-facts row on read replication — so **an ordinary D1 read is
+strongly consistent** and would have satisfied the read-after-write requirement above perfectly
+well. The consistency argument simply does not distinguish these two options.
+
+**What actually decides it is lifecycle, not consistency:**
+
+| | Durable Object | D1 |
+|---|---|---|
+| Cleanup of abandoned logins | An alarm per object, firing whether or not anything else in the system is healthy | A fourth table, plus a sweep the nightly cron must not forget |
+| What the table would contain | No table exists | Rows whose every member is destined for deletion |
+| Read-after-write across PoPs | Yes | Yes, on a primary read |
+| Single-use semantics | Single-threaded actor; read-and-delete cannot race | `DELETE ... RETURNING` is also atomic — a wash |
+| Latency | Object is placed near the first request, so the callback usually stays local | One hop to wherever the primary lives |
+
+**The deciding argument is the second row.** A D1 `oauth_attempts` table would be a table whose
+entire purpose is to be emptied, and its cleanup would become a second responsibility of the cron
+that already carries the product's real work. The Durable Object needs no table and cleans itself,
+which is fewer moving parts *in the failure case* rather than in the happy path.
+
+**This is a close call and MUST be recorded as one.** If a future change makes the cron sweep
+cheaper or makes a fourth table useful for something else, collapsing to a single store is a
+reasonable reversal — the interface is two methods, `start` and `consume`, so the migration is
+small. **What MUST NOT happen is a future reader inheriting this as settled on consistency
+grounds.**
 
 **The object MUST set an alarm on creation that calls `deleteAll()` on its storage after roughly
 15 minutes.** This is not tidiness; it is the entire cleanup strategy. Durable Objects have no
@@ -989,11 +1024,54 @@ Node built-ins; ADR-13 avoids it unless a dependency forces it, and all three de
 Web-standard and zero-dependency. **If one ever forces the flag, ADR-13 already requires naming the
 dependency that did.**
 
+### ADR-15 — Which store holds what
+
+**Written 2026-08-13 because the owner looked at the architecture diagram and could not work out
+why some state is in D1 and some in a Durable Object.** That question having no findable answer was
+itself the defect; the split was principled, but the principle existed only in my head and in the
+shape of two separate decisions.
+
+**New state MUST be placed by answering two questions. D1 wins if either is "yes".**
+
+| | Question |
+|---|---|
+| **1** | Does anything ever need to find this **without already knowing its key**? |
+| **2** | Does it **outlive a single interaction**? |
+
+| State | Searched? | Outlives? | Store |
+|---|---|---|---|
+| Users, and their encrypted Flickr tokens | Yes — joined against requests | Yes | **D1** |
+| The add-request queues | Yes — *"what is due tonight"* is a query across every user | Yes | **D1** |
+| Pairs that reached a moderator | Yes — the queue view lists them per user | Permanently, by ADR-11 | **D1** |
+| The OAuth request-token secret | **No** — the callback arrives holding the exact key | **No** — roughly 15 minutes, read once | **Durable Object** |
+
+**Question 1 is not a preference, it is a hard platform constraint.** A Worker **cannot enumerate
+the Durable Objects in a namespace** — see the verified-facts row. Anything that must be swept,
+reported on, listed, or searched therefore **MUST NOT** live in a Durable Object, because there is
+no runtime operation that would find it again. That single fact decides most of the table above
+before lifecycle is even considered.
+
+**Question 2 catches what question 1 misses.** A user row is fetched by NSID, which is a key the
+caller already holds, so question 1 alone would permit it in a Durable Object. It belongs in D1
+anyway because it is durable, joined, and reportable — and because a store that outlives a single
+interaction eventually gets asked a question nobody predicted.
+
+**The OAuth attempt is the only state in the system that answers "no" to both**, which is why there
+is exactly one Durable Object. **A rule with a single instance reads as an exception, and that is
+precisely why it needed writing down** rather than left to be inferred from the diagram.
+
+**Workers KV holds nothing.** Its consistency model is wrong for the login path (ADR-02) and there
+is no other candidate, so it is absent from the design rather than merely unused.
+
+**Where this rule and ADR-14 disagree, ADR-14 does not apply** — this is about placing state, not
+about taking dependencies.
+
 ## Considered and rejected
 
 | Option | Why not |
 |---|---|
 | AWS (the shape of the 2022 `fga-api`) | Workable, but every piece it needed has a simpler Cloudflare equivalent here, and the frontend is already Cloudflare Pages. Splitting across two providers buys nothing. |
+| D1 for the OAuth request-token secret | **A close call, not a clear loss.** D1 primary reads are strongly consistent, so it would work. It loses on lifecycle: it needs a fourth table whose every row is destined for deletion, plus a cleanup the cron must not forget. See ADR-02. |
 | An off-the-shelf OAuth 1.0a library | Every candidate is unmaintained, Node-only, or wraps an HTTP client we do not use. Full survey in ADR-14. |
 | Hand-rolling the router, CORS, and cookie parsing | Hono does all three, has zero dependencies, and its CORS middleware already implements the allowlist behavior ADR-12 spends a section warning about. See ADR-14. |
 | Rust via `workers-rs` | Nine commits in thirteen weeks against the runtime's 1,360, still pre-1.0, and its advantages do not apply to an I/O-bound workload. See ADR-13. |
