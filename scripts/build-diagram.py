@@ -106,37 +106,37 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1230" y="655" width="255" height="120" as="geometry" />
+          <mxGeometry x="320" y="965" width="255" height="95" as="geometry" />
         </mxCell>
 
-        <mxCell id="e1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="pages">
+        <mxCell id="e1" value="HTTPS" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="pages">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e2" value="fetch /api/v1/*&lt;br&gt;session cookie" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="pages" target="api">
+        <mxCell id="e2" value="fetch /api/v1/*&lt;br&gt;session cookie" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="pages" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e3" value="stash / retrieve&lt;br&gt;request-token secret" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="oauthdo">
+        <mxCell id="e3" value="stash / retrieve&lt;br&gt;request-token secret" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="secrets" target="api">
+        <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;" edge="1" parent="1" source="secrets" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e5" value="master key" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="secrets" target="retry">
+        <mxCell id="e5" value="master key" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="secrets" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e6" value="nightly sweep" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="cron" target="retry">
+        <mxCell id="e6" value="nightly sweep" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e7" value="queue requests&lt;br&gt;read status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1">
+        <mxCell id="e7" value="queue requests&lt;br&gt;read status" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e8" value="claim due requests&lt;br&gt;record outcome" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="d1">
+        <mxCell id="e8" value="claim due requests&lt;br&gt;record outcome" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="retry" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e9" value="request_token &#183; access_token" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.12;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
+        <mxCell id="e9" value="request_token &#183; access_token" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.15;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e10" value="flickr.groups.pools.add" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.88;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
+        <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.85;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e11" value="authorize at flickr.com" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickr">
@@ -159,3 +159,116 @@ print(f"Wrote {OUT}")
 print(f"  cloudflare payload : {len(CF)} chars")
 print(f"  flickr payload     : {len(FLICKR)} chars")
 print(f"  total file         : {OUT.stat().st_size} bytes")
+
+
+# --------------------------------------------------------------------------
+# Self-check. Straight edges are prettier than orthogonal ones but they cut
+# corners off anything standing between the endpoints, and that is exactly the
+# defect a human notices immediately and a generator never does. So the build
+# refuses to pass silently: every straight edge is intersected against every
+# box it is not attached to.
+# --------------------------------------------------------------------------
+
+import re
+import xml.etree.ElementTree as ET
+
+# Frames, labels, and the pieces that sit inside the Flickr card on purpose.
+NOT_OBSTACLES = {
+    "cfframe", "netb", "cflogo", "title", "date", "subtitle",
+    "flickrlogo", "flickrtext", "aflickr",
+}
+
+root = ET.parse(OUT).getroot()
+cells = root.findall(".//mxCell")
+
+boxes, edges = {}, []
+for c in cells:
+    g = c.find("mxGeometry")
+    if c.get("vertex") == "1" and g is not None and g.get("x") is not None:
+        boxes[c.get("id")] = tuple(float(g.get(k, 0)) for k in ("x", "y", "width", "height"))
+    elif c.get("edge") == "1":
+        edges.append(c)
+
+
+def attach_point(box, style, prefix):
+    """Fixed exitX/entryX if the style pins one, otherwise the box centre."""
+    x, y, w, h = box
+    fx = re.search(rf"{prefix}X=([\d.]+)", style)
+    fy = re.search(rf"{prefix}Y=([\d.]+)", style)
+    if fx and fy:
+        return x + float(fx.group(1)) * w, y + float(fy.group(1)) * h
+    return x + w / 2, y + h / 2
+
+
+def seg_hits_rect(a, b, rect, pad=6.0):
+    """True if segment ab passes through rect, grown by pad for near-misses.
+
+    Liang-Barsky. The sign convention is the whole trick and is easy to get
+    backwards: the parameter is p = -dx for the left edge and +dx for the right,
+    NOT dx for both. An earlier version used dx throughout, which inverted every
+    accept/reject and made the function answer False for everything -- a checker
+    that reported "no collisions" because it could not see any. Hence the
+    self-test below.
+    """
+    x, y, w, h = rect
+    xmin, ymin, xmax, ymax = x - pad, y - pad, x + w + pad, y + h + pad
+    dx, dy = b[0] - a[0], b[1] - a[1]
+
+    t0, t1 = 0.0, 1.0
+    for p, q in ((-dx, a[0] - xmin), (dx, xmax - a[0]),
+                 (-dy, a[1] - ymin), (dy, ymax - a[1])):
+        if p == 0:
+            if q < 0:
+                return False          # parallel and outside this slab
+            continue
+        t = q / p
+        if p < 0:
+            t0 = max(t0, t)
+        else:
+            t1 = min(t1, t)
+        if t0 > t1:
+            return False
+    return True
+
+
+# Prove the detector can detect before trusting it to report clean. A checker
+# that has never caught anything is indistinguishable from one that cannot.
+_box = (100.0, 100.0, 100.0, 100.0)
+_cases = [
+    ("horizontal straight through", (0.0, 150.0), (300.0, 150.0), True),
+    ("diagonal through corner",     (0.0, 0.0),   (300.0, 300.0), True),
+    ("passes clearly above",        (0.0, 50.0),  (300.0, 50.0),  False),
+    ("passes clearly below",        (0.0, 400.0), (300.0, 400.0), False),
+    ("stops short of the box",      (0.0, 150.0), (50.0, 150.0),  False),
+    ("starts after the box",        (250.0, 150.0), (400.0, 150.0), False),
+]
+for _name, _a, _b, _want in _cases:
+    _got = seg_hits_rect(_a, _b, _box, pad=0.0)
+    if _got != _want:
+        raise SystemExit(f"SELF-TEST FAILED: {_name} -> got {_got}, want {_want}")
+print(f"  collision detector self-test : {len(_cases)}/{len(_cases)} passed")
+
+
+problems = 0
+checked = 0
+for e in edges:
+    style = e.get("style") or ""
+    if "orthogonalEdgeStyle" in style:
+        continue  # routed deliberately; waypoints are not modelled here
+    src, tgt = e.get("source"), e.get("target")
+    if src not in boxes or tgt not in boxes:
+        continue
+    p = attach_point(boxes[src], style, "exit")
+    q = attach_point(boxes[tgt], style, "entry")
+    checked += 1
+    for bid, rect in boxes.items():
+        if bid in (src, tgt) or bid in NOT_OBSTACLES:
+            continue
+        if seg_hits_rect(p, q, rect):
+            print(f"  COLLISION: edge {e.get('id')} ({src} -> {tgt}) crosses '{bid}'")
+            problems += 1
+
+print(f"  straight edges checked : {checked}")
+print(f"  collisions             : {problems if problems else 'none'}")
+if problems:
+    raise SystemExit("Diagram has edge/box collisions -- fix the layout before committing.")
