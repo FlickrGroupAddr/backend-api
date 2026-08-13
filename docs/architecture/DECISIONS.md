@@ -61,6 +61,8 @@ beta-era numbers that will move.
 | Cloudflare recommends `wrangler types` over `@cloudflare/workers-types` | Cloudflare docs: *"We recommend you use `wrangler types` to generate runtime types, rather than using the `@cloudflare/workers-types` package"* — the generated types match the Worker's own compatibility date and flags. The package is **not** deprecated and remains recommended for typing libraries and shared packages. | 2026-08-13 |
 | No maintained, Workers-native OAuth 1.0a signer exists on npm | Surveyed via `npm view` and `npm search`: `oauth-1.0a@2.2.6` (2019, synchronous `hash_function` incompatible with async WebCrypto), `oauth-signature@1.5.0` (2017, depends on `crypto-js@3.x`), `oauth@0.10.2` (Node-only, built on `http`/`https`), `node-oauth1@1.3.0` (2020), `axios-oauth-1.0a@0.4.1` (2026, but an axios interceptor). See ADR-14. | 2026-08-13 |
 | `hono` and `zod` both ship with zero transitive dependencies | `npm view hono dependencies` and `npm view zod dependencies` both return empty. Versions `4.13.2` and `4.4.3`, both published 2026-08-13. | 2026-08-13 |
+| `flickr.groups.getInfo` reports whether a pool is moderated | Flickr API docs: the group element carries an **`ispoolmoderated`** attribute, `0` or `1`. This is the signal that would let an unanswered add be retried safely for unmoderated pools — see the open question on unconfirmed adds. **Not the same field as `restrictions.moderate_ok`**, which is about permitted *content* ratings and is a different thing entirely. | 2026-08-13 |
+| `flickr.groups.getInfo` also quantifies the per-group add throttle | Flickr API docs, example response: `<throttle count="10" mode="month" remaining="3" />`. **`count`** is the allowance, **`mode`** its period, and **`remaining`** how much is left. The docs do **not** enumerate the legal values of `mode` — only `month` appears in the example, and day and week are expected but unconfirmed. **Whether `remaining` is per-user or per-group is also unconfirmed** and matters enormously; the call is authenticated, so per-user is the reasonable reading. Both gaps need one live call to close. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, Durable Object requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
 ## Why OAuth 1.0a shapes so much of this
@@ -1100,9 +1102,15 @@ about taking dependencies.
   about what `getInfo` actually returns. **Note the asymmetry that already exists and is
   deliberate:** Flickr's own 105 and 106 stay retryable because there Flickr is *telling* us the
   write did not happen, which a dead socket does not.
-- **Flickr's per-group daily add limits are not yet quantified.** The retry cadence and the
-  per-group counter schema both depend on them, and they appear to vary by group. This
-  **SHOULD** be established from the API before the schema is fixed.
+- **Flickr's per-group add limits are quantifiable from the API, and the schema question is now
+  different from what was assumed.** `flickr.groups.getInfo` returns `<throttle count mode
+  remaining />` — see the verified-facts row. **FGA does not need to model the limits or count
+  attempts itself; it can ask.** That removes the per-group counter table this question was
+  written to design. What remains open is narrower and needs one live call: the legal values of
+  `mode`, and whether `remaining` is per-user or per-group. **If `remaining` is per-user, the
+  nightly sweep can skip a queue whose allowance is already spent rather than burning an attempt
+  to discover it** — which would make the sweep cheaper and quieter, though ADR-07's code 5 must
+  remain the authority, since a cached `remaining` can be stale in a way a live rejection is not.
 - **Whether D1 needs a separate group-metadata cache.** Currently assumed not: group rules can be
   read from Flickr on demand. Revisit if that read turns out to be slow or rate-limited.
 - **The wording a user sees when FGA has deliberately stopped.** *That* the queue is shown and
