@@ -145,7 +145,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="727" y="721" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="854" y="839" width="46" height="46" as="geometry" />
+          <mxGeometry x="877" y="886" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1537" y="728" width="46" height="46" as="geometry" />
