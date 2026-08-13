@@ -124,7 +124,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="flickrtitle" value="Flickr" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
           <mxGeometry x="1625" y="686" width="155" height="28" as="geometry" />
         </mxCell>
-        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
+        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;Login&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;oauth/request_token&lt;br&gt;oauth/authorize&lt;br&gt;oauth/access_token&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;Runtime&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;groups.pools.getGroups&lt;br&gt;photos.getAllContexts&lt;br&gt;groups.pools.add&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="1625" y="740" width="155" height="370" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
@@ -571,8 +571,8 @@ for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1"]
 # Boxed text tiles are sized by hand, and by hand is how you get a box that
 # either crowds its last line or trails 50px of dead space. This estimates the
 # wrapped text height and keeps the slack inside a band.
-CHAR_W = {13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
-LINE_H = {13: 18, 12: 17, 11: 15, 10: 14}
+CHAR_W = {20: 11.0, 14: 7.1, 13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
+LINE_H = {20: 26, 14: 18, 13: 18, 12: 17, 11: 15, 10: 14}
 SLACK_MIN, SLACK_MAX = 12.0, 45.0
 
 
@@ -717,6 +717,28 @@ print(f"    -> {'all clear' if not clashes else f'{len(clashes)} overlap(s)'}")
 problems += len(clashes)
 
 
+# The Flickr API tile lists the method names FGA calls, and a method name that
+# wraps mid-name reads as a typo rather than as a long line. This tile is not in
+# the boxed-text slack check above, because its height is set by the arrows that
+# must reach it rather than by its text -- so width is the only thing worth
+# asserting, and it is asserted per line.
+api_box = boxes["flickrapi"]
+api_usable = api_box[2] - 18.0
+api_size, api_wide = 20, []
+for chunk in re.split(r"<br\s*/?>", next(c.get("value") for c in cells if c.get("id") == "flickrapi")):
+    m = re.search(r"font-size:(\d+)px", chunk)
+    if m:
+        api_size = int(m.group(1))
+    text = re.sub(r"<[^>]*>", "", chunk).strip()
+    if text and len(text) * CHAR_W[api_size] > api_usable:
+        api_wide.append((text, len(text) * CHAR_W[api_size]))
+print(f"  Flickr API tile lines fit its {api_usable:.0f}px width:")
+for text, wpx in api_wide:
+    print(f"    {text!r} needs {wpx:.0f}px")
+print(f"    -> {'all fit' if not api_wide else f'{len(api_wide)} too wide'}")
+problems += len(api_wide)
+
+
 # "Master key" rode this arrow for two commits after the design stopped having
 # one: the v1 rewrite replaced a single Secrets Store master key with the four
 # entries the tile now lists, and nothing was checking the arrows against it. A
@@ -772,6 +794,14 @@ LOWERCASE_OPENERS = {
     "backend-api": "repository name",
     "flickr.groups.pools.add": "API method",
     "docs/architecture/DECISIONS.md": "path",
+    # The Flickr API tile lists the surface FGA calls. These are method and
+    # endpoint names, so their case is not ours to correct.
+    "oauth/request_token": "OAuth endpoint",
+    "oauth/authorize": "OAuth endpoint",
+    "oauth/access_token": "OAuth endpoint",
+    "groups.pools.getGroups": "API method",
+    "groups.pools.add": "API method",
+    "photos.getAllContexts": "API method",
 }
 LOWERCASE_CONTINUATIONS = {
     "per login attempt": "continuation of 'One Durable Object'",
