@@ -29,6 +29,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `ffc5ffa` | **ADR-11 added: pairs that reached a moderator are remembered permanently.** A `(photo, group)` pair resolving with code 6 or 7 is recorded for good, and a later resubmission warns the user without blocking them. Establishes that current pool membership proves approval after the fact, which is the only way the invisible moderator decision becomes partly visible. |
 | `28d40c6` | The queue view scoped to the `(user, group)` tuple, not "per group". Recorded that ADR-07 makes the queues fully disjoint — code 5 is the only retryable condition and it is per-user — so the nightly sweep is parallel across queues. |
 | `596579a` | **The queue view recorded**, where ADR-08's "the user can find out" half is finally delivered. Noted that ADR-10 caps the write volume ADR-09 warned about, since only queue heads are ever attempted. |
+| *this commit* | **ADR-14 added: integrate when feasible, innovate otherwise.** The owner's standing order against reinventing wheels, with the four tests that permit hand-written code and a full survey of the OAuth 1.0a packages showing why the signer is the exception. Records `hono` and `zod` as the only runtime dependencies, both with zero transitive dependencies. |
 | `93c455a` | **ADR-13 added: the implementation language is TypeScript.** Rust and Python were each argued for and rejected — Rust on the `workers-rs` maintenance numbers, Python because it is in open beta and ADR-03 already refused a beta dependency for a smaller surface. Carries the version policy, the TypeScript 7 / `typescript-eslint` tradeoff, and a checkable list of the idioms that separate current Workers code from dated Workers code. |
 | `1822e3d` | **ADR-10 added: FIFO per (user, group), and the queue is never jumped.** Settles that the API Worker attempts a new request immediately only when its queue is otherwise empty, and that the nightly sweep stops a queue at its first retryable failure. ADR-05 gained the `photos.getAllContexts` check. The Flickr API surface and OAuth 1.0a's signing of the request-token call were recorded as verified facts. |
 
@@ -57,6 +58,8 @@ beta-era numbers that will move.
 | Python Workers are in open beta | Cloudflare docs: the `python_workers` compatibility flag is required "while Python Workers are in open beta." Durable Objects, D1, and cron triggers are all documented as available. | 2026-08-13 |
 | TypeScript 7.0 is stable, and `typescript-eslint` cannot consume it | TypeScript 7.0 shipped 2026-07-08 as the first stable release built on the Go-native compiler, 8–12× faster on full builds; `npm dist-tags` gives `latest: 7.0.2`. It ships without a stable programmatic API until 7.1, so compiler-API consumers are blocked — `typescript-eslint@8.67.0` declares `peerDependencies.typescript` of `>=4.8.4 <6.1.0`, excluding 7.x. Biome (`2.5.8`) and oxlint (`1.78.0`) parse TypeScript themselves and are unaffected. | 2026-08-13 |
 | Cloudflare recommends `wrangler types` over `@cloudflare/workers-types` | Cloudflare docs: *"We recommend you use `wrangler types` to generate runtime types, rather than using the `@cloudflare/workers-types` package"* — the generated types match the Worker's own compatibility date and flags. The package is **not** deprecated and remains recommended for typing libraries and shared packages. | 2026-08-13 |
+| No maintained, Workers-native OAuth 1.0a signer exists on npm | Surveyed via `npm view` and `npm search`: `oauth-1.0a@2.2.6` (2019, synchronous `hash_function` incompatible with async WebCrypto), `oauth-signature@1.5.0` (2017, depends on `crypto-js@3.x`), `oauth@0.10.2` (Node-only, built on `http`/`https`), `node-oauth1@1.3.0` (2020), `axios-oauth-1.0a@0.4.1` (2026, but an axios interceptor). See ADR-14. | 2026-08-13 |
+| `hono` and `zod` both ship with zero transitive dependencies | `npm view hono dependencies` and `npm view zod dependencies` both return empty. Versions `4.13.2` and `4.4.3`, both published 2026-08-13. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, Durable Object requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
 ## Why OAuth 1.0a shapes so much of this
@@ -890,11 +893,109 @@ encode, sort, concatenate, sign — with no platform dependency, and it would be
 any of the three languages. The language choice is about the other ninety percent, which touches
 bindings continuously.
 
+### ADR-14 — Integrate when feasible, innovate otherwise
+
+**Standing order from the owner, 2026-08-13, in his words: *"integrate when feasible, innovate
+otherwise. If we can take stable, modern, well tested deps rather than write our own code, that's
+preferable 99% of the time. I just hate reinventing wheels."*** This decision governs every
+subsequent choice between adding a dependency and writing the code.
+
+**Where a maintained dependency exists that runs in this runtime and does the job, the project
+SHOULD take it.** Writing an equivalent by hand **MUST** be justified against the tests below, and
+the justification **MUST** be recorded where the code lives.
+
+**The reason is not effort, it is defect count.** A dependency with real adoption has been run
+against inputs this project will never think to try, by people who hit the edge cases first. Hand-
+written code starts at zero of that. The owner's framing is about wheels; the operative version is
+that **our version starts less correct and stays less correct**, because nobody else is finding bugs
+in it.
+
+#### The four tests that permit writing our own
+
+**A candidate must fail one of these for hand-written code to be the right answer.** Distaste for a
+dependency is not on the list.
+
+| Test | Meaning |
+|---|---|
+| **Does it run here?** | Workers are not Node. A package needing the filesystem, `http`/`https`, or Node built-ins does not run without `nodejs_compat`, which ADR-13 says to avoid unless a dependency forces it. |
+| **Is the platform already doing it?** | WebCrypto is native and does HMAC-SHA1, HMAC-SHA256, and AES-GCM. Taking a crypto library on top of it adds bundle, adds supply-chain surface, and removes an audited implementation. |
+| **Is it maintained?** | A package last published years ago is not "stable", it is unmaintained. The distinction matters most for anything security-adjacent. |
+| **Is the spec short, exact, and covered by published vectors?** | Where correctness can be *proven* against a standards body's own test data, the usual argument for a dependency — other people found the bugs — is replaced by something stronger. |
+
+**Supply-chain surface is a reason to choose dependencies carefully, and MUST NOT be read as a
+reason to avoid them.** This project decrypts users' Flickr tokens, so a compromised package in the
+production bundle is the worst outcome available. **The mitigation is preferring packages with no
+transitive dependencies of their own**, pinning exact versions, and keeping the production bundle
+small — not hand-writing more code, which trades a small audited risk for a large unaudited one.
+
+#### The worked example: OAuth 1.0a signing is the 1%
+
+**Surveyed 2026-08-13, before writing the signer, specifically to avoid reinventing a wheel.**
+Recorded in full because "we checked and there wasn't one" is worthless without the evidence:
+
+| Candidate | Last published | Why it fails |
+|---|---|---|
+| `oauth-1.0a@2.2.6` | 2019 | Its `hash_function` is **synchronous**; WebCrypto's `crypto.subtle.sign()` returns a Promise. Using it means `nodejs_compat` and `node:crypto` purely to satisfy the library's shape. |
+| `oauth-signature@1.5.0` | 2017 | Depends on `crypto-js@~3.1.9-1`, superseded and no longer the right way to do crypto in a browser-class runtime. |
+| `oauth@0.10.2` | 2025 | Node-only. Built on the `http`/`https` modules; does not run in a Worker. |
+| `node-oauth1@1.3.0` | 2020 | Unmaintained. |
+| `axios-oauth-1.0a@0.4.1` | 2026 | Actively maintained, but it is an **axios interceptor**. `fetch` is native here; adding an HTTP client to get a signer inverts the dependency. |
+
+**So FGA writes its own OAuth 1.0a signer, and it fails three of the four tests at once** — nothing
+maintained runs here, the crypto underneath it is already native, and RFC 5849 §3.4 ships worked
+example vectors that make the result provable rather than merely tested. **The signer MUST be a pure
+function** — percent-encode, sort, concatenate, sign — **and MUST be tested against the RFC's own
+published vectors**, not only against Flickr accepting it. A signature Flickr rejects tells you
+nothing about which of the four layers was wrong.
+
+#### What the project takes
+
+| Dependency | Version | Transitive deps | Why |
+|---|---|---|---|
+| `hono` | `4.13.2` | **0** | Routing, middleware, cookie helpers, and a CORS implementation that matches ADR-12's contract including the allowlist behavior. Workers-first rather than ported. |
+| `zod` | `4.4.3` | **0** | Runtime validation at the API boundary. TypeScript types vanish at runtime; request bodies arrive untrusted and need checking by something that still exists. |
+| `jose` | `6.2.8` | **0** | Signs and verifies the ADR-06 session cookie. Lists `workerd` among its supported runtimes and is built on WebCrypto. |
+| `vitest`, `@cloudflare/vitest-pool-workers`, `biome`, `wrangler`, `typescript` | see ADR-13 | dev only | None reach the deployed bundle. |
+
+**All three runtime dependencies have zero dependencies of their own**, which is why they clear the
+supply-chain bar above rather than merely being popular.
+
+**The session cookie is the case this rule caught, and it is worth recording as the counterweight to
+the OAuth exception above.** ADR-06 specifies an HMAC-SHA256-signed cookie, and the obvious reading
+was to write it by hand — serialize, sign, base64url, and on the way back parse, recompute, compare,
+check expiry. **That is roughly forty lines in which every plausible bug is a security bug**: a
+non-constant-time comparison leaks the signature through timing, a missing expiry check makes
+sessions immortal, and a missing algorithm check invites algorithm-confusion attacks. `jose`
+implements exactly this as JWS with `HS256`, which **is** HMAC-SHA256 — so **ADR-06 is unchanged and
+merely stops being hand-written.** This is the rule working in the direction it was written for, and
+it landed on the more security-critical of the two cases.
+
+#### Cloudflare's own agent guidance is a source, and it corrected two things
+
+**`github.com/cloudflare/skills` publishes Cloudflare's rules for agents building on Workers**, and
+it **SHOULD** be consulted before writing Workers code rather than relying on training data — which
+is, verbatim, its own first instruction. Two corrections it supplied on 2026-08-13:
+
+- **`crypto.subtle.timingSafeEqual` exists in this runtime.** Comparing secret values with `===` is a
+  timing side-channel, and the platform already solves it. This is the ADR-14 test "is the platform
+  already doing it?" answering yes for something that looked like hand-written territory.
+- **`ctx` MUST NOT be destructured.** `const { waitUntil } = ctx` loses the `this` binding and throws
+  "Illegal invocation" at runtime — a mistake that looks like ordinary modern JavaScript and fails
+  only in production.
+
+**Where its advice conflicts with a decision here, this document wins and the divergence gets
+recorded.** Cloudflare's skill advises enabling `nodejs_compat` broadly because many libraries need
+Node built-ins; ADR-13 avoids it unless a dependency forces it, and all three dependencies above are
+Web-standard and zero-dependency. **If one ever forces the flag, ADR-13 already requires naming the
+dependency that did.**
+
 ## Considered and rejected
 
 | Option | Why not |
 |---|---|
 | AWS (the shape of the 2022 `fga-api`) | Workable, but every piece it needed has a simpler Cloudflare equivalent here, and the frontend is already Cloudflare Pages. Splitting across two providers buys nothing. |
+| An off-the-shelf OAuth 1.0a library | Every candidate is unmaintained, Node-only, or wraps an HTTP client we do not use. Full survey in ADR-14. |
+| Hand-rolling the router, CORS, and cookie parsing | Hono does all three, has zero dependencies, and its CORS middleware already implements the allowlist behavior ADR-12 spends a section warning about. See ADR-14. |
 | Rust via `workers-rs` | Nine commits in thirteen weeks against the runtime's 1,360, still pre-1.0, and its advantages do not apply to an I/O-bound workload. See ADR-13. |
 | Python Workers | Open beta, and ADR-03 already rejected a beta dependency for a far smaller surface. Revisit at general availability. See ADR-13. |
 | Holding TypeScript at `6.0.3` to keep `typescript-eslint` | Considered seriously. Biome removes the need by not depending on the compiler API at all. See ADR-13. |
