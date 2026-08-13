@@ -1,0 +1,55 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "fga-backend-api",
+	"main": "src/index.ts",
+
+	// ADR-13: track current. Bump deliberately, and re-run `wrangler types` after.
+	"compatibility_date": "2026-08-13",
+
+	// ADR-13 deliberately omits "nodejs_compat". hono, jose and zod are all
+	// Web-standard and zero-dependency. If a future dependency forces the flag,
+	// ADR-13 requires naming that dependency in the same commit.
+	"compatibility_flags": [],
+
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+
+	// ADR-04: the nightly sweep is the v1 work engine. 00:15 UTC rather than
+	// 00:00 -- nothing here needs midnight exactly, and the hour boundary is the
+	// busiest moment on the shared cron infrastructure.
+	"triggers": {
+		"crons": ["15 0 * * *"]
+	},
+
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "fga",
+			// Placeholder. Filled by `wrangler d1 create fga`, which needs an API
+			// token with D1 scope -- the token in this session is Registrar-only.
+			// Local development and tests use Miniflare's own D1 and ignore this.
+			"database_id": "00000000-0000-0000-0000-000000000000"
+		}
+	],
+
+	"durable_objects": {
+		"bindings": [
+			{
+				// ADR-02: one object per login attempt, NOT per user. The name says so
+				// because that distinction is the whole point of the decision.
+				"name": "OAUTH_LOGIN",
+				"class_name": "OAuthLoginAttempt"
+			}
+		]
+	},
+
+	"migrations": [
+		{
+			"tag": "v1",
+			// SQLite-backed storage, which is the current default for new classes.
+			"new_sqlite_classes": ["OAuthLoginAttempt"]
+		}
+	]
+}
