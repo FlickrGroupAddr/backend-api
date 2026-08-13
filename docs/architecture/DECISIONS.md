@@ -137,8 +137,8 @@ because "the secrets" as a single blob is what makes their roles hard to reason 
 |---|---|---|
 | Flickr consumer key | Identifies FGA to Flickr as an application | Every Flickr call |
 | Flickr consumer secret | Signs every OAuth 1.0a request, HMAC-SHA1 | Every Flickr call |
-| **Token-encryption key** | AES-GCM. Encrypts each user's Flickr access token before it is written to D1, and decrypts it when a Worker needs to act as that user | Storing the token after login; every group-add attempt |
-| **Session-signing key** | HMAC-SHA256. Signs the session cookie, and verifies it on the way back in | Minting the cookie after login; every authenticated request |
+| **Token key (encryption)** | AES-GCM. Encrypts each user's Flickr access token before it is written to D1, and decrypts it when a Worker needs to act as that user | Storing the token after login; every group-add attempt |
+| **Session key (signing)** | HMAC-SHA256. Signs the session cookie, and verifies it on the way back in | Minting the cookie after login; every authenticated request |
 
 **The consumer key and secret together are the FGA Flickr API credentials** — the pair that marks a
 call as coming from *this application*, and the name the diagram uses for them. They are

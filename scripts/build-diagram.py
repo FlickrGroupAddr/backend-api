@@ -88,7 +88,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="380" y="640" width="190" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;FGA Flickr API credentials&lt;br&gt;Token-encryption key&lt;br&gt;Session-signing key&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+        <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;FGA Flickr API credentials&lt;br&gt;Token key (encryption)&lt;br&gt;Session key (signing)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="640" y="878" width="220" height="105" as="geometry" />
         </mxCell>
         <mxCell id="cron" value="&lt;b&gt;Cron Trigger&lt;/b&gt;&lt;br&gt;&lt;i&gt;Nightly&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=12;arcSize=12;" vertex="1" parent="1">
@@ -118,21 +118,24 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1300" y="870" width="200" height="110" as="geometry" />
         </mxCell>
 
-        <mxCell id="flickr" value="&lt;b&gt;Flickr&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;verticalAlign=top;spacingTop=107;fontSize=22;fontColor=#1A1A1A;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="595" width="205" height="555" as="geometry" />
+        <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="581" width="205" height="569" as="geometry" />
+        </mxCell>
+        <mxCell id="flickrtitle" value="Flickr" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
+          <mxGeometry x="1625" y="686" width="155" height="28" as="geometry" />
         </mxCell>
         <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="1625" y="740" width="155" height="370" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
-          <mxGeometry x="1625" y="620" width="155" height="73" as="geometry" />
+          <mxGeometry x="1625" y="606" width="155" height="73" as="geometry" />
         </mxCell>
                 <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
           <mxGeometry x="1600" y="150" width="205" height="140" as="geometry" />
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#8211; &#8211; &#8211; Scheduled or async&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="380" width="205" height="125" as="geometry" />
+          <mxGeometry x="1600" y="373" width="205" height="125" as="geometry" />
         </mxCell>
 
         <mxCell id="n1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
@@ -251,7 +254,7 @@ import xml.etree.ElementTree as ET
 # Frames, labels, and the pieces that sit inside the Flickr card on purpose.
 NOT_OBSTACLES = {
     "cfframe", "netb", "cflogo", "title", "date",
-    "flickrlogo", "flickr",
+    "flickrlogo", "flickr", "flickrtitle",
     # Step badges sit ON their arrows by design, so they are not obstacles.
     "n1", "n2", "n3", "n4", "n5", "n6", "n7",
     # Cascade cards behind the OAuth tile: decoration showing there are many,
@@ -623,14 +626,19 @@ for cid in ["justification", "key", "journey"]:
 # middle third, so ~30px of the tile's apparent gap was invisible SVG padding and
 # no spacingTop could close it. The artwork is now cropped, which means a future
 # session swapping in an uncropped file would silently reopen the gap.
-LOGO_GAP_MIN, LOGO_GAP_MAX = 8.0, 10.0
+# The title is its own cell rather than the card's label. As the card's label its
+# position came from spacingTop, which only sets where draw.io STARTS laying text
+# out inside a 569px-tall box -- the rendered line landed far lower than the
+# arithmetic said, so the word locked visually to the Flickr API tile beneath it
+# instead of to the mark above. A cell with its own geometry puts the title where
+# the numbers say it is, and makes that position measurable here.
+LOGO_GAP_MIN, LOGO_GAP_MAX = 6.0, 8.0
 lx, ly, lw, lh = boxes["flickrlogo"]
 fx, fy, fw, fh = boxes["flickr"]
-flickr_style = next(c.get("style") for c in cells if c.get("id") == "flickr")
-spacing_top = float(re.search(r"spacingTop=(\d+)", flickr_style).group(1))
-gap = (fy + spacing_top) - (ly + lh)
+tx, ty, tw, th = boxes["flickrtitle"]
+gap = ty - (ly + lh)
 print("  Flickr mark locked to its title:")
-print(f"    mark {lw:.0f}x{lh:.0f} at y {ly:.0f}-{ly + lh:.0f}, title top {fy + spacing_top:.0f}  gap {gap:.0f}px")
+print(f"    mark {lw:.0f}x{lh:.0f} at y {ly:.0f}-{ly + lh:.0f}, title y {ty:.0f}-{ty + th:.0f}  gap {gap:.0f}px")
 if not LOGO_GAP_MIN <= gap <= LOGO_GAP_MAX:
     print(f"    -> gap {gap:.0f}px is outside {LOGO_GAP_MIN:.0f}-{LOGO_GAP_MAX:.0f}px")
     problems += 1
@@ -665,11 +673,21 @@ for edge, got in want.items():
     if not ok:
         problems += 1
 
-# And the title must still clear the Flickr API tile it sits above.
-title_bottom = fy + spacing_top + float(re.search(r"fontSize=(\d+)", flickr_style).group(1)) * 1.3
-print(f"    title clears the Flickr API tile by {ay - title_bottom:.0f}px")
-if ay - title_bottom < 8:
+# The title must sit closer to the mark than to the Flickr API tile, which is the
+# whole point of locking it: whichever element it is nearest is the one a reader
+# groups it with. This is the check that would have caught the earlier version.
+below = ay - (ty + th)
+print(f"    title clears the Flickr API tile by {below:.0f}px")
+if below < 8:
     print("    -> title crowds the Flickr API tile")
+    problems += 1
+if below <= gap:
+    print(f"    -> title is nearer the Flickr API tile ({below:.0f}px) than the mark ({gap:.0f}px)")
+    problems += 1
+
+# The title shares the mark's column, so it inherits the same margins.
+if abs(tx - lx) > 0.5 or abs(tw - lw) > 0.5:
+    print(f"    -> title column {tx:.0f}+{tw:.0f} does not match the mark's {lx:.0f}+{lw:.0f}")
     problems += 1
 
 
