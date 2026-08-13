@@ -118,14 +118,14 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1300" y="870" width="200" height="110" as="geometry" />
         </mxCell>
 
-        <mxCell id="flickr" value="&lt;b&gt;Flickr&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;verticalAlign=top;spacingTop=96;fontSize=22;fontColor=#1A1A1A;" vertex="1" parent="1">
+        <mxCell id="flickr" value="&lt;b&gt;Flickr&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;verticalAlign=top;spacingTop=107;fontSize=22;fontColor=#1A1A1A;" vertex="1" parent="1">
           <mxGeometry x="1600" y="595" width="205" height="555" as="geometry" />
         </mxCell>
         <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="1625" y="740" width="155" height="370" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
-          <mxGeometry x="1618" y="602" width="169" height="80" as="geometry" />
+          <mxGeometry x="1625" y="620" width="155" height="73" as="geometry" />
         </mxCell>
                 <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
           <mxGeometry x="1600" y="150" width="205" height="140" as="geometry" />
@@ -649,6 +649,27 @@ if skew > 0.01:
 off = (lx + lw / 2) - (fx + fw / 2)
 print(f"    centred in the Flickr card: off by {off:.1f}px")
 if abs(off) > 0.5:
+    problems += 1
+
+# The mark sits in the same margins as the Flickr API tile beneath it -- left,
+# right and top all matching that tile's side inset. Two stacked elements with
+# almost-equal margins look like a mistake; equal ones look designed, and the
+# difference is invisible until they are side by side.
+ax, ay, aw, ah = boxes["flickrapi"]
+inset = ax - fx
+want = {"left": lx - fx, "right": (fx + fw) - (lx + lw), "top": ly - fy}
+print(f"    margins vs the Flickr API tile's {inset:.0f}px side inset:")
+for edge, got in want.items():
+    ok = abs(got - inset) <= 0.5
+    print(f"      {edge:<6}{got:>5.0f}px  {'ok' if ok else 'MISMATCH'}")
+    if not ok:
+        problems += 1
+
+# And the title must still clear the Flickr API tile it sits above.
+title_bottom = fy + spacing_top + float(re.search(r"fontSize=(\d+)", flickr_style).group(1)) * 1.3
+print(f"    title clears the Flickr API tile by {ay - title_bottom:.0f}px")
+if ay - title_bottom < 8:
+    print("    -> title crowds the Flickr API tile")
     problems += 1
 
 
