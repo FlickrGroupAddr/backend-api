@@ -154,7 +154,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1058" y="547" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="777" y="1281" width="46" height="46" as="geometry" />
+          <mxGeometry x="727" y="1281" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="452" y="813" width="46" height="46" as="geometry" />
@@ -546,6 +546,16 @@ n7_off = abs(n7c[1] - run_y)
 on_run = NEAR_MIN <= n7_off <= NEAR_MAX and run_x0 <= n7c[0] <= run_x1
 print(f"    n7 beside e11  offset {n7_off:>5.1f}px  {'ok' if on_run else 'BADLY PLACED'}")
 if not on_run:
+    problems += 1
+
+# n7 rides a 1,580px horizontal run, so nothing about the arrow decides where
+# along it the badge belongs -- which is exactly why it looked arbitrary. It is
+# pinned to the centre of App Secrets Store directly above it. An equality, not a
+# tolerance, because the alignment either reads or it does not.
+sx, _, sw, _ = boxes["secrets"]
+drift = n7c[0] - (sx + sw / 2)
+print(f"    n7 centred under App Secrets Store: off by {drift:.1f}px")
+if abs(drift) > 0.5:
     problems += 1
 
 
