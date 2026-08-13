@@ -124,7 +124,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="flickrtitle" value="Flickr" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
           <mxGeometry x="1625" y="686" width="155" height="28" as="geometry" />
         </mxCell>
-        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;div style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/div&gt;&lt;div style=&quot;font-size:13px;text-decoration:underline;margin-top:14px&quot;&gt;&lt;b&gt;Login&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/request_token&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/authorize&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/access_token&lt;/div&gt;&lt;div style=&quot;font-size:13px;text-decoration:underline;margin-top:14px&quot;&gt;&lt;b&gt;API Endpoints&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;groups.pools.getGroups&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;photos.getAllContexts&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;groups.pools.add&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
+        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;div style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:16px&quot;&gt;&lt;b&gt;Login&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/request_token&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/authorize&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/access_token&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:16px&quot;&gt;&lt;b&gt;API Endpoints&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;groups.pools.getGroups&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;photos.getAllContexts&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;groups.pools.add&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="1625" y="740" width="155" height="370" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
@@ -575,8 +575,8 @@ for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1"]
 # Boxed text tiles are sized by hand, and by hand is how you get a box that
 # either crowds its last line or trails 50px of dead space. This estimates the
 # wrapped text height and keeps the slack inside a band.
-CHAR_W = {20: 11.0, 14: 7.1, 13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
-LINE_H = {20: 26, 14: 18, 13: 18, 12: 17, 11: 15, 10: 14}
+CHAR_W = {20: 11.0, 15: 7.6, 14: 7.1, 13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
+LINE_H = {20: 26, 15: 20, 14: 18, 13: 18, 12: 17, 11: 15, 10: 14}
 SLACK_MIN, SLACK_MAX = 12.0, 45.0
 
 
