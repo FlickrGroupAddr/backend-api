@@ -79,8 +79,11 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="70" y="530" width="100" height="80" as="geometry" />
         </mxCell>
 
+        <mxCell id="dns" value="&lt;b&gt;Cloudflare DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;authoritative&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="470" width="190" height="85" as="geometry" />
+        </mxCell>
         <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="320" y="520" width="190" height="100" as="geometry" />
+          <mxGeometry x="320" y="600" width="190" height="85" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;consumer key + secret,&lt;br&gt;master encryption key&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="640" y="662" width="220" height="100" as="geometry" />
@@ -120,11 +123,14 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1600" y="300" width="205" height="125" as="geometry" />
         </mxCell>
 
-        <mxCell id="e1" value="HTTPS" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="pages">
+        <mxCell id="e1" value="1 &#183; DNS query" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="dns">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e2" value="fetch /api/v001/*&lt;br&gt;session cookie" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="pages" target="api">
+        <mxCell id="e2" value="2 &#183; static assets" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="pages">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="3 &#183; fetch /api/v001/*" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="api">
+          <mxGeometry x="0.3" relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e3" value="request-token secret" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
@@ -293,8 +299,7 @@ print(f"  collisions             : {problems if problems else 'none'}")
 # both ends land on the same y; a later box move silently breaks that, and a
 # nearly-horizontal arrow looks like a mistake rather than a decision.
 MUST_BE_HORIZONTAL = {
-    "e1": "users -> pages",
-    "e2": "pages -> api",
+    "e12": "users -> api",
     "e6": "cron -> retry",
     "e9": "api -> flickr",
     "e10": "retry -> flickr",
@@ -354,6 +359,7 @@ for eid, (src, tgt, p, q) in segments.items():
 # Components only. The legend is diagram furniture -- its position claims nothing
 # about where code runs, so it is deliberately not asserted here.
 IN_EDGE_POP = {
+    "dns": True,  # authoritative DNS is anycast, answered at the nearest PoP
     "pages": True, "secrets": True, "cron": True, "api": True, "retry": True,
     "oauthdo": False,  # single Durable Object instance, not edge-replicated
     "d1": False,       # single primary, not edge-replicated
