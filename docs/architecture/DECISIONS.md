@@ -29,6 +29,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `ffc5ffa` | **ADR-11 added: pairs that reached a moderator are remembered permanently.** A `(photo, group)` pair resolving with code 6 or 7 is recorded for good, and a later resubmission warns the user without blocking them. Establishes that current pool membership proves approval after the fact, which is the only way the invisible moderator decision becomes partly visible. |
 | `28d40c6` | The queue view scoped to the `(user, group)` tuple, not "per group". Recorded that ADR-07 makes the queues fully disjoint — code 5 is the only retryable condition and it is per-user — so the nightly sweep is parallel across queues. |
 | `596579a` | **The queue view recorded**, where ADR-08's "the user can find out" half is finally delivered. Noted that ADR-10 caps the write volume ADR-09 warned about, since only queue heads are ever attempted. |
+| *this commit* | **ADR-13 added: the implementation language is TypeScript.** Rust and Python were each argued for and rejected — Rust on the `workers-rs` maintenance numbers, Python because it is in open beta and ADR-03 already refused a beta dependency for a smaller surface. Carries the version policy, the TypeScript 7 / `typescript-eslint` tradeoff, and a checkable list of the idioms that separate current Workers code from dated Workers code. |
 | `1822e3d` | **ADR-10 added: FIFO per (user, group), and the queue is never jumped.** Settles that the API Worker attempts a new request immediately only when its queue is otherwise empty, and that the nightly sweep stops a queue at its first retryable failure. ADR-05 gained the `photos.getAllContexts` check. The Flickr API surface and OAuth 1.0a's signing of the request-token call were recorded as verified facts. |
 
 ## Verified facts
@@ -52,6 +53,10 @@ beta-era numbers that will move.
 | Durable Objects have no TTL, and an idle one is free | Cloudflare docs: there is no automatic expiry, but "inactive objects receiving no requests do not incur any duration charges." Storage is metered separately and "Durable Objects will be billed for stored data until the data is removed"; once deleted through the Storage API the object is cleaned up and stops incurring storage fees. **There is no runtime API to enumerate the objects in a namespace** — a Worker cannot list them. | 2026-08-13 |
 | The Flickr API surface FGA needs is six calls | Read from the 2022 code in the old repos, which is working precedent rather than a guess. Login: `oauth/request_token`, then `oauth/authorize` with `perms=write` in the browser, then `oauth/access_token`. Runtime: `flickr.groups.pools.getGroups` for the groups a user may post to, `flickr.photos.getAllContexts` for the pools a photo is already in, and `flickr.groups.pools.add` for the add. Mined for the domain facts only — the architecture around them is not inherited. | 2026-08-13 |
 | OAuth 1.0a signs the request-token call itself | RFC 5849 §3.4: the signing key is `consumer_secret&token_secret`, with an empty token secret for the temporary-credentials request, and `oauth_consumer_key` travels in the parameters. **The first call of a login therefore already needs the FGA Flickr API credentials** — there is no unauthenticated leg anywhere in the flow. | 2026-08-13 |
+| Workers language support is far more uneven than the docs imply | GitHub `stats/participation` for the thirteen weeks to 2026-08-13: `cloudflare/workerd` **1,360** commits, `cloudflare/workers-sdk` **649**, `cloudflare/workers-rs` **9**. `workers-rs` is at `v0.8.5` (2026-06-12), pre-1.0, with 184 open issues. All four languages are described as first-class on the languages page. **The commit list endpoint caps at 100 per page and must not be used for this** — it reports a flat "100" for both active repos and hides the real ratio. | 2026-08-13 |
+| Python Workers are in open beta | Cloudflare docs: the `python_workers` compatibility flag is required "while Python Workers are in open beta." Durable Objects, D1, and cron triggers are all documented as available. | 2026-08-13 |
+| TypeScript 7.0 is stable, and `typescript-eslint` cannot consume it | TypeScript 7.0 shipped 2026-07-08 as the first stable release built on the Go-native compiler, 8–12× faster on full builds; `npm dist-tags` gives `latest: 7.0.2`. It ships without a stable programmatic API until 7.1, so compiler-API consumers are blocked — `typescript-eslint@8.67.0` declares `peerDependencies.typescript` of `>=4.8.4 <6.1.0`, excluding 7.x. Biome (`2.5.8`) and oxlint (`1.78.0`) parse TypeScript themselves and are unaffected. | 2026-08-13 |
+| Cloudflare recommends `wrangler types` over `@cloudflare/workers-types` | Cloudflare docs: *"We recommend you use `wrangler types` to generate runtime types, rather than using the `@cloudflare/workers-types` package"* — the generated types match the Worker's own compatibility date and flags. The package is **not** deprecated and remains recommended for typing libraries and shared packages. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, Durable Object requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
 ## Why OAuth 1.0a shapes so much of this
@@ -787,11 +792,112 @@ group rather than presenting one flat list sorted by submission time. A flat lis
 single queue when there are many, which makes correct FIFO behavior read as a bug the first time a
 later request lands ahead of an earlier one in a different group.
 
+### ADR-13 — The Workers are written in TypeScript, on the current stable toolchain
+
+Every Worker in this project — the API Worker, the retry Worker, and any Durable Object class —
+**MUST** be written in TypeScript with `strict` enabled. Decided by the owner, 2026-08-13, after
+Rust and Python were each argued for and rejected.
+
+**The deciding evidence was maintenance velocity, not taste.** Cloudflare's documentation describes
+JavaScript, TypeScript, Python, and Rust as having first-class support. Commit activity over the
+thirteen weeks to 2026-08-13 says otherwise:
+
+| Repository | What it is | Commits, 13 weeks |
+|---|---|---|
+| `cloudflare/workerd` | The runtime itself | 1,360 |
+| `cloudflare/workers-sdk` | Wrangler and the JavaScript toolchain | 649 |
+| `cloudflare/workers-rs` | The Rust bindings | 9 |
+
+**TypeScript compiles to what the runtime already executes.** `workerd` is a V8 isolate, so there is
+no translation layer between the source and the thing that runs — no WebAssembly boundary, no
+interpreter to instantiate, and nothing that can bit-rot independently of the runtime. Cold start
+stays sub-millisecond, and the Durable Object and D1 surfaces are exercised by essentially every
+Worker in existence rather than by a minority dialect.
+
+**Rust was rejected on maintenance, not on merit.** `workers-rs` is at `v0.8.5`, released 2026-06-12,
+still pre-1.0, with 184 open issues and the nine commits above. Its own README warns of "rough
+edges, unimplemented APIs, and potential bugs." Everything in it must compile to
+`wasm32-unknown-unknown`, which excludes `tokio` and any crate that does not target WebAssembly, and
+release builds need `lto`, `strip`, and `codegen-units = 1` to stay inside the bundle limit.
+**Against that, Rust's actual advantages do not apply to this workload.** FGA signs an HTTP request,
+calls an API, and writes a database row; there is no CPU-bound work anywhere in it, so zero-cost
+abstraction and manual memory control buy nothing. The stateful core of this design is Durable
+Objects, which is precisely the least-exercised part of that crate.
+
+**Python was rejected on maturity, and the argument is one this document already made.** Python
+Workers are in **open beta** and require the `python_workers` compatibility flag. ADR-03 rejected
+Cloudflare Secrets Store for holding four values on the grounds that "a beta dependency is not worth
+the better management story." **A beta runtime for the entire codebase cannot pass a bar that a beta
+secret store failed.** The 2022 code in the old repos was Python, which is precedent and therefore
+the weakest argument available here. Python's runtime lives inside `workerd`, so it is being
+actively built; **revisit this decision if Python Workers reach general availability.**
+
+#### The version policy, because "LTS" does not exist here
+
+**TypeScript has no LTS channel.** It ships roughly quarterly with no long-term-support line, so
+"latest LTS TypeScript" has no referent. The owner's intent — current, expert, not experimental — is
+recorded instead as this rule:
+
+**The project MUST track the current stable release of each tool, and MUST NOT adopt a `beta`,
+`rc`, `next`, or `dev` tag.** Where a stable release breaks a tool the project depends on, the
+project **MUST** either drop that tool or hold back, and **MUST** record which it chose and why.
+
+| Tool | Pinned at | Note |
+|---|---|---|
+| TypeScript | `7.0.2` | The Go-native compiler. Stable since 2026-07-08. |
+| Node.js | `24.x` (Krypton) | Active LTS. Build-time only; it is not the runtime. |
+| Wrangler | `4.123.0` | |
+| Vitest | `4.1.10` | With `@cloudflare/vitest-pool-workers` `0.21.3`. |
+| Biome | `2.5.8` | Lint and format. See the tradeoff below. |
+
+**TypeScript 7 costs the project `typescript-eslint`, and that is an accepted trade.** The Go-native
+compiler ships without a stable programmatic API until 7.1, so tools built on the compiler API
+cannot yet consume it — `typescript-eslint@8.67.0` declares a peer range of `>=4.8.4 <6.1.0`, which
+excludes 7.x outright. **The project therefore uses Biome, which parses TypeScript itself and has no
+compiler-API dependency**, making the incompatibility irrelevant rather than merely tolerated. The
+alternative was holding TypeScript at `6.0.3` to keep ESLint; that was rejected because type
+checking via `tsc --noEmit` is the safety net that matters here and it is unaffected either way.
+**If Biome proves insufficient, the correct response is to hold TypeScript at 6.0.3 in the same
+commit — not to run unlinted.**
+
+#### What "modern" means concretely, so it is checkable rather than a vibe
+
+**These are the idioms a 2026 Workers expert would expect, and each has a dated-looking alternative
+that still works.** Recorded because "write it in a modern style" is unenforceable and this is not.
+
+- **Types MUST be generated with `wrangler types`**, producing `worker-configuration.d.ts` from the
+  project's own compatibility date and flags. Hand-importing `@cloudflare/workers-types` is the
+  dated form; Cloudflare now recommends it only for libraries and shared packages.
+- **Durable Object classes MUST extend `DurableObject` from `cloudflare:workers`** and expose their
+  operations as **RPC methods**. The older pattern — a `fetch` handler on the object parsing a
+  synthetic URL to dispatch internally — is what this replaces, and Cloudflare directs all new
+  projects past it.
+- **The entrypoint MUST be an ES module** using `satisfies ExportedHandler<Env>`. Service-worker
+  syntax and `addEventListener("fetch", ...)` **MUST NOT** appear anywhere.
+- **Configuration MUST be `wrangler.jsonc`**, not `wrangler.toml`.
+- **`strict` MUST be on, together with `noUncheckedIndexedAccess`.** `any` **MUST NOT** be used to
+  silence an error; `unknown` plus a narrowing check is the expected form.
+- **Tests MUST run inside `workerd`** via `@cloudflare/vitest-pool-workers`, against real bindings.
+  Hand-mocked D1 and Durable Object stubs test the mock rather than the Worker.
+- **Platform primitives MUST be used directly** — WebCrypto, `AbortSignal`, `structuredClone`, and
+  top-level await. Polyfills and `nodejs_compat` **SHOULD** be avoided unless a specific dependency
+  forces it, and the forcing dependency named when it does.
+- **`enum` SHOULD be avoided** in favor of union types or `as const` objects. **CommonJS `require`
+  and `namespace` MUST NOT appear.**
+
+**What this decision does not settle:** the OAuth 1.0a signing helper is a pure function — percent-
+encode, sort, concatenate, sign — with no platform dependency, and it would be equally correct in
+any of the three languages. The language choice is about the other ninety percent, which touches
+bindings continuously.
+
 ## Considered and rejected
 
 | Option | Why not |
 |---|---|
 | AWS (the shape of the 2022 `fga-api`) | Workable, but every piece it needed has a simpler Cloudflare equivalent here, and the frontend is already Cloudflare Pages. Splitting across two providers buys nothing. |
+| Rust via `workers-rs` | Nine commits in thirteen weeks against the runtime's 1,360, still pre-1.0, and its advantages do not apply to an I/O-bound workload. See ADR-13. |
+| Python Workers | Open beta, and ADR-03 already rejected a beta dependency for a far smaller surface. Revisit at general availability. See ADR-13. |
+| Holding TypeScript at `6.0.3` to keep `typescript-eslint` | Considered seriously. Biome removes the need by not depending on the compiler API at all. See ADR-13. |
 | Cognito, or Google logins with a JWKS cache | Both exist to supply an identity FGA has decided not to hold. See ADR-01. |
 | Per-user Durable Objects with alarms | **Deferred, not rejected.** The right answer at a scale this project has not reached. See ADR-04 for the promotion criteria. |
 | Cloudflare Secrets Store | Correct product, wrong maturity and wrong ceiling. See ADR-03. |
