@@ -85,8 +85,8 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="320" y="640" width="190" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;consumer key + secret,&lt;br&gt;master encryption key&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="640" y="880" width="220" height="90" as="geometry" />
+        <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;Flickr consumer key + secret&lt;br&gt;token-encryption key (AES-GCM)&lt;br&gt;session-signing key (HMAC)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="640" y="878" width="220" height="105" as="geometry" />
         </mxCell>
         <mxCell id="cron" value="&lt;b&gt;Cron Trigger&lt;/b&gt;&lt;br&gt;&lt;i&gt;nightly&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="320" y="1010" width="190" height="100" as="geometry" />
@@ -122,11 +122,11 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1610" y="935" width="185" height="120" as="geometry" />
         </mxCell>
         <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="330" width="205" height="140" as="geometry" />
+          <mxGeometry x="1600" y="325" width="205" height="140" as="geometry" />
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="520" width="205" height="125" as="geometry" />
+          <mxGeometry x="1600" y="540" width="205" height="125" as="geometry" />
         </mxCell>
 
         <mxCell id="n1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
@@ -438,6 +438,22 @@ for t in RIGHT_COLUMN:
     print(f"    {t:9} x {lefts[t]:.0f}-{lefts[t]+widths[t]:.0f}  width {widths[t]:.0f}")
 print(f"    -> {'aligned' if aligned else 'RAGGED'}")
 if not aligned:
+    problems += 1
+
+# The column is also evenly spaced. Flickr's top and bottom are pinned to the API
+# and Retry Workers so its two arrows stay level, so it cannot move -- the tiles
+# above it absorb any change, and uneven gaps are the visible symptom.
+stacked = sorted(RIGHT_COLUMN, key=lambda t: boxes[t][1])
+gaps = [
+    boxes[b][1] - (boxes[a][1] + boxes[a][3])
+    for a, b in zip(stacked, stacked[1:])
+]
+even = max(gaps) - min(gaps) <= 1.0
+print("  right column evenly spaced:")
+for (a, b), g in zip(zip(stacked, stacked[1:]), gaps):
+    print(f"    {a} -> {b}: {g:.0f}px")
+print(f"    -> {'even' if even else f'UNEVEN, spread {max(gaps)-min(gaps):.0f}px'}")
+if not even:
     problems += 1
 
 

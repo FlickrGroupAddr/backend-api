@@ -128,10 +128,34 @@ puts a hard ceiling at 100 users — discovered only once the product has tracti
 same mistake the 2022 design made with one SSM parameter per user, and it is named here so it is
 not reintroduced as an improvement.
 
-**Why plain Worker secrets rather than Secrets Store for the master key:** only three app-level
-values need storing, and Secrets Store is in open beta while Worker secrets are GA. A beta
-dependency is not worth the better management story when the value being protected is the key to
-every user's Flickr credential. **Revisit once Secrets Store leaves beta.**
+**Four app-level secrets exist, and they do different jobs.** Naming them together in one place,
+because "the secrets" as a single blob is what makes their roles hard to reason about:
+
+| Secret | What it is for | Touched during |
+|---|---|---|
+| Flickr consumer key | Identifies FGA to Flickr as an application | Every Flickr call |
+| Flickr consumer secret | Signs every OAuth 1.0a request, HMAC-SHA1 | Every Flickr call |
+| **Token-encryption key** | AES-GCM. Encrypts each user's Flickr access token before it is written to D1, and decrypts it when a Worker needs to act as that user | Storing the token after login; every group-add attempt |
+| **Session-signing key** | HMAC-SHA256. Signs the session cookie, and verifies it on the way back in | Minting the cookie after login; every authenticated request |
+
+**The session cookie is the only thing making a browser request trustworthy, and this key is the
+only thing making the cookie unforgeable.** Nothing about a session is stored server-side — that
+is the whole point of ADR-06 — so there is no session record to look up and no session table to
+consult. The cookie carries the NSID in the clear alongside a signature; the Worker recomputes
+that signature with this key and trusts the NSID only if they match. Lose the key and every
+session breaks. Leak it and anyone can mint a cookie claiming to be any Flickr user.
+
+**The token-encryption key and the session-signing key MUST be separate values.** Using one key
+for both AES-GCM encryption and HMAC signing violates key separation, and the practical
+consequence is sharper than the theoretical one: **rotating the session key logs everyone out and
+costs nothing, while rotating the token-encryption key requires re-encrypting every stored Flickr
+token.** Those two operations must stay independent — sharing a key makes the cheap one as
+expensive as the dear one, which in practice means neither ever gets rotated.
+
+**Why plain Worker secrets rather than Secrets Store:** four values is not a management problem,
+and Secrets Store is in open beta while Worker secrets are GA. A beta dependency is not worth the
+better management story when the values being protected are the key to every user's Flickr
+credential and the key to every session. **Revisit once Secrets Store leaves beta.**
 
 ### ADR-04 — The v1 work engine is a nightly Cron Trigger over a D1 table
 
@@ -178,6 +202,9 @@ where at-least-once delivery makes it mandatory for a second reason.
 After the Flickr callback completes, the API Worker **SHOULD** mint a signed token carrying the
 NSID and set it as an `HttpOnly; Secure; SameSite=Lax` cookie. It **MUST NOT** send the Flickr
 token to the browser under any circumstances.
+
+**The signing key is a Worker secret, and MUST be distinct from the token-encryption key** — see
+the secrets table in ADR-03, which is also where the reason for keeping them separate lives.
 
 **Why:** it is stateless, costs no D1 read per request, and uses HMAC-SHA256, which is already
 proven in this runtime. Instant revocation is the thing given up, and it matters little here: the
