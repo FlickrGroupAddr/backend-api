@@ -131,7 +131,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1600" y="150" width="205" height="140" as="geometry" />
         </mxCell>
 
-        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#8211; &#8211; &#8211; Scheduled or async&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#8211; &#8211; &#8211; Asynchronous replication&lt;br&gt;&#183; &#183; &#183; &#183; Scheduled trigger&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="1600" y="373" width="205" height="125" as="geometry" />
         </mxCell>
 
@@ -188,7 +188,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e5" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="secrets" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e6" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
+        <mxCell id="e6" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;dashPattern=1 4;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e7" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1replica">
@@ -873,13 +873,17 @@ for c in cells:
 # undiagnosable unless the reader knows replication is in play. Without the label
 # the primary/replica split is decoration.
 #
-# THE DASHED STYLE. Both dashed edges are dashed on purpose, and the legend's
-# "Scheduled or async" row is written against them. Making either one solid does
-# not merely change a line: it orphans a legend entry that then explains nothing.
+# THE LINE STYLES. Three of them, and the difference between the two broken ones
+# carries meaning: dotted reads as weaker than dashed, so the nightly trigger --
+# notional, a clock firing -- is dotted, while replication lag, which is a real
+# data-consistency property with a failure mode behind it, is dashed. The legend
+# has a row per style written against these exact edges. Making one solid, or
+# collapsing dotted back into dashed, does not merely change a line: it orphans a
+# legend entry that then explains nothing.
 REQUIRED_EDGE_LABEL = {"e16": "Eventual"}
-MUST_BE_DASHED = {
-    "e6": "cron -> retry, a scheduled sweep",
-    "e16": "d1 -> replica, asynchronous replication",
+LINE_STYLE = {
+    "e6": ("dotted", "cron -> retry, a scheduled trigger"),
+    "e16": ("dashed", "d1 -> replica, asynchronous replication"),
 }
 print("  Load-bearing edge labels still present:")
 for eid, needle in REQUIRED_EDGE_LABEL.items():
@@ -889,11 +893,15 @@ for eid, needle in REQUIRED_EDGE_LABEL.items():
     if not ok:
         problems += 1
 
-print("  Edges the legend's dashed entry describes are still dashed:")
-for eid, why in MUST_BE_DASHED.items():
-    dashed = "dashed=1" in (edge_by_id[eid].get("style") or "")
-    print(f"    {eid:4} {why:<42} {'dashed' if dashed else 'NOW SOLID -- orphans the legend'}")
-    if not dashed:
+print("  Edges still carry the line style the legend describes:")
+for eid, (want, why) in LINE_STYLE.items():
+    style = edge_by_id[eid].get("style") or ""
+    # draw.io draws dotted as a dashed line with a short dash pattern, so the two
+    # broken styles differ only by dashPattern -- checking "dashed=1" alone would
+    # pass either and quietly let one collapse into the other.
+    got = "dotted" if "dashPattern=" in style else "dashed" if "dashed=1" in style else "solid"
+    print(f"    {eid:4} {why:<40} {got:<7} {'ok' if got == want else f'WANT {want.upper()} -- orphans a legend row'}")
+    if got != want:
         problems += 1
 
 
