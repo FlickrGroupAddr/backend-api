@@ -53,6 +53,65 @@ beta-era numbers that will move.
 | OAuth 1.0a signs the request-token call itself | RFC 5849 §3.4: the signing key is `consumer_secret&token_secret`, with an empty token secret for the temporary-credentials request, and `oauth_consumer_key` travels in the parameters. **The first call of a login therefore already needs the FGA Flickr API credentials** — there is no unauthenticated leg anywhere in the flow. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, Durable Object requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
+## Why OAuth 1.0a shapes so much of this
+
+**Background, not a decision — so there are deliberately no RFC 2119 keywords below.**
+Several of the decisions that follow look like independent choices and are largely
+consequences of one fact: Flickr speaks OAuth 1.0a, and 1.0a is not a slightly older
+OAuth 2.0. Stating the cause once here saves each effect from re-arguing it.
+
+**It does have a callback.** `oauth_callback` on the way out and `oauth_verifier` on the
+way back are essentially what the "a" revision added: plain 1.0 pre-registered the
+callback URL and nothing tied a returning user to the request that began the flow, which
+was a session-fixation hole. **The callback is a route on the API Worker, not a component
+of its own** — `api.flickrgroupaddr.com/v001/auth/callback`. The 2021 code deployed it as
+a separate Worker (`flickrgroupaddr-flickr-callback-cfworker`), which is why an
+architecture diagram with no callback box looks wrong at first glance to anyone returning
+from that era.
+
+| | OAuth 1.0a | OAuth 2.0 |
+|---|---|---|
+| Proving the caller | Every request is signed, HMAC-SHA1 over the request itself | Bearer token; TLS carries the security |
+| Credentials per call | Two secrets — the consumer secret and the token secret | One token |
+| Legs in the dance | Three | Two |
+| Identity payload | `user_nsid`, `username`, `fullname` as form fields | ID token with claims, verifiable against a JWKS |
+| Token lifetime | Does not expire | Short-lived, plus a refresh token |
+
+### The third leg is the thing the architecture is built around
+
+In OAuth 2.0 the browser is redirected to authorize, returns with a code, and the server
+exchanges that code for a token. In 1.0a the server must **first** call Flickr for a
+request token, which comes back as a token *and a token secret*. Only then is the browser
+redirected. When it returns carrying a verifier, the final exchange has to be signed with
+that token secret.
+
+**So a provider-issued secret has to survive a round trip through someone's browser.** It
+cannot travel in the URL, and it cannot be recomputed. That single constraint is the whole
+reason ADR-02 exists: the OAuth Durable Object is not there because Durable Objects are
+interesting, it is there because 1.0a hands the server a secret and then walks the user
+away for two minutes.
+
+### Three more consequences, each of which reads as arbitrary without the cause
+
+- **There is no unauthenticated leg anywhere.** The very first request-token call is itself
+  signed, with the token-secret half of the signing key empty because no token exists yet.
+  That empty half is what makes the call *look* anonymous when it is not, and it is why
+  reading the FGA credentials is its own step in the user journey rather than an
+  implementation detail — nothing can reach Flickr before it has happened.
+- **There is no identity payload.** 1.0a returns no ID token and offers nothing to verify
+  against a JWKS; the access-token response carries the NSID and username as plain form
+  fields. ADR-01's "the Flickr account is the identity" is therefore less a preference than
+  an acknowledgment — there is no email address to be had at any price.
+- **Access tokens do not expire.** No refresh machinery is needed, which is a real
+  simplification. The cost is that a leaked token stays valid until the user revokes FGA at
+  Flickr, and that is what ADR-03's encryption at rest is protecting against.
+
+**The load-bearing fact under all of this is that `workerd` implements HMAC-SHA1.** It is a
+deprecated primitive that a modern runtime could quite reasonably decline to ship, and
+without it every Flickr call would be unsignable and Cloudflare Workers would be off the
+table for this project entirely. That is why it is the first row of the verified-facts
+table and was established three ways rather than assumed.
+
 ## Decisions
 
 **Labelled `ADR-nn` for Architecture Decision Record, deliberately not `D-n`.** Cloudflare's
