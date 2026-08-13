@@ -92,7 +92,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="320" y="1010" width="190" height="100" as="geometry" />
         </mxCell>
 
-        <mxCell id="oauthdo" value="&lt;b&gt;OAuth Dance DO&lt;/b&gt;&lt;br&gt;&lt;i&gt;one Durable Object per oauth_token&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0051C3;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+        <mxCell id="oauthdo" value="&lt;b&gt;OAuth Dance DO&lt;/b&gt;&lt;br&gt;&lt;i&gt;one Durable Object per oauth_token&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="940" y="300" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="api" value="&lt;b&gt;API Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;backend-api&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
@@ -474,6 +474,30 @@ for badge, eid in list(BADGE_ON_EDGE.items()) + [("n4", "e11")]:
     clean = "clear" if not label else f"HAS LABEL {label!r}"
     print(f"    {eid:4} ({badge}) {clean}")
     if label:
+        problems += 1
+
+
+# The step badges are a distinct visual language and MUST NOT be confusable with
+# any tile. The OAuth DO was originally #0051C3 against badges at #003087 -- only
+# 68 units apart in RGB, close enough to read as the same thing at a glance.
+BADGE_FILL = "#003087"
+MIN_COLOUR_DISTANCE = 90.0
+
+
+def rgb(hexcolour):
+    h = hexcolour.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+badge_rgb = rgb(BADGE_FILL)
+print("  badge colour distinct from tile fills:")
+for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1"]:
+    style = next(c.get("style") for c in cells if c.get("id") == tile)
+    fill = re.search(r"fillColor=(#[0-9A-Fa-f]{6})", style).group(1)
+    dist = math.dist(badge_rgb, rgb(fill))
+    verdict = "ok" if dist >= MIN_COLOUR_DISTANCE else "TOO CLOSE TO BADGE BLUE"
+    print(f"    {tile:9} {fill}  distance {dist:>5.0f}  {verdict}")
+    if dist < MIN_COLOUR_DISTANCE:
         problems += 1
 
 if problems:
