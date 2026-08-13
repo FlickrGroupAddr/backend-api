@@ -182,7 +182,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;" edge="1" parent="1" source="secrets" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e5" value="Master key" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="secrets" target="retry">
+        <mxCell id="e5" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="secrets" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e6" value="Nightly sweep" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
@@ -715,6 +715,32 @@ for n, t in clashes:
     print(f"    {n} OVERLAPS {t}")
 print(f"    -> {'all clear' if not clashes else f'{len(clashes)} overlap(s)'}")
 problems += len(clashes)
+
+
+# "Master key" rode this arrow for two commits after the design stopped having
+# one: the v1 rewrite replaced a single Secrets Store master key with the four
+# entries the tile now lists, and nothing was checking the arrows against it. A
+# label naming a secret the tile does not hold is a diagram describing an older
+# design, and it reads as authoritative right up until someone acts on it.
+secrets_raw = next(c.get("value") for c in cells if c.get("id") == "secrets")
+entries = [re.sub(r"<[^>]*>", "", s).strip() for s in re.split(r"<br\s*/?>", secrets_raw)]
+entries = [e for e in entries if e]
+if len(entries) < 2:
+    raise SystemExit("Worker Secrets tile parsed to fewer than 2 entries -- the check is blind.")
+# Entries, not secrets: "FGA Flickr API credentials" is one line covering two of
+# ADR-03's four, since the consumer key and secret are only ever used as a pair.
+print(f"  Worker Secrets arrows name only what the tile holds ({len(entries) - 1} entries):")
+for c in cells:
+    if not c.get("edge") or "secrets" not in (c.get("source"), c.get("target")):
+        continue
+    label = (c.get("value") or "").strip()
+    if not label:
+        print(f"    {c.get('id'):4} unlabeled -- reads as 'this Worker reads secrets'  ok")
+        continue
+    known = any(label.lower() in e.lower() for e in entries)
+    print(f"    {c.get('id'):4} {label!r} {'ok' if known else 'NAMES NOTHING THE TILE HOLDS'}")
+    if not known:
+        problems += 1
 
 
 # "DO" is banned on this project. Terry is a long-time DigitalOcean customer and

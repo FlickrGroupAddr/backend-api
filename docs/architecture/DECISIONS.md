@@ -122,7 +122,7 @@ Object design that ADR-04 explicitly rejected, which is the opposite of what thi
 ### ADR-03 — Per-user Flickr tokens are AES-GCM encrypted in D1
 
 Each user's Flickr access token and token secret **MUST** be encrypted with AES-GCM and stored in
-D1 beside that user's row. The master key **MUST** be held as a Worker secret. Per-user tokens
+D1 beside that user's row. The token key **MUST** be held as a Worker secret. Per-user tokens
 **MUST NOT** be stored in Cloudflare Secrets Store.
 
 **Why not Secrets Store for tokens:** it holds 100 secrets per account, so one secret per user
