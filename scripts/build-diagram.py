@@ -122,7 +122,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1610" y="935" width="185" height="120" as="geometry" />
         </mxCell>
         <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="330" width="205" height="165" as="geometry" />
+          <mxGeometry x="1600" y="330" width="205" height="140" as="geometry" />
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
@@ -520,6 +520,49 @@ for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1"]
     verdict = "ok" if dist >= MIN_COLOUR_DISTANCE else "TOO CLOSE TO BADGE BLUE"
     print(f"    {tile:9} {fill}  distance {dist:>5.0f}  {verdict}")
     if dist < MIN_COLOUR_DISTANCE:
+        problems += 1
+
+
+# Boxed text tiles are sized by hand, and by hand is how you get a box that
+# either crowds its last line or trails 50px of dead space. This estimates the
+# wrapped text height and keeps the slack inside a band.
+CHAR_W = {13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
+LINE_H = {13: 18, 12: 17, 11: 15, 10: 14}
+SLACK_MIN, SLACK_MAX = 12.0, 45.0
+
+
+def text_height(cid, pad_left=10.0, pad_right=8.0):
+    raw = next(c.get("value") or "" for c in cells if c.get("id") == cid)
+    # ElementTree has already unescaped one level, so real tags are present.
+    if "<br>" not in raw and "<b>" not in raw:
+        raise SystemExit(f"Text estimator found no markup in '{cid}' -- it would measure blind.")
+    usable = boxes[cid][2] - pad_left - pad_right
+    size, total = 12, 8.0  # spacingTop
+    for chunk in raw.split("<br>"):
+        m = re.search(r"font-size:(\d+)px", chunk)
+        if m:
+            size = int(m.group(1))
+        text = re.sub(r"<[^>]*>", "", chunk).replace("&nbsp;", " ").strip()
+        if not text:
+            total += LINE_H[size]
+            continue
+        total += max(1, math.ceil(len(text) * CHAR_W[size] / usable)) * LINE_H[size]
+    return total
+
+
+print("  boxed text fits its tile:")
+for cid in ["justification", "key", "journey"]:
+    need = text_height(cid)
+    have = boxes[cid][3]
+    slack = have - need
+    if slack < SLACK_MIN:
+        verdict = "CRAMPED"
+    elif slack > SLACK_MAX:
+        verdict = "EXCESS WHITESPACE"
+    else:
+        verdict = "ok"
+    print(f"    {cid:14} box {have:>4.0f}px  text ~{need:>4.0f}px  slack {slack:>4.0f}px  {verdict}")
+    if verdict != "ok":
         problems += 1
 
 if problems:
