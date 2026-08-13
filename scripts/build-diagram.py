@@ -104,7 +104,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="oauthdo" value="&lt;b&gt;OAuth Request Token&lt;/b&gt;&lt;br&gt;&lt;i&gt;One Durable Object&lt;br&gt;per login attempt&lt;br&gt;Self-deletes after ~15 min&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="940" y="300" width="230" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="api" value="&lt;b&gt;api.flickrgroupaddr.com&lt;br&gt;REST API Endpoint&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Worker&lt;/i&gt;&lt;br&gt;&lt;i&gt;backend-api&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+        <mxCell id="api" value="&lt;b&gt;api.flickrgroupaddr.com&lt;br&gt;REST API Endpoint&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Worker&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="940" y="740" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="retry" value="&lt;b&gt;Retry Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;Drains due requests&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
@@ -792,7 +792,6 @@ if banned:
 LOWERCASE_OPENERS = {
     "flickrgroupaddr.com": "domain",
     "api.flickrgroupaddr.com": "hostname",
-    "backend-api": "repository name",
     "flickr.groups.pools.add": "API method",
     "docs/architecture/DECISIONS.md": "path",
     # The Flickr API tile lists the surface FGA calls. These are method and
