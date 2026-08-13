@@ -21,7 +21,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `77cb9a6` | Added the argument against that alarm engine. Confirmed the Workers Paid plan. |
 | `b47c982` | **The v1 rewrite.** Work engine changed to a nightly cron over D1 (ADR-4). Master key moved from Secrets Store to Worker secrets (ADR-3). Session decision added (ADR-6). Flickr's read/write/delete-only scope recorded and its consequence folded into ADR-1. Diagram redrawn to match. Plus the plan allowances this message describes. |
 | `361a188` | Decision markers removed from the diagram. It now carries the shape only and points here for the reasoning. |
-| *this commit* | **Decisions renumbered `D1`–`D6` to `ADR-1`–`ADR-6`** to end the collision with Cloudflare D1. Any external reference to the old labels is now stale. |
+| `8b09cb1` | **Decisions renumbered `D1`–`D6` to `ADR-1`–`ADR-6`** to end the collision with Cloudflare D1. Any external reference to the old labels is now stale. |
 
 ## Verified facts
 
