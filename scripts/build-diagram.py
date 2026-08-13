@@ -111,8 +111,8 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="940" y="1040" width="230" height="100" as="geometry" />
         </mxCell>
 
-        <mxCell id="d1replica" value="&lt;b&gt;D1 Read Replica&lt;/b&gt;&lt;br&gt;&lt;i&gt;ALL reads&lt;br&gt;Served from nearest region&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4FC3E8;strokeColor=none;fontColor=#0B2E3D;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="950" y="915" width="210" height="80" as="geometry" />
+        <mxCell id="d1replica" value="&lt;b&gt;Read-Only SQL DB&lt;/b&gt;&lt;br&gt;&lt;i&gt;D1 Read Replica&lt;br&gt;Single replica per&lt;br&gt;Cloudflare geo region&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4FC3E8;strokeColor=none;fontColor=#0B2E3D;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="940" y="905" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="d1" value="&lt;b&gt;D1 Primary&lt;/b&gt;&lt;br&gt;&lt;i&gt;ALL writes&lt;br&gt;Users &#183; requests &#183; tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="1300" y="900" width="200" height="110" as="geometry" />
