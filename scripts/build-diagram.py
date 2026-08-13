@@ -163,7 +163,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1537" y="817" width="46" height="46" as="geometry" />
         </mxCell>
 
-        <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px;margin-top:7px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;1&lt;/b&gt;DNS query, resolved at the nearest PoP&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;2&lt;/b&gt;Static assets served from Cloudflare Pages&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;3&lt;/b&gt;Begin login &#8212; the browser calls the API Worker&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;4&lt;/b&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;5&lt;/b&gt;Worker signs with them and asks Flickr for a request token&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;6&lt;/b&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;7&lt;/b&gt;Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;8&lt;/b&gt;REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-left:22px;text-indent:-22px&quot;&gt;&lt;b style=&quot;display:inline-block;width:22px&quot;&gt;9&lt;/b&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+        <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Static assets served from Cloudflare Pages&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
           <mxGeometry x="1228" y="180" width="275" height="495" as="geometry" />
         </mxCell>
 
@@ -630,9 +630,9 @@ def text_lines(raw):
     declaration with the text it governs, which splitting on the tag would throw
     away.
     """
-    s = re.sub(r"</div>", "", raw)            # closing tags carry no style info
+    s = re.sub(r"</div>|</tr>|</table>", "", raw)   # closing tags carry no style
     s = re.sub(r"<br\s*/?>", "\x00", s)
-    s = re.sub(r"(<div[^>]*>)", "\x00\\1", s)
+    s = re.sub(r"(<div[^>]*>|<tr[^>]*>)", "\x00\\1", s)
     parts = s.split("\x00")
     if parts and not re.sub(r"<[^>]*>", "", parts[0]).strip():
         parts.pop(0)                          # value opened with a div
@@ -688,10 +688,12 @@ def text_height(cid, pad_left=10.0, pad_right=8.0):
         if not text:
             total += LINE_H[size]
             continue
-        # A hanging indent narrows the column every line after the first wraps
-        # into, so it has to come off the usable width or the estimate is wide.
-        m_ind = re.search(r"margin-left:\s*(\d+)px", chunk)
-        indent = int(m_ind.group(1)) if m_ind else 0
+        # Whatever sits left of the text narrows the column it wraps into, and it
+        # has to come off the usable width or the estimate is wide. Two shapes do
+        # this here: a hanging indent (margin-left) and a fixed-width first table
+        # column holding the step number (width).
+        m_ind = re.search(r"margin-left:\s*(\d+)px|width:\s*(\d+)px", chunk)
+        indent = int(next(g for g in m_ind.groups() if g)) if m_ind else 0
         total += wrapped_lines(text, CHAR_W[size], usable - indent) * LINE_H[size]
     return total
 
@@ -721,6 +723,21 @@ for cid in ["justification", "key", "journey"]:
 # and leaves the judgement where it belongs.
 print(f"    spread across the three: {max(slacks.values()) - min(slacks.values()):.0f}px"
       f"  ({', '.join(f'{c} {s:.0f}' for c, s in slacks.items())})")
+
+
+# The journey is a two-column table -- step number, then step text -- because that
+# is the only construction where a wrapped line starts at exactly the same x as
+# the first one. A rewrite of this label produced three-cell rows with the number
+# duplicated into the text column, rendering as "11DNS query", and every check
+# here still passed: they all read the flattened text and none looked at the
+# shape. Structure needs its own assertion when the text alone cannot show damage.
+journey_rows = re.findall(r"<tr[^>]*>(.*?)</tr>",
+                          next(c.get("value") for c in cells if c.get("id") == "journey"))
+wrong_cells = [i for i, r in enumerate(journey_rows, 1) if r.count("<td") != 2]
+print(f"  User Journey rows are number-plus-text pairs: {len(journey_rows)} rows,"
+      f" {'all two cells' if not wrong_cells else f'WRONG CELL COUNT in rows {wrong_cells}'}")
+if len(journey_rows) != 9 or wrong_cells:
+    problems += 1
 
 
 # The Flickr mark sits directly above the word "Flickr", and the gap between them
