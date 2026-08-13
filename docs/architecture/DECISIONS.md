@@ -23,7 +23,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `361a188` | Decision markers removed from the diagram. It now carries the shape only and points here for the reasoning. |
 | `8b09cb1` | **Decisions renumbered `D1`–`D6` to `ADR-1`–`ADR-6`** to end the collision with Cloudflare D1. Any external reference to the old labels is now stale. |
 | `ab88b96` | Filled in the SHA this table had left as "this commit". |
-| *next commit* | Zero-padded the labels to `ADR-01`–`ADR-06` so they sort correctly past nine. |
+| `18c8813` | Zero-padded the labels to `ADR-01`–`ADR-06` so they sort correctly past nine. |
 
 ## Verified facts
 
