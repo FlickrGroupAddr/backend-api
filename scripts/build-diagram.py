@@ -13,12 +13,16 @@ Generated rather than hand-written because the Cloudflare payload alone is over
 3,000 characters of base64, and hand-transcribing that is a good way to ship a
 silently corrupt image.
 
-Logos come from Wikimedia Commons and live in docs/architecture/logos/ so the
+Artwork comes from Wikimedia Commons and lives in docs/architecture/logos/ so the
 build has no network dependency:
   cloudflare-mark.svg  File:Cloudflare Logo.svg
   flickr-mark.svg      File:Flickr logo - SuperTinyIcons.svg
-Both are company trademarks used here nominatively, to identify the services this
-system actually depends on.
+  users.svg            File:Font Awesome 5 solid users.svg
+
+The first two are company trademarks used nominatively, to identify the services
+this system actually depends on. users.svg is Font Awesome Free 5.2.0 by
+@fontawesome, icons licensed CC BY 4.0 (https://fontawesome.com/license); the
+attribution comment travels inside the SVG itself.
 """
 
 import base64
@@ -42,6 +46,7 @@ def embed(name: str) -> str:
 
 CF = embed("cloudflare-mark.svg")
 FLICKR = embed("flickr-mark.svg")
+USERS = embed("users.svg")
 
 TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
   <diagram id="fga-architecture" name="FlickrGroupAddr Architecture">
@@ -67,8 +72,8 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="260" y="250" width="1240" height="820" as="geometry" />
         </mxCell>
 
-        <mxCell id="users" value="Users" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1A1A1A;strokeWidth=2;fontSize=13;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="70" y="520" width="90" height="100" as="geometry" />
+        <mxCell id="users" value="Users" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={USERS};fontSize=13;fontStyle=1;verticalLabelPosition=top;verticalAlign=bottom;" vertex="1" parent="1">
+          <mxGeometry x="70" y="530" width="100" height="80" as="geometry" />
         </mxCell>
 
         <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
@@ -158,7 +163,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
 """
 
 OUT.write_text(
-    TEMPLATE.replace("{CF}", CF).replace("{FLICKR}", FLICKR).replace("{DATE}", DATE),
+    TEMPLATE.replace("{CF}", CF)
+    .replace("{FLICKR}", FLICKR)
+    .replace("{USERS}", USERS)
+    .replace("{DATE}", DATE),
     encoding="utf-8",
 )
 print(f"Wrote {OUT}")
