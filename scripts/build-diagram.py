@@ -160,7 +160,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="502" y="813" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="422" y="773" width="46" height="46" as="geometry" />
+          <mxGeometry x="422" y="813" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1300" y="780" width="46" height="46" as="geometry" />
@@ -515,7 +515,7 @@ BADGE_ON_EDGE = {
     # and drawing one would say the endpoint receives a trusted server-to-server
     # request when it actually receives an untrusted GET whose token and verifier
     # sit in a URL the user can read and edit.
-    "n8": "e12",   # browser -> API Worker, the OAuth callback
+    "n8": "e13",   # browser -> API Worker, the OAuth callback
     "n9": "e9",    # API Worker <-> Flickr, trading the verifier for the access token
     "n10": "e13",  # users -> API Worker, authenticated calls
     # Steps 5 and 9 get parallel arrows for the same reason steps 3 and 8 do:
