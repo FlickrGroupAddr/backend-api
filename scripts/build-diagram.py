@@ -1,0 +1,161 @@
+"""Generate the FGA architecture .drawio with embedded vector logos.
+
+Run from anywhere:  python scripts/build-diagram.py
+
+The .drawio under docs/architecture/ is a GENERATED artifact. Edit this file, not
+the XML -- a hand edit to the output is lost the next time this runs.
+
+draw.io embeds images as `image=data:image/svg+xml,<base64>` -- note it omits the
+usual `;base64` marker and puts the payload straight after the comma. Base64 uses
+only [A-Za-z0-9+/=], so it is safe unescaped inside an XML attribute.
+
+Generated rather than hand-written because the Cloudflare payload alone is over
+3,000 characters of base64, and hand-transcribing that is a good way to ship a
+silently corrupt image.
+
+Logos come from Wikimedia Commons and live in docs/architecture/logos/ so the
+build has no network dependency:
+  cloudflare-mark.svg  File:Cloudflare Logo.svg
+  flickr-mark.svg      File:Flickr logo - SuperTinyIcons.svg
+Both are company trademarks used here nominatively, to identify the services this
+system actually depends on.
+"""
+
+import base64
+import pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+SVG = ROOT / "docs" / "architecture" / "logos"
+OUT = ROOT / "docs" / "architecture" / "FlickrGroupAddr-Architecture-2026-08-12.drawio"
+
+
+def embed(name: str) -> str:
+    raw = (SVG / name).read_bytes()
+    return "data:image/svg+xml," + base64.b64encode(raw).decode("ascii")
+
+
+CF = embed("cloudflare-mark.svg")
+FLICKR = embed("flickr-mark.svg")
+
+TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
+  <diagram id="fga-arch-2026-08-12" name="FlickrGroupAddr Architecture">
+    <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1260" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="FlickrGroupAddr Architecture &#8212; v1" style="text;html=1;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="24" width="700" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="date" value="2026-08-12" style="text;html=1;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="62" width="300" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Cloudflare-native &#183; the Flickr account is the identity &#183; no PII held beyond the Flickr NSID" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="50" y="88" width="800" height="22" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="220" y="150" width="1300" height="950" as="geometry" />
+        </mxCell>
+        <mxCell id="cflogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={CF}" vertex="1" parent="1">
+          <mxGeometry x="238" y="166" width="182" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="netb" value="Cloudflare global network &#8212; anycast, no regions to choose" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="260" y="250" width="1240" height="820" as="geometry" />
+        </mxCell>
+
+        <mxCell id="users" value="Users" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1A1A1A;strokeWidth=2;fontSize=13;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="70" y="520" width="90" height="105" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="520" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;consumer key + secret,&lt;br&gt;master encryption key&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;&#9670; D3&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="662" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cron" value="&lt;b&gt;Cron Trigger&lt;/b&gt;&lt;br&gt;&lt;i&gt;nightly&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;&#9670; D4&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="830" width="190" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="oauthdo" value="&lt;b&gt;OAuth Dance DO&lt;/b&gt;&lt;br&gt;&lt;i&gt;one Durable Object per oauth_token&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;&#9670; D2&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0051C3;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="300" width="230" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="api" value="&lt;b&gt;API Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;backend-api&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;&#9670; D1 &#183; D6&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="520" width="230" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="retry" value="&lt;b&gt;Retry Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;drains due requests&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;&#9670; D5&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="830" width="230" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d1" value="&lt;b&gt;D1 (SQLite)&lt;/b&gt;&lt;br&gt;&lt;i&gt;users &#183; pending requests&lt;br&gt;per-group counters&lt;br&gt;encrypted Flickr tokens&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;&#9670; D3 &#183; D4&lt;/font&gt;" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=12;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="960" y="640" width="220" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="520" width="200" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
+          <mxGeometry x="1655" y="558" width="90" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="flickrtext" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;i&gt;flickr.com&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;OAuth 1.0a&lt;br&gt;HMAC-SHA1 signed&lt;/i&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1610" y="668" width="180" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="aflickr" value="&lt;i&gt;Per-group daily add limits are why this system exists &#8212; a single request may retry for weeks.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="945" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="key" value="&lt;b&gt;Decisions&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;&#9670; D1&amp;nbsp; Flickr account is the identity; no PII&lt;br&gt;&#9670; D2&amp;nbsp; OAuth state in a DO, never in KV&lt;br&gt;&#9670; D3&amp;nbsp; Tokens AES-GCM in D1; key in secrets&lt;br&gt;&#9670; D4&amp;nbsp; Nightly cron, not per-user DO alarms&lt;br&gt;&#9670; D5&amp;nbsp; Idempotent per (photo, group)&lt;br&gt;&#9670; D6&amp;nbsp; Session is a signed cookie&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Reasoning: docs/architecture/DECISIONS.md&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Edges&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="565" width="255" height="255" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="pages">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="fetch /api/v1/*&lt;br&gt;session cookie" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="pages" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="stash / retrieve&lt;br&gt;request-token secret" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="oauthdo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="secrets" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="master key" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="secrets" target="retry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="nightly sweep" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="cron" target="retry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="queue requests&lt;br&gt;read status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="claim due requests&lt;br&gt;record outcome" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="d1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="request_token &#183; access_token" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.12;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="flickr.groups.pools.add" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.88;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="authorize at flickr.com" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickr">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="115" y="1180" />
+              <mxPoint x="1700" y="1180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+"""
+
+OUT.write_text(TEMPLATE.replace("{CF}", CF).replace("{FLICKR}", FLICKR), encoding="utf-8")
+print(f"Wrote {OUT}")
+print(f"  cloudflare payload : {len(CF)} chars")
+print(f"  flickr payload     : {len(FLICKR)} chars")
+print(f"  total file         : {OUT.stat().st_size} bytes")
