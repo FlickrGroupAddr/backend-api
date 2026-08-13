@@ -1086,6 +1086,20 @@ about taking dependencies.
 
 ## Open questions
 
+- **An unanswered add is currently terminal, and it MAY be too strict.** Found while writing the
+  Flickr client, 2026-08-13. ADR-07 classifies by Flickr's error code, but a request that times
+  out or dies in transport has no code at all — and it may still have been processed. If the pool
+  was moderated, the photo could be in front of a volunteer right now, so ADR-08 makes the safe
+  reading terminal, and that is what the code does today (`kind: "unconfirmed"`, distinct from a
+  Flickr-reported failure so the user can be told "we could not confirm this" rather than "Flickr
+  said no"). **The cost is that one dropped connection permanently fails a request that probably
+  never happened.** The refinement worth investigating: `flickr.groups.getInfo` reports whether a
+  pool is moderated, and **for an unmoderated pool the ambiguity disappears entirely** — ADR-05's
+  `photos.getAllContexts` check then says definitively whether the add landed, so a retry is safe.
+  Only moderated pools would stay terminal. That would need one extra call and a verified fact
+  about what `getInfo` actually returns. **Note the asymmetry that already exists and is
+  deliberate:** Flickr's own 105 and 106 stay retryable because there Flickr is *telling* us the
+  write did not happen, which a dead socket does not.
 - **Flickr's per-group daily add limits are not yet quantified.** The retry cadence and the
   per-group counter schema both depend on them, and they appear to vary by group. This
   **SHOULD** be established from the API before the schema is fixed.
