@@ -46,7 +46,7 @@
           <mxGeometry x="940" y="830" width="230" height="100" as="geometry" />
         </mxCell>
 
-        <mxCell id="d1" value="&lt;b&gt;D1 (SQLite)&lt;/b&gt;&lt;br&gt;&lt;i&gt;users &#183; pending requests&lt;br&gt;per-group counters&lt;br&gt;encrypted Flickr tokens&lt;/i&gt;" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=12;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="d1" value="&lt;b&gt;D1 (SQLite)&lt;/b&gt;&lt;br&gt;&lt;i&gt;users &#183; pending requests&lt;br&gt;per-group counters&lt;br&gt;encrypted Flickr tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="1240" y="670" width="210" height="110" as="geometry" />
         </mxCell>
 
