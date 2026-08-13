@@ -115,14 +115,14 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1300" y="870" width="200" height="110" as="geometry" />
         </mxCell>
 
-        <mxCell id="flickr" value="&lt;b&gt;Flickr&lt;/b&gt;&lt;br&gt;&lt;i&gt;flickr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;verticalAlign=top;spacingTop=78;fontSize=14;fontColor=#1A1A1A;" vertex="1" parent="1">
+        <mxCell id="flickr" value="&lt;b&gt;Flickr&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;verticalAlign=top;spacingTop=95;fontSize=16;fontColor=#1A1A1A;" vertex="1" parent="1">
           <mxGeometry x="1600" y="595" width="205" height="555" as="geometry" />
         </mxCell>
         <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="1625" y="740" width="155" height="370" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
-          <mxGeometry x="1683" y="618" width="44" height="44" as="geometry" />
+          <mxGeometry x="1658" y="600" width="88" height="88" as="geometry" />
         </mxCell>
                 <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
           <mxGeometry x="1600" y="150" width="205" height="140" as="geometry" />
@@ -652,7 +652,6 @@ if banned:
 LOWERCASE_ALLOWED = {
     "flickrgroupaddr.com": "domain",
     "backend-api": "repository name",
-    "flickr.com": "domain",
     "flickr.groups.pools.add": "API method",
     "docs/architecture/DECISIONS.md": "path",
     "per login attempt": "continuation of 'One Durable Object'",
