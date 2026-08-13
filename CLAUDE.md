@@ -21,6 +21,23 @@ same class of collision.
 **Prefer the unabbreviated form whenever a short form could plausibly mean something else in his
 world.** Cloud vendors, storage products, and protocol names are the usual offenders.
 
+## Every line a human reads starts with a capital
+
+**This is a global standing order and it keeps getting broken on this project**, which is why it is
+restated here. Tile labels, edge labels, key entries, table cells that are phrases — all of them.
+Not "nightly", "drains due requests", "token-encryption key". The build fails on a lowercase label
+line.
+
+**The reason is consistency before taste.** A label set that capitalises eleven lines and not the
+twelfth reads as *unfinished* rather than as informal, and the eye stops on the odd one out at
+exactly the moment someone is trying to skim.
+
+**Two things are legitimately lowercase, and both are listed explicitly in the build check rather
+than pattern-matched:** identifiers, paths and domains where case carries meaning
+(`flickrgroupaddr.com`, `backend-api`, `flickr.groups.pools.add`), and the continuation line of a
+sentence wrapped across two rows. A digit is also a correct first character — numbered steps and
+measurements start with one.
+
 ## Dates are versions
 
 There is no `v1`/`v2`/`draft`/`final` on this project. **Artifacts are dated, and the filename and
