@@ -156,15 +156,21 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="727" y="1281" width="46" height="46" as="geometry" />
         </mxCell>
-        <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="452" y="813" width="46" height="46" as="geometry" />
         </mxCell>
+        <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="773" width="46" height="46" as="geometry" />
+        </mxCell>
         <mxCell id="n9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="780" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n11" value="11" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1537" y="817" width="46" height="46" as="geometry" />
         </mxCell>
 
-        <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Static assets served from Cloudflare Pages&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="1228" y="180" width="275" height="462" as="geometry" />
+        <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Static assets served from Cloudflare Pages&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Authorize at flickr.com &#8212; the user grants FGA write access&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Flickr redirects the BROWSER to the Worker&#39;s OAuth callback route, carrying a verifier. Flickr never calls FGA directly&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the token secret back out and trades the verifier for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1228" y="180" width="275" height="547" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
@@ -262,7 +268,7 @@ NOT_OBSTACLES = {
     "cfframe", "netb", "cflogo", "title", "date",
     "flickrlogo", "flickr", "flickrtitle",
     # Step badges sit ON their arrows by design, so they are not obstacles.
-    "n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9",
+    "n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9", "n10", "n11",
     # Cascade cards behind the OAuth tile: decoration showing there are many,
     # and the edge legitimately terminates on the tile stacked in front of them.
     "oauthdo_b1", "oauthdo_b2",
@@ -502,12 +508,21 @@ BADGE_ON_EDGE = {
     "n4": "e4",    # Worker Secrets -> API Worker, read the FGA credentials
     "n5": "e9",    # API Worker <-> Flickr, request token (access token on the return)
     "n6": "e3",    # API Worker <-> OAuth Durable Object, stash the secret (read back on return)
-    "n8": "e13",   # users -> API Worker, authenticated calls
+    # The OAuth callback. It rides the users-to-Worker channel because that is
+    # literally what it is: Flickr answers the authorize page with a redirect, and
+    # the BROWSER then makes a fresh request to the Worker's callback route. There
+    # is no Flickr-to-Worker arrow on this canvas because there is no such call,
+    # and drawing one would say the endpoint receives a trusted server-to-server
+    # request when it actually receives an untrusted GET whose token and verifier
+    # sit in a URL the user can read and edit.
+    "n8": "e12",   # browser -> API Worker, the OAuth callback
+    "n9": "e9",    # API Worker <-> Flickr, trading the verifier for the access token
+    "n10": "e13",  # users -> API Worker, authenticated calls
     # Steps 5 and 9 get parallel arrows for the same reason steps 3 and 8 do:
     # they are separate conversations that happen at different points, and one
     # shared line made the second invisible. e9 is the login leg, e17 everything
     # afterwards.
-    "n9": "e17",   # API Worker -> Flickr, acting as the user after login
+    "n11": "e17",  # API Worker -> Flickr, acting as the user after login
 }
 NEAR_MIN, NEAR_MAX = 24.0, 32.0   # badge radius is 23; 24 clears the line by a hair, 32 still reads as attached
 
@@ -748,9 +763,18 @@ print(f"    spread across the three: {max(slacks.values()) - min(slacks.values()
 journey_rows = re.findall(r"<tr[^>]*>(.*?)</tr>",
                           next(c.get("value") for c in cells if c.get("id") == "journey"))
 wrong_cells = [i for i, r in enumerate(journey_rows, 1) if r.count("<td") != 2]
-print(f"  User Journey rows are number-plus-text pairs: {len(journey_rows)} rows,"
+# Tied to the badge count rather than a literal. This check previously hardcoded
+# nine rows, so splitting the login into more steps failed the build with a
+# message that said "all two cells" and no explanation -- the count it was
+# unhappy about was never printed. A step with no badge on the canvas, or a badge
+# numbering a step that does not exist, is the defect actually worth catching.
+badge_count = len([c for c in cells if re.fullmatch(r"n\d+", c.get("id") or "")])
+print(f"  User Journey rows are number-plus-text pairs: {len(journey_rows)} rows vs"
+      f" {badge_count} badges,"
       f" {'all two cells' if not wrong_cells else f'WRONG CELL COUNT in rows {wrong_cells}'}")
-if len(journey_rows) != 9 or wrong_cells:
+if len(journey_rows) != badge_count:
+    print(f"    -> {len(journey_rows)} steps but {badge_count} badges; every step needs one")
+if len(journey_rows) != badge_count or wrong_cells:
     problems += 1
 
 
@@ -845,7 +869,7 @@ if abs(tx - lx) > 0.5 or abs(tw - lw) > 0.5:
 # sit beside their arrow, which means NOTHING was checking them against tiles. A
 # badge overlapping a tile went unnoticed for several commits after a column
 # shift moved the tile under it.
-BADGES = ["n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9"]
+BADGES = [f"n{i}" for i in range(1, 12)]
 TILES = ["dns", "pages", "secrets", "cron", "oauthdo", "api", "retry",
          "d1replica", "d1", "users", "flickrapi", "journey", "key", "justification"]
 
