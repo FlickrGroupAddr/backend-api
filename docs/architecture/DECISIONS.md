@@ -486,6 +486,12 @@ blocked by the same cap — so trying the next one is not merely wasted, it is t
 decision exists to forbid. It reads like an efficiency win because it saves nothing and costs an
 API call; it is actually a correctness rule wearing an efficiency costume.
 
+**The FIFO guarantee is a within-queue property and nothing more.** Queues keyed by different
+`(user, group)` tuples are fully independent — ADR-07 classifies the only retryable condition,
+code **5**, as a per-group *per-user* throttle — so the sweep **MAY** process queues in any order
+or concurrently without weakening this decision. The argument is in "The queue view", where it also
+settles how the interface is scoped.
+
 #### Three mechanisms this rule needs, each of which fails silently if missed
 
 **The append and the "am I alone?" test MUST be atomic.** Two submissions to the same
@@ -549,14 +555,38 @@ photo or four hundred. The expensive version of this feature is the one ADR-10 a
 means updating every pending row on a schedule, which reinvents exactly the per-row nightly write
 the paragraph above avoids.
 
-#### Scoping, with a recommendation but no decision
+#### Scoping — decided: the `(user, group)` tuple
 
-**Per group is the real view**, because it matches ADR-10's queue key: position means something,
-and a capped head explains every row beneath it at a glance. **Per user is a useful roll-up** for
-"what is the state of my stuff", but it **MUST** group by group rather than presenting one flat
-list sorted by submission time. A flat list looks like a single queue when there are many
-independent ones, which makes correct FIFO behavior read as a bug the first time a later request
-lands before an earlier one in a different group.
+**The real view is scoped to the `(user, group)` tuple, which is ADR-10's queue key exactly.**
+Decided by the owner, 2026-08-13. Within that scope position means something and a capped head
+explains every row beneath it at a glance.
+
+**Saying "per group" is wrong and the difference is not pedantic.** Three hundred users with
+requests queued for Group G hold three hundred separate queues, not one shared queue with three
+hundred participants. From a signed-in user's own screen the distinction is invisible — their user
+dimension is fixed to themselves, so their view looks per-group — but a future reader who takes
+"per group" literally builds a global queue for Group G, and that view is both meaningless and a
+disclosure of other people's activity that ADR-01 exists to avoid holding in the first place.
+
+**The queues are genuinely disjoint, and ADR-07 is what guarantees it.** The sole retryable
+condition in that table is code **5**, the per-group *per-user* throttle. The group-wide conditions
+— **10**, pool full, and **11**, pool disabled — are classified terminal, so they resolve requests
+out of a queue rather than stalling it. **Nothing one user's queue does can block another's**, even
+for the same group.
+
+Two things follow, both worth having written down before someone needs them:
+
+- **The nightly sweep is embarrassingly parallel across queues.** No queue's progress depends on
+  any other's, so queues **MAY** be processed in any order, or concurrently, without weakening
+  ADR-10. The FIFO guarantee is a within-queue property and nothing more.
+- **A pool filling up or being disabled will fail many users' requests on the same night**, and
+  those failures are independent and terminal rather than a shared blockage. Support-wise it will
+  *look* like a systemic outage. It is not one, and the queue view should make that legible.
+
+**Per user remains a useful roll-up** for "what is the state of my stuff", and it **MUST** group by
+group rather than presenting one flat list sorted by submission time. A flat list looks like a
+single queue when there are many, which makes correct FIFO behavior read as a bug the first time a
+later request lands ahead of an earlier one in a different group.
 
 ## Considered and rejected
 
@@ -577,5 +607,7 @@ lands before an earlier one in a different group.
   **SHOULD** be established from the API before the schema is fixed.
 - **Whether D1 needs a separate group-metadata cache.** Currently assumed not: group rules can be
   read from Flickr on demand. Revisit if that read turns out to be slow or rate-limited.
-- **How the queue is shown to the user.** *That* it is shown is settled — see "The queue view" below.
-  The open part is scoping, and the shape of the terminal-state copy.
+- **The wording a user sees when FGA has deliberately stopped.** *That* the queue is shown and
+  *how it is scoped* are both settled — see "The queue view". What remains is the copy itself, and
+  it is the sentence that either delivers ADR-08's promise or quietly undercuts it. It deserves
+  writing carefully rather than defaulting to a status code.
