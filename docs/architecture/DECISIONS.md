@@ -331,6 +331,36 @@ user.** The cron mutates each `(photo, group)` row at most daily, but a person c
 moment, and their own change is the one they watch for. Any caching scheme MUST treat the user's
 own mutation as the common case rather than the edge case.
 
+### The stale-read failure, and where it will actually come from
+
+**If a write appears not to have persisted, the first suspect is bookmark propagation, not
+Cloudflare's replication.** Replication rarely breaks. Bookmarks get dropped constantly, because
+doing it right requires deliberate plumbing that is easy to omit and produces no error when
+omitted.
+
+`withSession()` guarantees read-your-own-writes **within a session**. A session is identified by a
+**bookmark** — an opaque token D1 returns after a query, marking how far along the database state
+that session has seen. Pass it into the next `withSession()` call and D1 guarantees the replica
+serving you is at least that current, waiting or falling back to the primary if it is not. Fail to
+pass it and the next request starts unconstrained, free to be served by any replica, including one
+that has not yet received the write made moments earlier.
+
+**FGA runs over HTTP, so consecutive requests are different Worker invocations with no shared
+memory.** A user submitting a request and then loading their dashboard is two invocations. Unless
+the bookmark from the write travels to the read — in a cookie, a response header the client echoes
+back, or similar — **the dashboard read is unconstrained and may legitimately miss the row that was
+just written.** Nothing is broken. The guarantee simply was not asked for.
+
+| Symptom | Likely cause |
+|---|---|
+| User adds a request, dashboard does not show it | Bookmark not carried from the write response into the next read |
+| Intermittent, and worse for distant users | Same — a nearby replica lags the primary by more than the round trip |
+| Reproducible on every read, all users | Not replication. Look at the write path. |
+
+**So: the write response MUST return its bookmark, and the client MUST send it back on subsequent
+reads.** This is cheap to build in and unpleasant to retrofit, because by then the symptom has been
+misdiagnosed at least once as a caching bug or a phantom write.
+
 **Where a cache still earns its place:** group metadata — name, icon, rules — is identical for
 every user and changes rarely, so it **MAY** be held in the shared edge cache with a normal TTL.
 That is genuinely shared data, which is exactly what a shared cache is for.
