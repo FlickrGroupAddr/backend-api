@@ -164,7 +164,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Static assets served from Cloudflare Pages&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret back out and trades it for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="1228" y="180" width="275" height="495" as="geometry" />
+          <mxGeometry x="1228" y="180" width="275" height="476" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
@@ -616,6 +616,12 @@ CHAR_W = {20: 11.0, 15: 7.6, 14: 7.1, 13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
 # slack and passed. An estimator that is wrong in the generous direction is worse
 # than none, because it certifies the thing it should be catching.
 LINE_H = {size: round(size * 1.2) for size in CHAR_W}
+# A space is far narrower than an average character -- 0.28em in Helvetica and
+# Arial against roughly 0.51em for the mixed-case average above. Charging a full
+# character per gap sounds harmless and is not: the journey's longest step carries
+# 29 spaces, so the error compounded into a whole phantom line and the box was
+# sized for text that was never going to be there.
+SPACE_W = {size: size * 0.28 for size in CHAR_W}
 SLACK_MIN, SLACK_MAX = 12.0, 45.0
 
 
@@ -639,7 +645,7 @@ def text_lines(raw):
     return parts
 
 
-def wrapped_lines(text, char_w, usable):
+def wrapped_lines(text, char_w, usable, space_w):
     """Greedy word wrap, the way a browser actually breaks a line.
 
     Dividing total width by column width assumes text can break anywhere, and it
@@ -652,11 +658,11 @@ def wrapped_lines(text, char_w, usable):
     line_w, lines = 0.0, 1
     for word in text.split():
         w = len(word) * char_w
-        if line_w and line_w + char_w + w > usable:
+        if line_w and line_w + space_w + w > usable:
             lines += 1
             line_w = w
         else:
-            line_w += (char_w if line_w else 0.0) + w
+            line_w += (space_w if line_w else 0.0) + w
     return lines
 
 
@@ -694,7 +700,7 @@ def text_height(cid, pad_left=10.0, pad_right=8.0):
         # column holding the step number (width).
         m_ind = re.search(r"margin-left:\s*(\d+)px|width:\s*(\d+)px", chunk)
         indent = int(next(g for g in m_ind.groups() if g)) if m_ind else 0
-        total += wrapped_lines(text, CHAR_W[size], usable - indent) * LINE_H[size]
+        total += wrapped_lines(text, CHAR_W[size], usable - indent, SPACE_W[size]) * LINE_H[size]
     return total
 
 
