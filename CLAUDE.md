@@ -16,7 +16,10 @@ this project refers to it constantly, so a decision numbered D1 beside a databas
 same class of collision.
 
 **Zero-pad any number that will ever be sorted.** `ADR-07` not `ADR-7`; the REST API is
-`/api/v001/*`. Unpadded numbers sort as `1, 10, 2` and cannot be retrofitted cheaply once cited.
+`api.flickrgroupaddr.com/v001/*`. Unpadded numbers sort as `1, 10, 2` and cannot be retrofitted
+cheaply once cited. **It paid off the same day it was written** — the decisions reached `ADR-11`
+within hours, and unpadded they would have sorted `ADR-1, ADR-10, ADR-11, ADR-2`, burying the
+governing `ADR-08` second from last.
 
 **Prefer the unabbreviated form whenever a short form could plausibly mean something else in his
 world.** Cloud vendors, storage products, and protocol names are the usual offenders.

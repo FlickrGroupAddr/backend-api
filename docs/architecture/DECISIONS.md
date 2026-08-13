@@ -70,10 +70,14 @@ every file listing, heading index, and grep result the moment a tenth decision e
 costs one character now and cannot be retrofitted cheaply once the labels are referenced from
 commit messages and code comments.
 
-**The REST API version is padded for the same reason, to three digits: `/api/v001/*`.** This
+**The REST API version is padded for the same reason, to three digits: `/v001/*`.** The padding
 carries over from the 2022 API, which used the same form. A path version is harder to change than
 a document label, not easier — it is baked into every client that has ever called it — so the
 padding **MUST** be right from the first route.
+
+**The path has no `/api` segment, because ADR-12 put the API on its own hostname.** Routes are
+`https://api.flickrgroupaddr.com/v001/*`; writing `/api/v001/*` there would say "api" twice. The
+earlier form in this document dated from before the origins were split.
 
 ### ADR-01 — The Flickr account is the identity
 
@@ -225,8 +229,14 @@ After the Flickr callback completes, the API Worker **SHOULD** mint a signed tok
 NSID and set it as an `HttpOnly; Secure; SameSite=Lax` cookie. It **MUST NOT** send the Flickr
 token to the browser under any circumstances.
 
-**The signing key is a Worker secret, and MUST be distinct from the token-encryption key** — see
-the secrets table in ADR-03, which is also where the reason for keeping them separate lives.
+**The signing key is a Worker secret, and MUST be distinct from the token key** — see the secrets
+table in ADR-03, which is also where the reason for keeping them separate lives.
+
+**ADR-12 settles the cookie's remaining attributes**, once the UI and API became separate origins.
+The short version: it is minted by `api.flickrgroupaddr.com`, stays **host-only** with no `Domain`
+attribute, and `SameSite=Lax` above is still correct because same-site is not the same thing as
+same-origin. The CORS contract that makes it work — including the reflected-`Origin` mistake that
+would undo all of this — is recorded there.
 
 **Why:** it is stateless, costs no D1 read per request, and uses HMAC-SHA256, which is already
 proven in this runtime. Instant revocation is the thing given up, and it matters little here: the
@@ -583,6 +593,65 @@ scoping above, and it needs closing the same way.
 **The cost is negligible and worth stating so nobody optimizes it away.** One row written per pair
 that ever reaches a moderator, and one indexed read on submission. Against ADR-09's write budget it
 does not register.
+
+### ADR-12 — The UI and the API are separate origins, and the session cookie stays host-only
+
+The JAMstack UI is served from `https://flickrgroupaddr.com` and the API Worker answers on
+`https://api.flickrgroupaddr.com`. Decided by the owner, 2026-08-13. They are **same-site** — one
+registrable domain — but **different origins**, and every requirement below follows from that one
+distinction.
+
+**The session cookie MUST NOT carry a `Domain` attribute.** The API Worker is the OAuth callback
+endpoint and therefore the thing that mints the session, so the cookie is set by
+`api.flickrgroupaddr.com` and is sent back to `api.flickrgroupaddr.com` as a host-only cookie. It
+never needs to reach the apex, and giving it a `Domain` would widen it to every subdomain that will
+ever exist for no benefit. **Host-only is both the correct and the narrower choice, and it is easy
+to get wrong in the safe-looking direction.**
+
+**`SameSite=Lax` from ADR-06 remains correct, because same-site is not same-origin.** A `fetch` from
+the UI to the API shares the registrable domain, so it is a same-site request and a `Lax` cookie
+rides along. No change is needed there, and `SameSite=None` **MUST NOT** be adopted — it would be
+strictly worse and would hand back the CSRF protection described below. ADR-02 keeps OAuth state in
+a Durable Object rather than a cookie, so nothing needs to be read during Flickr's cross-site
+redirect back, which is the one place `Lax` could otherwise have bitten.
+
+| Cookie attribute | Value | Why |
+|---|---|---|
+| `HttpOnly` | set | Script **MUST NOT** be able to read the session. ADR-06. |
+| `Secure` | set | HTTPS only. |
+| `SameSite` | `Lax` | Same-site covers UI-to-API; also the CSRF control. |
+| `Domain` | **absent** | Host-only to `api.flickrgroupaddr.com`. |
+| `Path` | `/` | |
+
+#### The CORS contract, stated exactly, because the shortcut here is catastrophic
+
+Every API response **MUST** carry `Access-Control-Allow-Origin: https://flickrgroupaddr.com` and
+`Access-Control-Allow-Credentials: true`, plus `Vary: Origin` so no cache can serve one origin's
+CORS decision to another. Preflight responses **MUST** additionally answer with the permitted
+methods and headers, and **SHOULD** set `Access-Control-Max-Age` so the browser stops asking.
+
+**`Access-Control-Allow-Origin: *` is not an option** — the browser refuses a wildcard whenever
+credentials are included, so the allowed origin has to be written out.
+
+**The Worker MUST NOT reflect the request's `Origin` header back in `Access-Control-Allow-Origin`.**
+This is the shortcut that makes the error go away during development, and combined with
+`Allow-Credentials: true` it means **any website on the internet can make authenticated calls as a
+logged-in FGA user** and read the responses. The permitted origin **MUST** be compared against a
+fixed allowlist and the header emitted only on a match. It is recorded here in this much detail
+because it is the single highest-severity mistake available in this design, it is a two-line
+mistake, and it looks exactly like the fix.
+
+**Every browser call to the API MUST set `credentials: 'include'`.** The `fetch` default is
+`same-origin`, which silently omits the cookie across origins — the failure is a well-formed
+request that authenticates as nobody, which reads as a session bug rather than a client bug.
+
+**`SameSite=Lax` is doing the CSRF work here**, and no token scheme is required while it holds. If a
+future change ever loosens it, CSRF tokens become mandatory in the same commit, not afterwards.
+
+**What this costs, honestly:** a same-origin design — the API on `flickrgroupaddr.com/api/*` —
+would need none of this. The split buys clean routing and independent deploys, and the price is the
+contract above. That is a fair trade only while the contract is actually written down, which is why
+it is here rather than left to the implementation.
 
 ### The queue view — where ADR-08 becomes visible
 
