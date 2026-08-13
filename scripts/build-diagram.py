@@ -71,7 +71,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="users" value="Users" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1A1A1A;strokeWidth=2;fontSize=13;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="70" y="520" width="90" height="105" as="geometry" />
+          <mxGeometry x="70" y="520" width="90" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
@@ -99,13 +99,13 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="520" width="200" height="400" as="geometry" />
+          <mxGeometry x="1600" y="520" width="200" height="410" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
-          <mxGeometry x="1655" y="558" width="90" height="90" as="geometry" />
+          <mxGeometry x="1655" y="610" width="90" height="90" as="geometry" />
         </mxCell>
         <mxCell id="flickrtext" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;i&gt;flickr.com&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;OAuth 1.0a&lt;br&gt;HMAC-SHA1 signed&lt;/i&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1610" y="668" width="180" height="120" as="geometry" />
+          <mxGeometry x="1610" y="715" width="180" height="120" as="geometry" />
         </mxCell>
         <mxCell id="aflickr" value="&lt;i&gt;Per-group daily add limits are why this system exists &#8212; a single request may retry for weeks.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="1600" y="945" width="240" height="80" as="geometry" />
@@ -139,10 +139,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e8" value="claim due requests&lt;br&gt;record outcome" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="retry" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e9" value="request_token &#183; access_token" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.15;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
+        <mxCell id="e9" value="request_token &#183; access_token" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.41;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.85;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
+        <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.59;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e11" value="authorize at flickr.com" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickr">
@@ -259,7 +259,7 @@ print(f"  collision detector self-test : {len(_cases)}/{len(_cases)} passed")
 
 
 problems = 0
-checked = 0
+segments = {}
 for e in edges:
     style = e.get("style") or ""
     if "orthogonalEdgeStyle" in style:
@@ -269,7 +269,7 @@ for e in edges:
         continue
     p = attach_point(boxes[src], style, "exit")
     q = attach_point(boxes[tgt], style, "entry")
-    checked += 1
+    segments[e.get("id")] = (src, tgt, p, q)
     for bid, rect in boxes.items():
         if bid in (src, tgt) or bid in NOT_OBSTACLES:
             continue
@@ -277,7 +277,28 @@ for e in edges:
             print(f"  COLLISION: edge {e.get('id')} ({src} -> {tgt}) crosses '{bid}'")
             problems += 1
 
-print(f"  straight edges checked : {checked}")
+print(f"  straight edges checked : {len(segments)}")
 print(f"  collisions             : {problems if problems else 'none'}")
+
+# Edges that are meant to read as dead level. Attachment fractions are chosen so
+# both ends land on the same y; a later box move silently breaks that, and a
+# nearly-horizontal arrow looks like a mistake rather than a decision.
+MUST_BE_HORIZONTAL = {
+    "e1": "users -> pages",
+    "e2": "pages -> api",
+    "e6": "cron -> retry",
+    "e9": "api -> flickr",
+    "e10": "retry -> flickr",
+}
+for eid, label in MUST_BE_HORIZONTAL.items():
+    if eid not in segments:
+        raise SystemExit(f"Expected straight edge {eid} ({label}) not found.")
+    _, _, p, q = segments[eid]
+    drop = abs(p[1] - q[1])
+    status = "level" if drop < 0.001 else f"OFF BY {drop:.2f}px"
+    print(f"  {eid:4} {label:18} y={p[1]:.0f} -> {q[1]:.0f}  {status}")
+    if drop >= 0.001:
+        problems += 1
+
 if problems:
-    raise SystemExit("Diagram has edge/box collisions -- fix the layout before committing.")
+    raise SystemExit("Diagram geometry check failed -- fix the layout before committing.")
