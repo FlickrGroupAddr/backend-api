@@ -133,14 +133,20 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="537" y="747" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="777" y="1277" width="46" height="46" as="geometry" />
+          <mxGeometry x="1362" y="754" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1032" y="547" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n6" value="6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="777" y="1277" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="757" y="787" width="46" height="46" as="geometry" />
         </mxCell>
 
-        <mxCell id="journey" value="&lt;b&gt;User journey&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;br&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;br&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the Worker fetches a request token from Flickr and stashes the secret in the OAuth DO&lt;br&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Authorize at flickr.com &#8212; the user's decision, made on Flickr's own page&lt;br&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; /api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="280" y="240" width="620" height="170" as="geometry" />
+        <mxCell id="journey" value="&lt;b&gt;User journey&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp; DNS query, resolved at the nearest PoP&lt;br&gt;&lt;b&gt;2&lt;/b&gt;&amp;nbsp; Static assets served from Cloudflare Pages&lt;br&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp; Begin login &#8212; the browser calls the API Worker&lt;br&gt;&lt;b&gt;4&lt;/b&gt;&amp;nbsp; Worker asks Flickr for a request token&lt;br&gt;&lt;b&gt;5&lt;/b&gt;&amp;nbsp; Worker stashes the token secret in the OAuth DO&lt;br&gt;&lt;b&gt;6&lt;/b&gt;&amp;nbsp; Authorize at flickr.com. Flickr redirects back, and the Worker reads the secret out of the DO and trades it for the long-lived access token &#8212; the return legs of 4 and 5&lt;br&gt;&lt;b&gt;7&lt;/b&gt;&amp;nbsp; /api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="238" width="620" height="180" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="dns">
@@ -155,7 +161,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e13" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="api">
           <mxGeometry x="0.55" relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e3" value="request-token secret" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
+        <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;" edge="1" parent="1" source="secrets" target="api">
@@ -173,7 +179,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e8" value="claim &#183; record" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="retry" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e9" value="request_token &#183; access_token" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
+        <mxCell id="e9" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.63;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
@@ -224,7 +230,7 @@ NOT_OBSTACLES = {
     "cfframe", "netb", "cflogo", "title", "date",
     "flickrlogo", "flickrtext", "aflickr",
     # Step badges sit ON their arrows by design, so they are not obstacles.
-    "n1", "n2", "n3", "n4", "n5",
+    "n1", "n2", "n3", "n4", "n5", "n6", "n7",
 }
 
 root = ET.parse(OUT).getroot()
@@ -430,7 +436,14 @@ if not aligned:
 # clear of its line reads as an unrelated blob, and nothing else here would catch
 # it -- badges are excluded from the collision check precisely because they are
 # meant to overlap their edge.
-BADGE_ON_EDGE = {"n1": "e1", "n2": "e2", "n3": "e12", "n5": "e13"}
+BADGE_ON_EDGE = {
+    "n1": "e1",    # users -> Cloudflare DNS
+    "n2": "e2",    # users -> Cloudflare Pages
+    "n3": "e12",   # users -> API Worker, begin login
+    "n4": "e9",    # API Worker <-> Flickr, request token (access token on the return)
+    "n5": "e3",    # API Worker <-> OAuth DO, stash the secret (read back on the return)
+    "n7": "e13",   # users -> API Worker, authenticated calls
+}
 TOLERANCE_PX = 8.0
 
 
@@ -453,13 +466,13 @@ for badge, eid in BADGE_ON_EDGE.items():
     if d > TOLERANCE_PX:
         problems += 1
 
-# n4 rides the orthogonal Users-to-Flickr route, whose long leg is the horizontal
+# n6 rides the orthogonal Users-to-Flickr route, whose long leg is the horizontal
 # run between its two waypoints; the straight-edge machinery above cannot model it.
-n4x, n4y, n4w, n4h = boxes["n4"]
-n4c = (n4x + n4w / 2, n4y + n4h / 2)
+n6x, n6y, n6w, n6h = boxes["n6"]
+n6c = (n6x + n6w / 2, n6y + n6h / 2)
 run_y, run_x0, run_x1 = 1300.0, 120.0, 1540.0
-on_run = abs(n4c[1] - run_y) <= TOLERANCE_PX and run_x0 <= n4c[0] <= run_x1
-print(f"    n4 on e11  offset {abs(n4c[1]-run_y):>5.1f}px  {'ok' if on_run else 'OFF THE LINE'}")
+on_run = abs(n6c[1] - run_y) <= TOLERANCE_PX and run_x0 <= n6c[0] <= run_x1
+print(f"    n6 on e11  offset {abs(n6c[1]-run_y):>5.1f}px  {'ok' if on_run else 'OFF THE LINE'}")
 if not on_run:
     problems += 1
 
@@ -469,7 +482,7 @@ if not on_run:
 # the first badged version shipped unreadable. The descriptions live in the
 # "User journey" key instead, where they have room to be sentences.
 print("  badged arrows carry no competing label:")
-for badge, eid in list(BADGE_ON_EDGE.items()) + [("n4", "e11")]:
+for badge, eid in list(BADGE_ON_EDGE.items()) + [("n6", "e11")]:
     label = (edge_by_id[eid].get("value") or "").strip()
     clean = "clear" if not label else f"HAS LABEL {label!r}"
     print(f"    {eid:4} ({badge}) {clean}")
