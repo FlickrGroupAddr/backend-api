@@ -39,6 +39,8 @@ beta-era numbers that will move.
 | Durable Object alarms deliver at-least-once | Cloudflare docs: guaranteed at-least-once execution, automatic retry with exponential backoff from 2 seconds, up to 6 retries, and `alarmInfo.retryCount` / `alarmInfo.isRetry` exposed to the handler. | 2026-08-12 |
 | Cloudflare Secrets Store caps at 100 secrets | Open beta limits: 100 secrets per account, one store per account, 1024 bytes per secret value. | 2026-08-12 |
 | Flickr OAuth offers only three permission levels | Flickr API docs: the `perms` parameter accepts `read`, `write`, or `delete`. **There is no narrower scope** — no way to request permission to add photos to groups without also granting full write access to the account. | 2026-08-12 |
+| `flickr.groups.pools.add` returns a numeric error code | Flickr API docs. Relevant codes: **1** photo not found, **2** group not found, **3** photo already in pool, **4** photo in maximum number of pools, **5** photo limit reached, **6** photo added to the Pending Queue for this pool, **7** photo already in the Pending Queue, **8** content not allowed, **10** maximum number of photos in group pool, **11** group pool is disabled. Transient: **105** service unavailable, **106** write operation failed. | 2026-08-13 |
+| A moderator's decision on a queued photo is invisible to the API | There is no error code, callback, or endpoint that reports a rejection. After code **6** the photo sits in the pool's pending queue; if a moderator rejects it, it simply never appears in the pool. `flickr.photos.getAllContexts` can show whether a photo landed, but "not in the pool" cannot distinguish *still pending* from *rejected*. | 2026-08-13 |
 | Durable Objects have no TTL, and an idle one is free | Cloudflare docs: there is no automatic expiry, but "inactive objects receiving no requests do not incur any duration charges." Storage is metered separately and "Durable Objects will be billed for stored data until the data is removed"; once deleted through the Storage API the object is cleaned up and stops incurring storage fees. **There is no runtime API to enumerate the objects in a namespace** — a Worker cannot list them. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, DO requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
@@ -181,6 +183,50 @@ application at Flickr directly, which is both more thorough and outside FGA's co
 **This is the softest decision in this document and the cheapest to reverse.** If revocation
 becomes a real requirement, an opaque session row in D1 replaces it without touching anything
 else.
+
+### ADR-07 — Add failures are classified by Flickr's error code, and an unrecognized code is terminal
+
+Every attempt **MUST** record the numeric error code Flickr returned. Only codes on the
+**retryable allowlist** below **MAY** be attempted again. Every other outcome — including any code
+not in this table, and any code added by Flickr in future — **MUST** be terminal.
+
+| Code | Meaning | Class |
+|---|---|---|
+| *(success)* | Added to the pool | Terminal success |
+| 3 | Photo already in pool | Terminal success — it is already there |
+| **6** | **Added to the Pending Queue** | **Terminal. MUST NOT be retried. See below.** |
+| **7** | **Already in the Pending Queue** | **Terminal. MUST NOT be retried.** |
+| 5 | Photo limit reached | **Retryable** — this is the per-group, per-user throttle the project exists to wait out |
+| 105 | Service currently unavailable | **Retryable** — transient |
+| 106 | Write operation failed | **Retryable** — transient |
+| 1 | Photo not found | Terminal failure — deleted, or no longer visible to us |
+| 2 | Group not found | Terminal failure |
+| 4 | Photo in maximum number of pools | Terminal failure — needs the user to remove it from another group |
+| 8 | Content not allowed | Terminal failure — a policy rejection, not a queue |
+| 10 | Maximum number of photos in group pool | Terminal failure — the pool is full |
+| 11 | Group pool is disabled | Terminal failure |
+| 98, 99 | Auth failure | Terminal for the request; **MUST** flag the user to re-link their Flickr account |
+
+**Why the default is inverted from the 2022 implementation.** That version classified codes 5 and
+6 explicitly and wrote everything else to a status string beginning `fail_`. Its retry query
+selected every request with no recorded status matching `permstatus_%`, so **every unrecognized
+code was retried nightly, forever**. That bucket held codes 1, 2, 4, 7, 8, 10, and 11 — every one
+of them a permanent condition that could never succeed. **An unknown failure is the one most
+likely to be permanent, and it was the one guaranteed to repeat.**
+
+**Codes 6 and 7 are the moderator-protection rule, and they are absolute.** When a pool is
+moderated, an add does not fail — it lands in a queue for a human volunteer to review. If that
+person rejects the photo, the API says nothing; the photo is simply removed from the queue and
+never appears in the pool. **A subsequent add for the same pair therefore does not look like a
+retry to Flickr. It looks like a brand-new submission, and the moderator sees it again.** Nightly
+retries against a rejected photo would make FGA an instrument for pestering the exact volunteers
+whose goodwill the product depends on. Once a pair reaches a queue, FGA is done with it.
+
+**FGA MUST NOT attempt to detect rejection by resubmitting.** `flickr.photos.getAllContexts` can
+confirm whether a photo landed in a pool, and **MAY** be used to update what the user is shown.
+But absence from the pool is ambiguous — still pending, or rejected — and no amount of resubmitting
+resolves it. The correct behavior on ambiguity is to report the state honestly to the user and
+stop.
 
 ## Considered and rejected
 
