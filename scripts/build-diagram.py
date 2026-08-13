@@ -50,7 +50,7 @@ USERS = embed("users.svg")
 
 TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
   <diagram id="fga-architecture" name="FlickrGroupAddr Architecture">
-    <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1260" math="0" shadow="0">
+    <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1400" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -63,64 +63,64 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
 
         <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="220" y="150" width="1300" height="950" as="geometry" />
+          <mxGeometry x="220" y="150" width="1300" height="1050" as="geometry" />
         </mxCell>
         <mxCell id="cflogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={CF}" vertex="1" parent="1">
           <mxGeometry x="238" y="166" width="182" height="60" as="geometry" />
         </mxCell>
         <mxCell id="netb" value="Lowest-latency Cloudflare edge PoP (anycast routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="260" y="440" width="950" height="630" as="geometry" />
+          <mxGeometry x="260" y="440" width="950" height="710" as="geometry" />
         </mxCell>
         <mxCell id="asingle" value="&lt;i&gt;Outside the edge PoP on purpose. A Durable Object and a D1 primary each live in ONE location. That single instance is what makes them strongly consistent &#8212; consistency and edge replication are mutually exclusive.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1240" y="300" width="250" height="120" as="geometry" />
+          <mxGeometry x="1240" y="600" width="250" height="120" as="geometry" />
         </mxCell>
 
         <mxCell id="users" value="Users" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={USERS};fontSize=13;fontStyle=1;verticalLabelPosition=top;verticalAlign=bottom;" vertex="1" parent="1">
-          <mxGeometry x="70" y="530" width="100" height="80" as="geometry" />
+          <mxGeometry x="70" y="750" width="100" height="80" as="geometry" />
         </mxCell>
 
         <mxCell id="dns" value="&lt;b&gt;Cloudflare DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;authoritative&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="320" y="470" width="190" height="85" as="geometry" />
+          <mxGeometry x="320" y="480" width="190" height="90" as="geometry" />
         </mxCell>
         <mxCell id="pages" value="&lt;b&gt;Cloudflare Pages&lt;/b&gt;&lt;br&gt;&lt;i&gt;JAMstack UI&lt;/i&gt;&lt;br&gt;&lt;i&gt;flickrgroupaddr.com&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="320" y="600" width="190" height="85" as="geometry" />
+          <mxGeometry x="320" y="660" width="190" height="90" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;Worker Secrets&lt;/b&gt;&lt;br&gt;&lt;i&gt;consumer key + secret,&lt;br&gt;master encryption key&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="640" y="662" width="220" height="100" as="geometry" />
+          <mxGeometry x="640" y="880" width="220" height="90" as="geometry" />
         </mxCell>
         <mxCell id="cron" value="&lt;b&gt;Cron Trigger&lt;/b&gt;&lt;br&gt;&lt;i&gt;nightly&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="320" y="830" width="190" height="100" as="geometry" />
+          <mxGeometry x="320" y="1010" width="190" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="oauthdo" value="&lt;b&gt;OAuth Dance DO&lt;/b&gt;&lt;br&gt;&lt;i&gt;one Durable Object per oauth_token&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0051C3;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="940" y="300" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="api" value="&lt;b&gt;API Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;backend-api&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="940" y="520" width="230" height="100" as="geometry" />
+          <mxGeometry x="940" y="740" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="retry" value="&lt;b&gt;Retry Worker&lt;/b&gt;&lt;br&gt;&lt;i&gt;drains due requests&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="940" y="830" width="230" height="100" as="geometry" />
+          <mxGeometry x="940" y="1010" width="230" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="d1" value="&lt;b&gt;D1 (SQLite)&lt;/b&gt;&lt;br&gt;&lt;i&gt;users &#183; pending requests&lt;br&gt;per-group counters&lt;br&gt;encrypted Flickr tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="1240" y="670" width="210" height="110" as="geometry" />
+          <mxGeometry x="1240" y="870" width="210" height="110" as="geometry" />
         </mxCell>
 
         <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="520" width="205" height="410" as="geometry" />
+          <mxGeometry x="1600" y="740" width="205" height="370" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
-          <mxGeometry x="1658" y="610" width="90" height="90" as="geometry" />
+          <mxGeometry x="1658" y="830" width="90" height="90" as="geometry" />
         </mxCell>
         <mxCell id="flickrtext" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;br&gt;&lt;i&gt;flickr.com&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;OAuth 1.0a&lt;br&gt;HMAC-SHA1 signed&lt;/i&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1610" y="715" width="185" height="120" as="geometry" />
+          <mxGeometry x="1610" y="935" width="185" height="120" as="geometry" />
         </mxCell>
         <mxCell id="aflickr" value="&lt;i&gt;Per-group daily add limits are why this system exists &#8212; a single request may retry for weeks.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="945" width="205" height="100" as="geometry" />
+          <mxGeometry x="1600" y="1140" width="205" height="90" as="geometry" />
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="300" width="205" height="125" as="geometry" />
+          <mxGeometry x="1600" y="520" width="205" height="125" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="1 &#183; DNS query" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="dns">
@@ -150,17 +150,17 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e8" value="claim &#183; record" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="retry" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e9" value="request_token &#183; access_token" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.41;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
+        <mxCell id="e9" value="request_token &#183; access_token" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.59;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
+        <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.63;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e11" value="authorize at flickr.com" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickr">
+        <mxCell id="e11" value="authorize at flickr.com" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.97;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickr">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="115" y="1180" />
-              <mxPoint x="1700" y="1180" />
+              <mxPoint x="120" y="1300" />
+              <mxPoint x="1540" y="1300" />
             </Array>
           </mxGeometry>
         </mxCell>
