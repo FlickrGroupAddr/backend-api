@@ -238,7 +238,21 @@ stop.
 the same outcome could also mean something retryable. **This rule outranks every retry rule in
 this document, including ADR-07's allowlist.** When they disagree, this one wins.
 
-**Why, and the reasoning is the asymmetry rather than the courtesy:**
+**Why this matters more than a retry policy usually would.** In the project owner's words,
+2026-08-13:
+
+> *"One thing I love about Flickr is the community aspect. Group mods are taking on a real burden
+> in that job, and I do not want FGA getting a bad reputation in a community I love."*
+
+**FGA is a convenience layer sitting on top of a community that runs on unpaid attention.** Group
+moderators review submissions because they care about their pool, not because anyone pays them.
+A tool that automates submissions into that queue is **spending someone else's volunteer time by
+default**, and it earns its place only by spending less of it than the human would have. A tool
+that becomes known for wasting moderator time gets banned from pools — and that ban would be the
+community working correctly, not failing. **The reputational risk is not a side effect to manage;
+it is the accurate signal that the tool has started taking more than it gives.**
+
+**The engineering justification, which is the asymmetry rather than the courtesy:**
 
 | Getting it wrong this way | Costs |
 |---|---|
