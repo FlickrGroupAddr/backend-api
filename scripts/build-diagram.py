@@ -72,7 +72,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="260" y="440" width="950" height="710" as="geometry" />
         </mxCell>
         <mxCell id="asingle" value="&lt;i&gt;Outside the edge PoP on purpose. The Durable Object and the D1 primary each live in ONE location, and every write crosses to them. If a write looks like it did not persist, check whether the read came from a replica that has not caught up yet.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1240" y="600" width="250" height="120" as="geometry" />
+          <mxGeometry x="1240" y="570" width="250" height="120" as="geometry" />
         </mxCell>
 
         <mxCell id="users" value="Users" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={USERS};fontSize=13;fontStyle=1;labelPosition=left;align=right;verticalLabelPosition=middle;verticalAlign=middle;spacingRight=10;" vertex="1" parent="1">
@@ -142,7 +142,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="597" y="721" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1362" y="780" width="46" height="46" as="geometry" />
+          <mxGeometry x="1362" y="728" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1058" y="547" width="46" height="46" as="geometry" />
