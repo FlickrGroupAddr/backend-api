@@ -191,11 +191,11 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e10" value="flickr.groups.pools.add" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.63;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickr">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.97;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickr">
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=2;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickr">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="120" y="1300" />
-              <mxPoint x="1540" y="1300" />
+              <mxPoint x="1702.5" y="1300" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -495,7 +495,7 @@ for badge, eid in BADGE_ON_EDGE.items():
 # run between its two waypoints; the straight-edge machinery above cannot model it.
 n6x, n6y, n6w, n6h = boxes["n6"]
 n6c = (n6x + n6w / 2, n6y + n6h / 2)
-run_y, run_x0, run_x1 = 1300.0, 120.0, 1540.0
+run_y, run_x0, run_x1 = 1300.0, 120.0, 1702.5
 on_run = abs(n6c[1] - run_y) <= TOLERANCE_PX and run_x0 <= n6c[0] <= run_x1
 print(f"    n6 on e11  offset {abs(n6c[1]-run_y):>5.1f}px  {'ok' if on_run else 'OFF THE LINE'}")
 if not on_run:
