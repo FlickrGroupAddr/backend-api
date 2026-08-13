@@ -71,7 +71,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="netb" value="Lowest-latency Cloudflare edge PoP (anycast routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
           <mxGeometry x="260" y="440" width="950" height="710" as="geometry" />
         </mxCell>
-        <mxCell id="asingle" value="&lt;i&gt;Outside the edge PoP on purpose. A Durable Object and a D1 primary each live in ONE location. That single instance is what makes them strongly consistent &#8212; consistency and edge replication are mutually exclusive.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
+        <mxCell id="asingle" value="&lt;i&gt;Outside the edge PoP on purpose. The Durable Object and the D1 primary each live in ONE location, and every write crosses to them. If a write looks like it did not persist, check whether the read came from a replica that has not caught up yet.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="1240" y="600" width="250" height="120" as="geometry" />
         </mxCell>
 
@@ -108,8 +108,11 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="940" y="1010" width="230" height="100" as="geometry" />
         </mxCell>
 
-        <mxCell id="d1" value="&lt;b&gt;D1 (SQLite)&lt;/b&gt;&lt;br&gt;&lt;i&gt;users &#183; pending requests&lt;br&gt;per-group counters&lt;br&gt;encrypted Flickr tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="1240" y="870" width="210" height="110" as="geometry" />
+        <mxCell id="d1replica" value="&lt;b&gt;D1 Read Replica&lt;/b&gt;&lt;br&gt;&lt;i&gt;ALL reads&lt;br&gt;served from nearest region&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4FC3E8;strokeColor=none;fontColor=#0B2E3D;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="980" y="870" width="210" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="&lt;b&gt;D1 Primary&lt;/b&gt;&lt;br&gt;&lt;i&gt;ALL writes&lt;br&gt;users &#183; requests &#183; tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="870" width="200" height="110" as="geometry" />
         </mxCell>
 
         <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
@@ -125,7 +128,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1600" y="325" width="205" height="140" as="geometry" />
         </mxCell>
 
-        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; request / response&lt;br&gt;&#8211; &#8211; &#8211; scheduled or async&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="1600" y="540" width="205" height="125" as="geometry" />
         </mxCell>
 
@@ -179,10 +182,19 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e6" value="nightly sweep" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e7" value="queue &#183; status" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="d1">
+        <mxCell id="e7" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.35;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1replica">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e8" value="claim &#183; record" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="retry" target="d1">
+        <mxCell id="e8" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.35;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="d1replica">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="d1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="async replication" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="d1" target="d1replica">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e9" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.1;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickr">
@@ -402,8 +414,9 @@ for eid, (src, tgt, p, q) in segments.items():
 IN_EDGE_POP = {
     "dns": True,  # authoritative DNS is anycast, answered at the nearest PoP
     "pages": True, "secrets": True, "cron": True, "api": True, "retry": True,
-    "oauthdo": False,  # single Durable Object instance, not edge-replicated
-    "d1": False,       # single primary, not edge-replicated
+    "d1replica": True,  # a read replica exists in every region, including this PoP's
+    "oauthdo": False,   # single Durable Object instance, not edge-replicated
+    "d1": False,        # the primary is one location; every write crosses to it
 }
 
 
