@@ -69,7 +69,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="220" y="150" width="1300" height="1080" as="geometry" />
         </mxCell>
         <mxCell id="cflogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={CF}" vertex="1" parent="1">
-          <mxGeometry x="238" y="166" width="300" height="99" as="geometry" />
+          <mxGeometry x="260" y="190" width="300" height="99" as="geometry" />
         </mxCell>
         <mxCell id="netb" value="Lowest-latency Cloudflare edge PoP (anycast routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
           <mxGeometry x="260" y="440" width="950" height="740" as="geometry" />
@@ -699,6 +699,16 @@ if not LOGO_GAP_MIN <= gap <= LOGO_GAP_MAX:
 # looks faintly wrong, and nobody can say why. Hold every rendered mark to its own
 # artwork's viewBox ratio rather than trusting draw.io's aspect flag. Both marks
 # are sized by hand, so both need this.
+# The Cloudflare mark is inset equally from the frame's left and top. Unequal
+# margins on a corner element read as a mistake rather than as a choice, and the
+# eye catches it long before it can name it -- so this is an equality, not a band.
+fx0, fy0 = boxes["cfframe"][0], boxes["cfframe"][1]
+left_in, top_in = boxes["cflogo"][0] - fx0, boxes["cflogo"][1] - fy0
+print(f"  Cloudflare mark inset from its frame: left {left_in:.0f}px, top {top_in:.0f}px")
+if abs(left_in - top_in) > 0.5:
+    print("    -> insets differ; a corner element with unequal margins reads as misplaced")
+    problems += 1
+
 LOGO_ART = {"flickrlogo": "flickr-mark-tight.svg", "cflogo": "cloudflare-mark.svg"}
 for cid, art in LOGO_ART.items():
     bw, bh = boxes[cid][2], boxes[cid][3]
