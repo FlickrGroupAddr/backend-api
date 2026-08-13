@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/scripts/check-diagram-date.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking architecture diagram date"
+          }
+        ]
+      }
+    ]
+  }
+}
