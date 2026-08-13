@@ -163,10 +163,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="422" y="813" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1300" y="780" width="46" height="46" as="geometry" />
+          <mxGeometry x="1337" y="813" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n11" value="11" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1537" y="817" width="46" height="46" as="geometry" />
+          <mxGeometry x="1417" y="813" width="46" height="46" as="geometry" />
         </mxCell>
 
         <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Static assets served from Cloudflare Pages&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Authorize at flickr.com &#8212; the user grants FGA write access&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Flickr redirects the BROWSER to the Worker&#39;s OAuth callback route, carrying a verifier. Flickr never calls FGA directly&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the token secret back out and trades the verifier for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;REST API endpoints: api.flickrgroupaddr.com/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
@@ -217,7 +217,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e9" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.0925;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e17" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.74;exitDx=0;exitDy=0;entryX=0;entryY=0.185;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
+        <mxCell id="e17" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.175;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e10" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.63;exitDx=0;exitDy=0;entryX=0;entryY=0.9075;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickrapi">
@@ -516,7 +516,7 @@ BADGE_ON_EDGE = {
     # request when it actually receives an untrusted GET whose token and verifier
     # sit in a URL the user can read and edit.
     "n8": "e13",   # browser -> API Worker, the OAuth callback
-    "n9": "e9",    # API Worker <-> Flickr, trading the verifier for the access token
+    "n9": "e17",   # API Worker <-> Flickr, trading the verifier for the access token
     "n10": "e13",  # users -> API Worker, authenticated calls
     # Steps 5 and 9 get parallel arrows for the same reason steps 3 and 8 do:
     # they are separate conversations that happen at different points, and one
@@ -577,11 +577,18 @@ if abs(drift) > 0.5:
 # they straddle the centre line of the DNS / Pages / Cron column rather than each
 # landing wherever its own arrow allowed. Symmetry about a shared axis is the
 # thing the eye checks; an equality, not a band, for the same reason as n7 above.
-col_mid = boxes["dns"][0] + boxes["dns"][2] / 2
-pair_mid = (boxes["n8"][0] + boxes["n10"][0]) / 2 + 23
-print(f"    n8 and n10 straddle the DNS column centre: axis {pair_mid:.1f} vs {col_mid:.1f}")
-if abs(pair_mid - col_mid) > 0.5:
-    problems += 1
+BADGE_PAIRS = {
+    ("n8", "n10"): "dns",   # the two browser-to-Worker returns
+    ("n9", "n11"): "d1",    # the two Worker-to-Flickr calls after login
+}
+for (a, b), tile in BADGE_PAIRS.items():
+    axis = boxes[tile][0] + boxes[tile][2] / 2
+    pair_mid = (boxes[a][0] + boxes[b][0]) / 2 + 23
+    level = abs(boxes[a][1] - boxes[b][1]) <= 0.5
+    print(f"    {a} and {b} straddle the {tile} axis: {pair_mid:.1f} vs {axis:.1f}"
+          f", {'level' if level else 'NOT LEVEL'}")
+    if abs(pair_mid - axis) > 0.5 or not level:
+        problems += 1
 
 
 # A badged arrow MUST carry no text label. Both a badge and an edge label default
