@@ -69,7 +69,10 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="238" y="166" width="182" height="60" as="geometry" />
         </mxCell>
         <mxCell id="netb" value="Lowest-latency Cloudflare edge PoP (anycast routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="260" y="250" width="1240" height="820" as="geometry" />
+          <mxGeometry x="260" y="440" width="950" height="630" as="geometry" />
+        </mxCell>
+        <mxCell id="asingle" value="&lt;i&gt;Outside the edge PoP on purpose. A Durable Object and a D1 primary each live in ONE location. That single instance is what makes them strongly consistent &#8212; consistency and edge replication are mutually exclusive.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="300" width="250" height="120" as="geometry" />
         </mxCell>
 
         <mxCell id="users" value="Users" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={USERS};fontSize=13;fontStyle=1;verticalLabelPosition=top;verticalAlign=bottom;" vertex="1" parent="1">
@@ -341,6 +344,36 @@ for eid, (src, tgt, p, q) in segments.items():
     verdict = "ok" if est <= length else "TOO WIDE"
     print(f"    {eid:4} arrow {length:>5.0f}px  label ~{est:>4.0f}px  {verdict}")
     if est > length:
+        problems += 1
+
+
+# Which side of the edge-PoP boundary a tile sits on is now a CLAIM, not layout:
+# Workers run at the nearest anycast PoP, while a Durable Object and a D1 primary
+# each live in exactly one location. Drag a box across that line and the diagram
+# starts asserting something false, so the build checks it.
+IN_EDGE_POP = {
+    "pages": True, "secrets": True, "cron": True, "api": True, "retry": True, "key": True,
+    "oauthdo": False,  # single Durable Object instance, not edge-replicated
+    "d1": False,       # single primary, not edge-replicated
+}
+
+
+def contains(outer, inner):
+    ox, oy, ow, oh = outer
+    ix, iy, iw, ih = inner
+    return ix >= ox and ix + iw <= ox + ow and iy >= oy and iy + ih <= oy + oh
+
+
+print("  edge-PoP containment:")
+for tile, expected in IN_EDGE_POP.items():
+    if tile not in boxes:
+        raise SystemExit(f"Containment check names '{tile}', which is not in the diagram.")
+    actually_in_pop = contains(boxes["netb"], boxes[tile])
+    in_cloudflare = contains(boxes["cfframe"], boxes[tile])
+    ok = actually_in_pop == expected and in_cloudflare
+    where = "inside PoP" if expected else "outside PoP (single-location)"
+    print(f"    {tile:9} {where:30} {'ok' if ok else 'WRONG SIDE'}")
+    if not ok:
         problems += 1
 
 if problems:
