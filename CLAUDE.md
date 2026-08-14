@@ -297,12 +297,33 @@ than admitting there is no fix**, because it turns the banner from a call to act
 always red is scenery.** That is the erosion the global build-chain doctrine spends four paragraphs
 refusing, and it is why those packages are not reported at all rather than merely reported softly.
 
-**The direct dependencies ARE the incremental lever**, which is what makes the narrower scope
-sufficient rather than merely quieter: bumping one usually carries its transitive tree forward as a
-side effect, without anybody having to read a list of things they cannot fix.
+**The direct dependencies are the only lever anyone can pull**, which is what makes the narrower
+scope sufficient rather than merely quieter: bumping one usually carries its transitive tree forward
+as a side effect, without anybody having to read a list of things they cannot fix.
 
-**Fixes MUST be offered one at a time**, smallest first, with `npm run check` re-run after each.
-**MUST NOT** propose a big-bang update of everything at once.
+### "Incremental" means DAILY, not one package at a time
+
+**Corrected 2026-08-14 after this document got it backwards.** Terry's words: *"WE can update all
+outdated versions at once. By incremental updates I meant that I want to take latest stable of
+everything daily, not have a toolchain rot for two months, update, and catch all the problems at
+once."*
+
+**Apply every available update in one sitting, then run `npm run check` once.** Offering them one at
+a time and re-checking between each is **not** what the standing order asks for, and it makes a
+daily habit tedious enough to skip.
+
+**The increment is the DAY. It is not the package.** That is the whole mechanism:
+
+| Cadence | A batch looks like | A breakage is |
+|---|---|---|
+| **Daily** | One or two bumps | Obvious. Almost nothing changed |
+| Every two months | Dozens of bumps across majors | A pile of interacting failures to untangle at once |
+
+**Taking everything at once is safe precisely BECAUSE it is done daily.** The two properties are not
+in tension — the frequency is what keeps the batch small, and a small batch is what keeps attribution
+easy. **A rare update is the risky one**, which is the outcome this whole check exists to prevent.
+
+**So the failure mode to design against is a skipped day, never a large batch.**
 
 ### Three shapes in `npm outdated --json` that recall gets wrong
 
