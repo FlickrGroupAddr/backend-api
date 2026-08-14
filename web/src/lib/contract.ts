@@ -83,6 +83,40 @@ export const group = z.object({
 
 export const groupList = z.object({ groups: z.array(group) });
 
+/**
+ * `POST /api/v001/photos/:photoId/preflight` — ADR-20.
+ *
+ * **`poolsKnown` is not decoration.** A failed pool lookup is not "in no pools", so the
+ * interface MUST say it could not check rather than render a confident `ready`.
+ */
+export const preflightStatus = z.enum([
+	"ready",
+	"needs_acknowledgement",
+	"already_queued",
+	"already_in_pool",
+]);
+
+export const preflight = z.object({
+	photoId: z.string(),
+	poolsKnown: z.boolean(),
+	groups: z.array(
+		z.object({
+			groupId: z.string(),
+			status: preflightStatus,
+			reachedAModerator: z
+				.object({
+					flickrCode: moderationCode,
+					firstSeenAt: z.number(),
+					stillPending: z.boolean(),
+				})
+				.nullable(),
+		}),
+	),
+});
+
+export type PreflightStatus = z.infer<typeof preflightStatus>;
+export type Preflight = z.infer<typeof preflight>;
+
 /** `GET /api/v001/groups/:groupId`. Shape is Flickr's, so it is read loosely. */
 export const groupInfo = z.looseObject({});
 

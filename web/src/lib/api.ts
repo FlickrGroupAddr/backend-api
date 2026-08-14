@@ -101,6 +101,16 @@ export const api = {
 			`/api/v001/queue?state=${state}&limit=50${cursor ? `&after=${cursor}` : ""}`,
 		),
 
+	/**
+	 * ADR-20. One call for the whole selection, so the ADR-04 warning can be shown
+	 * before the person commits rather than discovered afterwards.
+	 */
+	preflight: (photoId: string, groupIds: readonly string[]) =>
+		call(contract.preflight, `/api/v001/photos/${photoId}/preflight`, {
+			method: "POST",
+			body: JSON.stringify({ groupIds }),
+		}),
+
 	/** ADR-19. 404 for a non-admin, which the caller shows as "no such page". */
 	adminOverview: (days = 7) =>
 		call(contract.adminOverview, `/api/v001/admin/overview?days=${days}`),

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { SvelteSet } from "svelte/reactivity";
 import { api } from "../lib/api.js";
-import type { Group } from "../lib/contract.js";
+import type { Group, PreflightStatus } from "../lib/contract.js";
 import { describeError } from "../lib/outcomes.js";
 import {
 	awaitingAcknowledgement,
@@ -56,10 +56,84 @@ const pendingAck = $derived(
 );
 const canSubmit = $derived(!running && photoId !== null && picked.size > 0);
 
+/*
+ * ADR-20. Ask the server about the whole selection whenever it changes.
+ *
+ * **This is what moves the ADR-04 warning in front of the decision.** Before it, the
+ * only way to learn a photo had already reached a moderator was to submit and read the
+ * 409 -- the warning arriving after the commitment, for a rule that exists to inform
+ * the commitment.
+ *
+ * One call covers every selected group, because getAllContexts is per-photo.
+ */
+let advice = $state(new Map<string, PreflightStatus>());
+let poolsKnown = $state(true);
+let checking = $state(false);
+
+$effect(() => {
+	const id = photoId;
+	const ids = [...picked];
+
+	if (id === null || ids.length === 0) {
+		advice = new Map();
+		return;
+	}
+
+	let cancelled = false;
+	checking = true;
+
+	// A short debounce, because picking five groups fires five times otherwise and the
+	// last answer is the only one that matters.
+	const timer = setTimeout(() => {
+		void (async () => {
+			try {
+				const result = await api.preflight(id, ids);
+				if (cancelled) return;
+				advice = new Map(result.groups.map((g) => [g.groupId, g.status]));
+				poolsKnown = result.poolsKnown;
+			} catch (error) {
+				// Preflight is advisory. If it fails the person can still submit, and
+				// the server re-checks everything -- so this degrades to the old
+				// behavior rather than blocking.
+				if (!cancelled) {
+					console.error("preflight failed", error);
+					advice = new Map();
+				}
+			} finally {
+				if (!cancelled) checking = false;
+			}
+		})();
+	}, 250);
+
+	return () => {
+		cancelled = true;
+		clearTimeout(timer);
+	};
+});
+
+const willSend = $derived(
+	[...picked].filter((id) => advice.get(id) !== "already_in_pool").length,
+);
+const willWarn = $derived(
+	[...picked].filter((id) => advice.get(id) === "needs_acknowledgement").length,
+);
+
+/** One short phrase per chip. Null means nothing worth saying. */
+function chipNote(status: PreflightStatus | undefined): string | null {
+	if (status === "needs_acknowledgement") return "seen by a moderator";
+	if (status === "already_in_pool") return "already in";
+	if (status === "already_queued") return "already queued";
+	return null;
+}
+
 const hint = $derived.by(() => {
-	const seconds = Math.max(1, Math.ceil(picked.size * 0.4));
-	const pace = `one at a time, about ${seconds}s`;
-	return moderatedCount > 0 ? `${moderatedCount} moderated · ${pace}` : pace;
+	if (checking) return "Checking…";
+	const parts: string[] = [];
+	if (moderatedCount > 0) parts.push(`${moderatedCount} moderated`);
+	const skipping = picked.size - willSend;
+	if (skipping > 0) parts.push(`${skipping} already in`);
+	parts.push(`one at a time, about ${Math.max(1, Math.ceil(willSend * 0.4))}s`);
+	return parts.join(" · ");
 });
 
 /** "that 1" reads wrong; "those 3" reads right. Grammar is part of the interface. */
@@ -189,8 +263,15 @@ function railOf(kind: string): string {
 			{#if chosen.length > 0}
 				<ul class="chips plain">
 					{#each chosen as group (group.id)}
-						<li class="chip" class:moderated={group.poolModerated}>
+						{@const note = chipNote(advice.get(group.id))}
+						<li
+							class="chip"
+							class:moderated={group.poolModerated}
+							class:seen={advice.get(group.id) === "needs_acknowledgement"}
+							class:inactive={advice.get(group.id) === "already_in_pool"}
+						>
 							<span class="truncate">{group.name ?? group.id}</span>
+							{#if note !== null}<span class="chip-note">{note}</span>{/if}
 							<button
 								type="button"
 								class="chip-x"
@@ -367,6 +448,27 @@ function railOf(kind: string): string {
 	.chip.moderated {
 		border-color: var(--human);
 		color: var(--human);
+	}
+
+	/* Preflight results, shown ON the chip -- the decision is made while looking at
+	   these, so that is where the answer belongs. */
+	.chip-note {
+		font-size: var(--t-xs);
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.chip.seen {
+		border-color: var(--human);
+	}
+
+	.chip.seen .chip-note {
+		color: var(--human);
+	}
+
+	/* Already in the pool: nothing will be sent, so it recedes rather than warns. */
+	.chip.inactive {
+		opacity: 0.55;
 	}
 
 	.chip-x {

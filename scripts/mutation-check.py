@@ -169,6 +169,23 @@ MUTATIONS = [
         'if (!admin) return c.json({ error: "not_found" }, 404);',
         'if (!admin) return c.json({ error: "forbidden" }, 403);',
     ),
+    (
+        # Preflight stops being scoped to the caller. Every status it returns is still
+        # correct-looking, and it silently becomes a way to ask whether SOMEBODY ELSE's
+        # photo reached a moderator.
+        "ADR-20: let preflight read another account's moderation history",
+        "src/db/requests.ts",
+        "       WHERE nsid = ? AND photo_id = ? AND group_id IN (${holes})`,\n\t\t)\n\t\t.bind(nsid, photoId, ...groupIds)\n\t\t.all<{ group_id: string; flickr_code: number; first_seen_at: number }>();",
+        "       WHERE photo_id = ? AND group_id IN (${holes})`,\n\t\t)\n\t\t.bind(photoId, ...groupIds)\n\t\t.all<{ group_id: string; flickr_code: number; first_seen_at: number }>();",
+    ),
+    (
+        # ADR-04's precedence inverted: a photo already IN the pool gets warned about.
+        # A false warning spends exactly the credibility the real one needs.
+        "ADR-20: warn about a photo that is already in the pool",
+        "src/routes/api.ts",
+        'const status = inPool.has(groupId)\n\t\t\t\t? "already_in_pool"',
+        'const status = false\n\t\t\t\t? "already_in_pool"',
+    ),
 ]
 
 

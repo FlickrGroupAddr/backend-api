@@ -447,6 +447,44 @@ disagreement means either our reading of `remaining` is wrong or something else 
 allowance, and both are worth knowing. **Observation cannot cause a silent skip, because nothing
 skips.**
 
+## ADR-20 — The warning arrives before the commitment
+
+**`POST /api/v001/photos/:photoId/preflight` answers ADR-04's question for many groups in one
+round trip.** It takes a group list, capped at 200, and reports each as `ready`,
+`needs_acknowledgement`, `already_queued` or `already_in_pool`.
+
+**Without it, the only way to learn about a warning was to submit.** Forty groups meant forty
+`POST`s, each returning `409 needs_acknowledgement`, each one a decision the person had already
+committed to blind. **A rule whose entire purpose is informed consent cannot deliver the
+information after the consent.**
+
+**It costs ONE Flickr call regardless of group count**, because `flickr.photos.getAllContexts` is
+per-photo rather than per-group. The three D1 reads are bounded by the caller's list. That asymmetry
+is why this is worth an endpoint rather than a loop.
+
+### It is advisory, and MUST NOT become authorization
+
+**`POST /api/v001/requests` re-checks everything itself and is unchanged.** A caller that skips
+preflight gets identical protection. A caller that forges a preflight response gains nothing.
+
+**This is the only safe shape for a "check first" endpoint.** The moment the submit path trusts a
+prior check, the check becomes a security boundary that the client controls — and ADR-01 is the last
+rule in this project that should depend on a client being honest.
+
+### Order of precedence, and it mirrors the submit path exactly
+
+**Pool membership beats a moderation record.** ADR-04: a photo now in the pool was approved, which
+is the one direction an invisible decision becomes visible. Warning about an accepted photo spends
+exactly the credibility the real warning needs.
+
+**`poolsKnown` is reported separately, and that distinction is load-bearing.** A failed
+`getAllContexts` is not "the photo is in no pools" — presence proves approval, absence proves
+nothing. Rendering unknown as a clean `ready` would suppress warnings the server then raises at
+submit time, which is worse than not checking at all.
+
+**Results are scoped to the caller's NSID**, so preflight cannot be used to probe whether another
+account's photo reached a moderator.
+
 ---
 
 ## Considered and rejected
@@ -495,10 +533,5 @@ skips.**
   are waiting on the answer.
 - **The wording a user sees when FGA has deliberately stopped.** That the queue is shown is settled.
   The sentence itself is not, and it either delivers ADR-01's promise or quietly undercuts it.
-- **No endpoint answers "which of my groups already hold this photo."** `getPhotoPools` exists in
-  `src/flickr/api.ts` but is reachable only inside `POST /api/v001/requests`. Without a batch
-  preflight the picker discovers ADR-04 warnings as N separate `409`s, one round trip each, which
-  is unusable at forty groups. **The shape is not settled** — one call per photo returning its
-  pools, or one call taking a group list and returning warnings for each.
 - **Whether `scripts/traceability.py` should scan `web/`.** It globs `test/*.test.ts`, so no UI test
   can verify a decision today. ADR-01's user-facing copy will live there.

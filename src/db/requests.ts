@@ -270,6 +270,96 @@ export async function withdrawRequest(
 	};
 }
 
+/**
+ * ADR-04, for many groups at once.
+ *
+ * **The single-pair version below is the same question asked N times, and N round trips
+ * is what made the picker unusable.** Submitting one photo to forty groups discovered
+ * forty warnings as forty separate `409`s, each one a POST the user had to wait for.
+ *
+ * One `IN` clause instead. The list is bounded by the caller, so the query cannot grow
+ * past the page it serves — ADR-17's reasoning applied to a batch rather than a page.
+ */
+export async function moderatedPairsFor(
+	db: D1Database,
+	nsid: string,
+	photoId: string,
+	groupIds: readonly string[],
+): Promise<Map<string, { code: number; firstSeenAt: number }>> {
+	if (groupIds.length === 0) return new Map();
+
+	// Placeholders rather than interpolation. The ids are Flickr's and opaque, and
+	// building SQL from them would be the one place this project trusted them.
+	const holes = groupIds.map(() => "?").join(",");
+
+	const { results } = await db
+		.prepare(
+			`SELECT group_id, flickr_code, first_seen_at FROM moderated_pairs
+       WHERE nsid = ? AND photo_id = ? AND group_id IN (${holes})`,
+		)
+		.bind(nsid, photoId, ...groupIds)
+		.all<{ group_id: string; flickr_code: number; first_seen_at: number }>();
+
+	return new Map(
+		results.map((row) => [
+			row.group_id,
+			{ code: row.flickr_code, firstSeenAt: row.first_seen_at },
+		]),
+	);
+}
+
+/**
+ * Which of these pairs already have an unresolved request.
+ *
+ * **A pending pair cannot be submitted again** — `idx_requests_one_pending_per_pair`
+ * enforces it — so telling the user before they try beats a constraint violation after.
+ */
+export async function pendingPairsFor(
+	db: D1Database,
+	nsid: string,
+	photoId: string,
+	groupIds: readonly string[],
+): Promise<Set<string>> {
+	if (groupIds.length === 0) return new Set();
+
+	const holes = groupIds.map(() => "?").join(",");
+
+	const { results } = await db
+		.prepare(
+			`SELECT group_id FROM requests
+       WHERE nsid = ? AND photo_id = ? AND state = 'pending'
+         AND group_id IN (${holes})`,
+		)
+		.bind(nsid, photoId, ...groupIds)
+		.all<{ group_id: string }>();
+
+	return new Set(results.map((row) => row.group_id));
+}
+
+/** Pairs that already reached the goal state, per ADR-05. */
+export async function succeededPairsFor(
+	db: D1Database,
+	nsid: string,
+	photoId: string,
+	groupIds: readonly string[],
+): Promise<Set<string>> {
+	if (groupIds.length === 0) return new Set();
+
+	const holes = groupIds.map(() => "?").join(",");
+
+	const { results } = await db
+		.prepare(
+			`SELECT DISTINCT group_id FROM requests
+       WHERE nsid = ? AND photo_id = ? AND state = 'resolved'
+         AND outcome IN ('succeeded', 'already_in_pool')
+         AND group_id IN (${holes})`,
+		)
+		.bind(nsid, photoId, ...groupIds)
+		.all<{ group_id: string }>();
+
+	return new Set(results.map((row) => row.group_id));
+}
+
 /** ADR-04. */
 export async function pairReachedAModerator(
 	db: D1Database,

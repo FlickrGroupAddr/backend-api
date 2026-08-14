@@ -6,10 +6,13 @@ import { checkAdmin } from "../admin/allowlist.js";
 import { overview } from "../db/metrics.js";
 import {
 	enqueue,
+	moderatedPairsFor,
 	pairReachedAModerator,
 	pendingCount,
+	pendingPairsFor,
 	recordAttempt,
 	resolveRequest,
+	succeededPairsFor,
 	withdrawRequest,
 } from "../db/requests.js";
 import { getFlickrTokens } from "../db/users.js";
@@ -114,6 +117,99 @@ apiRoutes.get("/api/v001/me", (c) =>
 		admin: checkAdmin(c.get("nsid"), c.env.ADMIN_NSIDS).admin,
 	}),
 );
+
+/** ADR-20. The picker asks about many groups; the cap bounds the reply, not the work. */
+const preflight = z.object({
+	groupIds: z.array(z.string().min(1).max(64)).min(1).max(200),
+});
+
+/**
+ * ADR-20. **Answers ADR-04's question for many groups in ONE round trip.**
+ *
+ * Without this the picker learned about warnings by submitting: forty groups meant forty
+ * POSTs, each returning `409 needs_acknowledgement`, each one a decision the user had
+ * already made blind. The warning arrived after the commitment, which is precisely
+ * backwards for a rule whose whole point is informed consent.
+ *
+ * **It costs ONE Flickr call regardless of how many groups are asked about**, because
+ * `getAllContexts` is per-photo, not per-group. The three D1 reads are bounded by the
+ * caller's list.
+ *
+ * **This is advisory and MUST NOT be treated as authorization.** `POST /requests`
+ * re-checks everything itself. A caller that skipped preflight gets the same protection,
+ * and a caller that forges a preflight result gains nothing — which is the only safe way
+ * to build a "check first" endpoint.
+ */
+apiRoutes.post("/api/v001/photos/:photoId/preflight", async (c) => {
+	const photoId = z.string().min(1).max(64).safeParse(c.req.param("photoId"));
+	const body = preflight.safeParse(await c.req.json().catch(() => null));
+
+	if (!photoId.success || !body.success) {
+		return c.json({ error: "invalid_request" }, 400);
+	}
+
+	const nsid = c.get("nsid");
+	// Duplicates would multiply the response without adding a question.
+	const groupIds = [...new Set(body.data.groupIds)];
+
+	const tokens = await getFlickrTokens(c.env.DB, nsid, c.env.TOKEN_KEY);
+	if (tokens === null) return c.json({ error: "no_flickr_credentials" }, 409);
+
+	const [moderated, pending, succeeded, pools] = await Promise.all([
+		moderatedPairsFor(c.env.DB, nsid, photoId.data, groupIds),
+		pendingPairsFor(c.env.DB, nsid, photoId.data, groupIds),
+		succeededPairsFor(c.env.DB, nsid, photoId.data, groupIds),
+		getPhotoPools(photoId.data, {
+			consumerKey: c.env.FLICKR_CONSUMER_KEY,
+			consumerSecret: c.env.FLICKR_CONSUMER_SECRET,
+			token: tokens.token,
+			tokenSecret: tokens.tokenSecret,
+		}),
+	]);
+
+	/**
+	 * **`poolsKnown` is reported, and the distinction is load-bearing.** A failed
+	 * `getAllContexts` is not "the photo is in no pools" — ADR-04 says presence proves
+	 * approval while absence proves nothing. Rendering an unknown as a clean "ready"
+	 * would suppress warnings the server will then raise at submit time.
+	 */
+	const poolsKnown = pools !== null;
+	const inPool = new Set(pools ?? []);
+
+	return c.json({
+		photoId: photoId.data,
+		poolsKnown,
+		groups: groupIds.map((groupId) => {
+			const seen = moderated.get(groupId);
+
+			// Order matters and mirrors POST /requests exactly. Pool membership beats a
+			// moderation record, because a photo in the pool was approved -- that is the
+			// one direction an invisible decision becomes visible.
+			const status = inPool.has(groupId)
+				? "already_in_pool"
+				: succeeded.has(groupId)
+					? "already_in_pool"
+					: pending.has(groupId)
+						? "already_queued"
+						: seen !== undefined
+							? "needs_acknowledgement"
+							: "ready";
+
+			return {
+				groupId,
+				status,
+				reachedAModerator:
+					seen === undefined
+						? null
+						: {
+								flickrCode: seen.code,
+								firstSeenAt: seen.firstSeenAt,
+								stillPending: seen.code === 7,
+							},
+			};
+		}),
+	});
+});
 
 /** Three rules meet here in order: ADR-04's warning, ADR-03's ordering, then ADR-03's
  *  narrow permission to attempt immediately. */

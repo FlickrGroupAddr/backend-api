@@ -33,12 +33,23 @@ function formEncoded(fields: Record<string, string>): Response {
 	});
 }
 
-function outboundService(request: Request): Response {
+async function outboundService(request: Request): Promise<Response> {
 	const url = new URL(request.url);
 
 	if (url.hostname === "api.flickr.com") {
-		// The method travels in the form-encoded body, so the stub keys off the
-		// path only and answers the shape both calls share.
+		// `callFlickr` sends every parameter form-encoded in the POST body, including
+		// `method` and `photo_id`, so the body is the only place to key off.
+		//
+		// **One photo id is special so ADR-20's `already_in_pool` branch is
+		// reachable.** Every other id gets an empty pool, leaving existing tests
+		// untouched. A test that needs the photo to be in a pool asks for photo
+		// `in-pool` and group `g-already-in`.
+		const body = await request.clone().text();
+
+		if (body.includes("photo_id=in-pool")) {
+			return Response.json({ stat: "ok", pool: [{ id: "g-already-in" }] });
+		}
+
 		return Response.json({ stat: "ok", pool: [] });
 	}
 

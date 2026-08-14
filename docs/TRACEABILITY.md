@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**19 decisions · 44 test blocks · 73 mutations**
+**20 decisions · 45 test blocks · 79 mutations**
 
 ## Forward: decision to verification
 
@@ -22,8 +22,8 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`sweep.test.ts` queues are independent | yes |
 | **ADR-02** | Classify by Flickr's error code. Unknown means terminal. | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-02, requests: the resolution invariant | yes |
 | **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
-| **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
-| **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request | — |
+| **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
+| **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`preflight.test.ts` ADR-20, the batch preflight | — |
 | **ADR-06** | The work engine is a nightly cron over D1 | Test | `sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | — |
 | **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` answers /health without a session<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
 | **ADR-08** | OAuth state lives in a Durable Object | Test | `oauth.test.ts` protocolParams<br>`oauth.test.ts` authorizationHeader<br>`oauth.test.ts` buildAuthorizeUrl<br>`oauth.test.ts` parseFormResponse<br>`oauth.test.ts` the login attempt, ADR-08<br>`oauth.test.ts` sends a login to Flickr carrying a request token | — |
@@ -38,6 +38,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-17** | Every list endpoint is paginated, with a cursor | Test | `api.test.ts` ADR-17, pagination | — |
 | **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-14 and ADR-07, the diagnostic page<br>`worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
 | **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication | yes |
+| **ADR-20** | The warning arrives before the commitment | Test | `preflight.test.ts` ADR-20, the batch preflight | yes |
 
 ## Backward: every test block defends something
 
@@ -65,6 +66,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `oauth.test.ts` | parseFormResponse | ADR-08 |
 | `oauth.test.ts` | the login attempt, ADR-08 | ADR-08 |
 | `oauth.test.ts` | sends a login to Flickr carrying a request token | ADR-08 |
+| `preflight.test.ts` | ADR-20, the batch preflight | ADR-04, ADR-05, ADR-20 |
 | `schema.test.ts` | ADR-03 and ADR-16, requests: ordering | ADR-03, ADR-16 |
 | `schema.test.ts` | ADR-02, requests: the resolution invariant | ADR-02 |
 | `schema.test.ts` | ADR-04, requests: one outstanding request per pair | ADR-04 |
@@ -165,3 +167,9 @@ by reading code or config, because there is no runtime behavior to exercise.
 | src/admin/allowlist.ts | — |
 | ADR-19: answer 403 instead of 404, confirming the surface exists | ADR-19 |
 | src/middleware/admin.ts | — |
+| ADR-20: let preflight read another account's moderation history | ADR-20 |
+| src/db/requests.ts | — |
+|        WHERE nsid = ? AND photo_id = ? AND group_id IN (${holes})`,\n\t\t)\n\t\t.bind(nsid, photoId, ...groupIds)\n\t\t.all<{ group_id: string; flickr_code: number; first_seen_at: number }>(); | — |
+|        WHERE photo_id = ? AND group_id IN (${holes})`,\n\t\t)\n\t\t.bind(photoId, ...groupIds)\n\t\t.all<{ group_id: string; flickr_code: number; first_seen_at: number }>(); | — |
+| ADR-20: warn about a photo that is already in the pool | ADR-20 |
+| src/routes/api.ts | — |
