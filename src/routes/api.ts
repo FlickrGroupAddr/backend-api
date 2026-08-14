@@ -6,6 +6,7 @@ import {
 	enqueue,
 	pairReachedAModerator,
 	pendingCount,
+	recordAttempt,
 	resolveRequest,
 	withdrawRequest,
 } from "../db/requests.js";
@@ -135,6 +136,17 @@ apiRoutes.post("/v001/requests", async (c) => {
 	// been waiting longer.
 	if ((await pendingCount(c.env.DB, nsid, groupId)) === 1) {
 		const head = { id, nsid, photoId, groupId };
+
+		// BEFORE the attempt, matching the sweep. An attempt that throws still
+		// happened, and ADR-08 turns on not losing that: a dead socket may have
+		// left a photo in front of a moderator, so the record of having tried
+		// MUST NOT depend on getting a reply.
+		//
+		// This was missing until the first real add ran on 2026-08-13. The row
+		// resolved correctly with Flickr's code, and reported `attempts: 0` --
+		// the same event counted on one path and not the other.
+		await recordAttempt(c.env.DB, id);
+
 		const disposition = await createAttempt(c.env)(head);
 
 		if (outcomeColumn(disposition) !== null) {

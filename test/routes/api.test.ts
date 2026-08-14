@@ -121,6 +121,48 @@ describe("queueing a request", () => {
 		});
 	});
 
+	it("records the attempt it just made", async () => {
+		// Found by the first real add, 2026-08-13. The row resolved correctly with
+		// Flickr's code and reported `attempts: 0`, because only the nightly sweep
+		// called recordAttempt -- the same event counted on one path and not the
+		// other. Every earlier test asserted on the RESPONSE, which is identical
+		// either way.
+		await authed("/v001/requests", {
+			method: "POST",
+			body: JSON.stringify({ photoId: "p1", groupId: "g1" }),
+		});
+
+		const row = await env.DB.prepare(
+			"SELECT attempts, last_attempt_at FROM requests WHERE photo_id = 'p1'",
+		).first<{ attempts: number; last_attempt_at: number | null }>();
+
+		expect(row?.attempts).toBe(1);
+		expect(row?.last_attempt_at).toBeGreaterThan(0);
+	});
+
+	it("does NOT record an attempt for a request it only queued", async () => {
+		// The control for the test above. Without it, always writing attempts=1
+		// would pass -- including on the path where ADR-10 forbids an attempt.
+		await env.DB.prepare(
+			`INSERT INTO requests (nsid, photo_id, group_id, created_at)
+       VALUES (?, 'waiting', 'g1', 0)`,
+		)
+			.bind(NSID)
+			.run();
+
+		await authed("/v001/requests", {
+			method: "POST",
+			body: JSON.stringify({ photoId: "p2", groupId: "g1" }),
+		});
+
+		const row = await env.DB.prepare(
+			"SELECT attempts, last_attempt_at FROM requests WHERE photo_id = 'p2'",
+		).first<{ attempts: number; last_attempt_at: number | null }>();
+
+		expect(row?.attempts).toBe(0);
+		expect(row?.last_attempt_at).toBeNull();
+	});
+
 	it("queues without attempting when something is already waiting", async () => {
 		// ADR-10: a queue of length one is the ONLY case where an immediate
 		// attempt cannot take an allowance slot from a request that has been
