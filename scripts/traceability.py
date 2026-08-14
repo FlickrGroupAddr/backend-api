@@ -156,6 +156,26 @@ def build() -> tuple[str, list[str]]:
     for tag in sorted(set(by_adr) - set(declared)):
         gaps.append(f"UNKNOWN  tests cite {tag}, which DECISIONS.md does not define")
 
+    # INDEX: the reading-order table must cover every ADR exactly once.
+    #
+    # **This is what makes two orderings safe to keep at the same time.** Sections run
+    # ascending for lookup and the index runs by importance for reading. Without a check
+    # the index silently falls behind, and a stale reading order is worse than none --
+    # it tells a newcomer they have seen everything when they have not.
+    index_body = read(DECISIONS).split("## Read in this order", 1)
+    if len(index_body) < 2:
+        gaps.append("INDEX    DECISIONS.md has no 'Read in this order' table")
+    else:
+        listed = re.findall(r"\[(ADR-\d+)\]\(#", index_body[1].split("\n## ", 1)[0])
+        for tag in declared:
+            if listed.count(tag) != 1:
+                gaps.append(
+                    f"INDEX    {tag} appears {listed.count(tag)} times in the reading "
+                    f"order table; it must appear exactly once"
+                )
+        for tag in sorted(set(listed) - set(declared)):
+            gaps.append(f"INDEX    reading order names {tag}, which is not defined")
+
     # ORDER: a reference document is scanned by number, not read front to back. This was
     # ordered by importance once and Terry could not find anything in it.
     numbers = [int(tag.split("-")[1]) for tag in declared]

@@ -15,6 +15,48 @@ everyone but its author. Numbers are cited from code comments, so they **MUST NO
 a narrative — `scripts/traceability.py --check` fails the build if the order breaks.
 `docs/TRACEABILITY.md` maps each decision to the tests that verify it.
 
+## Read in this order
+
+**Numbers are for LOOKUP. This table is for READING.** Numbers record the order decisions were made,
+which is an accident of history. They are cited from 266 places in code and from 65 commit messages,
+so they **MUST NOT** be renumbered to encode importance — importance changes, and an identifier that
+encodes a changing property has to keep changing with it.
+
+**Read first — it governs the rest**
+
+| | |
+|---|---|
+| [ADR-08](#adr-08--fail-polite-this-one-outranks-the-rest) | **Fail-polite.** Never retry into a human. Settles every conflict below |
+
+**Then — what the system does**
+
+| | |
+|---|---|
+| [ADR-07](#adr-07--classify-by-flickrs-error-code-unknown-means-terminal) | ADR-08 as executable code. An unknown error is terminal |
+| [ADR-10](#adr-10--fifo-per-user-group-the-queue-is-never-jumped) | The queue is never jumped, and the sweep stops at a throttle |
+| [ADR-11](#adr-11--a-pair-that-reached-a-moderator-is-remembered-forever) | A pair a volunteer saw is remembered forever. Warn, never block |
+| [ADR-05](#adr-05--adds-are-idempotent-per-photo-group) | Never submit the same pair twice |
+| [ADR-04](#adr-04--the-work-engine-is-a-nightly-cron-over-d1) | A nightly cron, not per-user alarms |
+
+**Then — how it is built**
+
+| | |
+|---|---|
+| [ADR-01](#adr-01--the-flickr-account-is-the-identity) | No PII. The token is more powerful than the feature set |
+| [ADR-02](#adr-02--oauth-state-lives-in-a-durable-object) | The OAuth secret survives a redirect in a Durable Object |
+| [ADR-03](#adr-03--tokens-are-aes-gcm-encrypted-in-d1-under-a-separate-key) | Tokens encrypted at rest, under a key of their own |
+| [ADR-06](#adr-06--the-session-is-a-stateless-signed-cookie) | Sessions are a signed cookie, not a table |
+| [ADR-12](#adr-12--the-ui-and-api-are-separate-origins-so-the-cookie-is-host-only) | Host-only cookie, and never reflect the `Origin` header |
+| [ADR-09](#adr-09--no-cache-in-front-of-d1) | No cache. Writes cost 1,000× reads |
+| [ADR-13](#adr-13--typescript-on-the-current-stable-toolchain) | TypeScript, current stable, no pre-release tags |
+| [ADR-14](#adr-14--integrate-when-feasible-innovate-otherwise) | Take the dependency unless it fails four tests |
+| [ADR-15](#adr-15--which-store-holds-what) | Two questions decide where new state lives |
+| [ADR-16](#adr-16--a-request-has-two-identifiers) | One id orders, one identifies. Neither does the other's job |
+| [ADR-17](#adr-17--every-list-endpoint-is-paginated-with-a-cursor) | Keyset pagination, because offset silently skips rows |
+
+**Every ADR appears here exactly once, and `--check` enforces that.** A decision missing from this
+table is one nobody was told to read.
+
 ---
 
 ## ADR-01 — The Flickr account is the identity
