@@ -8,43 +8,30 @@ import {
 } from "./db/requests.js";
 
 /**
- * ADR-04's nightly sweep, and ADR-10's queue discipline.
+ * ADR-04's nightly engine and ADR-10's queue discipline.
  *
- * The attempt itself is injected rather than imported. That keeps the walking
- * rules -- which are the part that can be subtly, expensively wrong -- testable
- * against scripted outcomes, with no network and no Flickr account. The
- * production wiring supplies a function that decrypts the user's token and
- * calls `flickr.groups.pools.add`.
+ * **`attempt` is injected, not imported.** The walking rules are the part that can be
+ * subtly and expensively wrong, so they test against scripted outcomes with no network
+ * and no Flickr account.
  */
 
-/** Attempts one add and classifies the result. Injected for testability. */
 export type AttemptFn = (head: QueueHead) => Promise<Disposition>;
 
 export interface SweepReport {
 	readonly queuesWalked: number;
 	readonly attempted: number;
 	readonly resolved: number;
-	/** Queues stopped by a retryable failure. Expected, not an error. */
+	/** Expected, not an error. It is the product working. */
 	readonly stoppedOnThrottle: number;
 	readonly errors: readonly string[];
 }
 
-/**
- * A guard, not a rule. ADR-10 permits continuing through a queue after each
- * resolution, and a queue of terminal failures would otherwise walk its whole
- * length in one night. Flickr's own throttle usually stops a queue long before
- * this does.
- */
+/** A guard, not a rule. ADR-10 permits continuing after each resolution, so a queue of
+ *  terminal failures would otherwise walk its whole length in one night. */
 const MAX_ATTEMPTS_PER_QUEUE = 25;
 
-/**
- * Walks every queue with pending work.
- *
- * Queues are independent -- ADR-10 notes the sweep is embarrassingly parallel
- * across them -- but this runs them in sequence. Nothing here needs the
- * concurrency, and sequential execution keeps the Flickr call rate low and the
- * failure ordering easy to read in a log.
- */
+/** Queues are independent, so this MAY run them concurrently. It does not: nothing needs
+ *  the speed, and sequential keeps the Flickr call rate low and the log readable. */
 export async function sweep(
 	db: D1Database,
 	attempt: AttemptFn,
@@ -67,9 +54,9 @@ export async function sweep(
 				attempted++;
 				disposition = await attempt(head);
 			} catch (cause) {
-				// One queue failing MUST NOT abandon the others. A thrown error is
-				// also not a reason to retry this pair -- we do not know what
-				// happened, and ADR-08 says an unknown outcome stops.
+				// One queue failing MUST NOT abandon the others. A throw is also not a
+				// reason to retry this pair -- we do not know what happened, and ADR-08
+				// says an unknown outcome stops.
 				errors.push(
 					`${head.nsid}/${head.groupId}: ${
 						cause instanceof Error ? cause.message : String(cause)
@@ -78,9 +65,8 @@ export async function sweep(
 				break;
 			}
 
-			// ADR-10: a retryable failure ends this queue for the night. Nothing
-			// behind the head may be attempted -- the request that has been waiting
-			// longest keeps its place at the front.
+			// ADR-10. Everything behind the head is blocked by the same cap, so trying
+			// the next one is the queue-jump this rule forbids, not an optimization.
 			if (disposition.kind === "retry") {
 				stoppedOnThrottle++;
 				break;
@@ -89,8 +75,6 @@ export async function sweep(
 			await resolveRequest(db, head, disposition);
 			resolved++;
 
-			// The head resolved and left the queue, so whatever was behind it is now
-			// the head and MAY be attempted in the same sweep.
 			head = await nextInQueue(db, head.nsid, head.groupId);
 		}
 	}

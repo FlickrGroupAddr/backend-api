@@ -6,25 +6,18 @@ import {
 } from "../oauth/signature.js";
 
 /**
- * Flickr's OAuth 1.0a login, the three legs of it.
+ * Flickr's three-leg OAuth 1.0a login. Signing lives in ../oauth/signature.ts.
  *
- * The signing itself lives in ../oauth/signature.ts and is checked against RFC
- * 5849's published vectors. This module is the Flickr-specific half: endpoints,
- * parameter assembly, and reading the form-encoded replies.
- *
- * Everything except the two `fetch` calls is a pure function, so the assembly
- * can be tested without a network and without a Flickr account.
+ * Everything except the two `fetch` calls is pure, so the assembly tests without a
+ * network and without a Flickr account.
  */
 
 const REQUEST_TOKEN_URL = "https://www.flickr.com/services/oauth/request_token";
 const AUTHORIZE_URL = "https://www.flickr.com/services/oauth/authorize";
 const ACCESS_TOKEN_URL = "https://www.flickr.com/services/oauth/access_token";
 
-/**
- * ADR-01 records that Flickr offers only read, write, or delete -- there is no
- * scope for "add photos to groups" alone. `write` is the narrowest that can do
- * the job, and it grants far more than FGA uses.
- */
+/** ADR-01: Flickr offers only read, write or delete. **`write` is the narrowest that can
+ *  do the job**, and it grants far more than FGA uses. */
 const PERMS = "write";
 
 export interface TemporaryCredentials {
@@ -39,12 +32,8 @@ export interface AccessCredentials {
 	readonly username: string;
 }
 
-/**
- * The protocol parameters every signed call carries.
- *
- * The nonce is from `crypto.getRandomValues`, never `Math.random()` -- a
- * predictable nonce lets an observer replay a captured request.
- */
+/** The nonce comes from `crypto.getRandomValues`, never `Math.random()` -- a predictable
+ *  nonce lets an observer replay a captured request. */
 export function protocolParams(consumerKey: string): Param[] {
 	const nonce = [...crypto.getRandomValues(new Uint8Array(16))]
 		.map((byte) => byte.toString(16).padStart(2, "0"))
@@ -59,13 +48,9 @@ export function protocolParams(consumerKey: string): Param[] {
 	];
 }
 
-/**
- * Builds the `Authorization: OAuth ...` header, per RFC 5849 section 3.5.1.
- *
- * Only `oauth_*` parameters appear in the header. Any non-protocol parameters
- * still contribute to the signature -- they are in `params` -- but they travel
- * in the query string or body, which is why the two lists are not the same.
- */
+/** Only `oauth_*` fields appear in the header. Non-protocol parameters still contribute
+ *  to the signature -- they are in `params` -- but travel in the query or body, which is
+ *  why the two lists differ. */
 export async function authorizationHeader(
 	method: string,
 	url: URL,
@@ -91,23 +76,13 @@ export async function authorizationHeader(
 	return `OAuth ${rendered}`;
 }
 
-/**
- * Parses Flickr's `application/x-www-form-urlencoded` replies.
- *
- * `URLSearchParams` handles the decoding, including `+` for space, which a
- * hand-rolled split on `&` and `=` would get wrong.
- */
+/** `URLSearchParams` handles `+` as space, which a hand-rolled split would get wrong. */
 export function parseFormResponse(body: string): Record<string, string> {
 	return Object.fromEntries(new URLSearchParams(body));
 }
 
-/**
- * Leg 1. Obtains temporary credentials.
- *
- * Note this call is itself signed, with an EMPTY token secret -- there is no
- * unauthenticated leg anywhere in OAuth 1.0a. The trailing "&" that an empty
- * secret produces in the signing key is required, not incidental.
- */
+/** Leg 1. **This call is itself signed, with an EMPTY token secret** -- OAuth 1.0a has no
+ *  unauthenticated leg. That empty half is what makes it look anonymous when it is not. */
 export async function fetchRequestToken(
 	consumerKey: string,
 	consumerSecret: string,
@@ -136,8 +111,8 @@ export async function fetchRequestToken(
 
 	const fields = parseFormResponse(await response.text());
 
-	// Flickr signals success by echoing this. Its absence means the reply is an
-	// error page that happened to arrive with a 200.
+	// Flickr signals success by echoing this. Its absence means an error page that
+	// happened to arrive with a 200.
 	if (fields.oauth_callback_confirmed !== "true") {
 		throw new Error("Flickr did not confirm the OAuth callback");
 	}
@@ -151,7 +126,7 @@ export async function fetchRequestToken(
 	return { token, tokenSecret };
 }
 
-/** Leg 2. Where the browser gets sent. No signing -- the user does this part. */
+/** Leg 2. No signing -- the user does this part. */
 export function buildAuthorizeUrl(requestToken: string): string {
 	const url = new URL(AUTHORIZE_URL);
 	url.searchParams.set("oauth_token", requestToken);
@@ -159,13 +134,9 @@ export function buildAuthorizeUrl(requestToken: string): string {
 	return url.toString();
 }
 
-/**
- * Leg 3. Exchanges the verifier for long-lived access credentials.
- *
- * This is signed with the REQUEST token secret -- the value ADR-02's Durable
- * Object exists to carry across the redirect. Signing with the consumer secret
- * alone produces a valid-looking request that Flickr rejects opaquely.
- */
+/** Leg 3. **Signed with the REQUEST token secret** -- the value ADR-02's Durable Object
+ *  exists to carry across the redirect. The consumer secret alone produces a
+ *  valid-looking request that Flickr rejects opaquely. */
 export async function exchangeAccessToken(
 	consumerKey: string,
 	consumerSecret: string,

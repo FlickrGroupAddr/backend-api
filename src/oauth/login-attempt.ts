@@ -1,25 +1,14 @@
 import { DurableObject } from "cloudflare:workers";
 
 /**
- * Holds the intermediate state of a single OAuth 1.0a login, per ADR-02.
+ * ADR-02. One object per LOGIN ATTEMPT, never per user -- at this point the person has
+ * authorized nothing, so no identity exists yet.
  *
- * One object per LOGIN ATTEMPT, not per user. A user who abandons a login and
- * starts another gets a second object; nothing is shared between them and
- * neither can invalidate the other.
- *
- * It exists because OAuth 1.0a issues a request token SECRET that has to
- * survive a redirect out to Flickr and back. Workers KV cannot hold it -- it is
- * eventually consistent, and the callback frequently lands at a different edge
- * location than the one that started the login, well inside KV's propagation
- * window. A Durable Object is single-homed, so the read after the redirect sees
- * the write that preceded it.
+ * It exists because OAuth 1.0a hands the server a token SECRET and then walks the user
+ * away to flickr.com for two minutes. KV cannot hold it: the callback often lands at a
+ * different point of presence, well inside KV's propagation window.
  */
 
-/**
- * ADR-02 requires the state to be destroyed roughly fifteen minutes after it is
- * created. A login that has not completed by then has been abandoned, and the
- * secret has no reason to outlive it.
- */
 const ABANDONED_AFTER_MS = 15 * 60 * 1000;
 
 interface StoredAttempt {
@@ -29,12 +18,9 @@ interface StoredAttempt {
 }
 
 export class OAuthLoginAttempt extends DurableObject<Env> {
-	/**
-	 * Records the temporary credentials and arms the cleanup alarm.
-	 *
-	 * The alarm is set in the same call that writes the secret, so there is no
-	 * window in which state exists without something scheduled to remove it.
-	 */
+	/** The alarm is armed in the same call that writes the secret, so no window exists
+	 *  where state lives with nothing scheduled to remove it. Durable Objects have no
+	 *  TTL, and most logins are abandoned, so this path is the common case. */
 	async start(requestToken: string, requestTokenSecret: string): Promise<void> {
 		await this.ctx.storage.put<StoredAttempt>("attempt", {
 			requestToken,
@@ -44,21 +30,16 @@ export class OAuthLoginAttempt extends DurableObject<Env> {
 		await this.ctx.storage.setAlarm(Date.now() + ABANDONED_AFTER_MS);
 	}
 
-	/**
-	 * Returns the stored credentials exactly once and erases them.
-	 *
-	 * Single-use by construction: the callback needs the secret precisely once,
-	 * and a replayed callback MUST NOT find anything to work with. Returns null
-	 * when the attempt is unknown, already consumed, or expired -- all three are
-	 * the same answer to the caller, which is "start over".
-	 */
+	/** Single-use by construction: the callback needs the secret exactly once, and a
+	 *  replay MUST find nothing. Null covers unknown, consumed and expired alike --
+	 *  telling them apart would only help someone probing the endpoint. */
 	async consume(
 		requestToken: string,
 	): Promise<{ requestTokenSecret: string } | null> {
 		const attempt = await this.ctx.storage.get<StoredAttempt>("attempt");
 
-		// Compare before erasing, so a callback carrying the wrong token cannot
-		// destroy a legitimate attempt that is still in flight.
+		// Compare BEFORE erasing, so a callback carrying the wrong token cannot destroy
+		// a legitimate attempt still in flight.
 		if (attempt === undefined || attempt.requestToken !== requestToken) {
 			return null;
 		}
@@ -67,7 +48,7 @@ export class OAuthLoginAttempt extends DurableObject<Env> {
 		return { requestTokenSecret: attempt.requestTokenSecret };
 	}
 
-	/** ADR-02: the abandoned-login sweep. Deletes everything this object holds. */
+	/** The entire cleanup strategy for abandoned logins. */
 	override async alarm(): Promise<void> {
 		await this.ctx.storage.deleteAll();
 	}

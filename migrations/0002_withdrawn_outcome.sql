@@ -1,23 +1,16 @@
--- Adds 'withdrawn' to the requests.outcome enum.
+-- Adds 'withdrawn' to requests.outcome.
 --
--- A user who queued something and changed their mind needs a way out, and the
--- row MUST survive it: "you withdrew this" is part of the account of what FGA
--- did on someone's behalf, and deleting the row would leave the user's history
--- silently missing an entry they caused. Withdrawal is a RESOLUTION, not an
--- erasure, so it uses the existing state machine rather than widening it --
--- state becomes 'resolved' and the pending/resolved CHECK below still holds.
+-- **Withdrawal is a RESOLUTION, not an erasure**, so it uses the existing state machine
+-- rather than widening it. The row MUST survive: "you withdrew this" is part of the
+-- account of what FGA did on someone's behalf.
 --
--- This is a full table rebuild because SQLite cannot alter a CHECK constraint.
--- The rebuild is the standard recipe: create, copy, drop, rename, re-index.
--- Dropping a table drops its indexes with it, so the three below are recreated
--- verbatim from 0001 rather than being new.
+-- A full table rebuild because SQLite cannot alter a CHECK constraint. Dropping a table
+-- drops its indexes, so the three below are recreated verbatim from 0001.
 --
--- One deliberate consequence, recorded because it is invisible otherwise: the
--- AUTOINCREMENT sequence is reseeded from the copied rows. 0001 uses
--- AUTOINCREMENT specifically so a deleted row's id cannot be reused and put a
--- new request at the head of a queue it should have joined the back of. That
--- guarantee holds going forward from the rebuild; it does not extend across it.
--- Production held zero request rows when this ran, so nothing was at stake.
+-- **One invisible consequence:** the AUTOINCREMENT sequence is reseeded from the copied
+-- rows. 0001 uses AUTOINCREMENT so a deleted row's id cannot be reused and put a new
+-- request at the head of a queue. That guarantee holds going forward from the rebuild; it
+-- does not extend across it. Production held zero request rows when this ran.
 
 CREATE TABLE requests_rebuilt (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,18 +22,9 @@ CREATE TABLE requests_rebuilt (
   state           TEXT    NOT NULL DEFAULT 'pending'
                           CHECK (state IN ('pending', 'resolved')),
 
-  -- How it resolved. Null while pending.
-  --   succeeded            -- added to the pool
-  --   already_in_pool      -- code 3, or getAllContexts said so. ADR-05 treats
-  --                           this as success, not error.
-  --   queued_for_moderator -- codes 6 and 7. Terminal by ADR-07, and the reason
-  --                           ADR-08 exists. NOT a failure and NOT a success.
-  --   failed               -- terminal failure, ADR-07
-  --   withdrawn            -- the user changed their mind before anything was
-  --                           sent. Only reachable from 'pending', which is what
-  --                           makes it honest: a request that reached a
-  --                           moderator resolved at that moment, so nothing
-  --                           withdrawable has ever been in front of a person.
+  --   withdrawn -- reachable ONLY from 'pending', which is what makes it honest: a
+  --                request that reached a moderator resolved at that moment, so nothing
+  --                withdrawable has ever been in front of a person.
   outcome         TEXT    CHECK (outcome IN (
                             'succeeded',
                             'already_in_pool',

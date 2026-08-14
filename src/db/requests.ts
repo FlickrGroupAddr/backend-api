@@ -2,11 +2,11 @@ import type { Disposition } from "../adds/classify.js";
 import { outcomeColumn, reachedAModerator } from "../adds/classify.js";
 
 /**
- * The add-request queues, per ADR-10.
+ * ADR-10's queues.
  *
- * "Queue" is a view over the `requests` table rather than a table of its own: a
- * queue is every pending row sharing an `(nsid, group_id)`, ordered by `id`.
- * There is no queue object to keep in step with the rows.
+ * **A "queue" is a VIEW over the `requests` table, not a table of its own:** every
+ * pending row sharing an `(nsid, group_id)`, ordered by `id`. There is no queue object to
+ * keep in step with the rows.
  */
 
 export interface QueueHead {
@@ -17,20 +17,12 @@ export interface QueueHead {
 }
 
 /**
- * The head of every queue that currently has pending work.
+ * The head of every queue with pending work.
  *
- * Written as a correlated subquery rather than leaning on SQLite's bare-column
- * behavior with `MIN()`. That shortcut works and is documented, but this form
- * is obviously correct to a reader who does not know the shortcut, and it uses
- * the partial index directly.
- *
- * **Users flagged `needs_relink` are excluded here rather than skipped later.**
- * ADR-07 makes the request that met code 98 or 99 terminal, and after that the
- * user's stored token is known bad -- every further attempt would burn a Flickr
- * call to rediscover the same thing. Filtering at the query means their queues
- * simply sit still, intact, and resume when they log in again. Failing those
- * requests instead would silently empty a user's queue while they were unaware
- * anything was wrong.
+ * **Users flagged `needs_relink` are excluded HERE rather than skipped later.** Their
+ * stored token is known bad, so every attempt would burn a Flickr call to rediscover the
+ * same thing. Filtering leaves their queues intact and resuming on next login; failing
+ * those requests would silently empty a queue while the user knew nothing.
  */
 export async function queueHeads(db: D1Database): Promise<QueueHead[]> {
 	const { results } = await db
@@ -65,7 +57,6 @@ export async function queueHeads(db: D1Database): Promise<QueueHead[]> {
 	}));
 }
 
-/** The next pending request behind a resolved head, if the queue has one. */
 export async function nextInQueue(
 	db: D1Database,
 	nsid: string,
@@ -92,13 +83,8 @@ export async function nextInQueue(
 			};
 }
 
-/**
- * ADR-05's cheap first-pass guard: has this pair already succeeded?
- *
- * The authoritative check is `flickr.photos.getAllContexts`, which also sees
- * adds FGA did not make. This one costs no network call and catches the common
- * case -- an overlapping or re-run sweep.
- */
+/** ADR-05's cheap first pass. No network. The authoritative check is
+ *  `flickr.photos.getAllContexts`, which also sees adds FGA did not make. */
 export async function alreadySucceeded(
 	db: D1Database,
 	nsid: string,
@@ -119,7 +105,6 @@ export async function alreadySucceeded(
 	return row !== null;
 }
 
-/** Records that an attempt happened, whatever it produced. */
 export async function recordAttempt(db: D1Database, id: number): Promise<void> {
 	await db
 		.prepare(
@@ -130,13 +115,9 @@ export async function recordAttempt(db: D1Database, id: number): Promise<void> {
 }
 
 /**
- * Resolves a request and, where ADR-11 requires it, writes the permanent
- * moderated-pair record.
- *
- * Both writes happen in one batch so a request cannot be marked resolved
- * without the record that a person saw it. Losing that pairing is exactly the
- * failure ADR-11 exists to prevent -- the request row is transient and the
- * moderated record is not.
+ * **Both writes go in one batch so a request cannot be marked resolved without the record
+ * that a person saw it.** The request row is transient and the moderated record is not,
+ * so losing that pairing is exactly the failure ADR-11 exists to prevent.
  */
 export async function resolveRequest(
 	db: D1Database,
@@ -148,9 +129,6 @@ export async function resolveRequest(
 		throw new Error("A retryable disposition does not resolve its request");
 	}
 
-	// Only these two dispositions carry a Flickr code. `retry` does too, but it
-	// never reaches here -- the guard above rejects it, since a retryable outcome
-	// leaves the request pending rather than resolving it.
 	const code =
 		disposition.kind === "moderated" || disposition.kind === "terminal"
 			? disposition.code
@@ -194,16 +172,11 @@ export async function resolveRequest(
 }
 
 /**
- * Adds a request to the back of its queue. ADR-10.
+ * ADR-16. Two identifiers with different jobs: `id` orders and stays inside the server,
+ * `publicId` is the opaque handle that appears in URLs.
  *
- * Returns both identifiers because they have different jobs and different
- * audiences: `id` is the FIFO ordering key and stays inside the server, while
- * `publicId` is the opaque handle that appears in URLs and API responses.
- *
- * `crypto.randomUUID()` is a v4 from the runtime's own CSPRNG. **v4 rather than
- * v7 on purpose** -- this value exists to be unguessable, and a v7 would spend
- * its first 48 bits on a plaintext timestamp, republishing the request's
- * creation time to anyone holding the identifier.
+ * **v4, not v7.** This value exists to be unguessable, and v7 spends its first 48 bits on
+ * a plaintext timestamp, republishing the request's creation time to anyone holding it.
  */
 export async function enqueue(
 	db: D1Database,
@@ -226,14 +199,9 @@ export async function enqueue(
 	return { id: row.id, publicId };
 }
 
-/**
- * How many pending requests sit in a queue.
- *
- * ADR-10 lets the API Worker attempt a new request immediately only when it is
- * the SOLE unresolved request in its queue -- a queue of length one is the only
- * case where an immediate attempt cannot take an allowance slot from something
- * that has been waiting longer.
- */
+/** ADR-10 lets the API attempt immediately only when a request is the SOLE unresolved one
+ *  in its queue. A queue of length one is the only case where an immediate attempt cannot
+ *  take an allowance slot from something that waited longer. */
 export async function pendingCount(
 	db: D1Database,
 	nsid: string,
@@ -250,38 +218,25 @@ export async function pendingCount(
 	return row?.n ?? 0;
 }
 
-/**
- * What happened when a user tried to withdraw a request.
- *
- * `already_resolved` carries the outcome so the interface can say which kind of
- * "too late" this was. "It went to a moderator" and "it failed" are very
- * different things to read, and collapsing them into one message is exactly the
- * vagueness ADR-08 exists to prevent.
- */
+/** `already_resolved` carries the outcome, because "it went to a moderator" and "it
+ *  failed" are very different things to read. */
 export type WithdrawResult =
 	| { readonly kind: "withdrawn" }
 	| { readonly kind: "not_found" }
 	| { readonly kind: "already_resolved"; readonly outcome: string };
 
 /**
- * Withdraws a pending request: the user queued it and changed their mind.
+ * **The `state = 'pending'` guard is IN the UPDATE, and that is the honesty of this
+ * feature.** Reaching a moderator resolves a request at that instant, so anything still
+ * pending has provably never been in front of a person.
  *
- * **The `state = 'pending'` guard is the honesty of this feature, and it is in
- * the UPDATE rather than in a check before it.** A request that reaches a
- * moderator resolves at that instant, so anything still pending has provably
- * never been in front of a person -- which is what makes "withdrawn" a true
- * statement rather than a hopeful one. FGA cannot retract a photo from a
- * moderation queue; Flickr has no such call. It can only decline to send one.
+ * As a condition, the race with the nightly sweep becomes the database's problem: if the
+ * sweep resolves this row first, the UPDATE matches nothing and the user is told it was
+ * too late. **A read-then-write would report success for a request just submitted to a
+ * human**, which is the one wrong answer this project is organized against.
  *
- * Doing the guard as a condition makes the race with the nightly sweep the
- * database's problem: if the sweep resolves this row first, the UPDATE matches
- * nothing and the user is told it was too late. A read-then-write would report
- * success for a request that had just been submitted to a human, which is the
- * one wrong answer this whole project is organized against.
- *
- * `nsid` is a condition for the same reason -- one user MUST NOT be able to
- * withdraw another's request by guessing an id. The follow-up lookup is scoped
- * to the caller too, so a miss cannot be used to probe which ids exist.
+ * `nsid` is a condition for the same reason, and the follow-up lookup is scoped to the
+ * caller too, so a miss cannot be used to probe which ids exist.
  */
 export async function withdrawRequest(
 	db: D1Database,
@@ -300,8 +255,6 @@ export async function withdrawRequest(
 
 	if (withdrawn !== null) return { kind: "withdrawn" };
 
-	// It did not apply. Either there is no such request for this user, or it had
-	// already resolved -- and the difference is worth telling them.
 	const existing = await db
 		.prepare("SELECT outcome FROM requests WHERE public_id = ? AND nsid = ?")
 		.bind(publicId, nsid)
@@ -311,14 +264,13 @@ export async function withdrawRequest(
 
 	return {
 		kind: "already_resolved",
-		// A row that failed the UPDATE's `state = 'pending'` condition is resolved,
-		// and 0001's CHECK makes a resolved row's outcome non-null. The fallback
-		// exists so a future schema change cannot turn this into a crash.
+		// 0001's CHECK makes a resolved row's outcome non-null. The fallback exists so a
+		// future schema change cannot turn this into a crash.
 		outcome: existing.outcome ?? "unknown",
 	};
 }
 
-/** ADR-11: has this pair already been in front of a moderator? */
+/** ADR-11. */
 export async function pairReachedAModerator(
 	db: D1Database,
 	nsid: string,

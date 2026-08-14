@@ -1,12 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { readSessionCookie, verifySession } from "../session.js";
 
-/**
- * Requires a valid session cookie and puts the NSID on the context.
- *
- * ADR-06's session is stateless, so this costs no database read -- verifying the
- * signature IS the lookup.
- */
+/** ADR-06 sessions are stateless, so verifying the signature IS the lookup. No D1 read. */
 export type SessionVariables = { nsid: string };
 
 export const requireSession = createMiddleware<{
@@ -21,8 +16,7 @@ export const requireSession = createMiddleware<{
 
 	const nsid = await verifySession(cookie, c.env.SESSION_KEY);
 	if (nsid === null) {
-		// Tampered, expired, wrong key, malformed -- all the same answer. Telling
-		// them apart would only help someone probing the endpoint.
+		// Tampered, expired, wrong key, malformed -- one answer for all four.
 		return c.json({ error: "not_authenticated" }, 401);
 	}
 

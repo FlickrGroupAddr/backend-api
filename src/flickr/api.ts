@@ -1,12 +1,7 @@
 import type { Param } from "../oauth/signature.js";
 import { authorizationHeader, protocolParams } from "./oauth.js";
 
-/**
- * The authenticated Flickr REST calls FGA makes.
- *
- * Six calls total across the whole product, three of them here -- the surface
- * was read out of the 2022 code, which is working precedent rather than a guess.
- */
+/** The three authenticated Flickr calls FGA makes. See docs/FLICKR.md. */
 
 const REST_URL = "https://api.flickr.com/services/rest/";
 
@@ -18,27 +13,19 @@ export interface UserCredentials {
 }
 
 /**
- * The result of one call, with the distinction that matters most kept explicit.
- *
- * `unreachable` is NOT the same as a Flickr error, and collapsing the two would
- * be the most dangerous simplification available here. When Flickr answers 105
- * or 106 it is telling us the write did not happen; when the request never
- * completes we do not know whether it happened, and ADR-08 says an outcome that
- * could mean a person saw something is terminal.
+ * **`unreachable` is NOT a Flickr error, and collapsing the two would be the most
+ * dangerous simplification available here.** Codes 105 and 106 mean Flickr is telling us
+ * the write did not happen. A dead socket means we do not know, and ADR-08 says an
+ * outcome that could mean a person saw something is terminal.
  */
 export type FlickrResult =
 	| { readonly kind: "ok"; readonly body: Record<string, unknown> }
 	| { readonly kind: "error"; readonly code: number; readonly message: string }
 	| { readonly kind: "unreachable"; readonly detail: string };
 
-/**
- * Signs and issues one call.
- *
- * Method arguments travel in the POST body and the protocol parameters in the
- * Authorization header, but BOTH are signed -- RFC 5849 folds form-encoded body
- * parameters into the signature base string, and omitting them produces a
- * signature Flickr rejects without saying why.
- */
+/** Method arguments travel in the body and protocol parameters in the header, but **both
+ *  are signed** -- RFC 5849 folds form-encoded body parameters into the base string, and
+ *  omitting them produces a signature Flickr rejects without saying why. */
 export async function callFlickr(
 	method: string,
 	args: Readonly<Record<string, string>>,
@@ -49,8 +36,7 @@ export async function callFlickr(
 	const bodyParams: Param[] = [
 		["method", method],
 		["format", "json"],
-		// Without this Flickr wraps the JSON in a callback function and the reply
-		// is not parseable JSON at all.
+		// Without this Flickr wraps the JSON in a callback and it is not parseable JSON.
 		["nojsoncallback", "1"],
 		...Object.entries(args),
 	];
@@ -108,12 +94,8 @@ export async function callFlickr(
 	return { kind: "ok", body };
 }
 
-/**
- * `flickr.groups.pools.add`. The call the whole product exists to make.
- *
- * Returns the raw result; classification is ADR-07's job and lives in
- * ../adds/classify.ts, deliberately apart from the transport.
- */
+/** The call the whole product exists to make. Classification is ADR-07's job and lives
+ *  in ../adds/classify.ts, deliberately apart from the transport. */
 export async function addPhotoToGroup(
 	photoId: string,
 	groupId: string,
@@ -126,16 +108,9 @@ export async function addPhotoToGroup(
 	);
 }
 
-/**
- * `flickr.photos.getAllContexts`. ADR-05's authoritative idempotency check.
- *
- * Beats the local D1 guard because it also sees adds FGA did not make -- the
- * user adding a photo by hand, or a second FGA session. Returns the pool IDs the
- * photo currently belongs to.
- *
- * **Absence is not evidence of rejection.** A photo sitting in a moderation
- * queue is not in the pool either, and no call distinguishes those two.
- */
+/** ADR-05's authoritative check. Beats the local guard because it also sees adds FGA did
+ *  not make. **Absence is not evidence of rejection** -- a photo awaiting a moderator is
+ *  not in the pool either, and no call distinguishes those two. */
 export async function getPhotoPools(
 	photoId: string,
 	credentials: UserCredentials,
@@ -160,7 +135,6 @@ export async function getPhotoPools(
 		.filter((id): id is string => id !== null);
 }
 
-/** `flickr.groups.pools.getGroups`. The groups a user may post to. */
 export async function getUserGroups(
 	credentials: UserCredentials,
 ): Promise<FlickrResult> {
@@ -168,33 +142,15 @@ export async function getUserGroups(
 }
 
 /**
- * What `flickr.groups.getInfo` tells us about one group.
- *
- * **The field shapes here are read from Flickr's documentation and have not yet
- * been confirmed against a live reply.** The JSON form of this API wraps some
- * values in `_content` and leaves others bare, inconsistently, so every access
- * below is defensive and `null` means "not present in the shape we expected"
- * rather than "absent from the group".
+ * **The JSON form of this API wraps some values in `_content` and leaves others bare,
+ * inconsistently**, so every access below is defensive and `null` means "not in the shape
+ * we expected" rather than "absent from the group".
  */
 export interface GroupInfo {
 	readonly id: string;
 	readonly name: string | null;
-	/**
-	 * Whether the pool is moderated. This is the field that would let an
-	 * unanswered add be retried safely for UNmoderated pools -- see the open
-	 * question on unconfirmed adds.
-	 *
-	 * **Not the same as `restrictions.moderate_ok`**, which is about permitted
-	 * content ratings and is a different thing entirely.
-	 */
+	/** Not `restrictions.moderate_ok`, which is about content ratings. See docs/FLICKR.md. */
 	readonly poolModerated: boolean | null;
-	/**
-	 * The per-group add allowance. `mode` is the period; only "month" appears in
-	 * Flickr's own example, and day and week are expected but unconfirmed.
-	 * Whether `remaining` is per-user or per-group is also unconfirmed and
-	 * matters a great deal -- the call is authenticated, so per-user is the
-	 * reasonable reading.
-	 */
 	readonly throttle: {
 		readonly count: number | null;
 		readonly mode: string | null;
@@ -220,7 +176,6 @@ function asText(value: unknown): string | null {
 	return null;
 }
 
-/** `flickr.groups.getInfo`. Moderation status and the add throttle. */
 export async function getGroupInfo(
 	groupId: string,
 	credentials: UserCredentials,

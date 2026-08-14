@@ -1,31 +1,15 @@
 /**
- * Encryption of per-user Flickr tokens at rest, per ADR-03.
+ * ADR-03. AES-GCM at rest for Flickr tokens.
  *
- * ADR-14's "is the platform already doing it?" test answers yes here: WebCrypto
- * does AES-GCM natively, so a crypto library would add bundle and supply-chain
- * surface while removing an audited implementation.
- *
- * The threat this addresses is narrow and worth stating so the protection is
- * not mistaken for more than it is: it protects the tokens if the D1 contents
- * leak without the Worker secret leaking too. It does nothing about a
- * compromised Worker, which by definition holds the key.
+ * **Scope of the protection:** it covers a D1 leak that does not also leak the Worker
+ * secret. It does nothing about a compromised Worker, which holds the key by definition.
  */
 
-/** AES-GCM's standard nonce length. 96 bits is the size the mode is built for. */
 const IV_BYTES = 12;
-
-/** AES-256. The key material must be exactly this long after base64 decoding. */
 const KEY_BYTES = 32;
 
-/**
- * Decodes the base64 key from the Worker secret.
- *
- * Requiring exactly 32 raw bytes rather than hashing whatever string arrives is
- * deliberate. Hashing accepts a weak passphrase silently and turns it into a
- * key-shaped thing; this refuses to start instead. Generate one with:
- *
- *   openssl rand -base64 32
- */
+/** Requires exactly 32 raw bytes rather than hashing whatever arrives. Hashing accepts a
+ *  weak passphrase silently; this refuses to start. Generate: `openssl rand -base64 32`. */
 async function importKey(base64Key: string): Promise<CryptoKey> {
 	let raw: Uint8Array;
 	try {
@@ -46,27 +30,16 @@ async function importKey(base64Key: string): Promise<CryptoKey> {
 	]);
 }
 
-/**
- * The NSID is bound into the ciphertext as additional authenticated data.
- *
- * It is not secret -- it is the row's own primary key. Binding it means a token
- * blob only decrypts in the row it belongs to, so moving one user's ciphertext
- * into another user's row fails authentication rather than silently granting
- * the wrong person's Flickr access. Costs nothing and closes a real hole for
- * anyone who gains write access to D1 but not the key.
- */
+/** The NSID is the row's own primary key, not a secret. Binding it as additional
+ *  authenticated data means a blob only decrypts in the row it belongs to, so moving one
+ *  user's ciphertext into another's row fails instead of granting the wrong access. */
 function aad(nsid: string): Uint8Array {
 	return new TextEncoder().encode(nsid);
 }
 
-/**
- * Encrypts one token value. The 12-byte IV is prepended to the ciphertext, so a
- * value and the nonce that decrypts it cannot be separated by accident.
- *
- * A fresh random IV per call is required, not merely advisable: reusing a nonce
- * under the same key breaks AES-GCM catastrophically, leaking the keystream and
- * ultimately the authentication key.
- */
+/** The IV is prepended, so a value and the nonce that decrypts it cannot be separated.
+ *  **A fresh random IV per call is required, not advisable:** reusing a nonce under one
+ *  key breaks AES-GCM catastrophically and leaks the authentication key. */
 export async function encryptToken(
 	plaintext: string,
 	nsid: string,
@@ -87,14 +60,9 @@ export async function encryptToken(
 	return packed;
 }
 
-/**
- * Decrypts one token value.
- *
- * Throws on any failure -- wrong key, wrong NSID, truncated input, tampered
- * ciphertext. There is deliberately no null-returning variant: a caller that
- * cannot decrypt a token cannot act for that user, and swallowing the failure
- * would turn a detected tamper into a confusing downstream error.
- */
+/** Throws on every failure, and there is deliberately no null-returning variant: a caller
+ *  that cannot decrypt cannot act for that user, and swallowing it turns a detected
+ *  tamper into a confusing error somewhere else. */
 export async function decryptToken(
 	packed: Uint8Array,
 	nsid: string,

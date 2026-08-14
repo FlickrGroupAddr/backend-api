@@ -17,12 +17,7 @@ import {
 	type SessionVariables,
 } from "../middleware/session.js";
 
-/**
- * The authenticated REST surface, under `/v001/*`.
- *
- * The version is zero-padded to match the ADR labels -- `v001` sorts correctly
- * past nine and cannot be retrofitted cheaply once anything cites it.
- */
+/** The authenticated surface, `/v001/*`. */
 
 export const apiRoutes = new Hono<{
 	Bindings: Env;
@@ -30,25 +25,11 @@ export const apiRoutes = new Hono<{
 }>();
 
 /**
- * ADR-09: nothing behind a session may reach a shared cache.
+ * ADR-09. **Registered BEFORE `requireSession` deliberately:** a middleware that rejects
+ * never calls `next()`, so registering this second would leave exactly the 401s uncovered.
  *
- * **Registered BEFORE `requireSession` deliberately.** A middleware that
- * rejects a request never calls `next()`, so anything registered after it does
- * not run on that path -- putting this second would have left exactly the 401s
- * uncovered. Sitting first, it sets the header on the way back out and covers
- * every response the group can produce.
- *
- * ADR-09 specifies `private`; this adds `no-store`, and the extra word earns its
- * place twice. Correctness: the queue view changes the instant a user withdraws
- * something, and a browser reusing its own cached copy would show the request
- * still sitting there. Safety: `private` asks shared caches not to store, while
- * `no-store` asks everything not to, and the difference costs nothing on
- * responses this small.
- *
- * **The risk today is latent rather than live** — Cloudflare does not cache JSON
- * from a Worker by default, so nothing is leaking now. It becomes real the day
- * somebody adds a Cache Rule or "Cache Everything", which is exactly the change
- * that gets made without auditing what is already behind a session.
+ * `no-store` goes beyond ADR-09's `private` because the queue view changes the instant a
+ * user withdraws something, and a browser reusing its own cached copy would still show it.
  */
 apiRoutes.use("/v001/*", async (c, next) => {
 	await next();
@@ -61,21 +42,12 @@ apiRoutes.use("/v001/*", requireSession);
 const submission = z.object({
 	photoId: z.string().min(1).max(64),
 	groupId: z.string().min(1).max(64),
-	/** ADR-11: the user has seen the moderation warning and chosen to proceed. */
 	acknowledgedModeration: z.boolean().optional(),
 });
 
-/**
- * The queue view's paging and filter parameters.
- *
- * `limit` is capped rather than merely defaulted. An uncapped `?limit=` is the
- * same unbounded query this pagination exists to remove, just with the caller
- * holding the trigger.
- *
- * `state` defaults to `pending`, because that is the question this page answers
- * -- "what is FGA still going to do for me". History is available with
- * `state=all` and is the rarer ask, so it is the one that pays for itself.
- */
+/** ADR-17. **`limit` is capped, not merely defaulted** -- an uncapped `?limit=` is the
+ *  same unbounded query with the caller holding the trigger. `state` defaults to pending
+ *  because that is the question this page answers. */
 const queueQuery = z.object({
 	limit: z.coerce.number().int().min(1).max(200).default(50),
 	after: z.uuidv4().optional(),
@@ -84,12 +56,8 @@ const queueQuery = z.object({
 
 apiRoutes.get("/v001/me", (c) => c.json({ nsid: c.get("nsid") }));
 
-/**
- * Queues an add request.
- *
- * Three rules meet here, in this order: ADR-11's warning, ADR-10's ordering, and
- * ADR-10's narrow permission to attempt immediately.
- */
+/** Three rules meet here in order: ADR-11's warning, ADR-10's ordering, then ADR-10's
+ *  narrow permission to attempt immediately. */
 apiRoutes.post("/v001/requests", async (c) => {
 	const parsed = submission.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success) {
@@ -99,8 +67,6 @@ apiRoutes.post("/v001/requests", async (c) => {
 	const { photoId, groupId, acknowledgedModeration } = parsed.data;
 	const nsid = c.get("nsid");
 
-	// ADR-11. A pair that already reached a moderator gets a warning BEFORE it is
-	// queued -- but the user is never blocked. The warning informs; they decide.
 	const priorModeration = await pairReachedAModerator(
 		c.env.DB,
 		nsid,
@@ -109,10 +75,9 @@ apiRoutes.post("/v001/requests", async (c) => {
 	);
 
 	if (priorModeration !== null && acknowledgedModeration !== true) {
-		// ADR-11: presence in the pool proves approval after the fact, and this is
-		// the one direction the invisible decision becomes visible. Warning about a
-		// photo the moderator accepted would spend exactly the credibility the real
-		// warning needs.
+		// ADR-11: presence in the pool proves approval, the one direction the invisible
+		// decision becomes visible. Warning about an accepted photo spends exactly the
+		// credibility the real warning needs.
 		const tokens = await getFlickrTokens(c.env.DB, nsid, c.env.TOKEN_KEY);
 		const pools =
 			tokens === null
@@ -124,9 +89,8 @@ apiRoutes.post("/v001/requests", async (c) => {
 						tokenSecret: tokens.tokenSecret,
 					});
 
-		// A failed lookup is not an approval. `?? false` keeps this a boolean and
-		// makes the safe reading the default: if we cannot confirm the photo is in
-		// the pool, the user still gets the warning.
+		// `?? false` keeps the safe reading as the default: a failed lookup is not an
+		// approval, so the user still gets the warning.
 		const alreadyApproved = pools?.includes(groupId) ?? false;
 
 		if (!alreadyApproved) {
@@ -134,8 +98,6 @@ apiRoutes.post("/v001/requests", async (c) => {
 				{
 					status: "needs_acknowledgement",
 					reason: "reached_a_moderator",
-					// Named for what is KNOWN. No rejection signal exists in the Flickr
-					// API, so the copy must not imply one.
 					flickrCode: priorModeration.code,
 					firstSeenAt: priorModeration.firstSeenAt,
 					stillPending: priorModeration.code === 7,
@@ -147,21 +109,12 @@ apiRoutes.post("/v001/requests", async (c) => {
 
 	const { id, publicId } = await enqueue(c.env.DB, nsid, photoId, groupId);
 
-	// ADR-10: attempt immediately if, and only if, this is the SOLE unresolved
-	// request in its queue. A queue of length one is the only case where an
-	// immediate attempt cannot take an allowance slot from something that has
-	// been waiting longer.
 	if ((await pendingCount(c.env.DB, nsid, groupId)) === 1) {
 		const head = { id, nsid, photoId, groupId };
 
-		// BEFORE the attempt, matching the sweep. An attempt that throws still
-		// happened, and ADR-08 turns on not losing that: a dead socket may have
-		// left a photo in front of a moderator, so the record of having tried
-		// MUST NOT depend on getting a reply.
-		//
-		// This was missing until the first real add ran on 2026-08-13. The row
-		// resolved correctly with Flickr's code, and reported `attempts: 0` --
-		// the same event counted on one path and not the other.
+		// BEFORE the attempt, matching the sweep. An attempt that throws still happened,
+		// and ADR-08 turns on not losing that: a dead socket may have left a photo in
+		// front of a moderator, so the record MUST NOT depend on getting a reply.
 		await recordAttempt(c.env.DB, id);
 
 		const disposition = await createAttempt(c.env)(head);
@@ -180,28 +133,16 @@ apiRoutes.post("/v001/requests", async (c) => {
 });
 
 /**
- * Withdraws a pending request -- the user queued it and changed their mind.
+ * **"Withdraw", not "cancel" or "delete", and the word is doing work.** Delete is wrong:
+ * the row survives, resolved as `withdrawn`, so the user's history still accounts for
+ * something they caused. Cancel suggests stopping something in motion, which this cannot
+ * do -- Flickr offers no call to pull a photo back out of a moderation queue.
  *
- * **Named "withdraw" rather than "cancel" or "delete", and the word is doing
- * work.** Delete would be wrong: the row survives, resolved as `withdrawn`, so
- * the user's history still accounts for something they caused. Cancel suggests
- * stopping something already in motion, which this cannot do -- see below.
- *
- * **POST rather than DELETE for the same reason.** This is a state transition on
- * a request, not the removal of one, and the response reports the transition.
- *
- * **It succeeds only while the request is pending, which is what makes it
- * honest.** Reaching a moderator resolves a request at that moment, so anything
- * still withdrawable has never been in front of a person. FGA cannot pull a
- * photo back out of a moderation queue -- Flickr offers no such call -- and a
- * feature that implied otherwise would be ADR-08 broken in the most direct way
- * available: telling someone a volunteer will not see their photo when one
- * already has.
+ * POST rather than DELETE for the same reason: this is a state transition, not a removal.
  */
 apiRoutes.post("/v001/requests/:publicId/withdraw", async (c) => {
-	// Shape-checked before it reaches the database. This is not a security
-	// control -- `withdrawRequest` conditions on `nsid` and that is what makes it
-	// safe -- it just turns a malformed id into a clean 400 rather than a 404
+	// Not a security control -- `withdrawRequest` conditions on `nsid` and that is what
+	// makes it safe. This just turns a malformed id into a clean 400 rather than a 404
 	// that reads as "your request vanished".
 	const parsed = z.uuidv4().safeParse(c.req.param("publicId"));
 	if (!parsed.success) {
@@ -219,15 +160,12 @@ apiRoutes.post("/v001/requests/:publicId/withdraw", async (c) => {
 			return c.json({ error: "not_found" }, 404);
 
 		case "already_resolved":
-			// 409 rather than 400: the request is fine, the state is not. The outcome
-			// travels so the interface can say WHICH kind of too-late this was.
+			// 409, not 400: the request is fine, the state is not.
 			return c.json(
 				{
 					error: "already_resolved",
 					publicId,
 					outcome: result.outcome,
-					// The one outcome where the user should be told plainly that a person
-					// is involved and FGA is out of the loop.
 					reachedAModerator: result.outcome === "queued_for_moderator",
 				},
 				409,
@@ -235,13 +173,9 @@ apiRoutes.post("/v001/requests/:publicId/withdraw", async (c) => {
 	}
 });
 
-/**
- * The groups this user may post to. One Flickr call, whatever the group count.
- *
- * `poolModerated` and `inviteOnly` come free in this reply. The add THROTTLE
- * does not -- it needs `groups.getInfo` per group, which is the sibling route
- * below and is why this one does not fetch it.
- */
+/** One Flickr call whatever the group count. `poolModerated` and `inviteOnly` come free
+ *  in this reply. **The throttle does not** -- it needs `groups.getInfo` per group, which
+ *  is the sibling route below and is why this one does not fetch it. */
 apiRoutes.get("/v001/groups", async (c) => {
 	const nsid = c.get("nsid");
 
@@ -268,8 +202,8 @@ apiRoutes.get("/v001/groups", async (c) => {
 		);
 	}
 
-	// The JSON shape here is documented loosely and unconfirmed against a live
-	// reply, so read it defensively rather than trusting a path.
+	// This JSON shape is documented loosely, so read it defensively rather than trusting
+	// a path.
 	const container = listed.body.groups;
 	const rawGroups =
 		typeof container === "object" &&
@@ -278,9 +212,8 @@ apiRoutes.get("/v001/groups", async (c) => {
 			? ((container as { group: unknown[] }).group as Record<string, unknown>[])
 			: [];
 
-	// Only what a picker needs. The raw reply carries every group's full
-	// description and rules -- HTML, award codes, decades of forum boilerplate --
-	// which came to 979 KB on a real account. None of it is useful here.
+	// Only what a picker needs. The raw reply carries every group's full description and
+	// rules -- 979 KB on a real account -- and none of it is useful here.
 	return c.json({
 		groups: rawGroups
 			.map((group) => ({
@@ -289,8 +222,6 @@ apiRoutes.get("/v001/groups", async (c) => {
 				name: typeof group.name === "string" ? group.name : null,
 				photos: Number(group.photos ?? 0),
 				members: Number(group.member_count ?? 0),
-				// Free signals already present in this reply. Fetching them here
-				// costs nothing; fetching the THROTTLE would cost a call per group.
 				poolModerated: Number(group.ispoolmoderated ?? 0) === 1,
 				inviteOnly: Number(group.invitation_only ?? 0) === 1,
 			}))
@@ -299,16 +230,10 @@ apiRoutes.get("/v001/groups", async (c) => {
 });
 
 /**
- * One group's moderation status and add allowance.
- *
- * Split out from the list deliberately, and the reason is worth recording. The
- * first version fetched this inline for every group, reasoning that a burst of
- * parallel calls would be rude to Flickr. That was right about the rudeness and
- * wrong about the scale: the owner belongs to 330 groups, so it made 331
- * SEQUENTIAL calls and took 53 seconds.
- *
- * The fix is not concurrency, it is not making the calls. A list view does not
- * need throttle data for groups nobody is looking at.
+ * Split out from the list deliberately. The first version fetched this inline for every
+ * group, reasoning that parallel calls would be rude to Flickr. **That was right about
+ * the rudeness and wrong about the scale:** 330 groups meant 331 sequential calls and
+ * 53 seconds. **The fix was not concurrency. It was not making the calls.**
  */
 apiRoutes.get("/v001/groups/:groupId", async (c) => {
 	const nsid = c.get("nsid");
@@ -332,12 +257,9 @@ apiRoutes.get("/v001/groups/:groupId", async (c) => {
 });
 
 /**
- * The queue view -- where ADR-08's second half is delivered.
- *
- * Every decision in this project implements the STOPPING. This is the only place
- * the user finds out, and without it fail-polite is a promise the product never
- * keeps. A silent stop reads as a bug, and a user who thinks the tool is broken
- * goes and does the thing by hand, repeatedly, recreating the exact harm.
+ * **Where ADR-08 becomes visible.** Every other decision implements the stopping. This is
+ * the only place the user finds out, and without it fail-polite is a promise the product
+ * never keeps.
  */
 apiRoutes.get("/v001/queue", async (c) => {
 	const nsid = c.get("nsid");
@@ -354,14 +276,13 @@ apiRoutes.get("/v001/queue", async (c) => {
 
 	const { limit, after, state } = params.data;
 
-	// Keyset pagination on (group_id, id), which is exactly the sort order, so a
-	// page boundary is a position in that order rather than a row count. Offset
-	// paging would drift here: the sweep resolves rows every night, so the same
-	// OFFSET returns a different window and requests slide across pages unseen.
+	// ADR-17. Keyset on (group_id, id), which IS the sort order, so a page boundary is a
+	// position rather than a row count. Offset paging drifts here: the sweep resolves
+	// rows nightly, so the same OFFSET returns a different window and requests slide
+	// across pages unseen.
 	//
-	// The cursor is a `public_id` the caller already holds. Resolving it back to
-	// its (group_id, id) is one indexed lookup and keeps the internal id out of
-	// the URL. Scoped by nsid, so a cursor from another account finds nothing.
+	// The cursor is a `public_id` the caller already holds, resolved back to its
+	// (group_id, id). Scoped by nsid, so another account's cursor finds nothing.
 	let cursor: { group_id: string; id: number } | null = null;
 	if (after !== undefined) {
 		cursor = await c.env.DB.prepare(
@@ -375,24 +296,17 @@ apiRoutes.get("/v001/queue", async (c) => {
 		}
 	}
 
-	// One extra row, purely to learn whether another page exists. Cheaper and
-	// more honest than a COUNT(*), which would be a second scan reporting a
-	// total that is stale the moment the sweep runs.
+	// One extra row, purely to learn whether another page exists. Cheaper and more honest
+	// than a COUNT(*), which reports a total that is stale the moment the sweep runs.
 	const probe = limit + 1;
 
-	// **Position is computed in SQL, not while iterating**, because paging made
-	// the old JS version wrong: a page starting mid-group restarted at 1.
+	// **Position is a correlated COUNT, not a window function, and the difference is the
+	// bug.** A window function is evaluated AFTER the WHERE clause, so with the cursor
+	// condition in there it would number only this page and restart at 1. The subquery is
+	// independent of the page, and its cost is bounded by page size rather than history.
 	//
-	// It is a correlated COUNT rather than a window function, and the difference
-	// matters. A window function is evaluated AFTER the WHERE clause, so with the
-	// cursor condition in there it would number only the rows on this page and
-	// restart at 1 -- the exact bug, moved into SQL. The subquery is independent
-	// of the page, and its cost is bounded by the PAGE size rather than by the
-	// user's history: at most `limit` range-counts against the partial pending
-	// index, and none at all for resolved rows.
-	//
-	// Ordered by `id` -- ADR-10's ordering key -- while only `public_id` is
-	// selected, so the internal id orders the rows and never leaves the server.
+	// Ordered by `id` while only `public_id` is selected, so the internal id orders the
+	// rows and never leaves the server.
 	const { results } = await c.env.DB.prepare(
 		`SELECT r.public_id, r.photo_id, r.group_id, r.state, r.outcome,
             r.flickr_code, r.attempts, r.created_at, r.last_attempt_at,
@@ -429,9 +343,9 @@ apiRoutes.get("/v001/queue", async (c) => {
 	const hasMore = results.length > limit;
 	const page = hasMore ? results.slice(0, limit) : results;
 
-	// Grouped by group, never one flat list. A flat list looks like a single
-	// queue when there are many, which makes correct FIFO behavior read as a bug
-	// the first time a later request lands ahead of an earlier one elsewhere.
+	// Grouped, never one flat list. A flat list looks like a single queue when there are
+	// many, which makes correct FIFO behavior read as a bug the first time a later
+	// request lands ahead of an earlier one elsewhere.
 	const queues = new Map<string, unknown[]>();
 
 	for (const row of page) {
@@ -447,16 +361,13 @@ apiRoutes.get("/v001/queue", async (c) => {
 			queuedAt: row.created_at,
 			lastAttemptAt: row.last_attempt_at,
 			resolvedAt: row.resolved_at,
-			// Position within the whole group's pending queue, not within this
-			// page. See the window function above.
 			position: row.position,
 		});
 		queues.set(row.group_id, entries);
 	}
 
-	// The cursor is the last row of THIS page. Null means the end, and it says so
-	// definitively rather than leaving the caller to infer it from a short page --
-	// which would be wrong exactly when the last page is exactly `limit` long.
+	// **Null means the end, stated rather than inferred.** Letting the caller infer it
+	// from a short page is wrong exactly when the last page is exactly `limit` long.
 	const last = page.at(-1);
 
 	return c.json({
