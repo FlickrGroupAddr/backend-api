@@ -1127,6 +1127,44 @@ is no other candidate, so it is absent from the design rather than merely unused
 **Where this rule and ADR-14 disagree, ADR-14 does not apply** — this is about placing state, not
 about taking dependencies.
 
+## The indexes, and the query each one serves
+
+**Every index below was confirmed in use by `EXPLAIN QUERY PLAN` against 42,000 rows on
+2026-08-13**, not by reasoning about it. **An index nothing uses is pure write cost**, and ADR-09
+records that D1 bills writes 1,000× reads — so this table is the justification, and an index that
+cannot name its query does not belong.
+
+| Index | Columns | Serves |
+|---|---|---|
+| rowid | `id` | `recordAttempt`, `resolveRequest`, and ADR-10's ordering. `INTEGER PRIMARY KEY` **is** the rowid in SQLite, so this costs nothing extra. |
+| `sqlite_autoindex_requests_1` | `public_id` | **Implicit, created by the `UNIQUE` constraint.** Serves the withdraw lookup and its follow-up. |
+| `idx_requests_queue` | `nsid, group_id, id` **partial**, pending only | `pendingCount`, `nextInQueue`, and the sweep's queue-head subquery. Covering for the first two. |
+| `idx_requests_pair` | `nsid, photo_id, group_id` | ADR-05's `alreadySucceeded`, which looks at **resolved** rows and so cannot use the partial index below. |
+| `idx_requests_one_pending_per_pair` | `nsid, photo_id, group_id` **partial unique**, pending only | ADR-11's "one in flight per pair" rule. The constraint IS the index. |
+| `moderated_pairs` PK | `nsid, photo_id, group_id` | ADR-11's warning lookup. |
+| `users` PK | `nsid` | Every token and username read. |
+
+**A `UNIQUE` constraint creates an index, and grepping for `CREATE INDEX` will not find it.** Two
+of the seven above are implicit. **Anyone auditing coverage MUST use `PRAGMA index_list`**, or they
+will conclude a column is unindexed and add a duplicate B-tree that costs writes and serves nothing.
+
+### Two things this audit found, neither of them an index
+
+**Query plans on empty tables are a broken instrument.** With no rows, SQLite has no statistics and
+guesses: the nightly sweep's query showed a full `SCAN`, and an index was nearly added to fix it.
+Populated with realistic data the same query uses a **partial covering index over pending rows
+only**, which is what it should do. **Populate before reading a plan, or do not read it.**
+
+**The one suboptimal plan is `/v001/queue`, and an index is the wrong fix.** It sorts via
+`USE TEMP B-TREE FOR ORDER BY`; a non-partial `(nsid, group_id, id)` index removes that. **It is
+not worth adding**, because the sort is over a single user's rows while the index would be written
+on every insert forever.
+
+**The real defect there is that the query is unbounded**: it returns every request a user has ever
+made, resolved ones included, with no `LIMIT` and no pagination. That is the same shape as the
+groups endpoint that took 53 seconds — a query sized against an assumption that stops holding — and
+**no index fixes it.** Recorded in Open questions.
+
 ## Considered and rejected
 
 | Option | Why not |
@@ -1177,6 +1215,15 @@ about taking dependencies.
   rather than retrying nightly forever — **the failure mode this bullet was worried about does not
   exist.** What is left is one wasted Flickr call per disabled pool, once. Skipping them is still
   worth doing and is no longer urgent.
+- **`/v001/queue` is unbounded and MUST gain a limit before anyone has a long history.** Found
+  2026-08-13 while auditing indexes. It selects every request a user has ever made, resolved rows
+  included, ordered but never limited — so the response and the rows read both grow forever, and a
+  user who has queued ten thousand photos over a year downloads all of them to look at what is
+  pending today. **This is the same defect as the 53-second groups endpoint**, which returned 979 KB
+  because it was sized against an assumption nobody checked. **An index does not fix it**; the fix
+  is a `LIMIT` with pagination, and probably a default that returns pending work only, since that is
+  what the page is for. Recorded rather than fixed because the right shape depends on what the
+  interface shows, and no interface exists yet.
 - **Whether D1 needs a separate group-metadata cache.** Currently assumed not: group rules can be
   read from Flickr on demand. Revisit if that read turns out to be slow or rate-limited.
 - **The wording a user sees when FGA has deliberately stopped.** *That* the queue is shown and
