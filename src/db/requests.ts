@@ -193,24 +193,37 @@ export async function resolveRequest(
 	await db.batch(statements);
 }
 
-/** Adds a request to the back of its queue. ADR-10. */
+/**
+ * Adds a request to the back of its queue. ADR-10.
+ *
+ * Returns both identifiers because they have different jobs and different
+ * audiences: `id` is the FIFO ordering key and stays inside the server, while
+ * `publicId` is the opaque handle that appears in URLs and API responses.
+ *
+ * `crypto.randomUUID()` is a v4 from the runtime's own CSPRNG. **v4 rather than
+ * v7 on purpose** -- this value exists to be unguessable, and a v7 would spend
+ * its first 48 bits on a plaintext timestamp, republishing the request's
+ * creation time to anyone holding the identifier.
+ */
 export async function enqueue(
 	db: D1Database,
 	nsid: string,
 	photoId: string,
 	groupId: string,
-): Promise<number> {
+): Promise<{ id: number; publicId: string }> {
+	const publicId = crypto.randomUUID();
+
 	const row = await db
 		.prepare(
-			`INSERT INTO requests (nsid, photo_id, group_id, created_at)
-       VALUES (?, ?, ?, ?)
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+       VALUES (?, ?, ?, ?, ?)
        RETURNING id`,
 		)
-		.bind(nsid, photoId, groupId, Date.now())
+		.bind(publicId, nsid, photoId, groupId, Date.now())
 		.first<{ id: number }>();
 
 	if (row === null) throw new Error("Enqueue returned no row");
-	return row.id;
+	return { id: row.id, publicId };
 }
 
 /**
@@ -273,16 +286,16 @@ export type WithdrawResult =
 export async function withdrawRequest(
 	db: D1Database,
 	nsid: string,
-	id: number,
+	publicId: string,
 ): Promise<WithdrawResult> {
 	const withdrawn = await db
 		.prepare(
 			`UPDATE requests
        SET state = 'resolved', outcome = 'withdrawn', resolved_at = ?
-       WHERE id = ? AND nsid = ? AND state = 'pending'
+       WHERE public_id = ? AND nsid = ? AND state = 'pending'
        RETURNING id`,
 		)
-		.bind(Date.now(), id, nsid)
+		.bind(Date.now(), publicId, nsid)
 		.first<{ id: number }>();
 
 	if (withdrawn !== null) return { kind: "withdrawn" };
@@ -290,8 +303,8 @@ export async function withdrawRequest(
 	// It did not apply. Either there is no such request for this user, or it had
 	// already resolved -- and the difference is worth telling them.
 	const existing = await db
-		.prepare("SELECT outcome FROM requests WHERE id = ? AND nsid = ?")
-		.bind(id, nsid)
+		.prepare("SELECT outcome FROM requests WHERE public_id = ? AND nsid = ?")
+		.bind(publicId, nsid)
 		.first<{ outcome: string | null }>();
 
 	if (existing === null) return { kind: "not_found" };

@@ -27,11 +27,11 @@ async function insertRequest(
 	nsid = "99999999@N00",
 ): Promise<number> {
 	const row = await env.DB.prepare(
-		`INSERT INTO requests (nsid, photo_id, group_id, created_at)
-     VALUES (?, ?, ?, ?)
+		`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+     VALUES (?, ?, ?, ?, ?)
      RETURNING id`,
 	)
-		.bind(nsid, photoId, groupId, NOW)
+		.bind(crypto.randomUUID(), nsid, photoId, groupId, NOW)
 		.first<{ id: number }>();
 
 	if (row === null) throw new Error("insert returned no row");

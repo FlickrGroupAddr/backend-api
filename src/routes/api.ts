@@ -128,7 +128,7 @@ apiRoutes.post("/v001/requests", async (c) => {
 		}
 	}
 
-	const id = await enqueue(c.env.DB, nsid, photoId, groupId);
+	const { id, publicId } = await enqueue(c.env.DB, nsid, photoId, groupId);
 
 	// ADR-10: attempt immediately if, and only if, this is the SOLE unresolved
 	// request in its queue. A queue of length one is the only case where an
@@ -151,11 +151,15 @@ apiRoutes.post("/v001/requests", async (c) => {
 
 		if (outcomeColumn(disposition) !== null) {
 			await resolveRequest(c.env.DB, head, disposition);
-			return c.json({ status: "resolved", id, disposition: disposition.kind });
+			return c.json({
+				status: "resolved",
+				publicId,
+				disposition: disposition.kind,
+			});
 		}
 	}
 
-	return c.json({ status: "queued", id }, 202);
+	return c.json({ status: "queued", publicId }, 202);
 });
 
 /**
@@ -177,20 +181,22 @@ apiRoutes.post("/v001/requests", async (c) => {
  * available: telling someone a volunteer will not see their photo when one
  * already has.
  */
-apiRoutes.post("/v001/requests/:id/withdraw", async (c) => {
-	// Flickr ids are opaque strings, but this one is OUR autoincrement id, so it
-	// is genuinely numeric. Anything else is a malformed request rather than a
-	// missing one -- `Number()` would turn "" and " " into 0.
-	const id = Number.parseInt(c.req.param("id"), 10);
-	if (!Number.isSafeInteger(id) || id < 1) {
+apiRoutes.post("/v001/requests/:publicId/withdraw", async (c) => {
+	// Shape-checked before it reaches the database. This is not a security
+	// control -- `withdrawRequest` conditions on `nsid` and that is what makes it
+	// safe -- it just turns a malformed id into a clean 400 rather than a 404
+	// that reads as "your request vanished".
+	const parsed = z.uuidv4().safeParse(c.req.param("publicId"));
+	if (!parsed.success) {
 		return c.json({ error: "invalid_request" }, 400);
 	}
 
-	const result = await withdrawRequest(c.env.DB, c.get("nsid"), id);
+	const publicId = parsed.data;
+	const result = await withdrawRequest(c.env.DB, c.get("nsid"), publicId);
 
 	switch (result.kind) {
 		case "withdrawn":
-			return c.json({ status: "withdrawn", id });
+			return c.json({ status: "withdrawn", publicId });
 
 		case "not_found":
 			return c.json({ error: "not_found" }, 404);
@@ -201,7 +207,7 @@ apiRoutes.post("/v001/requests/:id/withdraw", async (c) => {
 			return c.json(
 				{
 					error: "already_resolved",
-					id,
+					publicId,
 					outcome: result.outcome,
 					// The one outcome where the user should be told plainly that a person
 					// is involved and FGA is out of the loop.
@@ -319,8 +325,10 @@ apiRoutes.get("/v001/groups/:groupId", async (c) => {
 apiRoutes.get("/v001/queue", async (c) => {
 	const nsid = c.get("nsid");
 
+	// Ordered by `id`, which is ADR-10's ordering key, but only `public_id` is
+	// selected -- the internal id orders the rows and never leaves the server.
 	const { results } = await c.env.DB.prepare(
-		`SELECT id, photo_id, group_id, state, outcome, flickr_code,
+		`SELECT public_id, photo_id, group_id, state, outcome, flickr_code,
             attempts, created_at, last_attempt_at, resolved_at
      FROM requests
      WHERE nsid = ?
@@ -328,7 +336,7 @@ apiRoutes.get("/v001/queue", async (c) => {
 	)
 		.bind(nsid)
 		.all<{
-			id: number;
+			public_id: string;
 			photo_id: string;
 			group_id: string;
 			state: string;
@@ -365,7 +373,7 @@ apiRoutes.get("/v001/queue", async (c) => {
 		if (position !== null) pendingAhead.set(row.group_id, position);
 
 		entries.push({
-			id: row.id,
+			publicId: row.public_id,
 			photoId: row.photo_id,
 			state: row.state,
 			outcome: row.outcome,

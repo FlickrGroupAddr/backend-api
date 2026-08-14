@@ -13,6 +13,21 @@ import { mintSession, SESSION_COOKIE } from "../../src/session.js";
 const NSID = "12345678@N00";
 const API = "https://api.flickrgroupaddr.com";
 
+/**
+ * A v4 UUID built by SQLite, for rows inserted straight into the table.
+ *
+ * Spliced into the SQL rather than bound, so adding the column to a fixture
+ * costs no extra bind parameter. **Fixtures only** -- the Worker mints real ones
+ * with `crypto.randomUUID()`, which is a CSPRNG where SQLite's `random()` is
+ * not, and that difference is the entire point of the column.
+ */
+const SQL_UUID = `lower(
+  hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' ||
+  substr(hex(randomblob(2)), 2) || '-' ||
+  substr('89ab', 1 + (abs(random()) % 4), 1) ||
+  substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))
+)`;
+
 /** Matches the SESSION_KEY in .dev.vars, which the test Worker loads. */
 async function sessionCookie(nsid = NSID): Promise<string> {
 	const token = await mintSession(nsid, env.SESSION_KEY);
@@ -144,8 +159,8 @@ describe("queueing a request", () => {
 		// The control for the test above. Without it, always writing attempts=1
 		// would pass -- including on the path where ADR-10 forbids an attempt.
 		await env.DB.prepare(
-			`INSERT INTO requests (nsid, photo_id, group_id, created_at)
-       VALUES (?, 'waiting', 'g1', 0)`,
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+       VALUES (${SQL_UUID}, ?, 'waiting', 'g1', 0)`,
 		)
 			.bind(NSID)
 			.run();
@@ -168,8 +183,8 @@ describe("queueing a request", () => {
 		// attempt cannot take an allowance slot from a request that has been
 		// waiting longer.
 		await env.DB.prepare(
-			`INSERT INTO requests (nsid, photo_id, group_id, created_at)
-       VALUES (?, 'waiting', 'g1', 0)`,
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+       VALUES (${SQL_UUID}, ?, 'waiting', 'g1', 0)`,
 		)
 			.bind(NSID)
 			.run();
@@ -262,7 +277,7 @@ describe("the queue view, where ADR-08 becomes visible", () => {
 			["p3", "g2"],
 		]) {
 			await env.DB.prepare(
-				"INSERT INTO requests (nsid, photo_id, group_id, created_at) VALUES (?, ?, ?, 0)",
+				`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at) VALUES (${SQL_UUID}, ?, ?, ?, 0)`,
 			)
 				.bind(NSID, photo, group)
 				.run();
@@ -280,7 +295,7 @@ describe("the queue view, where ADR-08 becomes visible", () => {
 	it("numbers pending positions so waiting does not look like breakage", async () => {
 		for (const photo of ["p1", "p2", "p3"]) {
 			await env.DB.prepare(
-				"INSERT INTO requests (nsid, photo_id, group_id, created_at) VALUES (?, ?, 'g1', 0)",
+				`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at) VALUES (${SQL_UUID}, ?, ?, 'g1', 0)`,
 			)
 				.bind(NSID, photo)
 				.run();
@@ -298,8 +313,8 @@ describe("the queue view, where ADR-08 becomes visible", () => {
 		// reason this view exists.
 		await env.DB.prepare(
 			`INSERT INTO requests
-         (nsid, photo_id, group_id, state, outcome, flickr_code, created_at, resolved_at)
-       VALUES (?, 'p1', 'g1', 'resolved', 'queued_for_moderator', 6, 0, 1)`,
+         (public_id, nsid, photo_id, group_id, state, outcome, flickr_code, created_at, resolved_at)
+       VALUES (${SQL_UUID}, ?, 'p1', 'g1', 'resolved', 'queued_for_moderator', 6, 0, 1)`,
 		)
 			.bind(NSID)
 			.run();
@@ -327,7 +342,7 @@ describe("the queue view, where ADR-08 becomes visible", () => {
 			.run();
 
 		await env.DB.prepare(
-			"INSERT INTO requests (nsid, photo_id, group_id, created_at) VALUES ('99999999@N00', 'theirs', 'g1', 0)",
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at) VALUES (${SQL_UUID}, '99999999@N00', 'theirs', 'g1', 0)`,
 		).run();
 
 		const body = (await (await authed("/v001/queue")).json()) as {
@@ -348,53 +363,56 @@ describe("the queue view, where ADR-08 becomes visible", () => {
  * cannot retract a photo from a moderation queue and MUST NOT imply it can.
  */
 describe("withdrawing a request", () => {
-	/** Queues a request directly and returns its id. */
-	async function queue(photoId: string, groupId = "g1"): Promise<number> {
+	/** Queues a request directly and returns its PUBLIC id, which is what URLs use. */
+	async function queue(photoId: string, groupId = "g1"): Promise<string> {
 		const row = await env.DB.prepare(
-			`INSERT INTO requests (nsid, photo_id, group_id, created_at)
-       VALUES (?, ?, ?, 0) RETURNING id`,
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+       VALUES (${SQL_UUID}, ?, ?, ?, 0) RETURNING public_id`,
 		)
 			.bind(NSID, photoId, groupId)
-			.first<{ id: number }>();
+			.first<{ public_id: string }>();
 
-		return row?.id ?? 0;
+		return row?.public_id ?? "";
 	}
 
 	/** Queues a request that has already resolved with the given outcome. */
-	async function resolved(photoId: string, outcome: string): Promise<number> {
+	async function resolved(photoId: string, outcome: string): Promise<string> {
 		const row = await env.DB.prepare(
 			`INSERT INTO requests
-         (nsid, photo_id, group_id, state, outcome, resolved_at, created_at)
-       VALUES (?, ?, 'g1', 'resolved', ?, 1, 0) RETURNING id`,
+         (public_id, nsid, photo_id, group_id, state, outcome, resolved_at, created_at)
+       VALUES (${SQL_UUID}, ?, ?, 'g1', 'resolved', ?, 1, 0) RETURNING public_id`,
 		)
 			.bind(NSID, photoId, outcome)
-			.first<{ id: number }>();
+			.first<{ public_id: string }>();
 
-		return row?.id ?? 0;
+		return row?.public_id ?? "";
 	}
 
-	function withdraw(id: number | string): Promise<Response> {
-		return authed(`/v001/requests/${id}/withdraw`, { method: "POST" });
+	function withdraw(publicId: string): Promise<Response> {
+		return authed(`/v001/requests/${publicId}/withdraw`, { method: "POST" });
 	}
 
 	it("withdraws a pending request", async () => {
-		const id = await queue("p1");
-		const response = await withdraw(id);
+		const publicId = await queue("p1");
+		const response = await withdraw(publicId);
 
 		expect(response.status).toBe(200);
-		expect(await response.json()).toMatchObject({ status: "withdrawn", id });
+		expect(await response.json()).toMatchObject({
+			status: "withdrawn",
+			publicId,
+		});
 	});
 
 	it("resolves the row as withdrawn rather than deleting it", async () => {
 		// The user's history MUST still account for something they caused. A
 		// deleted row leaves a silent gap where an explicable event belongs.
-		const id = await queue("p1");
-		await withdraw(id);
+		const publicId = await queue("p1");
+		await withdraw(publicId);
 
 		const row = await env.DB.prepare(
-			"SELECT state, outcome, resolved_at FROM requests WHERE id = ?",
+			"SELECT state, outcome, resolved_at FROM requests WHERE public_id = ?",
 		)
-			.bind(id)
+			.bind(publicId)
 			.first<{ state: string; outcome: string; resolved_at: number }>();
 
 		expect(row?.state).toBe("resolved");
@@ -437,25 +455,36 @@ describe("withdrawing a request", () => {
 			.run();
 
 		const theirs = await env.DB.prepare(
-			`INSERT INTO requests (nsid, photo_id, group_id, created_at)
-       VALUES ('99999999@N00', 'theirs', 'g1', 0) RETURNING id`,
-		).first<{ id: number }>();
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+       VALUES (${SQL_UUID}, '99999999@N00', 'theirs', 'g1', 0) RETURNING public_id`,
+		).first<{ public_id: string }>();
 
 		// 404, not 403: a distinct answer would confirm the id exists, turning this
-		// into a way to enumerate other people's requests.
-		expect((await withdraw(theirs?.id ?? 0)).status).toBe(404);
+		// into a way to enumerate other people's requests. Note the caller here
+		// KNOWS the id -- an unguessable public_id makes that unrealistic, and the
+		// nsid condition is what makes it safe even when they do.
+		expect((await withdraw(theirs?.public_id ?? "")).status).toBe(404);
 
 		const still = await env.DB.prepare(
-			"SELECT state FROM requests WHERE id = ?",
+			"SELECT state FROM requests WHERE public_id = ?",
 		)
-			.bind(theirs?.id ?? 0)
+			.bind(theirs?.public_id ?? "")
 			.first<{ state: string }>();
 
 		expect(still?.state).toBe("pending");
 	});
 
-	it("rejects an id that is not a positive integer", async () => {
-		for (const bad of ["abc", "-1", "0", "1.5", "", "1e9999"]) {
+	it("rejects an id that is not a v4 UUID", async () => {
+		for (const bad of [
+			"abc",
+			"1",
+			"",
+			"not-a-uuid",
+			// A syntactically valid UUID of the wrong version. Worth pinning: the
+			// column holds v4 specifically, and a v7 here would mean something in
+			// the system is minting the timestamp-leaking kind.
+			"017f22e2-79b0-7cc3-98c4-dc0c0c07398f",
+		]) {
 			expect((await withdraw(bad)).status).not.toBe(200);
 		}
 	});
@@ -503,15 +532,15 @@ describe("queue position", () => {
 		for (const photo of ["done1", "done2"]) {
 			await env.DB.prepare(
 				`INSERT INTO requests
-           (nsid, photo_id, group_id, state, outcome, resolved_at, created_at)
-         VALUES (?, ?, 'g1', 'resolved', 'succeeded', 1, 0)`,
+           (public_id, nsid, photo_id, group_id, state, outcome, resolved_at, created_at)
+         VALUES (${SQL_UUID}, ?, ?, 'g1', 'resolved', 'succeeded', 1, 0)`,
 			)
 				.bind(NSID, photo)
 				.run();
 		}
 
 		await env.DB.prepare(
-			"INSERT INTO requests (nsid, photo_id, group_id, created_at) VALUES (?, 'waiting', 'g1', 0)",
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at) VALUES (${SQL_UUID}, ?, 'waiting', 'g1', 0)`,
 		)
 			.bind(NSID)
 			.run();
@@ -531,18 +560,18 @@ describe("queue position", () => {
 		// Withdrawal makes the bug above visible: withdraw the head and the rest
 		// must advance. A queue whose numbers never move is a queue that looks
 		// stuck, which is the opposite of what this view is for.
-		const ids: number[] = [];
+		const publicIds: string[] = [];
 		for (const photo of ["p1", "p2", "p3"]) {
 			const row = await env.DB.prepare(
-				`INSERT INTO requests (nsid, photo_id, group_id, created_at)
-         VALUES (?, ?, 'g1', 0) RETURNING id`,
+				`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+         VALUES (${SQL_UUID}, ?, ?, 'g1', 0) RETURNING public_id`,
 			)
 				.bind(NSID, photo)
-				.first<{ id: number }>();
-			ids.push(row?.id ?? 0);
+				.first<{ public_id: string }>();
+			publicIds.push(row?.public_id ?? "");
 		}
 
-		await authed(`/v001/requests/${ids[0]}/withdraw`, { method: "POST" });
+		await authed(`/v001/requests/${publicIds[0]}/withdraw`, { method: "POST" });
 
 		const body = (await (await authed("/v001/queue")).json()) as {
 			queues: { requests: { photoId: string; position: number | null }[] }[];
