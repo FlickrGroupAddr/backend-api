@@ -65,6 +65,23 @@ const submission = z.object({
 	acknowledgedModeration: z.boolean().optional(),
 });
 
+/**
+ * The queue view's paging and filter parameters.
+ *
+ * `limit` is capped rather than merely defaulted. An uncapped `?limit=` is the
+ * same unbounded query this pagination exists to remove, just with the caller
+ * holding the trigger.
+ *
+ * `state` defaults to `pending`, because that is the question this page answers
+ * -- "what is FGA still going to do for me". History is available with
+ * `state=all` and is the rarer ask, so it is the one that pays for itself.
+ */
+const queueQuery = z.object({
+	limit: z.coerce.number().int().min(1).max(200).default(50),
+	after: z.uuidv4().optional(),
+	state: z.enum(["pending", "all"]).default("pending"),
+});
+
 apiRoutes.get("/v001/me", (c) => c.json({ nsid: c.get("nsid") }));
 
 /**
@@ -325,16 +342,76 @@ apiRoutes.get("/v001/groups/:groupId", async (c) => {
 apiRoutes.get("/v001/queue", async (c) => {
 	const nsid = c.get("nsid");
 
-	// Ordered by `id`, which is ADR-10's ordering key, but only `public_id` is
-	// selected -- the internal id orders the rows and never leaves the server.
+	const params = queueQuery.safeParse({
+		limit: c.req.query("limit"),
+		after: c.req.query("after"),
+		state: c.req.query("state"),
+	});
+
+	if (!params.success) {
+		return c.json({ error: "invalid_request" }, 400);
+	}
+
+	const { limit, after, state } = params.data;
+
+	// Keyset pagination on (group_id, id), which is exactly the sort order, so a
+	// page boundary is a position in that order rather than a row count. Offset
+	// paging would drift here: the sweep resolves rows every night, so the same
+	// OFFSET returns a different window and requests slide across pages unseen.
+	//
+	// The cursor is a `public_id` the caller already holds. Resolving it back to
+	// its (group_id, id) is one indexed lookup and keeps the internal id out of
+	// the URL. Scoped by nsid, so a cursor from another account finds nothing.
+	let cursor: { group_id: string; id: number } | null = null;
+	if (after !== undefined) {
+		cursor = await c.env.DB.prepare(
+			"SELECT group_id, id FROM requests WHERE public_id = ? AND nsid = ?",
+		)
+			.bind(after, nsid)
+			.first<{ group_id: string; id: number }>();
+
+		if (cursor === null) {
+			return c.json({ error: "unknown_cursor" }, 400);
+		}
+	}
+
+	// One extra row, purely to learn whether another page exists. Cheaper and
+	// more honest than a COUNT(*), which would be a second scan reporting a
+	// total that is stale the moment the sweep runs.
+	const probe = limit + 1;
+
+	// **Position is computed in SQL, not while iterating**, because paging made
+	// the old JS version wrong: a page starting mid-group restarted at 1.
+	//
+	// It is a correlated COUNT rather than a window function, and the difference
+	// matters. A window function is evaluated AFTER the WHERE clause, so with the
+	// cursor condition in there it would number only the rows on this page and
+	// restart at 1 -- the exact bug, moved into SQL. The subquery is independent
+	// of the page, and its cost is bounded by the PAGE size rather than by the
+	// user's history: at most `limit` range-counts against the partial pending
+	// index, and none at all for resolved rows.
+	//
+	// Ordered by `id` -- ADR-10's ordering key -- while only `public_id` is
+	// selected, so the internal id orders the rows and never leaves the server.
 	const { results } = await c.env.DB.prepare(
-		`SELECT public_id, photo_id, group_id, state, outcome, flickr_code,
-            attempts, created_at, last_attempt_at, resolved_at
-     FROM requests
-     WHERE nsid = ?
-     ORDER BY group_id, id`,
+		`SELECT r.public_id, r.photo_id, r.group_id, r.state, r.outcome,
+            r.flickr_code, r.attempts, r.created_at, r.last_attempt_at,
+            r.resolved_at,
+            CASE WHEN r.state = 'pending' THEN (
+              SELECT COUNT(*) FROM requests q
+              WHERE q.nsid     = r.nsid
+                AND q.group_id = r.group_id
+                AND q.state    = 'pending'
+                AND q.id      <= r.id
+            ) END AS position
+     FROM requests r
+     WHERE r.nsid = ?1
+       AND (?4 = 'all' OR r.state = 'pending')
+       AND (?2 IS NULL OR (r.group_id, r.id) > (?2, ?3))
+     ORDER BY r.group_id, r.id
+     LIMIT ?5`,
 	)
-		.bind(nsid)
+		.bind(nsid, cursor?.group_id ?? null, cursor?.id ?? null, state, probe)
 		.all<{
 			public_id: string;
 			photo_id: string;
@@ -346,31 +423,19 @@ apiRoutes.get("/v001/queue", async (c) => {
 			created_at: number;
 			last_attempt_at: number | null;
 			resolved_at: number | null;
+			position: number | null;
 		}>();
+
+	const hasMore = results.length > limit;
+	const page = hasMore ? results.slice(0, limit) : results;
 
 	// Grouped by group, never one flat list. A flat list looks like a single
 	// queue when there are many, which makes correct FIFO behavior read as a bug
 	// the first time a later request lands ahead of an earlier one elsewhere.
 	const queues = new Map<string, unknown[]>();
 
-	// Counted separately from the entry list, because position counts PENDING
-	// requests only. Using the list length instead made a user whose earlier
-	// requests had all succeeded report position 3 while being first in line, and
-	// it froze every position behind a withdrawn request -- a queue whose numbers
-	// never move reads as stuck, which is the opposite of this view's purpose.
-	const pendingAhead = new Map<string, number>();
-
-	for (const row of results) {
+	for (const row of page) {
 		const entries = queues.get(row.group_id) ?? [];
-
-		// Position is only meaningful while pending, and it is what tells a user
-		// that nothing is wrong -- they are simply behind someone.
-		const position =
-			row.state === "pending"
-				? (pendingAhead.get(row.group_id) ?? 0) + 1
-				: null;
-
-		if (position !== null) pendingAhead.set(row.group_id, position);
 
 		entries.push({
 			publicId: row.public_id,
@@ -382,12 +447,20 @@ apiRoutes.get("/v001/queue", async (c) => {
 			queuedAt: row.created_at,
 			lastAttemptAt: row.last_attempt_at,
 			resolvedAt: row.resolved_at,
-			position,
+			// Position within the whole group's pending queue, not within this
+			// page. See the window function above.
+			position: row.position,
 		});
 		queues.set(row.group_id, entries);
 	}
 
+	// The cursor is the last row of THIS page. Null means the end, and it says so
+	// definitively rather than leaving the caller to infer it from a short page --
+	// which would be wrong exactly when the last page is exactly `limit` long.
+	const last = page.at(-1);
+
 	return c.json({
 		queues: [...queues].map(([groupId, requests]) => ({ groupId, requests })),
+		nextCursor: hasMore && last !== undefined ? last.public_id : null,
 	});
 });

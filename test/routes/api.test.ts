@@ -319,7 +319,9 @@ describe("the queue view, where ADR-08 becomes visible", () => {
 			.bind(NSID)
 			.run();
 
-		const body = (await (await authed("/v001/queue")).json()) as {
+		// `state=all` because the default is pending-only -- history is the rarer
+		// question and the one that pays for itself.
+		const body = (await (await authed("/v001/queue?state=all")).json()) as {
 			queues: {
 				requests: { outcome: string; flickrCode: number; position: null }[];
 			}[];
@@ -524,6 +526,148 @@ describe("withdrawing a request", () => {
 	});
 });
 
+describe("queue pagination", () => {
+	/** Queues n requests in one group and returns their public ids in order. */
+	async function queueMany(n: number, group = "g1"): Promise<string[]> {
+		const ids: string[] = [];
+		for (let i = 0; i < n; i++) {
+			const row = await env.DB.prepare(
+				`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+         VALUES (${SQL_UUID}, ?, ?, ?, 0) RETURNING public_id`,
+			)
+				.bind(NSID, `p${i}`, group)
+				.first<{ public_id: string }>();
+			ids.push(row?.public_id ?? "");
+		}
+		return ids;
+	}
+
+	type Page = {
+		queues: { requests: { photoId: string; position: number | null }[] }[];
+		nextCursor: string | null;
+	};
+
+	async function page(query: string): Promise<Page> {
+		return (await (await authed(`/v001/queue${query}`)).json()) as Page;
+	}
+
+	it("returns at most `limit` requests and a cursor for the rest", async () => {
+		await queueMany(5);
+		const first = await page("?limit=2");
+
+		expect(first.queues.flatMap((q) => q.requests)).toHaveLength(2);
+		expect(first.nextCursor).not.toBeNull();
+	});
+
+	it("walks every request exactly once across pages", async () => {
+		await queueMany(5);
+
+		const seen: string[] = [];
+		let cursor: string | null = null;
+		for (let guard = 0; guard < 10; guard++) {
+			const p: Page = await page(
+				`?limit=2${cursor === null ? "" : `&after=${cursor}`}`,
+			);
+			seen.push(...p.queues.flatMap((q) => q.requests).map((r) => r.photoId));
+			cursor = p.nextCursor;
+			if (cursor === null) break;
+		}
+
+		// No duplicates, nothing skipped, original order preserved.
+		expect(seen).toEqual(["p0", "p1", "p2", "p3", "p4"]);
+	});
+
+	it("reports no cursor on a final page that is exactly `limit` long", async () => {
+		// The off-by-one an inferred cursor gets wrong. A caller that stops on a
+		// SHORT page would ask for one more page here; a caller that trusts a null
+		// cursor stops correctly. That is why the probe row exists.
+		await queueMany(4);
+		const p = await page("?limit=4");
+
+		expect(p.queues.flatMap((q) => q.requests)).toHaveLength(4);
+		expect(p.nextCursor).toBeNull();
+	});
+
+	it("keeps positions correct on a page that starts mid-queue", async () => {
+		// The reason position moved into SQL. Computed while iterating a page, the
+		// third request would report position 1 because the page began at it.
+		await queueMany(4);
+		const first = await page("?limit=2");
+		const second = await page(`?limit=2&after=${first.nextCursor}`);
+
+		expect(
+			second.queues.flatMap((q) => q.requests).map((r) => r.position),
+		).toEqual([3, 4]);
+	});
+
+	it("does not skip a request when an earlier one resolves between pages", async () => {
+		// THE ARGUMENT FOR A CURSOR OVER A PAGE NUMBER. The nightly sweep resolves
+		// rows constantly, so with `state=all` and OFFSET 2, deleting or filtering
+		// out an earlier row shifts everything left and page 2 silently begins
+		// after the row that moved into slot 2. A keyset cursor names a position in
+		// the sort order, so it cannot drift.
+		const ids = await queueMany(4);
+		const first = await page("?limit=2");
+
+		// p0 leaves the pending set while the caller holds a cursor pointing at p1.
+		await authed(`/v001/requests/${ids[0]}/withdraw`, { method: "POST" });
+
+		const second = await page(`?limit=2&after=${first.nextCursor}`);
+		const photos = second.queues
+			.flatMap((q) => q.requests)
+			.map((r) => r.photoId);
+
+		expect(photos).toEqual(["p2", "p3"]);
+	});
+
+	it("rejects a limit outside the permitted range", async () => {
+		for (const bad of ["0", "-1", "201", "abc"]) {
+			expect((await authed(`/v001/queue?limit=${bad}`)).status).toBe(400);
+		}
+	});
+
+	it("refuses a cursor belonging to somebody else", async () => {
+		await env.DB.prepare(
+			`INSERT INTO users
+         (nsid, access_token_encrypted, access_token_secret_encrypted, created_at, updated_at)
+       VALUES ('99999999@N00', ?, ?, 0, 0)`,
+		)
+			.bind(new Uint8Array([1]), new Uint8Array([2]))
+			.run();
+
+		const theirs = await env.DB.prepare(
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+       VALUES (${SQL_UUID}, '99999999@N00', 'theirs', 'g1', 0) RETURNING public_id`,
+		).first<{ public_id: string }>();
+
+		const response = await authed(
+			`/v001/queue?after=${theirs?.public_id ?? ""}`,
+		);
+		expect(response.status).toBe(400);
+	});
+
+	it("defaults to pending only, and shows history on request", async () => {
+		await queueMany(2);
+		await env.DB.prepare(
+			`INSERT INTO requests
+         (public_id, nsid, photo_id, group_id, state, outcome, resolved_at, created_at)
+       VALUES (${SQL_UUID}, ?, 'old', 'g1', 'resolved', 'succeeded', 1, 0)`,
+		)
+			.bind(NSID)
+			.run();
+
+		const byDefault = await page("");
+		expect(
+			byDefault.queues.flatMap((q) => q.requests).map((r) => r.photoId),
+		).not.toContain("old");
+
+		const all = await page("?state=all");
+		expect(
+			all.queues.flatMap((q) => q.requests).map((r) => r.photoId),
+		).toContain("old");
+	});
+});
+
 describe("queue position", () => {
 	it("counts only the pending requests ahead, not resolved ones", async () => {
 		// A user whose earlier requests all succeeded is at the FRONT of their
@@ -573,7 +717,9 @@ describe("queue position", () => {
 
 		await authed(`/v001/requests/${publicIds[0]}/withdraw`, { method: "POST" });
 
-		const body = (await (await authed("/v001/queue")).json()) as {
+		// `state=all` so the withdrawn row is visible and its null position can be
+		// asserted rather than merely absent.
+		const body = (await (await authed("/v001/queue?state=all")).json()) as {
 			queues: { requests: { photoId: string; position: number | null }[] }[];
 		};
 
