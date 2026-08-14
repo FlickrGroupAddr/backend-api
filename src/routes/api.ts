@@ -7,6 +7,7 @@ import {
 	pairReachedAModerator,
 	pendingCount,
 	resolveRequest,
+	withdrawRequest,
 } from "../db/requests.js";
 import { getFlickrTokens } from "../db/users.js";
 import { getGroupInfo, getPhotoPools, getUserGroups } from "../flickr/api.js";
@@ -117,6 +118,60 @@ apiRoutes.post("/v001/requests", async (c) => {
 	}
 
 	return c.json({ status: "queued", id }, 202);
+});
+
+/**
+ * Withdraws a pending request -- the user queued it and changed their mind.
+ *
+ * **Named "withdraw" rather than "cancel" or "delete", and the word is doing
+ * work.** Delete would be wrong: the row survives, resolved as `withdrawn`, so
+ * the user's history still accounts for something they caused. Cancel suggests
+ * stopping something already in motion, which this cannot do -- see below.
+ *
+ * **POST rather than DELETE for the same reason.** This is a state transition on
+ * a request, not the removal of one, and the response reports the transition.
+ *
+ * **It succeeds only while the request is pending, which is what makes it
+ * honest.** Reaching a moderator resolves a request at that moment, so anything
+ * still withdrawable has never been in front of a person. FGA cannot pull a
+ * photo back out of a moderation queue -- Flickr offers no such call -- and a
+ * feature that implied otherwise would be ADR-08 broken in the most direct way
+ * available: telling someone a volunteer will not see their photo when one
+ * already has.
+ */
+apiRoutes.post("/v001/requests/:id/withdraw", async (c) => {
+	// Flickr ids are opaque strings, but this one is OUR autoincrement id, so it
+	// is genuinely numeric. Anything else is a malformed request rather than a
+	// missing one -- `Number()` would turn "" and " " into 0.
+	const id = Number.parseInt(c.req.param("id"), 10);
+	if (!Number.isSafeInteger(id) || id < 1) {
+		return c.json({ error: "invalid_request" }, 400);
+	}
+
+	const result = await withdrawRequest(c.env.DB, c.get("nsid"), id);
+
+	switch (result.kind) {
+		case "withdrawn":
+			return c.json({ status: "withdrawn", id });
+
+		case "not_found":
+			return c.json({ error: "not_found" }, 404);
+
+		case "already_resolved":
+			// 409 rather than 400: the request is fine, the state is not. The outcome
+			// travels so the interface can say WHICH kind of too-late this was.
+			return c.json(
+				{
+					error: "already_resolved",
+					id,
+					outcome: result.outcome,
+					// The one outcome where the user should be told plainly that a person
+					// is involved and FGA is out of the loop.
+					reachedAModerator: result.outcome === "queued_for_moderator",
+				},
+				409,
+			);
+	}
 });
 
 /**
@@ -252,8 +307,25 @@ apiRoutes.get("/v001/queue", async (c) => {
 	// the first time a later request lands ahead of an earlier one elsewhere.
 	const queues = new Map<string, unknown[]>();
 
+	// Counted separately from the entry list, because position counts PENDING
+	// requests only. Using the list length instead made a user whose earlier
+	// requests had all succeeded report position 3 while being first in line, and
+	// it froze every position behind a withdrawn request -- a queue whose numbers
+	// never move reads as stuck, which is the opposite of this view's purpose.
+	const pendingAhead = new Map<string, number>();
+
 	for (const row of results) {
 		const entries = queues.get(row.group_id) ?? [];
+
+		// Position is only meaningful while pending, and it is what tells a user
+		// that nothing is wrong -- they are simply behind someone.
+		const position =
+			row.state === "pending"
+				? (pendingAhead.get(row.group_id) ?? 0) + 1
+				: null;
+
+		if (position !== null) pendingAhead.set(row.group_id, position);
+
 		entries.push({
 			id: row.id,
 			photoId: row.photo_id,
@@ -264,9 +336,7 @@ apiRoutes.get("/v001/queue", async (c) => {
 			queuedAt: row.created_at,
 			lastAttemptAt: row.last_attempt_at,
 			resolvedAt: row.resolved_at,
-			// Position is only meaningful while pending, and it is what tells a user
-			// that nothing is wrong -- they are simply behind someone.
-			position: row.state === "pending" ? entries.length + 1 : null,
+			position,
 		});
 		queues.set(row.group_id, entries);
 	}

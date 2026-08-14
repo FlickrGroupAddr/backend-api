@@ -237,6 +237,74 @@ export async function pendingCount(
 	return row?.n ?? 0;
 }
 
+/**
+ * What happened when a user tried to withdraw a request.
+ *
+ * `already_resolved` carries the outcome so the interface can say which kind of
+ * "too late" this was. "It went to a moderator" and "it failed" are very
+ * different things to read, and collapsing them into one message is exactly the
+ * vagueness ADR-08 exists to prevent.
+ */
+export type WithdrawResult =
+	| { readonly kind: "withdrawn" }
+	| { readonly kind: "not_found" }
+	| { readonly kind: "already_resolved"; readonly outcome: string };
+
+/**
+ * Withdraws a pending request: the user queued it and changed their mind.
+ *
+ * **The `state = 'pending'` guard is the honesty of this feature, and it is in
+ * the UPDATE rather than in a check before it.** A request that reaches a
+ * moderator resolves at that instant, so anything still pending has provably
+ * never been in front of a person -- which is what makes "withdrawn" a true
+ * statement rather than a hopeful one. FGA cannot retract a photo from a
+ * moderation queue; Flickr has no such call. It can only decline to send one.
+ *
+ * Doing the guard as a condition makes the race with the nightly sweep the
+ * database's problem: if the sweep resolves this row first, the UPDATE matches
+ * nothing and the user is told it was too late. A read-then-write would report
+ * success for a request that had just been submitted to a human, which is the
+ * one wrong answer this whole project is organized against.
+ *
+ * `nsid` is a condition for the same reason -- one user MUST NOT be able to
+ * withdraw another's request by guessing an id. The follow-up lookup is scoped
+ * to the caller too, so a miss cannot be used to probe which ids exist.
+ */
+export async function withdrawRequest(
+	db: D1Database,
+	nsid: string,
+	id: number,
+): Promise<WithdrawResult> {
+	const withdrawn = await db
+		.prepare(
+			`UPDATE requests
+       SET state = 'resolved', outcome = 'withdrawn', resolved_at = ?
+       WHERE id = ? AND nsid = ? AND state = 'pending'
+       RETURNING id`,
+		)
+		.bind(Date.now(), id, nsid)
+		.first<{ id: number }>();
+
+	if (withdrawn !== null) return { kind: "withdrawn" };
+
+	// It did not apply. Either there is no such request for this user, or it had
+	// already resolved -- and the difference is worth telling them.
+	const existing = await db
+		.prepare("SELECT outcome FROM requests WHERE id = ? AND nsid = ?")
+		.bind(id, nsid)
+		.first<{ outcome: string | null }>();
+
+	if (existing === null) return { kind: "not_found" };
+
+	return {
+		kind: "already_resolved",
+		// A row that failed the UPDATE's `state = 'pending'` condition is resolved,
+		// and 0001's CHECK makes a resolved row's outcome non-null. The fallback
+		// exists so a future schema change cannot turn this into a crash.
+		outcome: existing.outcome ?? "unknown",
+	};
+}
+
 /** ADR-11: has this pair already been in front of a moderator? */
 export async function pairReachedAModerator(
 	db: D1Database,
