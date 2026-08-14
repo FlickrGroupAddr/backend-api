@@ -9,7 +9,7 @@ coming back every day for weeks.
 
 | | |
 |---|---|
-| API | <https://fga-backend-api.terryott.workers.dev> |
+| Site and API | <https://flickrgroupaddr.com> — one origin serves both. See ADR-18 |
 | Health | `/health` answers `{"status":"ok"}` |
 | Auth | Every `/api/v001/*` route answers `401` without a session cookie |
 | Nightly sweep | Cron `15 0 * * *` |
@@ -43,7 +43,7 @@ It is ADR-01. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.m
 npm run check
 ```
 
-Typecheck, lint, 160 tests, the traceability gate, and the web build. **It MUST be clean before a
+Typecheck, lint, 201 tests, the traceability gate, and the web build. **It MUST be clean before a
 commit.**
 
 ## What it is built on
@@ -52,5 +52,9 @@ Cloudflare Workers, D1, and one Durable Object. TypeScript. Three runtime depend
 no dependencies of its own: `hono`, `jose`, `zod`.
 
 The UI is Svelte, prebuilt by Vite into `web/dist` and served as static assets by the same Worker,
-on one origin. **Measured 2026-08-14: 39 kB gzipped**, of which `zod` is 17 kB — the framework and
-all three screens together are 21 kB.
+on one origin. **Measured 2026-08-14 from a wiped `web/dist`: 42.3 kB of JavaScript gzipped, plus
+3.0 kB of CSS.**
+
+A throwaway chunked build weighs the parts: `zod` 18.1 kB, Svelte's runtime 14.7 kB, and 10.6 kB for
+all three screens. **Those do not add up to 42.3 kB, because one chunk compresses better than
+three** — the shipped bundle is the single number above.

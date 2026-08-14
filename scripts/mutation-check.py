@@ -23,9 +23,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # (name, file, find, replace) -- `find` MUST appear exactly once, which is checked.
+#
+# **A name SHOULD open with the ADR it attacks.** `scripts/traceability.py` reads the ADR
+# out of the name, so an untagged mutation defends nothing in `docs/TRACEABILITY.md` --
+# the matrix then reports `-` for a decision that IS mutation-covered. The name is also
+# what the operator reads when one survives, so the tag earns its place twice.
+#
+# **Two are deliberately untagged, and that is honest rather than an oversight.** No ADR
+# states that one user MUST NOT withdraw another's request, and none states the
+# `needs_relink` exclusion -- both are described in code comments only. A forced link is
+# worse than an admitted gap, which is the same rule TRACE-EXEMPT follows for tests.
 MUTATIONS = [
     (
-        "fail-polite: retry a photo that reached a moderator",
+        "ADR-01: retry a photo that reached a moderator",
         "src/adds/classify.ts",
         "const RETRYABLE = new Set([5, 105, 106]);",
         "const RETRYABLE = new Set([5, 6, 105, 106]);",
@@ -49,49 +59,49 @@ MUTATIONS = [
         "\t\t\t\tstoppedOnThrottle++;\n\t\t\t\thead = await nextInQueue(db, head.nsid, head.groupId);\n\t\t\t\tcontinue;",
     ),
     (
-        "cookie: drop HttpOnly",
+        "ADR-11: drop HttpOnly from the session cookie",
         "src/session.ts",
         "\thttpOnly: true,",
         "\thttpOnly: false,",
     ),
     (
-        "cookie: SameSite=None",
+        "ADR-11: set SameSite=None on the session cookie",
         "src/session.ts",
         '\tsameSite: "Lax",',
         '\tsameSite: "None",',
     ),
     (
-        "cookie: drop the __Host- prefix",
+        "ADR-11: drop the __Host- cookie prefix",
         "src/session.ts",
         '\tprefix: "host",',
         "",
     ),
     (
-        "session: stop pinning the JWS algorithm",
+        "ADR-10: stop pinning the JWS algorithm",
         "src/session.ts",
         '\t\t\talgorithms: ["HS256"],',
         "",
     ),
     (
-        "CORS: reflect the request Origin",
+        "ADR-11: reflect the request Origin in CORS",
         "src/index.ts",
         "\t\torigin: (origin) => (origin === c.env.UI_ORIGIN ? c.env.UI_ORIGIN : null),",
         "\t\torigin: (origin) => origin,",
     ),
     (
-        "crypto: unbind the NSID from the ciphertext",
+        "ADR-09: unbind the NSID from the ciphertext",
         "src/crypto/tokens.ts",
         "function aad(nsid: string): Uint8Array {\n\treturn new TextEncoder().encode(nsid);",
         "function aad(_nsid: string): Uint8Array {\n\treturn new TextEncoder().encode(\"fixed\");",
     ),
     (
-        "crypto: reuse one IV forever",
+        "ADR-09: reuse one IV forever",
         "src/crypto/tokens.ts",
         "\tconst iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));",
         "\tconst iv = new Uint8Array(IV_BYTES);",
     ),
     (
-        "withdraw: drop the state='pending' guard",
+        "ADR-01: drop the state='pending' guard from withdraw",
         "src/db/requests.ts",
         "       WHERE public_id = ? AND nsid = ? AND state = 'pending'",
         "       WHERE public_id = ? AND nsid = ?",
@@ -109,19 +119,19 @@ MUTATIONS = [
         "",
     ),
     (
-        "immediate path: stop recording the attempt",
+        "ADR-19: stop recording the attempt on the immediate path",
         "src/routes/api.ts",
         "\t\tawait recordAttempt(c.env.DB, id);",
         "",
     ),
     (
-        "OAuth: use encodeURIComponent without the five-character fix",
+        "ADR-14: use encodeURIComponent without the five-character fix",
         "src/oauth/signature.ts",
         "\treturn encodeURIComponent(value).replace(\n\t\t/[!'()*]/g,\n\t\t(char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,\n\t);",
         "\treturn encodeURIComponent(value);",
     ),
     (
-        "OAuth: drop the trailing ampersand in the signing key",
+        "ADR-14: drop the trailing ampersand in the signing key",
         "src/oauth/signature.ts",
         "\treturn `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`;",
         "\treturn tokenSecret\n\t\t? `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`\n\t\t: percentEncode(consumerSecret);",
@@ -133,13 +143,13 @@ MUTATIONS = [
         "\tif (false as boolean) {",
     ),
     (
-        "login attempt: return the secret more than once",
+        "ADR-08: return the login secret more than once",
         "src/oauth/login-attempt.ts",
         "\t\tawait this.ctx.storage.deleteAll();\n\t\treturn { requestTokenSecret: attempt.requestTokenSecret };",
         "\t\treturn { requestTokenSecret: attempt.requestTokenSecret };",
     ),
     (
-        "pagination: cap the limit at nothing",
+        "ADR-17: cap the pagination limit at nothing",
         "src/routes/api.ts",
         "\tlimit: z.coerce.number().int().min(1).max(200).default(50),",
         "\tlimit: z.coerce.number().int().min(1).default(50),",

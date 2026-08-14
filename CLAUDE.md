@@ -58,12 +58,14 @@ because a box that is too large passes.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, 160 tests, the traceability gate, and the web build. **It MUST be
+Typecheck (both tsconfigs), lint, 201 tests, the traceability gate, and the web build. **It MUST be
 clean before a commit.**
 
-**The count was documented as 178 and was wrong for a week.** The suite rebuild took it to 156 and
-neither this file nor the README was updated. **Quote the number the runner prints, never one read
-from a document.**
+**This count has now been wrong twice, which is why the rule below is absolute rather than a
+reminder.** It was documented as 178, the suite rebuild took it to 156, and neither this file nor
+the README was updated. It then read 160 while the runner printed 201 — found 2026-08-14 while
+catching a cleared session up. **Quote the number the runner prints, never one read from a
+document, and that includes this line.**
 
 **Tests run inside real `workerd`** against real D1 and real Durable Objects. Outbound `fetch` is
 stubbed in `vitest.config.ts`, so **a test reaching the real Flickr fails loudly.**
@@ -107,9 +109,14 @@ endpoint should, not because a decision asked for it.
 python scripts/mutation-check.py
 ```
 
-**It breaks the source in 20 specific ways and checks the suite screams at each.** Every mutation is
+**It breaks the source in 25 specific ways and checks the suite screams at each.** Every mutation is
 a decision this project made against — retry a photo a moderator saw, drop `HttpOnly`, reflect the
 CORS origin, reuse a crypto nonce.
+
+**A mutation's name SHOULD open with the ADR it attacks**, because `scripts/traceability.py` reads
+the tag out of the name and nothing else links the two. An untagged mutation makes the matrix report
+`—` for a decision that is genuinely mutation-covered, which understates the safety net rather than
+overstating it. Two are untagged on purpose, and `mutation-check.py` says which and why.
 
 **A green suite proves it AGREES with the code, never that it would NOTICE the code being wrong.**
 Those are different claims, and only the second one matters when tests are being deleted or

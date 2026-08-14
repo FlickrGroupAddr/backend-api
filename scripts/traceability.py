@@ -37,6 +37,7 @@ otherwise is how a real RTM becomes decoration.**
 """
 
 import argparse
+import ast
 import re
 import sys
 from pathlib import Path
@@ -112,15 +113,28 @@ def blocks() -> list[dict]:
 
 def mutations() -> list[dict]:
     """Mutation names and the ADRs they name. The name carries the tag on purpose --
-    it is what the operator reads when one survives."""
-    text = read(MUTATIONS_FILE)
-    inside = re.search(r"MUTATIONS = \[(.*?)\n\]", text, re.DOTALL)
-    if not inside:
-        return []
-    return [
-        {"name": name, "adrs": sorted(set(ADR_REF.findall(name)))}
-        for name in re.findall(r'^\s{8}"([^"]+)",', inside.group(1), re.MULTILINE)
-    ]
+    it is what the operator reads when one survives.
+
+    **Parsed with `ast`, because Python owns Python and a regex here was wrong.** The
+    previous version matched `^\\s{8}"([^"]+)",` against the MUTATIONS block, and every
+    element of a tuple sits at that indentation -- name, path, `find` and `replace`
+    alike. So it counted 79 "mutations" for 25, and listed `src/adds/classify.ts` and
+    raw source lines as mutation names in the generated matrix.
+
+    **Nothing failed, which is why it lasted.** The gap checks never read this count, so
+    the only symptom was a wrong number in a document nobody re-derives.
+    """
+    tree = ast.parse(read(MUTATIONS_FILE))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "MUTATIONS"
+            for target in node.targets
+        ):
+            return [
+                {"name": name, "adrs": sorted(set(ADR_REF.findall(name)))}
+                for name, *_ in ast.literal_eval(node.value)
+            ]
+    return []
 
 
 def build() -> tuple[str, list[str]]:
