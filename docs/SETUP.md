@@ -46,14 +46,23 @@ the dear one, so neither ever happens.
 
 Each key MUST decode to exactly 32 bytes. The code refuses anything else.
 
-## 4. Set four secrets
+## 4. Set five secrets
 
 ```
 npx wrangler secret put FLICKR_CONSUMER_KEY
 npx wrangler secret put FLICKR_CONSUMER_SECRET
 npx wrangler secret put TOKEN_KEY
 npx wrangler secret put SESSION_KEY
+npx wrangler secret put ADMIN_NSIDS
 ```
+
+**`ADMIN_NSIDS` is a JSON array of the NSIDs allowed to reach `/api/v001/admin/*`**, for example
+`["12345678@N00"]`. ADR-19.
+
+**Skipping it does not break anything, and that is the point.** The allowlist fails closed, so a
+missing secret admits nobody and the Health page simply 404s. The Worker logs one
+`admin_config_error` line saying why, which is the only way to tell "not configured" from "not
+you".
 
 **These MUST NOT go in `wrangler.jsonc`.** That file is public. For local work, copy
 `.dev.vars.example` to `.dev.vars`, which is gitignored.

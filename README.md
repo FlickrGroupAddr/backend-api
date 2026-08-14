@@ -13,7 +13,8 @@ coming back every day for weeks.
 | Health | `/health` answers `{"status":"ok"}` |
 | Auth | Every `/api/v001/*` route answers `401` without a session cookie |
 | Nightly sweep | Cron `15 0 * * *` |
-| Frontend | Svelte, scaffolded. Served by the same Worker. See ADR-18 |
+| Frontend | Svelte, served by the same Worker. See ADR-18 |
+| Admin | `/admin`, gated by the `ADMIN_NSIDS` allowlist. Reports findings, not figures. See ADR-19 |
 | Domain | `flickrgroupaddr.com`, registered 2026-08-14, nameservers on Cloudflare |
 
 ## Read this before anything else
