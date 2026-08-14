@@ -1,12 +1,15 @@
 import { Hono } from "hono";
-import { deleteCookie, setCookie } from "hono/cookie";
 import { upsertUser } from "../db/users.js";
 import {
 	buildAuthorizeUrl,
 	exchangeAccessToken,
 	fetchRequestToken,
 } from "../flickr/oauth.js";
-import { mintSession, SESSION_COOKIE } from "../session.js";
+import {
+	clearSessionCookie,
+	mintSession,
+	setSessionCookie,
+} from "../session.js";
 
 /**
  * The three legs of the Flickr login, wired together.
@@ -99,20 +102,11 @@ oauthRoutes.get("/oauth/callback", async (c) => {
 		c.env.TOKEN_KEY,
 	);
 
-	// ADR-12: host-only, no Domain attribute. The `secure` and `sameSite`
-	// settings are the ones that make ADR-06's stateless session safe.
-	setCookie(
-		c,
-		SESSION_COOKIE,
-		await mintSession(access.nsid, c.env.SESSION_KEY),
-		{
-			httpOnly: true,
-			secure: true,
-			sameSite: "Lax",
-			path: "/",
-			maxAge: 60 * 60 * 24 * 30,
-		},
-	);
+	// ADR-12's attributes live in session.ts, which is the only place that knows
+	// them. They used to be spelled out here AND described by a helper nothing
+	// called, so the tests asserted on the helper and could not have noticed this
+	// copy losing an attribute.
+	setSessionCookie(c, await mintSession(access.nsid, c.env.SESSION_KEY));
 
 	return c.redirect(uiUrl(c.env, "ok"), 302);
 });
@@ -126,6 +120,6 @@ oauthRoutes.get("/oauth/callback", async (c) => {
  * more thorough and outside FGA's control.
  */
 oauthRoutes.post("/oauth/logout", (c) => {
-	deleteCookie(c, SESSION_COOKIE, { path: "/", secure: true, sameSite: "Lax" });
+	clearSessionCookie(c);
 	return c.json({ status: "ok" });
 });

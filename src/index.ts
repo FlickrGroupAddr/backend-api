@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { getCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 // Hono's escaping tagged template. JavaScript has no built-in HTML escape, but
 // this dependency was already here -- ADR-14, found only after hand-writing one.
@@ -8,7 +7,7 @@ import { createAttempt } from "./adds/attempt.js";
 import { getUsername } from "./db/users.js";
 import { apiRoutes } from "./routes/api.js";
 import { oauthRoutes } from "./routes/oauth.js";
-import { SESSION_COOKIE, verifySession } from "./session.js";
+import { readSessionCookie, verifySession } from "./session.js";
 import { sweep } from "./sweep.js";
 
 export { OAuthLoginAttempt } from "./oauth/login-attempt.js";
@@ -70,7 +69,7 @@ app.get("/", async (c) => {
 	// verified, so showing it costs no database read. It is also not a secret --
 	// every Flickr NSID is public -- and the signature is what makes it
 	// trustworthy rather than the value itself.
-	const cookie = getCookie(c, SESSION_COOKIE);
+	const cookie = readSessionCookie(c);
 	const nsid =
 		cookie === undefined
 			? null

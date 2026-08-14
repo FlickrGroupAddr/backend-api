@@ -26,6 +26,13 @@ const migrations = await readD1Migrations("./migrations");
  * Flickr API. A test suite that can reach the internet will eventually reach it
  * by accident.
  */
+/** Flickr's OAuth legs answer form-encoded, not JSON. */
+function formEncoded(fields: Record<string, string>): Response {
+	return new Response(new URLSearchParams(fields).toString(), {
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+	});
+}
+
 function outboundService(request: Request): Response {
 	const url = new URL(request.url);
 
@@ -33,6 +40,28 @@ function outboundService(request: Request): Response {
 		// The method travels in the form-encoded body, so the stub keys off the
 		// path only and answers the shape both calls share.
 		return Response.json({ stat: "ok", pool: [] });
+	}
+
+	// The two OAuth legs, so a login can be driven end to end. Without these the
+	// callback was unreachable in tests, which is why nothing had ever asserted on
+	// the real `Set-Cookie` header.
+	if (url.hostname === "www.flickr.com") {
+		if (url.pathname === "/services/oauth/request_token") {
+			return formEncoded({
+				oauth_callback_confirmed: "true",
+				oauth_token: "test-request-token",
+				oauth_token_secret: "test-request-token-secret",
+			});
+		}
+
+		if (url.pathname === "/services/oauth/access_token") {
+			return formEncoded({
+				oauth_token: "test-access-token",
+				oauth_token_secret: "test-access-token-secret",
+				user_nsid: "146878425@N05",
+				username: "TerryDOtt",
+			});
+		}
 	}
 
 	return new Response(

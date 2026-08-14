@@ -1,10 +1,6 @@
+import { SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import {
-	mintSession,
-	SESSION_COOKIE,
-	sessionCookieAttributes,
-	verifySession,
-} from "../src/session.js";
+import { mintSession, SESSION_COOKIE, verifySession } from "../src/session.js";
 
 /**
  * The session cookie's security properties.
@@ -111,31 +107,93 @@ describe("rejection", () => {
 	});
 });
 
+/**
+ * The cookie attributes ADR-12 settles, asserted against the REAL `Set-Cookie`
+ * header a real login emits.
+ *
+ * **These used to read a `sessionCookieAttributes()` helper that returned a
+ * hardcoded string and that the Worker never called.** Five tests passed
+ * describing a cookie nothing issued, while the live attributes sat in a
+ * separate literal in the callback route. Their result was a function of one
+ * string constant and could not have detected any change to the cookie actually
+ * sent -- see [[assertions-that-pass-either-way]]. Driving a login and reading
+ * the header is the only version of this test that can fail for the right
+ * reason.
+ */
+const BASE = "https://api.flickrgroupaddr.com";
+
+/** Runs a full login against the stubbed Flickr and returns its `Set-Cookie`. */
+async function loginSetCookie(): Promise<string> {
+	const login = await SELF.fetch(`${BASE}/oauth/login`, {
+		redirect: "manual",
+	});
+	expect(login.status).toBe(302);
+
+	const authorize = new URL(login.headers.get("Location") ?? "");
+	const requestToken = authorize.searchParams.get("oauth_token");
+	expect(requestToken).not.toBeNull();
+
+	const callback = await SELF.fetch(
+		`${BASE}/oauth/callback?oauth_token=${requestToken}&oauth_verifier=test-verifier`,
+		{ redirect: "manual" },
+	);
+	expect(callback.status).toBe(302);
+
+	const header = callback.headers.get("Set-Cookie");
+	expect(header).not.toBeNull();
+	return header ?? "";
+}
+
 describe("cookie attributes, ADR-12", () => {
-	const attributes = sessionCookieAttributes();
-
-	it("is HttpOnly, so script cannot read the session", () => {
-		expect(attributes).toContain("HttpOnly");
+	it("is HttpOnly, so script cannot read the session", async () => {
+		expect(await loginSetCookie()).toContain("HttpOnly");
 	});
 
-	it("is Secure and SameSite=Lax", () => {
-		expect(attributes).toContain("Secure");
-		expect(attributes).toContain("SameSite=Lax");
+	it("is Secure and SameSite=Lax", async () => {
+		const header = await loginSetCookie();
+		expect(header).toContain("Secure");
+		expect(header).toContain("SameSite=Lax");
 	});
 
-	it("carries NO Domain attribute, so the cookie stays host-only", () => {
+	it("carries NO Domain attribute, so the cookie stays host-only", async () => {
 		// ADR-12. Adding a Domain would widen it to every subdomain that will ever
 		// exist, for no benefit. This is the mistake that looks like a fix.
-		expect(attributes).not.toContain("Domain");
+		expect(await loginSetCookie()).not.toContain("Domain");
 	});
 
-	it("is not SameSite=None", () => {
-		// SameSite=Lax is doing the CSRF work. Loosening it makes CSRF tokens
-		// mandatory in the same commit.
-		expect(attributes).not.toContain("SameSite=None");
+	it("is not SameSite=None", async () => {
+		// SameSite=Lax is doing the CSRF work, and it suffices only because ADR-12
+		// keeps the UI and the API on the same registrable domain. Loosening this
+		// makes CSRF tokens mandatory in the same commit.
+		expect(await loginSetCookie()).not.toContain("SameSite=None");
 	});
 
-	it("names the cookie without advertising what it is", () => {
-		expect(SESSION_COOKIE).toBe("fga_session");
+	it("carries the __Host- prefix, so a sibling subdomain cannot shadow it", async () => {
+		// The prefix is a browser-enforced contract: Secure, Path=/, no Domain. It
+		// closes session fixation from anything able to set cookies on the parent
+		// domain, which a host-only cookie alone does NOT prevent -- the browser
+		// does not report which host set a cookie it sends back.
+		expect(await loginSetCookie()).toContain("__Host-fga_session=");
+		expect(SESSION_COOKIE).toBe("__Host-fga_session");
+	});
+
+	it("expires with the token rather than on its own schedule", async () => {
+		// One constant drives the JWT's `exp` and this `Max-Age`. A token that
+		// outlives its cookie is the dangerous direction: the credential stays
+		// valid after the browser stops presenting it.
+		expect(await loginSetCookie()).toContain("Max-Age=2592000");
+	});
+
+	it("clears with attributes that match, or the deletion is a no-op", async () => {
+		const header = (
+			await SELF.fetch(`${BASE}/oauth/logout`, { method: "POST" })
+		).headers.get("Set-Cookie");
+
+		// A browser matches a deletion by name, path and domain. The logout route
+		// used to spell its own attributes out and omitted HttpOnly entirely.
+		expect(header).toContain("__Host-fga_session=");
+		expect(header).toContain("Path=/");
+		expect(header).toContain("Secure");
+		expect(header).not.toContain("Domain");
 	});
 });

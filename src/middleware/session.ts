@@ -1,6 +1,5 @@
-import { getCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
-import { SESSION_COOKIE, verifySession } from "../session.js";
+import { readSessionCookie, verifySession } from "../session.js";
 
 /**
  * Requires a valid session cookie and puts the NSID on the context.
@@ -14,7 +13,7 @@ export const requireSession = createMiddleware<{
 	Bindings: Env;
 	Variables: SessionVariables;
 }>(async (c, next) => {
-	const cookie = getCookie(c, SESSION_COOKIE);
+	const cookie = readSessionCookie(c);
 
 	if (cookie === undefined) {
 		return c.json({ error: "not_authenticated" }, 401);

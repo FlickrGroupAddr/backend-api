@@ -1,3 +1,6 @@
+import type { Context } from "hono";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import type { CookieOptions } from "hono/utils/cookie";
 import { jwtVerify, SignJWT } from "jose";
 
 /**
@@ -24,11 +27,36 @@ const AUDIENCE = "fga-api";
  * if it logs them out weekly, and the cookie grants no more than the ability to
  * queue that user's own photos. Shorten it here if that calculus ever changes;
  * nothing else needs to move.
+ *
+ * **One constant drives both the token's `exp` and the cookie's `Max-Age`.**
+ * They were separate literals -- "30d" and 60*60*24*30 -- which is two places to
+ * change and no way to notice. Drift there is not loud: a cookie outliving its
+ * token logs people out early, and a token outliving its cookie is worse,
+ * because the credential stays valid after the browser stops presenting it.
  */
-const SESSION_LIFETIME = "30d";
+const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
 
-/** The name is short and unremarkable on purpose -- it advertises nothing. */
-export const SESSION_COOKIE = "fga_session";
+/**
+ * The bare cookie name. On the wire it gains the `__Host-` prefix, so anything
+ * matching against a raw header wants `SESSION_COOKIE` below.
+ */
+const SESSION_COOKIE_NAME = "fga_session";
+
+/**
+ * The name as the browser sees it.
+ *
+ * **The `__Host-` prefix is a contract the browser enforces**: it will refuse
+ * this cookie unless it is `Secure`, has `Path=/`, and carries no `Domain`. The
+ * attack it closes is session fixation from a neighbour -- without the prefix,
+ * anything able to set cookies for the parent domain (a sibling subdomain, an
+ * XSS anywhere under it, a stray CNAME) can plant `Domain=flickrgroupaddr.com;
+ * fga_session=<attacker value>` that shadows ours, and the API cannot tell the
+ * two apart because `Domain` is not sent back with a cookie.
+ *
+ * ADR-12 already required host-only, no `Domain`, `Path=/` and `Secure`, so this
+ * costs nothing: it asks the browser to enforce what the code already intended.
+ */
+export const SESSION_COOKIE = `__Host-${SESSION_COOKIE_NAME}`;
 
 /**
  * ADR-03 keeps the session-signing key separate from the token-encryption key.
@@ -50,7 +78,7 @@ export async function mintSession(
 		.setIssuer(ISSUER)
 		.setAudience(AUDIENCE)
 		.setIssuedAt()
-		.setExpirationTime(SESSION_LIFETIME)
+		.setExpirationTime(`${SESSION_LIFETIME_SECONDS}s`)
 		.sign(keyBytes(signingKey));
 }
 
@@ -83,12 +111,56 @@ export async function verifySession(
 }
 
 /**
- * The cookie attributes ADR-12 settles, in one place so they cannot drift.
+ * The cookie attributes ADR-12 settles.
  *
- * No `Domain`: the cookie is minted by and returned to api.flickrgroupaddr.com
- * and never needs to reach the apex. Host-only is both the narrower and the
- * correct choice, and it is easy to get wrong in the safe-looking direction.
+ * `prefix: "host"` is what makes this real rather than aspirational. Hono
+ * prepends `__Host-` and then forces `Path=/`, `Secure` and no `Domain`
+ * AFTER spreading these options, so the three attributes the prefix depends on
+ * cannot be broken from here even by a careless edit. That is the whole reason
+ * to use the library's prefix support instead of writing `__Host-` into the
+ * name by hand: hand-written, the name and the attributes are two facts that
+ * must agree, and the browser silently drops the cookie when they stop
+ * agreeing.
+ *
+ * `SameSite=Lax` is doing the CSRF work. It is sufficient because ADR-12 puts
+ * the UI and the API on the same site -- flickrgroupaddr.com and
+ * api.flickrgroupaddr.com share a registrable domain, and SameSite is about
+ * site, not origin -- so the UI's authenticated calls still carry the cookie
+ * while a genuine cross-site POST does not. **Moving the UI to a different
+ * registrable domain would force `SameSite=None`, and CSRF tokens MUST land in
+ * the same commit if that ever happens.**
  */
-export function sessionCookieAttributes(): string {
-	return "HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000";
+const SESSION_COOKIE_OPTIONS = {
+	prefix: "host",
+	httpOnly: true,
+	secure: true,
+	sameSite: "Lax",
+	path: "/",
+	maxAge: SESSION_LIFETIME_SECONDS,
+} as const satisfies CookieOptions;
+
+/** Issues the session cookie. Called once, after the Flickr callback succeeds. */
+export function setSessionCookie(c: Context, token: string): void {
+	setCookie(c, SESSION_COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
+}
+
+/**
+ * The raw cookie value the browser sent, or undefined.
+ *
+ * The prefix MUST be passed here too -- `getCookie` looks for the prefixed name
+ * only when told to, so a read that omits it silently finds nothing and every
+ * request looks logged out.
+ */
+export function readSessionCookie(c: Context): string | undefined {
+	return getCookie(c, SESSION_COOKIE_NAME, "host");
+}
+
+/**
+ * Clears the session cookie.
+ *
+ * The attributes MUST match the ones it was set with, or the browser treats it
+ * as a different cookie and the deletion silently does nothing.
+ */
+export function clearSessionCookie(c: Context): void {
+	deleteCookie(c, SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS);
 }

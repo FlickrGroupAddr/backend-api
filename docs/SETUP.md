@@ -1,25 +1,40 @@
-# Bringing FlickrGroupAddr up for the first time
+# Bringing FlickrGroupAddr up
 
 **RFC 2119 keywords, and the capitals are load-bearing.** MUST and MUST NOT are absolute; SHOULD
 and SHOULD NOT are strong defaults a good argument may overrule; MAY is genuinely optional.
 
-**Everything here needs Terry's credentials and therefore Terry.** The steps are in dependency
-order — each one's output is the next one's input — and step 6 is the interesting one, because it
-answers three questions this design has been carrying unresolved.
+**This ran end to end on 2026-08-13 and production is live.** What follows is therefore both the
+record of how it was done and the runbook for doing it again — a second environment, a rebuild, or
+a recovery. **Steps that produced a value record the value**, so nothing here has to be
+re-derived.
+
+## Where it stands
+
+| | |
+|---|---|
+| Worker | <https://fga-backend-api.terryott.workers.dev> |
+| Database | `fga`, D1 id `0a54cbfa-770e-4b6d-a792-a5b65e5fa6be`, bound as `DB` |
+| Secrets | Four, set — `FLICKR_CONSUMER_KEY`, `FLICKR_CONSUMER_SECRET`, `TOKEN_KEY`, `SESSION_KEY` |
+| Cron | `15 0 * * *`, firing nightly |
+| Verified | `/health` and `/` return 200, every `/v001` route returns 401 without a cookie, and a real Flickr login completes and renders the signed-in NSID |
+
+**What is still aspirational is the domain.** `flickrgroupaddr.com` is in `pendingDelete` and a
+local watcher is waiting to re-register it, so `UI_ORIGIN` and `API_BASE_URL` both point at the
+`workers.dev` host today. **ADR-12's CORS contract is inert while those two are equal** and MUST be
+revisited when the domain lands — that is the one place where a same-origin coincidence is hiding
+whether the allowlist works.
 
 ## Before starting
 
 | | |
 |---|---|
-| Cloudflare | Already on the Workers Paid plan. `wrangler login` if the CLI is not already authorized. |
+| Cloudflare | Workers Paid plan. `npx wrangler login` if the CLI is not already authorized. |
 | Flickr | An API key, created at <https://www.flickr.com/services/apps/create/> |
-| Node | 24.x, already installed |
+| Node | 24.x |
 
-**A note on the callback URL, because it may bite at app-creation time.** OAuth 1.0a sends
-`oauth_callback` with each request, so Flickr **SHOULD NOT** need one registered in advance. If the
-app form demands one anyway, `flickrgroupaddr.com` is **not owned yet** — it is in `pendingDelete`
-and a local watcher is waiting to re-register it. Use `http://localhost:8787/oauth/callback` for
-now and revisit once the domain lands.
+**Flickr's app form does not ask for a callback URL, confirmed 2026-08-13.** This was recorded as
+a risk and is not one: OAuth 1.0a sends `oauth_callback` with each request token call, so there is
+nothing to pre-register and nothing to update when the domain changes.
 
 ## 1. Create the database
 
@@ -37,8 +52,8 @@ never read it, so an unset value fails at deploy rather than silently pointing s
 npx wrangler d1 migrations apply fga --remote
 ```
 
-**`--local` MUST NOT be omitted by accident in the other direction either** — the local database
-is already migrated, and this step is specifically about the remote one.
+**`--remote` is what makes this the production database.** Omitting it migrates the local one,
+which is already migrated, and reports success — a clean run against the wrong target.
 
 ## 3. Generate the two keys
 
@@ -55,6 +70,13 @@ openssl rand -base64 32     # SESSION_KEY
 **Each MUST decode to exactly 32 bytes.** The code refuses anything else rather than hashing a
 short value into a key-shaped thing.
 
+**`openssl` is not on PATH on this machine.** Git for Windows ships it at
+`C:\Program Files\Git\usr\bin\openssl.exe`, and Node needs no install at all:
+
+```
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
 ## 4. Set the four secrets
 
 ```
@@ -68,6 +90,12 @@ npx wrangler secret put SESSION_KEY
 For local development they go in `.dev.vars`, which is gitignored — copy `.dev.vars.example` and
 fill it in.
 
+**`.dev.vars` overrides `wrangler.jsonc`'s `vars` block, verified by reading the values back out of
+a running Worker.** That is what makes a localhost override work without editing committed
+configuration. The test suite MUST NOT depend on it: every value the tests need is pinned in
+`vitest.config.ts`, because `.dev.vars` is per-developer and a suite that reads it passes or fails
+according to a file not in the repository.
+
 ## 5. Run it locally and log in
 
 ```
@@ -79,48 +107,56 @@ request token, parks the secret in a Durable Object, bounces to Flickr for autho
 returns to mint a session cookie.
 
 **Reaching Flickr's authorize page at all proves the signature is accepted**, which is the one
-thing 146 passing tests cannot establish. The signer is checked against RFC 5849's published
-vectors, so it implements the specification correctly — but Flickr is idiosyncratic and only a live
-call settles whether that is enough.
+thing the test suite cannot establish. The signer is checked against RFC 5849's published vectors,
+so it implements the specification correctly — but Flickr is idiosyncratic and only a live call
+settles whether that is enough. It does.
 
-## 6. The diagnostic call, which answers three open questions at once
+**The landing page reports the session, never the redirect.** `?login=ok` means only that the
+callback believed it worked; the page verifies the cookie's signature and shows the NSID it
+recovered. Those two agree right up until something is wrong, which is the only moment anybody
+reads that page carefully.
 
-With the session cookie set, request:
+## 6. The diagnostic call
 
 ```
 http://localhost:8787/v001/groups
 ```
 
-**Read the reply carefully rather than only checking that it worked.** It carries the answers to
-three things recorded as unresolved in `docs/architecture/DECISIONS.md`:
+**This settled four questions the design had been carrying unresolved**, and the answers are in the
+verified-facts table in `docs/architecture/DECISIONS.md` with the date and method against each.
+Summarized:
 
-| Look at | Question it settles |
+| Question | Answer |
 |---|---|
-| That the call returned anything at all | Whether Flickr accepts our OAuth 1.0a signature on an authenticated REST call, not just on the login legs |
-| `throttle.mode` across several groups | Which periods Flickr actually uses. Only `month` appears in its own documentation; `day` and `week` are expected and unconfirmed |
-| `throttle.remaining` | **Whether the allowance is per-user or per-group.** If it is per-user, the nightly sweep can skip a queue whose allowance is already spent instead of burning an attempt to discover it |
-| `ispoolmoderated` | Whether the pool is moderated. This is the field that would let an unanswered add be retried safely for unmoderated pools — see the open question on unconfirmed adds |
+| Does Flickr accept our signature on an authenticated REST call? | Yes |
+| Which `throttle.mode` periods are real? | Five, not the one Flickr documents |
+| Is the allowance per-user or per-group? | Per-group, so a spent allowance cannot be inferred across queues |
+| Is `ispoolmoderated` present? | Yes, and it is what a safe retry rule for unmoderated pools would key off |
 
-**The `raw` field in that response holds the unparsed group list on purpose**, because the JSON
-shapes above are read from Flickr's documentation and have never been checked against a live reply.
-It **SHOULD** be removed once they are confirmed.
-
-**Record what is found in the verified-facts table**, with the date and how it was established —
-that table's whole value is that every row says how it was learned.
+**It also produced a performance defect worth remembering rather than a clean pass.** The endpoint
+originally fetched every group's detail in one request — 331 sequential Flickr calls and 979 KB for
+an account in 330 groups, taking **53 seconds**. `/v001/groups` now returns the list alone in one
+call (**308 ms**), and `/v001/groups/:groupId` returns the throttle and moderation detail for one
+group. **The fix was not concurrency; it was not making the calls.**
 
 ## 7. Deploy
 
 ```
-npm run check       # Typecheck, lint, and 146 tests. MUST be clean first.
+npm run check       # Typecheck, lint, and 154 tests. MUST be clean first.
 npx wrangler deploy
 ```
 
-**The cron trigger starts firing as soon as this succeeds**, nightly at 00:15 UTC. With no users
-and no queued requests it walks nothing and logs a report saying so.
+**The cron trigger starts firing as soon as this succeeds**, nightly at 00:15 UTC. With no queued
+requests it walks nothing and logs a report saying so.
+
+**Verify against production rather than assuming**, and note that two instruments lie here:
+Cloudflare's edge returns error `1010` to a `Python-urllib` user-agent before the Worker ever runs,
+and `wrangler types` reports Node.js compatibility as enabled when it is not. Use `curl` with a
+normal user-agent, and check `wrangler.jsonc` for the flags.
 
 ## What is deliberately not here
 
-**Routes are not yet mounted on a custom domain**, because the domain is not owned. Once
-`flickrgroupaddr.com` is re-registered, the API needs a route on `api.flickrgroupaddr.com` and the
-UI origin in `wrangler.jsonc` stops being aspirational. ADR-12 records the CORS contract that
-depends on both.
+**No frontend exists.** The API can drive one and it would be a separate Cloudflare Pages project.
+**Routes are not yet mounted on a custom domain**, because the domain is not owned — once
+`flickrgroupaddr.com` is re-registered, the API needs a route on `api.flickrgroupaddr.com` and both
+origins in `wrangler.jsonc` stop pointing at the same host.

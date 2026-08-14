@@ -32,6 +32,8 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `cccd677` | **ADR-15 added: which store holds what, and ADR-02 corrected.** The owner could not derive the D1-versus-Durable-Object split from the diagram, and the split turned out to rest on an argument ADR-02 never made: it compared the Durable Object against KV and never against D1, which would also have worked. Consistency does not distinguish them; lifecycle does. Both now say so. |
 | `ad0b864` | **ADR-14 added: integrate when feasible, innovate otherwise.** The owner's standing order against reinventing wheels, with the four tests that permit hand-written code and a full survey of the OAuth 1.0a packages showing why the signer is the exception. Records `hono` and `zod` as the only runtime dependencies, both with zero transitive dependencies. |
 | `93c455a` | **ADR-13 added: the implementation language is TypeScript.** Rust and Python were each argued for and rejected — Rust on the `workers-rs` maintenance numbers, Python because it is in open beta and ADR-03 already refused a beta dependency for a smaller surface. Carries the version policy, the TypeScript 7 / `typescript-eslint` tradeoff, and a checkable list of the idioms that separate current Workers code from dated Workers code. |
+| `dd1e807`, `31c97d8` | Live-call findings folded in: the five `throttle.mode` values, `remaining` being per-user, 330 groups as a real account size, and Flickr needing no pre-registered callback. |
+| *this commit* | **ADR-12 gains the `__Host-` cookie prefix, and records the defect it uncovered.** The attributes were specified in a helper the Worker never called, duplicated in the callback route, and duplicated again in logout — where `HttpOnly` had been lost. Five tests asserted on the dead helper and could not have failed. Replaced with assertions on the real `Set-Cookie` from a full stubbed login, verified by mutation. |
 | `1822e3d` | **ADR-10 added: FIFO per (user, group), and the queue is never jumped.** Settles that the API Worker attempts a new request immediately only when its queue is otherwise empty, and that the nightly sweep stops a queue at its first retryable failure. ADR-05 gained the `photos.getAllContexts` check. The Flickr API surface and OAuth 1.0a's signing of the request-token call were recorded as verified facts. |
 
 ## Verified facts
@@ -67,6 +69,8 @@ beta-era numbers that will move.
 | `throttle.remaining` is per-user, not per-group | Same live sample. **`remaining` equaled `count` in every one of 330 groups**, including `Amateurs` (95,352 members, 9.3M photos) and `Bird Photos` (101,665 members). A group-wide counter on pools that busy could not sit at full allowance. The owner had posted nothing that day, which is exactly the shape a per-user counter takes. **Strong but not conclusive** — confirming it needs one add followed by a re-read of the same group. | 2026-08-13 |
 | One account can belong to hundreds of groups | The owner is in **330**. Recorded because it invalidated a design assumption rather than as trivia: an endpoint that made one call per group took **53 seconds** and returned **979 KB**. Any per-group work **MUST** be sized against hundreds, not a handful. | 2026-08-13 |
 | Flickr accepts any `oauth_callback` with no pre-registration | The app-creation form never asked for a callback URL, and production `GET /oauth/login` against `fga-backend-api.terryott.workers.dev` returned a 302 to Flickr's authorize page carrying a valid request token — with that hostname supplied only in the per-request `oauth_callback` parameter. **FGA can therefore change hostnames without touching anything at Flickr**, which matters because the workers.dev origin is temporary and `flickrgroupaddr.com` replaces it once the domain is recovered. | 2026-08-13 |
+| Hono's `prefix: "host"` enforces the `__Host-` attributes rather than only renaming the cookie | Read from `node_modules/hono/dist/helper/cookie/index.js`: `generateCookie` calls `serialize("__Host-" + name, value, { ...opt, path: "/", secure: true, domain: void 0 })`. **The three forced attributes come after the spread**, so a caller cannot override them. `hono/utils/cookie.d.ts` additionally declares `HostCookieConstraint = { secure: true; path: '/'; domain?: undefined }`, though that constraint reaches `serialize` and not `setCookie`, whose `name` parameter is a plain `string`. Reads MUST pass the prefix too — `getCookie(c, name, "host")` — or they look for the unprefixed name and find nothing. | 2026-08-13 |
+| `jose` accepts a relative duration string for `setExpirationTime` | Read from `node_modules/jose/dist/webapi/lib/jwt_claims_set.js`: the parser regex accepts `seconds?\|secs?\|s\|minutes?\|...`, so `` `${n}s` `` is a relative offset. This is what lets one seconds constant drive both the token's `exp` and the cookie's `Max-Age`; a bare number would be read as an absolute epoch instead. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, Durable Object requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
 ## Why OAuth 1.0a shapes so much of this
@@ -727,11 +731,61 @@ redirect back, which is the one place `Lax` could otherwise have bitten.
 
 | Cookie attribute | Value | Why |
 |---|---|---|
+| Name | `__Host-fga_session` | The prefix makes the four rows below browser-enforced rather than merely intended. |
 | `HttpOnly` | set | Script **MUST NOT** be able to read the session. ADR-06. |
-| `Secure` | set | HTTPS only. |
+| `Secure` | set | HTTPS only. Required by the `__Host-` prefix. |
 | `SameSite` | `Lax` | Same-site covers UI-to-API; also the CSRF control. |
-| `Domain` | **absent** | Host-only to `api.flickrgroupaddr.com`. |
-| `Path` | `/` | |
+| `Domain` | **absent** | Host-only to `api.flickrgroupaddr.com`. Required by the `__Host-` prefix. |
+| `Path` | `/` | Required by the `__Host-` prefix. |
+
+#### The `__Host-` prefix, added 2026-08-13, and why host-only was not already enough
+
+**The cookie name MUST carry the `__Host-` prefix.** It is a contract the browser enforces: a cookie
+so named is rejected unless it is `Secure`, has `Path=/`, and carries no `Domain`. ADR-12 already
+required all three, so **this costs nothing and asks the browser to enforce what the code already
+intended.**
+
+**The gap it closes is one host-only does not.** Host-only controls where *our* cookie goes. It does
+not stop somebody else's cookie of the same name arriving: anything able to set cookies for the
+parent domain — a sibling subdomain, an XSS anywhere under it, a stray CNAME on a hostname nobody
+is watching — can set `Domain=flickrgroupaddr.com; fga_session=<attacker value>`, and the browser
+will send it to the API. **`Domain` is not transmitted with a cookie, so the API cannot tell the two
+apart**, which is what makes this session fixation rather than a nuisance. The prefix is the only
+mechanism that refuses the shadowing cookie at the browser.
+
+**It MUST be applied through the cookie library's `prefix: "host"` option rather than by writing
+`__Host-` into the name.** Hono prepends the prefix and then forces `Path=/`, `Secure` and
+`domain: undefined` *after* spreading the caller's options, so the three attributes the prefix
+depends on cannot be broken from the call site. Hand-written, the name and the attributes are two
+facts that must agree, and when they stop agreeing **the browser silently drops the cookie** — the
+failure is a login that appears to succeed and produces no session.
+
+**One-time effect on deploy: every existing session ends**, because the Worker now looks for a
+cookie name no browser has yet. Users log in again. There is no migration worth writing for a
+thirty-day cookie.
+
+#### The defect this ADR was hiding, and it is a testing lesson more than a security one
+
+**The attributes above were correct in this document and specified in a function the Worker never
+called.** `sessionCookieAttributes()` returned a hardcoded string; the live cookie was set from a
+second, separate literal in the callback route, and the logout route held a third copy that had
+**lost `HttpOnly` entirely**. Five tests asserted against the string helper.
+
+**Those tests could not have failed.** The helper took no arguments and returned a constant, so
+their result was a function of one string literal and was mathematically independent of the cookie
+the Worker actually issued. They would have passed against a cookie with no attributes at all.
+
+**The rule this establishes: a test of an HTTP-level property MUST assert on the response.** Not on
+a helper that describes the response, and not on a constant the production path does not read. The
+replacement drives a full login against a stubbed Flickr and reads the real `Set-Cookie` header
+— which required stubbing Flickr's two OAuth endpoints, previously unreachable in tests, and **that
+unreachability is why the gap existed for as long as it did.** The new tests were verified by
+mutation: changing `SameSite` and `Max-Age` at the source made exactly the expected assertions fail.
+
+**The attributes now live in one place, `SESSION_COOKIE_OPTIONS` in `src/session.ts`**, used by the
+set, read and clear paths alike. A single lifetime constant drives both the token's `exp` and the
+cookie's `Max-Age`; they were separate literals, and **a token outliving its cookie is the dangerous
+direction** — the credential stays valid after the browser stops presenting it.
 
 #### The CORS contract, stated exactly, because the shortcut here is catastrophic
 
@@ -1011,11 +1065,41 @@ implements exactly this as JWS with `HS256`, which **is** HMAC-SHA256 — so **A
 merely stops being hand-written.** This is the rule working in the direction it was written for, and
 it landed on the more security-critical of the two cases.
 
+#### The rule was broken the same day it was written, and how it got caught matters
+
+**Hours after this ADR landed, the landing page shipped a hand-written `escapeHtml`** — a
+`replaceAll` chain for the five HTML metacharacters, carrying a confident comment explaining why the
+escaping belonged next to the only code that builds markup. **The premise was that no library was
+available. It was never checked.** `hono` was already a dependency and exports `html` from
+`hono/html`, a tagged template that escapes every interpolation and leaves nested results alone.
+
+**Terry caught it by asking a question about the platform, not about the code**: *doesn't JS have a
+built-in for this?* It does not — there is no `String.prototype.escapeHTML`, and the DOM trick
+browsers use has no equivalent in Workers — **so the answer to his literal question was "no, we had
+to write it," and that answer was wrong at the level above.** The dependency question is the one this
+ADR exists to force, and a true statement about the platform stood in for it.
+
+**Two things this establishes, beyond the fix:**
+
+- **The survey MUST include dependencies already in the project**, not only the registry. The
+  cheapest possible integration — an import from something already installed and already audited —
+  is the one most easily skipped, because nothing about it looks like adding a dependency.
+- **Tests written against behavior make the swap free.** All 154 passed unchanged when the
+  hand-written function was deleted, including a `<script>` username and an ampersand case checking
+  for double-encoding, because none of them named the function. **Had they asserted on `escapeHtml`
+  they would have had to be rewritten**, and a rewritten test proves nothing about the change that
+  motivated it.
+
+**The escaping is load-bearing rather than cosmetic**: a Flickr display name is a third-party string
+the user controls, rendered into a page served from the origin that holds the session cookie.
+
 #### Cloudflare's own agent guidance is a source, and it corrected two things
 
 **`github.com/cloudflare/skills` publishes Cloudflare's rules for agents building on Workers**, and
 it **SHOULD** be consulted before writing Workers code rather than relying on training data — which
-is, verbatim, its own first instruction. Two corrections it supplied on 2026-08-13:
+is, verbatim, its own first instruction. **`wrangler login` offered to install these locally on
+2026-08-13 and they now live under `~/.claude/skills/`**, so they are read from disk rather than
+fetched. Two corrections it supplied:
 
 - **`crypto.subtle.timingSafeEqual` exists in this runtime.** Comparing secret values with `===` is a
   timing side-channel, and the platform already solves it. This is the ADR-14 test "is the platform
