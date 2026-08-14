@@ -1,7 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { readSessionCookie, verifySession } from "../session.js";
 
-/** ADR-06 sessions are stateless, so verifying the signature IS the lookup. No D1 read. */
+/** ADR-10 sessions are stateless, so verifying the signature IS the lookup. No D1 read. */
 export type SessionVariables = { nsid: string };
 
 export const requireSession = createMiddleware<{

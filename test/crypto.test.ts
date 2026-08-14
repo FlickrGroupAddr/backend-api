@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { decryptToken, encryptToken } from "../src/crypto/tokens.js";
 
-/** ADR-03. AES-GCM at rest, bound to the row it belongs to. */
+/** ADR-09. AES-GCM at rest, bound to the row it belongs to. */
 
 const KEY = "dGVzdC10b2tlbi1rZXktZXhhY3RseS0zMi1ieXRlcyE=";
 const OTHER_KEY = "b3RoZXItdG9rZW4ta2V5LWV4YWN0bHktMzItYnl0ZXMh";

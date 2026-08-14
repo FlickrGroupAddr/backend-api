@@ -1,5 +1,5 @@
 /**
- * ADR-03. AES-GCM at rest for Flickr tokens.
+ * ADR-09. AES-GCM at rest for Flickr tokens.
  *
  * **Scope of the protection:** it covers a D1 leak that does not also leak the Worker
  * secret. It does nothing about a compromised Worker, which holds the key by definition.

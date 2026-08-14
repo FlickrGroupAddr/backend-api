@@ -3,7 +3,7 @@
 -- Where a constraint could have been left to application code, it is here instead: a
 -- violated invariant should be a failed write, not a subtle behavior nobody notices.
 
--- users -- ADR-01 (the Flickr account IS the identity) and ADR-03 (tokens encrypted).
+-- users -- ADR-07 (the Flickr account IS the identity) and ADR-09 (tokens encrypted).
 -- No email, no password, no contact detail. The NSID is the whole identity.
 CREATE TABLE users (
   nsid                          TEXT    PRIMARY KEY,
@@ -11,7 +11,7 @@ CREATE TABLE users (
   -- Display only, refreshed at login. Never a key: usernames change, NSIDs do not.
   flickr_username               TEXT,
 
-  -- ADR-03. AES-GCM, with the 12-byte IV prepended to each value so a value and the
+  -- ADR-09. AES-GCM, with the 12-byte IV prepended to each value so a value and the
   -- nonce that decrypts it cannot be separated by accident.
   access_token_encrypted        BLOB    NOT NULL,
   access_token_secret_encrypted BLOB    NOT NULL,
@@ -21,14 +21,14 @@ CREATE TABLE users (
   -- all-or-nothing transaction. The only forward-looking column here, and it costs an int.
   token_key_version             INTEGER NOT NULL DEFAULT 1,
 
-  -- ADR-07: set on code 98 or 99, cleared by a successful login.
+  -- ADR-02: set on code 98 or 99, cleared by a successful login.
   needs_relink                  INTEGER NOT NULL DEFAULT 0 CHECK (needs_relink IN (0, 1)),
 
   created_at                    INTEGER NOT NULL,
   updated_at                    INTEGER NOT NULL
 ) STRICT;
 
--- requests -- the queues. ADR-10, ADR-07, ADR-05.
+-- requests -- the queues. ADR-03, ADR-02, ADR-05.
 CREATE TABLE requests (
   -- **The monotonic id IS the queue order.** Safer than a timestamp, which can tie.
   -- AUTOINCREMENT additionally stops SQLite reusing a deleted row's id, which would
@@ -39,14 +39,14 @@ CREATE TABLE requests (
   photo_id        TEXT    NOT NULL,
   group_id        TEXT    NOT NULL,
 
-  -- A request leaves its queue only by resolving. ADR-10.
+  -- A request leaves its queue only by resolving. ADR-03.
   state           TEXT    NOT NULL DEFAULT 'pending'
                           CHECK (state IN ('pending', 'resolved')),
 
   --   succeeded            -- added to the pool
   --   already_in_pool      -- code 3. ADR-05 treats this as success, not error
   --   queued_for_moderator -- codes 6 and 7. NOT a failure and NOT a success
-  --   failed               -- terminal failure, ADR-07
+  --   failed               -- terminal failure, ADR-02
   outcome         TEXT    CHECK (outcome IN (
                             'succeeded',
                             'already_in_pool',
@@ -54,7 +54,7 @@ CREATE TABLE requests (
                             'failed'
                           )),
 
-  -- ADR-07 records the RAW code, including ones this project does not recognize. That is
+  -- ADR-02 records the RAW code, including ones this project does not recognize. That is
   -- what makes a future classification change a data question rather than forensics.
   flickr_code     INTEGER,
 
@@ -80,14 +80,14 @@ CREATE INDEX idx_requests_queue
 CREATE INDEX idx_requests_pair
   ON requests (nsid, photo_id, group_id);
 
--- At most one outstanding request per pair. ADR-11 permits RE-submitting a pair that
+-- At most one outstanding request per pair. ADR-04 permits RE-submitting a pair that
 -- reached a moderator, but only after the first resolved -- never two in flight. Enforced
 -- here so a double-clicked button cannot put one photo in front of one volunteer twice.
 CREATE UNIQUE INDEX idx_requests_one_pending_per_pair
   ON requests (nsid, photo_id, group_id)
   WHERE state = 'pending';
 
--- moderated_pairs -- ADR-11. Every pair that reached a human's queue, kept permanently.
+-- moderated_pairs -- ADR-04. Every pair that reached a human's queue, kept permanently.
 --
 -- **Deliberately NOT a foreign key to requests.** These records must outlive the request
 -- row, the queue, and any later cleanup; a cascade would delete exactly the history the

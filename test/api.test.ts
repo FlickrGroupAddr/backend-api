@@ -88,7 +88,7 @@ beforeEach(async () => {
 	await addUser(OTHER);
 });
 
-describe("ADR-06, authentication", () => {
+describe("ADR-10, authentication", () => {
 	it.each([
 		["no cookie", undefined],
 		["a malformed cookie", `${SESSION_COOKIE}=a.b.c`],
@@ -114,7 +114,7 @@ describe("ADR-06, authentication", () => {
 	});
 });
 
-describe("ADR-09, nothing behind a session reaches a shared cache", () => {
+describe("ADR-12, nothing behind a session reaches a shared cache", () => {
 	it("marks the 200 AND the 401, which is what middleware order gets wrong", async () => {
 		// A rejecting middleware never calls next(), so registering the cache header
 		// after `requireSession` would leave exactly the 401s uncovered.
@@ -126,7 +126,7 @@ describe("ADR-09, nothing behind a session reaches a shared cache", () => {
 	});
 });
 
-describe("ADR-10 and ADR-05, queueing a request", () => {
+describe("ADR-03 and ADR-05, queueing a request", () => {
 	const submit = (body: unknown) =>
 		authed("/v001/requests", { method: "POST", body: JSON.stringify(body) });
 
@@ -178,7 +178,7 @@ describe("ADR-10 and ADR-05, queueing a request", () => {
 	});
 });
 
-describe("ADR-11, the moderation warning", () => {
+describe("ADR-04, the moderation warning", () => {
 	const submit = (body: unknown) =>
 		authed("/v001/requests", { method: "POST", body: JSON.stringify(body) });
 
@@ -241,7 +241,7 @@ describe("withdrawing a request", () => {
 
 	it("refuses one that reached a moderator, and says a human is involved", async () => {
 		// FGA cannot pull a photo back out of a moderation queue, so claiming otherwise
-		// would be ADR-08 broken in the most direct way available.
+		// would be ADR-01 broken in the most direct way available.
 		const id = await seed(NSID, "p1", "g1", {
 			outcome: "queued_for_moderator",
 		});
@@ -284,7 +284,7 @@ describe("withdrawing a request", () => {
 	});
 });
 
-describe("ADR-08, the queue view is where fail-polite becomes visible", () => {
+describe("ADR-01, the queue view is where fail-polite becomes visible", () => {
 	type Page = {
 		queues: {
 			groupId: string;

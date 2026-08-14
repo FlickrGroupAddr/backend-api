@@ -15,7 +15,7 @@ beforeEach(async () => {
 	await env.DB.exec("DELETE FROM users");
 });
 
-describe("ADR-12, CORS", () => {
+describe("ADR-11, CORS", () => {
 	it("allows the configured UI origin", async () => {
 		// The positive case is the control: without it, the negative tests below would
 		// pass just as well against middleware that never ran.
@@ -66,9 +66,9 @@ it("answers /health without a session", async () => {
 	expect(await response.json()).toEqual({ status: "ok" });
 });
 
-/** ADR-14 chose `hono/html` over a hand-written escape, and ADR-01 makes the Flickr
+/** ADR-14 chose `hono/html` over a hand-written escape, and ADR-07 makes the Flickr
  *  username the only identity there is to show. Both meet on this page. */
-describe("ADR-14 and ADR-01, the landing page", () => {
+describe("ADR-14 and ADR-07, the landing page", () => {
 	const load = async (query = "", cookie?: string): Promise<string> =>
 		await (
 			await SELF.fetch(`${API}/${query}`, {

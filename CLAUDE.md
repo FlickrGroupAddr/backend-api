@@ -6,7 +6,7 @@ a strong default a good argument may overrule. MAY is optional.
 **Read `docs/architecture/DECISIONS.md` before changing behavior.** This file holds only what a
 Claude session needs and the docs do not say.
 
-## ADR-08 outranks everything
+## ADR-01 outranks everything
 
 **Where an outcome could mean a person declined, treat it as terminal.** FGA submits photos into
 queues that unpaid volunteers work through. **Retrying into a human is the one failure this project
@@ -22,7 +22,7 @@ diagram build fails if a standalone `DO` reaches the canvas.**
 
 **Decisions are `ADR-nn`, never `D-n`.** Cloudflare's database is called D1.
 
-**Zero-pad anything that will ever sort.** `ADR-07`, not `ADR-7`. The API is `/v001/*`. Unpadded
+**Zero-pad anything that will ever sort.** `ADR-02`, not `ADR-7`. The API is `/v001/*`. Unpadded
 numbers sort `1, 10, 2` and cannot be fixed cheaply once cited.
 
 **Every line a human reads starts with a capital.** Tile labels, edge labels, table cells that are
@@ -82,6 +82,11 @@ because it counts as coverage.
 - A test block that cites no ADR and carries no `TRACE-EXEMPT: <reason>`.
 - A test citing an ADR `DECISIONS.md` does not define.
 - `DECISIONS.md` sections out of ascending ADR order.
+- The old-to-new renumbering table going missing.
+
+**Numbers encode importance.** ADR-01 governs, and it descends from there. They were renumbered once,
+on 2026-08-14. **MUST NOT be renumbered again** — 167 mentions across 65 commit messages already
+depend on one mapping table, and a second would make readers chain through two.
 
 `docs/TRACEABILITY.md` is **generated** by the same script. Do not edit it.
 
@@ -124,12 +129,12 @@ destructured.
 |---|---|
 | `cloudflare` | Workers, D1, KV, R2, bindings, the platform |
 | `workers-best-practices` | Whether Worker code is idiomatic |
-| `durable-objects` | Durable Object classes, RPC, alarms — ADR-02 |
+| `durable-objects` | Durable Object classes, RPC, alarms — ADR-08 |
 | `wrangler` | Any `wrangler` command or `wrangler.jsonc` field |
-| `agents-sdk` | Read before promoting ADR-04 |
+| `agents-sdk` | Read before promoting ADR-06 |
 
 **Ignore the rest for this project** — `cloudflare-one*`, `sandbox-*`, `cloudflare-email-service`
-(ADR-01 holds no email address), `turnstile-spin`, `web-perf`.
+(ADR-07 holds no email address), `turnstile-spin`, `web-perf`.
 
 **Where a skill and this repository disagree, the repository wins.** Cloudflare's skill advises
 enabling `nodejs_compat` broadly; ADR-13 refuses it unless a dependency forces it.
@@ -191,8 +196,8 @@ their architecture.** Precedent is the weakest argument available here.
 | `docs/FLICKR.md` | What the API actually does. Several rows contradict Flickr's docs |
 | `docs/SETUP.md` | Bring-up, and four traps that cost real time |
 | `docs/architecture/*.drawio` | Generated, and gospel. Do not edit |
-| `src/adds/classify.ts` | **ADR-07 and ADR-08 as executable code.** Widening its retryable set is the most dangerous edit available |
-| `src/sweep.ts` | ADR-04's engine and ADR-10's queue discipline. Its attempt function is injected so the rules test without a network |
+| `src/adds/classify.ts` | **ADR-02 and ADR-01 as executable code.** Widening its retryable set is the most dangerous edit available |
+| `src/sweep.ts` | ADR-06's engine and ADR-03's queue discipline. Its attempt function is injected so the rules test without a network |
 | `src/session.ts` | **The only place that knows the cookie's name or attributes.** They were once duplicated, and one copy had silently lost `HttpOnly` |
 | `src/oauth/signature.ts` | ADR-14's documented exception. Checked against RFC 5849's own vectors |
 | `migrations/` | The schema. Constraints carry the rules, not application code |

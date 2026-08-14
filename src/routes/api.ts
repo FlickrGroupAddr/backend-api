@@ -25,10 +25,10 @@ export const apiRoutes = new Hono<{
 }>();
 
 /**
- * ADR-09. **Registered BEFORE `requireSession` deliberately:** a middleware that rejects
+ * ADR-12. **Registered BEFORE `requireSession` deliberately:** a middleware that rejects
  * never calls `next()`, so registering this second would leave exactly the 401s uncovered.
  *
- * `no-store` goes beyond ADR-09's `private` because the queue view changes the instant a
+ * `no-store` goes beyond ADR-12's `private` because the queue view changes the instant a
  * user withdraws something, and a browser reusing its own cached copy would still show it.
  */
 apiRoutes.use("/v001/*", async (c, next) => {
@@ -56,7 +56,7 @@ const queueQuery = z.object({
 
 apiRoutes.get("/v001/me", (c) => c.json({ nsid: c.get("nsid") }));
 
-/** Three rules meet here in order: ADR-11's warning, ADR-10's ordering, then ADR-10's
+/** Three rules meet here in order: ADR-04's warning, ADR-03's ordering, then ADR-03's
  *  narrow permission to attempt immediately. */
 apiRoutes.post("/v001/requests", async (c) => {
 	const parsed = submission.safeParse(await c.req.json().catch(() => null));
@@ -75,7 +75,7 @@ apiRoutes.post("/v001/requests", async (c) => {
 	);
 
 	if (priorModeration !== null && acknowledgedModeration !== true) {
-		// ADR-11: presence in the pool proves approval, the one direction the invisible
+		// ADR-04: presence in the pool proves approval, the one direction the invisible
 		// decision becomes visible. Warning about an accepted photo spends exactly the
 		// credibility the real warning needs.
 		const tokens = await getFlickrTokens(c.env.DB, nsid, c.env.TOKEN_KEY);
@@ -113,7 +113,7 @@ apiRoutes.post("/v001/requests", async (c) => {
 		const head = { id, nsid, photoId, groupId };
 
 		// BEFORE the attempt, matching the sweep. An attempt that throws still happened,
-		// and ADR-08 turns on not losing that: a dead socket may have left a photo in
+		// and ADR-01 turns on not losing that: a dead socket may have left a photo in
 		// front of a moderator, so the record MUST NOT depend on getting a reply.
 		await recordAttempt(c.env.DB, id);
 
@@ -257,7 +257,7 @@ apiRoutes.get("/v001/groups/:groupId", async (c) => {
 });
 
 /**
- * **Where ADR-08 becomes visible.** Every other decision implements the stopping. This is
+ * **Where ADR-01 becomes visible.** Every other decision implements the stopping. This is
  * the only place the user finds out, and without it fail-polite is a promise the product
  * never keeps.
  */

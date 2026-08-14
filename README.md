@@ -24,7 +24,7 @@ photo in a queue for a person to review.
 **So where an outcome could mean a person already declined, FGA stops.** It never retries into a
 human. That rule outranks every other decision in this project.
 
-It is ADR-08. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.md).
+It is ADR-01. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.md).
 
 ## Where to go
 

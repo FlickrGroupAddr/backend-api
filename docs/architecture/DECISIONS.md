@@ -5,145 +5,52 @@ overrule. MAY is optional.**
 
 **The code is the specification. This file holds only what the code cannot say: why.**
 
-> **Read [ADR-08](#adr-08--fail-polite-this-one-outranks-the-rest) first. It outranks every other
-> decision here.** Where any two conflict, ADR-08 wins.
+**Numbers run most-important-first.** ADR-01 governs everything below it, and importance descends
+from there. Read down, and stop when you have enough.
 
 Labels are `ADR-nn`, never `D-n` — Cloudflare's database is called D1 and the collision confuses
-everyone but its author. Numbers are cited from code comments, so they **MUST NOT** be renumbered.
+everyone but its author.
 
-**Sections run in ascending ADR order** so a reader can find one by number. This is a reference, not
-a narrative — `scripts/traceability.py --check` fails the build if the order breaks.
-`docs/TRACEABILITY.md` maps each decision to the tests that verify it.
+**Sections run in ascending order, which is now also importance order.**
+`scripts/traceability.py --check` fails the build if that breaks, and `docs/TRACEABILITY.md` maps
+every decision to the tests that verify it.
 
-## Read in this order
+## Renumbered 2026-08-14 — old numbers no longer mean what they did
 
-**Numbers are for LOOKUP. This table is for READING.** Numbers record the order decisions were made,
-which is an accident of history. They are cited from 266 places in code and from 65 commit messages,
-so they **MUST NOT** be renumbered to encode importance — importance changes, and an identifier that
-encodes a changing property has to keep changing with it.
+**Numbers used to record the order decisions were made, which is an accident of history.** They now
+record the order a reader should take them in.
 
-**Read first — it governs the rest**
+Every citation in code, tests, migrations, docs and memory was rewritten in one pass — **178
+references across 35 files** — and the suite and the mutation harness both passed afterwards.
 
-| | |
-|---|---|
-| [ADR-08](#adr-08--fail-polite-this-one-outranks-the-rest) | **Fail-polite.** Never retry into a human. Settles every conflict below |
+**Commit messages were NOT rewritten, and cannot be.** 167 mentions across 65 commits still use the
+old numbering, and this project puts a lot of its reasoning there. **Use this table to read anything
+written before 2026-08-14.**
 
-**Then — what the system does**
+| Old | New | Decision |
+|---|---|---|
+| ADR-08 | **ADR-01** | Fail-polite. Never retry into a human |
+| ADR-07 | **ADR-02** | Classify by Flickr's error code |
+| ADR-10 | **ADR-03** | FIFO per (user, group). Never jump the queue |
+| ADR-11 | **ADR-04** | A pair that reached a moderator is remembered |
+| ADR-05 | ADR-05 | Adds are idempotent — **unchanged** |
+| ADR-04 | **ADR-06** | The nightly cron work engine |
+| ADR-01 | **ADR-07** | The Flickr account is the identity |
+| ADR-02 | **ADR-08** | OAuth state lives in a Durable Object |
+| ADR-03 | **ADR-09** | Tokens encrypted under a separate key |
+| ADR-06 | **ADR-10** | The session is a stateless signed cookie |
+| ADR-12 | **ADR-11** | Separate origins, host-only cookie, CORS |
+| ADR-09 | **ADR-12** | No cache in front of D1 |
+| ADR-13 to ADR-17 | **unchanged** | Engineering policy |
 
-| | |
-|---|---|
-| [ADR-07](#adr-07--classify-by-flickrs-error-code-unknown-means-terminal) | ADR-08 as executable code. An unknown error is terminal |
-| [ADR-10](#adr-10--fifo-per-user-group-the-queue-is-never-jumped) | The queue is never jumped, and the sweep stops at a throttle |
-| [ADR-11](#adr-11--a-pair-that-reached-a-moderator-is-remembered-forever) | A pair a volunteer saw is remembered forever. Warn, never block |
-| [ADR-05](#adr-05--adds-are-idempotent-per-photo-group) | Never submit the same pair twice |
-| [ADR-04](#adr-04--the-work-engine-is-a-nightly-cron-over-d1) | A nightly cron, not per-user alarms |
+**This table is permanent.** It is the only thing keeping 65 commit messages readable, and deleting
+it silently breaks every one of them.
 
-**Then — how it is built**
+**Renumbering again would be a mistake.** It was done once, deliberately, while the project was two
+days old and the cost was measurable. Every repeat doubles the number of mapping tables a reader has
+to chain through.
 
-| | |
-|---|---|
-| [ADR-01](#adr-01--the-flickr-account-is-the-identity) | No PII. The token is more powerful than the feature set |
-| [ADR-02](#adr-02--oauth-state-lives-in-a-durable-object) | The OAuth secret survives a redirect in a Durable Object |
-| [ADR-03](#adr-03--tokens-are-aes-gcm-encrypted-in-d1-under-a-separate-key) | Tokens encrypted at rest, under a key of their own |
-| [ADR-06](#adr-06--the-session-is-a-stateless-signed-cookie) | Sessions are a signed cookie, not a table |
-| [ADR-12](#adr-12--the-ui-and-api-are-separate-origins-so-the-cookie-is-host-only) | Host-only cookie, and never reflect the `Origin` header |
-| [ADR-09](#adr-09--no-cache-in-front-of-d1) | No cache. Writes cost 1,000× reads |
-| [ADR-13](#adr-13--typescript-on-the-current-stable-toolchain) | TypeScript, current stable, no pre-release tags |
-| [ADR-14](#adr-14--integrate-when-feasible-innovate-otherwise) | Take the dependency unless it fails four tests |
-| [ADR-15](#adr-15--which-store-holds-what) | Two questions decide where new state lives |
-| [ADR-16](#adr-16--a-request-has-two-identifiers) | One id orders, one identifies. Neither does the other's job |
-| [ADR-17](#adr-17--every-list-endpoint-is-paginated-with-a-cursor) | Keyset pagination, because offset silently skips rows |
-
-**Every ADR appears here exactly once, and `--check` enforces that.** A decision missing from this
-table is one nobody was told to read.
-
----
-
-## ADR-01 — The Flickr account is the identity
-
-**FGA MUST NOT store an email address, a display name, or any contact detail.** The NSID is the key.
-
-**Understand the consequence rather than assuming it away.** Flickr offers no scope narrower than
-`write`, so the token FGA holds grants edit access to the user's entire account, while the product
-needs only "add this photo to that group". **FGA holds a credential far more powerful than its
-feature set.**
-
-## ADR-02 — OAuth state lives in a Durable Object
-
-**The request-token secret MUST be held in a Durable Object keyed by `oauth_token`.** It **MUST NOT**
-go in Workers KV, which offers no read-after-write guarantee across points of presence.
-
-**D1 would also have worked** — its reads are strongly consistent. **Lifecycle decides it, not
-consistency.** A D1 table here would be a table whose every row is destined for deletion, plus a
-sweep the cron must not forget. The Durable Object needs no table and cleans itself.
-
-**It MUST set an alarm on creation that deletes its storage after roughly 15 minutes.** Most logins
-are abandoned, so that path is the common case.
-
-**One object per login ATTEMPT, not per user.** At that point no user exists yet.
-
-Lives in `src/oauth/login-attempt.ts`.
-
-## ADR-03 — Tokens are AES-GCM encrypted in D1, under a separate key
-
-**Each user's Flickr token MUST be encrypted before it reaches D1.** The key is a Worker secret.
-
-**The token key and the session key MUST be different values.** Rotating the session key logs
-everyone out and costs nothing. Rotating the token key means re-encrypting every stored token.
-**Sharing one key makes the cheap rotation as expensive as the dear one, so neither ever happens.**
-
-Per-user tokens **MUST NOT** go in Cloudflare Secrets Store — it caps at 100 secrets per account,
-which is a ceiling you discover only once the product works.
-
-Lives in `src/crypto/tokens.ts`.
-
-## ADR-04 — The work engine is a nightly cron over D1
-
-**Pending requests MUST be rows in D1.** A Cron Trigger is the engine. Per-user Durable Object alarms
-**MUST NOT** be introduced without measuring one of: the scan threatens Worker limits, Flickr
-rate-limits the burst, or per-user scheduling becomes a product requirement.
-
-A `SELECT` beats a fan-out when you need to ask what is stuck and why. **Plan cost was never the
-argument and does not reopen it.**
-
-Lives in `src/sweep.ts`.
-
-## ADR-05 — Adds are idempotent per (photo, group)
-
-**The handler MUST confirm the pair has not already succeeded before calling Flickr.**
-
-`flickr.photos.getAllContexts` beats the local check because it also sees adds FGA did not make.
-**"Already in the pool" MUST be treated as success.**
-
-## ADR-06 — The session is a stateless signed cookie
-
-**After the Flickr callback, the Worker mints a token carrying the NSID and sets it as a cookie.**
-The Flickr token **MUST NOT** reach the browser.
-
-It is stateless, so it costs no D1 read per request and there is no session table. **What that gives
-up is instant revocation**, which matters little here: the Flickr token never leaves the server, and
-a user who wants FGA cut off revokes it at Flickr, which is more thorough anyway.
-
-**This is the softest decision in this document and the cheapest to reverse.** An opaque session row
-in D1 replaces it without touching anything else.
-
-`src/session.ts` is the only place that knows the cookie's name or attributes. Set, read and clear
-all go through it.
-
-## ADR-07 — Classify by Flickr's error code. Unknown means terminal.
-
-**Only codes 5, 105 and 106 MAY be retried. Everything else is terminal, including codes Flickr has
-not invented yet.**
-
-**The default is inverted from the 2022 version, and that is the point.** That version retried every
-unrecognized code nightly, forever — a bucket holding codes 1, 2, 4, 7, 8, 10 and 11, every one a
-permanent condition. **An unknown failure is the one most likely to be permanent.**
-
-**Widening the retryable set is the most dangerous edit available in this repository.**
-
-The table lives in `src/adds/classify.ts`. Read it there.
-
-## ADR-08 — Fail-polite. This one outranks the rest.
+## ADR-01 — Fail-polite. This one outranks the rest.
 
 **Where an outcome could mean a human declined, FGA MUST treat it as terminal.** Even when the same
 outcome could also mean something retryable. **When this conflicts with any other decision here,
@@ -163,23 +70,20 @@ exact harm.
 
 Lives in `src/adds/classify.ts`.
 
-## ADR-09 — No cache in front of D1
+## ADR-02 — Classify by Flickr's error code. Unknown means terminal.
 
-**FGA MUST NOT build an application cache.** Every `/v001/*` response carries
-`Cache-Control: private, no-store`.
+**Only codes 5, 105 and 106 MAY be retried. Everything else is terminal, including codes Flickr has
+not invented yet.**
 
-**Cost is not the reason to cache.** D1 bills reads at $0.001 per million rows. **Writes cost 1,000×
-reads**, so anyone adding a per-attempt write MUST check the volume first.
+**The default is inverted from the 2022 version, and that is the point.** That version retried every
+unrecognized code nightly, forever — a bucket holding codes 1, 2, 4, 7, 8, 10 and 11, every one a
+permanent condition. **An unknown failure is the one most likely to be permanent.**
 
-The trap this prevents: a per-user response in a shared cache without a per-user key, which serves
-one member's queue to another.
+**Widening the retryable set is the most dangerous edit available in this repository.**
 
-**Anyone auditing indexes MUST use `PRAGMA index_list`.** A `UNIQUE` constraint creates an index that
-`grep "CREATE INDEX"` will never find, and the usual result is a duplicate B-tree that costs writes
-and serves nothing. **Read a query plan only against populated tables** — on an empty one SQLite has
-no statistics and guesses.
+The table lives in `src/adds/classify.ts`. Read it there.
 
-## ADR-10 — FIFO per (user, group). The queue is never jumped.
+## ADR-03 — FIFO per (user, group). The queue is never jumped.
 
 **Every request MUST be attempted in append order within its `(user, group)` queue.**
 
@@ -197,12 +101,12 @@ Queues keyed by different tuples are fully independent, so the sweep MAY run the
 
 Lives in `src/sweep.ts` and `src/db/requests.ts`.
 
-## ADR-11 — A pair that reached a moderator is remembered forever
+## ADR-04 — A pair that reached a moderator is remembered forever
 
 **Codes 6 and 7 MUST write a permanent `moderated_pairs` row**, and it MUST outlive the request.
 
 **On resubmission the interface MUST warn, and MUST NOT block.** The warning informs. The person
-decides. A block would override a human's judgment about their own photo, which is ADR-08 pointed the
+decides. A block would override a human's judgment about their own photo, which is ADR-01 pointed the
 wrong way.
 
 **Check the pool first.** A photo now in the pool was approved, so the warning MUST NOT fire — a
@@ -211,7 +115,78 @@ false alarm spends the credibility the real warning needs.
 The table is named for what is known. **No rejection signal exists in the Flickr API**, so nothing
 here may imply one.
 
-## ADR-12 — The UI and API are separate origins, so the cookie is host-only
+## ADR-05 — Adds are idempotent per (photo, group)
+
+**The handler MUST confirm the pair has not already succeeded before calling Flickr.**
+
+`flickr.photos.getAllContexts` beats the local check because it also sees adds FGA did not make.
+**"Already in the pool" MUST be treated as success.**
+
+## ADR-06 — The work engine is a nightly cron over D1
+
+**Pending requests MUST be rows in D1.** A Cron Trigger is the engine. Per-user Durable Object alarms
+**MUST NOT** be introduced without measuring one of: the scan threatens Worker limits, Flickr
+rate-limits the burst, or per-user scheduling becomes a product requirement.
+
+A `SELECT` beats a fan-out when you need to ask what is stuck and why. **Plan cost was never the
+argument and does not reopen it.**
+
+Lives in `src/sweep.ts`.
+
+## ADR-07 — The Flickr account is the identity
+
+**FGA MUST NOT store an email address, a display name, or any contact detail.** The NSID is the key.
+
+**Understand the consequence rather than assuming it away.** Flickr offers no scope narrower than
+`write`, so the token FGA holds grants edit access to the user's entire account, while the product
+needs only "add this photo to that group". **FGA holds a credential far more powerful than its
+feature set.**
+
+## ADR-08 — OAuth state lives in a Durable Object
+
+**The request-token secret MUST be held in a Durable Object keyed by `oauth_token`.** It **MUST NOT**
+go in Workers KV, which offers no read-after-write guarantee across points of presence.
+
+**D1 would also have worked** — its reads are strongly consistent. **Lifecycle decides it, not
+consistency.** A D1 table here would be a table whose every row is destined for deletion, plus a
+sweep the cron must not forget. The Durable Object needs no table and cleans itself.
+
+**It MUST set an alarm on creation that deletes its storage after roughly 15 minutes.** Most logins
+are abandoned, so that path is the common case.
+
+**One object per login ATTEMPT, not per user.** At that point no user exists yet.
+
+Lives in `src/oauth/login-attempt.ts`.
+
+## ADR-09 — Tokens are AES-GCM encrypted in D1, under a separate key
+
+**Each user's Flickr token MUST be encrypted before it reaches D1.** The key is a Worker secret.
+
+**The token key and the session key MUST be different values.** Rotating the session key logs
+everyone out and costs nothing. Rotating the token key means re-encrypting every stored token.
+**Sharing one key makes the cheap rotation as expensive as the dear one, so neither ever happens.**
+
+Per-user tokens **MUST NOT** go in Cloudflare Secrets Store — it caps at 100 secrets per account,
+which is a ceiling you discover only once the product works.
+
+Lives in `src/crypto/tokens.ts`.
+
+## ADR-10 — The session is a stateless signed cookie
+
+**After the Flickr callback, the Worker mints a token carrying the NSID and sets it as a cookie.**
+The Flickr token **MUST NOT** reach the browser.
+
+It is stateless, so it costs no D1 read per request and there is no session table. **What that gives
+up is instant revocation**, which matters little here: the Flickr token never leaves the server, and
+a user who wants FGA cut off revokes it at Flickr, which is more thorough anyway.
+
+**This is the softest decision in this document and the cheapest to reverse.** An opaque session row
+in D1 replaces it without touching anything else.
+
+`src/session.ts` is the only place that knows the cookie's name or attributes. Set, read and clear
+all go through it.
+
+## ADR-11 — The UI and API are separate origins, so the cookie is host-only
 
 **The cookie is `__Host-fga_session`: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, no `Domain`.**
 
@@ -227,6 +202,22 @@ domain. Same-site is not the same as same-origin.
 **The Worker MUST NOT reflect the request's `Origin` header.** With credentials enabled that lets any
 site on the internet make authenticated calls as a logged-in user. **It is a two-line mistake and it
 looks exactly like the fix.**
+
+## ADR-12 — No cache in front of D1
+
+**FGA MUST NOT build an application cache.** Every `/v001/*` response carries
+`Cache-Control: private, no-store`.
+
+**Cost is not the reason to cache.** D1 bills reads at $0.001 per million rows. **Writes cost 1,000×
+reads**, so anyone adding a per-attempt write MUST check the volume first.
+
+The trap this prevents: a per-user response in a shared cache without a per-user key, which serves
+one member's queue to another.
+
+**Anyone auditing indexes MUST use `PRAGMA index_list`.** A `UNIQUE` constraint creates an index that
+`grep "CREATE INDEX"` will never find, and the usual result is a duplicate B-tree that costs writes
+and serves nothing. **Read a query plan only against populated tables** — on an empty one SQLite has
+no statistics and guesses.
 
 ## ADR-13 — TypeScript, on the current stable toolchain
 
@@ -309,11 +300,11 @@ the end — that is wrong exactly when the last page is full.
 |---|---|
 | AWS | Every piece has a simpler Cloudflare equivalent here |
 | An off-the-shelf OAuth 1.0a library | All unmaintained, Node-only, or wrapping an HTTP client we do not use |
-| Per-user Durable Object alarms | **Deferred, not rejected.** See ADR-04's promotion criteria |
+| Per-user Durable Object alarms | **Deferred, not rejected.** See ADR-06's promotion criteria |
 | D1 read replication | Removed 2026-08-13. One user, in ENAM, with the database in ENAM. Replicas are eventually consistent and the bookmark plumbing fails silently |
 | Cloudflare Secrets Store | Right product, wrong maturity, and a 100-secret ceiling |
 | Workers KV | Consistency model is wrong for the login path |
-| Cognito or Google login | Both supply an identity ADR-01 declines to hold |
+| Cognito or Google login | Both supply an identity ADR-07 declines to hold |
 
 ## Still open
 
@@ -322,6 +313,6 @@ the end — that is wrong exactly when the last page is full.
   and **for an unmoderated pool the ambiguity disappears** — `getAllContexts` then answers
   definitively. Only moderated pools would stay terminal.
 - **The sweep SHOULD skip a group whose `throttle.mode` is `disabled`.** It costs one wasted call per
-  disabled pool. Not urgent: a live add into one returns code 11, which ADR-07 already resolves.
+  disabled pool. Not urgent: a live add into one returns code 11, which ADR-02 already resolves.
 - **The wording a user sees when FGA has deliberately stopped.** That the queue is shown is settled.
-  The sentence itself is not, and it either delivers ADR-08's promise or quietly undercuts it.
+  The sentence itself is not, and it either delivers ADR-01's promise or quietly undercuts it.

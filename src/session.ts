@@ -3,7 +3,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { CookieOptions } from "hono/utils/cookie";
 import { jwtVerify, SignJWT } from "jose";
 
-/** The session cookie. ADR-06 and ADR-12. A JWS with HS256 IS HMAC-SHA256. */
+/** The session cookie. ADR-10 and ADR-11. A JWS with HS256 IS HMAC-SHA256. */
 
 const ISSUER = "fga";
 const AUDIENCE = "fga-api";

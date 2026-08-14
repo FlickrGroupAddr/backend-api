@@ -1,7 +1,7 @@
 -- Gives every request an opaque public identifier. ADR-16.
 --
 -- **WHY A SECOND COLUMN AND NOT A NEW PRIMARY KEY.** `requests.id` is not merely an
--- identifier, it is ADR-10's FIFO ORDERING KEY -- `queueHeads` runs `SELECT MIN(q.id)`.
+-- identifier, it is ADR-03's FIFO ORDERING KEY -- `queueHeads` runs `SELECT MIN(q.id)`.
 -- Every UUID form ties somewhere, and in SQLite a text key also costs the rowid:
 -- `INTEGER PRIMARY KEY` IS the rowid, so it would turn a direct seek into an index
 -- lookup plus a row fetch.

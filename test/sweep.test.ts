@@ -4,7 +4,7 @@ import { classifyAdd } from "../src/adds/classify.js";
 import { enqueue, pairReachedAModerator } from "../src/db/requests.js";
 import { type AttemptFn, sweep } from "../src/sweep.js";
 
-/** ADR-04's nightly engine and ADR-10's walking rules, against real D1.
+/** ADR-06's nightly engine and ADR-03's walking rules, against real D1.
  *
  *  The attempt is scripted, so these test the RULES rather than Flickr -- and the rules
  *  are where an error is expensive. Jumping a queue spends an allowance belonging to a
@@ -106,12 +106,12 @@ describe("queues are independent", () => {
 
 		expect(report.errors).toHaveLength(1);
 		expect((await stateOf("p2"))?.state).toBe("resolved");
-		// ADR-08: we do not know what happened, so it MUST NOT resolve.
+		// ADR-01: we do not know what happened, so it MUST NOT resolve.
 		expect((await stateOf("boom"))?.state).toBe("pending");
 	});
 });
 
-describe("ADR-11, the permanent record", () => {
+describe("ADR-04, the permanent record", () => {
 	it.each([
 		[6, true],
 		[7, true],

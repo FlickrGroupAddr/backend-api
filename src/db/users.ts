@@ -1,6 +1,6 @@
 import { decryptToken, encryptToken } from "../crypto/tokens.js";
 
-/** ADR-01 and ADR-03. **Encryption lives here, not at the call sites**, so there is
+/** ADR-07 and ADR-09. **Encryption lives here, not at the call sites**, so there is
  *  exactly one path by which a Flickr token reaches D1 and no way to write one in
  *  plaintext by forgetting a step. */
 
@@ -10,7 +10,7 @@ export interface FlickrTokens {
 }
 
 /** Idempotent by NSID. Clearing `needs_relink` is the point of doing it on every login:
- *  ADR-07 sets that flag on code 98 or 99, and a completed login is what resolves it. */
+ *  ADR-02 sets that flag on code 98 or 99, and a completed login is what resolves it. */
 export async function upsertUser(
 	db: D1Database,
 	nsid: string,
@@ -89,7 +89,7 @@ export async function getUsername(
 	return row?.flickr_username ?? null;
 }
 
-/** ADR-07: Flickr answered 98 or 99, so the stored token is dead until the user re-links. */
+/** ADR-02: Flickr answered 98 or 99, so the stored token is dead until the user re-links. */
 export async function markNeedsRelink(
 	db: D1Database,
 	nsid: string,

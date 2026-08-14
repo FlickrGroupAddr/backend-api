@@ -15,7 +15,7 @@ export interface UserCredentials {
 /**
  * **`unreachable` is NOT a Flickr error, and collapsing the two would be the most
  * dangerous simplification available here.** Codes 105 and 106 mean Flickr is telling us
- * the write did not happen. A dead socket means we do not know, and ADR-08 says an
+ * the write did not happen. A dead socket means we do not know, and ADR-01 says an
  * outcome that could mean a person saw something is terminal.
  */
 export type FlickrResult =
@@ -94,7 +94,7 @@ export async function callFlickr(
 	return { kind: "ok", body };
 }
 
-/** The call the whole product exists to make. Classification is ADR-07's job and lives
+/** The call the whole product exists to make. Classification is ADR-02's job and lives
  *  in ../adds/classify.ts, deliberately apart from the transport. */
 export async function addPhotoToGroup(
 	photoId: string,

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { mintSession, SESSION_COOKIE, verifySession } from "../src/session.js";
 
 /**
- * ADR-06 and ADR-12.
+ * ADR-10 and ADR-11.
  *
  * **The attribute tests read the real `Set-Cookie` from a real login.** They once read a
  * helper that returned a hardcoded string and that the Worker never called, so five tests

@@ -15,7 +15,7 @@ export { OAuthLoginAttempt } from "./oauth/login-attempt.js";
 const app = new Hono<{ Bindings: Env }>();
 
 /**
- * ADR-12's CORS contract, and **the one place in this codebase where a two-line shortcut
+ * ADR-11's CORS contract, and **the one place in this codebase where a two-line shortcut
  * is catastrophic.**
  *
  * The response echoes OUR OWN configured constant, never the request's `Origin` header.
@@ -101,7 +101,7 @@ UI origin <code>${c.env.UI_ORIGIN}</code></p>`,
 export default {
 	fetch: app.fetch,
 
-	/** ADR-04. **Logged as structured JSON so a bad night is queryable**, rather than
+	/** ADR-06. **Logged as structured JSON so a bad night is queryable**, rather than
 	 *  readable-if-somebody-happens-to-look. `stoppedOnThrottle` is expected and is not
 	 *  an error -- it is the product working. */
 	async scheduled(

@@ -61,7 +61,7 @@ export function createAttempt(env: Env): AttemptFn {
 			await addPhotoToGroup(head.photoId, head.groupId, creds),
 		);
 
-		// ADR-07: the stored token is now known bad. Flagging stops the next sweep
+		// ADR-02: the stored token is now known bad. Flagging stops the next sweep
 		// rediscovering it once per queue -- `queueHeads` excludes flagged users.
 		if (disposition.kind === "terminal" && disposition.relink) {
 			await markNeedsRelink(env.DB, head.nsid);

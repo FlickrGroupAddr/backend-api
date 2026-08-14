@@ -156,28 +156,21 @@ def build() -> tuple[str, list[str]]:
     for tag in sorted(set(by_adr) - set(declared)):
         gaps.append(f"UNKNOWN  tests cite {tag}, which DECISIONS.md does not define")
 
-    # INDEX: the reading-order table must cover every ADR exactly once.
+    # MAPPING: the old-to-new renumbering table MUST survive.
     #
-    # **This is what makes two orderings safe to keep at the same time.** Sections run
-    # ascending for lookup and the index runs by importance for reading. Without a check
-    # the index silently falls behind, and a stale reading order is worse than none --
-    # it tells a newcomer they have seen everything when they have not.
-    index_body = read(DECISIONS).split("## Read in this order", 1)
-    if len(index_body) < 2:
-        gaps.append("INDEX    DECISIONS.md has no 'Read in this order' table")
-    else:
-        listed = re.findall(r"\[(ADR-\d+)\]\(#", index_body[1].split("\n## ", 1)[0])
-        for tag in declared:
-            if listed.count(tag) != 1:
-                gaps.append(
-                    f"INDEX    {tag} appears {listed.count(tag)} times in the reading "
-                    f"order table; it must appear exactly once"
-                )
-        for tag in sorted(set(listed) - set(declared)):
-            gaps.append(f"INDEX    reading order names {tag}, which is not defined")
+    # Numbers were renumbered once, on 2026-08-14, so ADR-01 is now the governing
+    # decision. 167 ADR mentions across 65 commit messages still use the old numbering
+    # and cannot be rewritten. **That table is the only thing keeping them readable**, so
+    # deleting it silently breaks every commit written before that date.
+    if "## Renumbered 2026-08-14" not in read(DECISIONS):
+        gaps.append(
+            "MAPPING  DECISIONS.md lost the old-to-new renumbering table; "
+            "65 commit messages depend on it"
+        )
 
-    # ORDER: a reference document is scanned by number, not read front to back. This was
-    # ordered by importance once and Terry could not find anything in it.
+    # ORDER: numbers now encode importance, so ascending order IS the reading order.
+    # A reference is scanned by number, and this was ordered by importance-without-numbers
+    # once, which Terry could not navigate at all.
     numbers = [int(tag.split("-")[1]) for tag in declared]
     if numbers != sorted(numbers):
         out_of_place = [

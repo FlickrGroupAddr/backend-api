@@ -30,7 +30,7 @@ beforeEach(async () => {
 		.run();
 });
 
-describe("ADR-10 and ADR-16, requests: ordering", () => {
+describe("ADR-03 and ADR-16, requests: ordering", () => {
 	it("hands out ids in append order, and never reuses a deleted one", async () => {
 		// AUTOINCREMENT matters: a reused id would put a new request at the head of a
 		// queue it should have joined the back of.
@@ -60,7 +60,7 @@ describe("ADR-10 and ADR-16, requests: ordering", () => {
 	});
 });
 
-describe("ADR-07, requests: the resolution invariant", () => {
+describe("ADR-02, requests: the resolution invariant", () => {
 	it.each([
 		["resolved with no outcome", "'resolved', NULL, 1"],
 		["resolved with no resolved_at", "'resolved', 'succeeded', NULL"],
@@ -89,7 +89,7 @@ describe("ADR-07, requests: the resolution invariant", () => {
 	});
 });
 
-describe("ADR-11, requests: one outstanding request per pair", () => {
+describe("ADR-04, requests: one outstanding request per pair", () => {
 	const pending = (photo: string, group: string) =>
 		insertRequest(
 			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
@@ -135,7 +135,7 @@ describe("moderated_pairs", () => {
 	});
 
 	it("outlives the user's requests", async () => {
-		// ADR-11: deliberately not a foreign key. A cascade would delete the history the
+		// ADR-04: deliberately not a foreign key. A cascade would delete the history the
 		// warning depends on.
 		await pair(6);
 		await env.DB.exec("DELETE FROM requests");
@@ -146,7 +146,7 @@ describe("moderated_pairs", () => {
 	});
 });
 
-describe("ADR-01 and ADR-03, users", () => {
+describe("ADR-07 and ADR-09, users", () => {
 	it("constrains needs_relink to a boolean", async () => {
 		await expect(
 			env.DB.prepare("UPDATE users SET needs_relink = 2").run(),

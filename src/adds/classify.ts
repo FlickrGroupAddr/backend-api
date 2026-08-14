@@ -1,7 +1,7 @@
 import type { FlickrResult } from "../flickr/api.js";
 
 /**
- * ADR-07 and ADR-08 as executable code. The most consequential function here.
+ * ADR-02 and ADR-01 as executable code. The most consequential function here.
  *
  * **An unrecognized outcome is TERMINAL.** The 2022 version defaulted the other way and
  * retried codes 1, 2, 4, 7, 8, 10 and 11 nightly forever -- every one a permanent
@@ -63,7 +63,7 @@ export function classifyAdd(code: number | null): Disposition {
 	return { kind: "terminal", code, relink: false };
 }
 
-/** ADR-11: this pair must be written to `moderated_pairs`. */
+/** ADR-04: this pair must be written to `moderated_pairs`. */
 export function reachedAModerator(
 	disposition: Disposition,
 ): disposition is { kind: "moderated"; code: 6 | 7 } {
@@ -95,7 +95,7 @@ export function outcomeColumn(
 }
 
 /** Exists so the `unreachable` branch cannot be skipped: a transport failure has no
- *  Flickr code, and inventing one would erase the distinction ADR-08 depends on. */
+ *  Flickr code, and inventing one would erase the distinction ADR-01 depends on. */
 export function classifyResult(result: FlickrResult): Disposition {
 	switch (result.kind) {
 		case "ok":

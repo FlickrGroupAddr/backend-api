@@ -8,7 +8,7 @@ import {
 } from "./db/requests.js";
 
 /**
- * ADR-04's nightly engine and ADR-10's queue discipline.
+ * ADR-06's nightly engine and ADR-03's queue discipline.
  *
  * **`attempt` is injected, not imported.** The walking rules are the part that can be
  * subtly and expensively wrong, so they test against scripted outcomes with no network
@@ -26,7 +26,7 @@ export interface SweepReport {
 	readonly errors: readonly string[];
 }
 
-/** A guard, not a rule. ADR-10 permits continuing after each resolution, so a queue of
+/** A guard, not a rule. ADR-03 permits continuing after each resolution, so a queue of
  *  terminal failures would otherwise walk its whole length in one night. */
 const MAX_ATTEMPTS_PER_QUEUE = 25;
 
@@ -55,7 +55,7 @@ export async function sweep(
 				disposition = await attempt(head);
 			} catch (cause) {
 				// One queue failing MUST NOT abandon the others. A throw is also not a
-				// reason to retry this pair -- we do not know what happened, and ADR-08
+				// reason to retry this pair -- we do not know what happened, and ADR-01
 				// says an unknown outcome stops.
 				errors.push(
 					`${head.nsid}/${head.groupId}: ${
@@ -65,7 +65,7 @@ export async function sweep(
 				break;
 			}
 
-			// ADR-10. Everything behind the head is blocked by the same cap, so trying
+			// ADR-03. Everything behind the head is blocked by the same cap, so trying
 			// the next one is the queue-jump this rule forbids, not an optimization.
 			if (disposition.kind === "retry") {
 				stoppedOnThrottle++;

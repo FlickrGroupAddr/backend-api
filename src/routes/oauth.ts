@@ -30,7 +30,7 @@ oauthRoutes.get("/oauth/login", async (c) => {
 		callbackUrl,
 	);
 
-	// ADR-02. Addressed by the request token, the only identifier that exists yet.
+	// ADR-08. Addressed by the request token, the only identifier that exists yet.
 	const stub = c.env.OAUTH_LOGIN.get(
 		c.env.OAUTH_LOGIN.idFromName(temporary.token),
 	);
@@ -86,7 +86,7 @@ oauthRoutes.get("/oauth/callback", async (c) => {
 	return c.redirect(uiUrl(c.env, "ok"), 302);
 });
 
-/** Ends the browser session and nothing else. ADR-06 accepts no server-side revocation,
+/** Ends the browser session and nothing else. ADR-10 accepts no server-side revocation,
  *  and the Flickr token deliberately survives -- cutting FGA off entirely happens at
  *  Flickr, which is both more thorough and outside our control. */
 oauthRoutes.post("/oauth/logout", (c) => {

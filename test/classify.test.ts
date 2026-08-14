@@ -5,7 +5,7 @@ import {
 	outcomeColumn,
 } from "../src/adds/classify.js";
 
-/** ADR-07 and ADR-08. Widening `RETRYABLE` is the most dangerous edit in the repo. */
+/** ADR-02 and ADR-01. Widening `RETRYABLE` is the most dangerous edit in the repo. */
 
 type Kind = ReturnType<typeof classifyAdd>["kind"];
 

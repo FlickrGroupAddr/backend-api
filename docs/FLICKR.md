@@ -19,7 +19,7 @@ token-secret half. So nothing can reach Flickr before the FGA credentials are re
 
 **The server gets a token SECRET, then walks the user away for two minutes.** That secret must
 survive a round trip through someone's browser. It cannot travel in the URL and cannot be
-recomputed. **That single fact is why ADR-02 exists.**
+recomputed. **That single fact is why ADR-08 exists.**
 
 **Access tokens never expire.** No refresh machinery is needed. A leaked token stays valid until the
 user revokes FGA at Flickr.
@@ -36,7 +36,7 @@ Cloudflare Workers at all.**
 **Flickr offers exactly three levels: `read`, `write`, `delete`.**
 
 **There is no scope for "add photos to groups".** `write` is the narrowest that works, and it grants
-edit access to the user's entire account. See ADR-01.
+edit access to the user's entire account. See ADR-07.
 
 ## A moderator's decision is invisible
 
@@ -46,7 +46,7 @@ After code **6** the photo sits in the pool's pending queue. If a moderator decl
 simply removed and never appears. `flickr.photos.getAllContexts` shows whether a photo landed, but
 **"not in the pool" cannot distinguish *still pending* from *rejected*.**
 
-**Presence in the pool proves approval. Absence proves nothing.** This is the whole reason ADR-08
+**Presence in the pool proves approval. Absence proves nothing.** This is the whole reason ADR-01
 exists.
 
 ## `groups.pools.add` error codes

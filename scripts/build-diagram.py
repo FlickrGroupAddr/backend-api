@@ -978,7 +978,7 @@ entries = [e for e in entries if e]
 if len(entries) < 2:
     raise SystemExit("Worker Secrets tile parsed to fewer than 2 entries -- the check is blind.")
 # Entries, not secrets: "FGA Flickr API credentials" is one line covering two of
-# ADR-03's four, since the consumer key and secret are only ever used as a pair.
+# ADR-09's four, since the consumer key and secret are only ever used as a pair.
 print(f"  Worker Secrets arrows name only what the tile holds ({len(entries) - 1} entries):")
 for c in cells:
     if not c.get("edge") or "secrets" not in (c.get("source"), c.get("target")):
@@ -1002,7 +1002,7 @@ for c in cells:
 # that then explains nothing.
 #
 # DASHED IS GONE, and so is the label that rode on it. Read replicas were removed
-# from the architecture on 2026-08-13 (Terry's call; see ADR-09), which deleted
+# from the architecture on 2026-08-13 (Terry's call; see ADR-12), which deleted
 # the only dashed edge -- `e16`, D1 primary to replica -- and with it the
 # "Eventual consistency" label this build used to protect as load-bearing. That
 # protection was correct while the split existed: the label was the entire

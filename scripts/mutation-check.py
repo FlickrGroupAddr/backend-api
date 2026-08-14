@@ -31,19 +31,19 @@ MUTATIONS = [
         "const RETRYABLE = new Set([5, 6, 105, 106]);",
     ),
     (
-        "ADR-07: make an unrecognized code retryable",
+        "ADR-02: make an unrecognized code retryable",
         "src/adds/classify.ts",
         "\treturn { kind: \"terminal\", code, relink: false };",
         "\treturn { kind: \"retry\", code };",
     ),
     (
-        "ADR-08 transport: make an unanswered call retryable",
+        "ADR-01 transport: make an unanswered call retryable",
         "src/adds/classify.ts",
         "\t\t\treturn { kind: \"unconfirmed\", detail: result.detail };",
         "\t\t\treturn { kind: \"retry\", code: 105 };",
     ),
     (
-        "ADR-10: keep walking a queue past a throttle",
+        "ADR-03: keep walking a queue past a throttle",
         "src/sweep.ts",
         "\t\t\t\tstoppedOnThrottle++;\n\t\t\t\tbreak;",
         "\t\t\t\tstoppedOnThrottle++;\n\t\t\t\thead = await nextInQueue(db, head.nsid, head.groupId);\n\t\t\t\tcontinue;",
@@ -127,7 +127,7 @@ MUTATIONS = [
         "\treturn tokenSecret\n\t\t? `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`\n\t\t: percentEncode(consumerSecret);",
     ),
     (
-        "ADR-11: stop writing the permanent moderated-pair record",
+        "ADR-04: stop writing the permanent moderated-pair record",
         "src/db/requests.ts",
         "\tif (reachedAModerator(disposition)) {",
         "\tif (false as boolean) {",

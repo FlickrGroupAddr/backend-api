@@ -11,7 +11,7 @@
 	// ADR-13 requires naming that dependency in the same commit.
 	"compatibility_flags": [],
 
-	// Public configuration, not secrets. ADR-12: the UI and the API are separate
+	// Public configuration, not secrets. ADR-11: the UI and the API are separate
 	// origins, and the CORS allowlist is compared against this exact value --
 	// never against the request's own Origin header.
 	//
@@ -21,10 +21,10 @@
 	// callback URL it cannot reach, and the failure would happen inside Flickr's
 	// redirect where there is nothing useful to read.
 	//
-	// ADR-12 describes the END state, where the UI and API are separate origins.
+	// ADR-11 describes the END state, where the UI and API are separate origins.
 	// Today they are the same origin, which makes the CORS contract inert rather
 	// than wrong. **Both values MUST be revisited when the domain lands**, and
-	// ADR-12's contract only starts doing work at that point.
+	// ADR-11's contract only starts doing work at that point.
 	"vars": {
 		"UI_ORIGIN": "https://fga-backend-api.terryott.workers.dev",
 		"API_BASE_URL": "https://fga-backend-api.terryott.workers.dev"
@@ -35,7 +35,7 @@
 		"head_sampling_rate": 1
 	},
 
-	// ADR-04: the nightly sweep is the v1 work engine. 00:15 UTC rather than
+	// ADR-06: the nightly sweep is the v1 work engine. 00:15 UTC rather than
 	// 00:00 -- nothing here needs midnight exactly, and the hour boundary is the
 	// busiest moment on the shared cron infrastructure.
 	"triggers": {
@@ -57,7 +57,7 @@
 	"durable_objects": {
 		"bindings": [
 			{
-				// ADR-02: one object per login attempt, NOT per user. The name says so
+				// ADR-08: one object per login attempt, NOT per user. The name says so
 				// because that distinction is the whole point of the decision.
 				"name": "OAUTH_LOGIN",
 				"class_name": "OAuthLoginAttempt"

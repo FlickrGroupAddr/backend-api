@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 /**
- * ADR-02. One object per LOGIN ATTEMPT, never per user -- at this point the person has
+ * ADR-08. One object per LOGIN ATTEMPT, never per user -- at this point the person has
  * authorized nothing, so no identity exists yet.
  *
  * It exists because OAuth 1.0a hands the server a token SECRET and then walks the user

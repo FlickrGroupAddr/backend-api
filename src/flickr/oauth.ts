@@ -16,7 +16,7 @@ const REQUEST_TOKEN_URL = "https://www.flickr.com/services/oauth/request_token";
 const AUTHORIZE_URL = "https://www.flickr.com/services/oauth/authorize";
 const ACCESS_TOKEN_URL = "https://www.flickr.com/services/oauth/access_token";
 
-/** ADR-01: Flickr offers only read, write or delete. **`write` is the narrowest that can
+/** ADR-07: Flickr offers only read, write or delete. **`write` is the narrowest that can
  *  do the job**, and it grants far more than FGA uses. */
 const PERMS = "write";
 
@@ -134,7 +134,7 @@ export function buildAuthorizeUrl(requestToken: string): string {
 	return url.toString();
 }
 
-/** Leg 3. **Signed with the REQUEST token secret** -- the value ADR-02's Durable Object
+/** Leg 3. **Signed with the REQUEST token secret** -- the value ADR-08's Durable Object
  *  exists to carry across the redirect. The consumer secret alone produces a
  *  valid-looking request that Flickr rejects opaquely. */
 export async function exchangeAccessToken(

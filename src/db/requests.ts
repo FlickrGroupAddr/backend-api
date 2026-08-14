@@ -2,7 +2,7 @@ import type { Disposition } from "../adds/classify.js";
 import { outcomeColumn, reachedAModerator } from "../adds/classify.js";
 
 /**
- * ADR-10's queues.
+ * ADR-03's queues.
  *
  * **A "queue" is a VIEW over the `requests` table, not a table of its own:** every
  * pending row sharing an `(nsid, group_id)`, ordered by `id`. There is no queue object to
@@ -117,7 +117,7 @@ export async function recordAttempt(db: D1Database, id: number): Promise<void> {
 /**
  * **Both writes go in one batch so a request cannot be marked resolved without the record
  * that a person saw it.** The request row is transient and the moderated record is not,
- * so losing that pairing is exactly the failure ADR-11 exists to prevent.
+ * so losing that pairing is exactly the failure ADR-04 exists to prevent.
  */
 export async function resolveRequest(
 	db: D1Database,
@@ -199,7 +199,7 @@ export async function enqueue(
 	return { id: row.id, publicId };
 }
 
-/** ADR-10 lets the API attempt immediately only when a request is the SOLE unresolved one
+/** ADR-03 lets the API attempt immediately only when a request is the SOLE unresolved one
  *  in its queue. A queue of length one is the only case where an immediate attempt cannot
  *  take an allowance slot from something that waited longer. */
 export async function pendingCount(
@@ -270,7 +270,7 @@ export async function withdrawRequest(
 	};
 }
 
-/** ADR-11. */
+/** ADR-04. */
 export async function pairReachedAModerator(
 	db: D1Database,
 	nsid: string,

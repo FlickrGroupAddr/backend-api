@@ -8,7 +8,7 @@ import {
 } from "../src/flickr/oauth.js";
 import type { Param } from "../src/oauth/signature.js";
 
-/** The Flickr login: parameter assembly, and ADR-02's single-use secret store. */
+/** The Flickr login: parameter assembly, and ADR-08's single-use secret store. */
 
 const URL_UNDER_TEST = new URL(
 	"https://www.flickr.com/services/oauth/request_token",
@@ -90,7 +90,7 @@ describe("buildAuthorizeUrl", () => {
 		const url = new URL(buildAuthorizeUrl("request-token"));
 		expect(url.protocol).toBe("https:");
 		expect(url.host).toBe("www.flickr.com");
-		// ADR-01: write is the narrowest scope Flickr offers that can do the job.
+		// ADR-07: write is the narrowest scope Flickr offers that can do the job.
 		expect(url.searchParams.get("perms")).toBe("write");
 		expect(url.search).not.toMatch(/secret/i);
 	});
@@ -107,7 +107,7 @@ describe("parseFormResponse", () => {
 	});
 });
 
-describe("the login attempt, ADR-02", () => {
+describe("the login attempt, ADR-08", () => {
 	function stub(token: string) {
 		return env.OAUTH_LOGIN.get(env.OAUTH_LOGIN.idFromName(token));
 	}
