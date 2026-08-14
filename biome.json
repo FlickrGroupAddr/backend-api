@@ -24,7 +24,11 @@
 		"rules": {
 			"preset": "recommended",
 			"nursery": {
-				"noFloatingPromises": "error"
+				"noFloatingPromises": "error",
+				"noMisusedPromises": "error",
+				"useAwaitThenable": "error",
+				"noBaseToString": "error",
+				"useExhaustiveSwitchCases": "error"
 			},
 			"suspicious": {
 				"noExplicitAny": "error"
