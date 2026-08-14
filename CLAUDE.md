@@ -195,6 +195,8 @@ recall is worse than no check at all**, because it looks like a record and is no
 | `npm` | `https://registry.npmjs.org/npm/latest` |
 | `typescript` | `https://registry.npmjs.org/typescript/latest`, compared against `node_modules/typescript/package.json` |
 | Every **direct** dependency | `npm outdated --json`, which queries the registry itself |
+| `compatibility_date` | `https://registry.npmjs.org/workerd/latest`, whose version is `1.YYYYMMDD.N` — that embedded date **is** the newest usable compatibility date |
+| `biome.json` `$schema` | **Local only.** The version in the URL against the installed `@biomejs/biome`. Needs no network |
 
 **It runs as `~/.claude/hooks/npm-toolchain-check.py`**, a `PreToolUse` hook gated on this project
 appearing in `~/.claude/toolchain-projects.json` with `"npm"` in its `toolchains`. It **never
@@ -300,6 +302,41 @@ refusing, and it is why those packages are not reported at all rather than merel
 **The direct dependencies are the only lever anyone can pull**, which is what makes the narrower
 scope sufficient rather than merely quieter: bumping one usually carries its transitive tree forward
 as a side effect, without anybody having to read a list of things they cannot fix.
+
+### Two checks no dependency scan can see
+
+**Added 2026-08-14 after Terry asked whether node, npm, `tsc` and direct dependencies were really the
+whole toolchain.** They were not. His instinct was right and the list was too short.
+
+**`compatibility_date` is toolchain, not configuration.** It is not a package version, so nothing in
+npm can see it — and it is not cosmetic: it selects which runtime behaviors the Worker gets, so
+changing it changes how deployed code executes. **It is also a one-line fix**, which makes it exactly
+the shape the banner exists for. The check found it stale on its first run.
+
+**The newest usable date comes from `workerd`'s own version.** `workerd` publishes as
+`1.YYYYMMDD.N`, and that embedded date is the newest compatibility date the runtime implements.
+Reading it from the runtime beats scraping a changelog, and it moves the moment Cloudflare ships.
+
+**`biome.json` pins a schema URL carrying a version, and installing a newer Biome does not rewrite
+it.** Both halves live in this repository, so no registry query can notice them drifting apart.
+Severity is low — a stale URL only degrades editor validation — but it is one line and belongs in
+the same breath as the Biome bump that caused it.
+
+**That check needs no network, so it still answers offline** — and a drift found on a plane is a
+confirmed positive Terry can fix on a plane, so it goes **loud** even when every other probe failed.
+The banner then names what it could not check, so a partial answer never reads as a complete one.
+
+#### `workerd` was considered and deliberately left OUT
+
+**It is the V8 isolate this Worker executes in and the runtime all 178 tests run inside**, so it is
+far more load-bearing than an incidental transitive package. It was still excluded, and the reason is
+the loudness rule rather than tidiness.
+
+**Measured 2026-08-14: `workerd` was three days behind at `1.20260811.1` against `1.20260814.1`, and
+BOTH `wrangler` (`4.123.0`) and `@cloudflare/vitest-pool-workers` (`0.21.3`) were already at
+latest.** No command Terry can run moves it. It fails the third clause, so it stays silent until a
+parent release makes it actionable — at which point the direct-dependency check catches that release
+anyway.
 
 ### "Incremental" means DAILY, not one package at a time
 
