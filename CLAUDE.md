@@ -176,6 +176,64 @@ malformed value that does not exist. **Read `wrangler.jsonc` with `Read`.** Same
 names only what is specific to this project, and it exists because the general rule kept losing to
 whatever tool was already in hand.
 
+## The toolchain freshness check is live, daily, and MUST NOT be answered from memory
+
+**Standing order, Terry, 2026-08-14:** on the first build of each day, confirm that this project has
+the latest stable `tsc`, the latest of every direct **and** indirect npm dependency, the latest
+`npm`, and the **LTS** `node`. **Quiet when current. Very loud when not.**
+
+**Every answer MUST come from the network, on every run.** Not from training data, not from a memory
+file, not from ADR-13's version table, and not from this file. **A freshness check sourced from
+recall is worse than no check at all**, because it looks like a record and is not.
+
+| What | Authoritative source, queried every time |
+|---|---|
+| `node` | `https://nodejs.org/dist/index.json`, newest entry with `lts != false` |
+| `npm` | `https://registry.npmjs.org/npm/latest` |
+| `typescript` | `https://registry.npmjs.org/typescript/latest`, compared against `node_modules/typescript/package.json` |
+| Every dependency, direct and indirect | `npm outdated --all --json`, which queries the registry itself |
+
+**It runs as `~/.claude/hooks/npm-toolchain-check.py`**, a `PreToolUse` hook gated on this project
+appearing in `~/.claude/toolchain-projects.json` with `"npm"` in its `toolchains`. It **never
+blocks** — a stale toolchain is worth knowing about and is not worth refusing to build over. Run it
+by hand with `python ~/.claude/hooks/npm-toolchain-check.py --probe`, which ignores the daily
+suppression and always asks live.
+
+### Volume tracks what Terry can fix, and that is the whole design
+
+**Measured here 2026-08-14: 23 packages were behind and every single one was transitive.** Zero
+direct dependencies had drifted. `nanoid` sat at `3.3.18` against a latest of `6.0.1` because
+`postcss` pins it there, and **no command the owner can type changes that.**
+
+| Finding | Volume | Why |
+|---|---|---|
+| `node`, `npm`, `tsc`, or a **direct** dependency behind | **Unmissable banner** | Each is one command from fixed |
+| **Transitive** dependencies behind | One counted line, naming the parents | Not the owner's to fix. The parent must release, or the direct dependency that drags it in must move |
+| Anything unreachable | A short quiet note | **Offline is not stale.** See the global `CLAUDE.md` |
+
+**A banner listing two dozen unfixable packages would be red permanently, and a banner that is
+always red is scenery.** That is the erosion the global build-chain doctrine spends four paragraphs
+refusing, and this is that doctrine applied to the one ecosystem where most drift belongs to
+somebody else. **Bumping a direct dependency usually carries its transitive tree forward**, which is
+the incremental lever Terry asked for.
+
+**Fixes MUST be offered one at a time**, smallest first, with `npm run check` re-run after each.
+**MUST NOT** propose a big-bang update of everything at once.
+
+### Three shapes in `npm outdated --json` that recall gets wrong
+
+**All three were read off real output rather than remembered**, and each one silently corrupts a
+naive reader:
+
+- **A value MAY be an array**, not an object, when a package resolves under several dependents.
+  Six of 152 entries here took that form. `jq` reports `Cannot index array with string`.
+- **`current` MAY be absent.** Platform-specific optional dependencies — the darwin and linux halves
+  of `@biomejs/cli-*` — are listed but not installed here. **They are not drift.**
+- **`latest` MAY be LOWER than `current`.** `unenv` showed `2.0.0-rc.24` against a `latest` of
+  `1.10.0`, because the installed version is a prerelease ahead of the `latest` dist-tag. **A string
+  `!=` comparison reports BEHIND forever.** The comparison **MUST** be semver-aware and
+  one-directional.
+
 ## Where things live
 
 | | |
