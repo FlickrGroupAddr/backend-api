@@ -105,6 +105,41 @@ The cron trigger starts firing at once, nightly at 00:15 UTC.
 attached to the Worker.** A mismatch sends Flickr an `oauth_callback` it cannot reach, and that
 fails inside Flickr's redirect where there is nothing useful to read.
 
+## The zone, and why every record is there
+
+**Six records. Configured 2026-08-14, verified from public DNS rather than from the API that wrote
+them.**
+
+| Record | Purpose |
+|---|---|
+| `AAAA flickrgroupaddr.com → 100::` proxied | The Workers Custom Domain. **Cloudflare manages this — do not edit it by hand** |
+| `AAAA www → 100::` proxied | Exists only so a redirect rule has something to attach to |
+| `MX @ → "."` priority 0 | RFC 7505 null MX: this domain accepts no mail |
+| `TXT @ → v=spf1 -all` | No host may send as this domain |
+| `TXT _dmarc → v=DMARC1; p=reject; sp=reject` | Receivers bin anything claiming to be us |
+| `TXT *._domainkey → v=DKIM1; p=` | Empty `p=` revokes **every** selector, including invented ones |
+
+**`100::` is the IPv6 discard prefix.** Traffic never reaches it; Cloudflare intercepts at the edge.
+It is the conventional target for a hostname that exists only to be proxied.
+
+**The mail records are hard-fail on purpose.** ADR-07 holds no email address and FGA sends none, so
+the honest configuration says so rather than leaving the domain silently spoofable. **There is no
+`rua=` on the DMARC record**, because collecting aggregate reports would mean holding an address
+ADR-07 declines to hold. **If FGA ever needs to send mail, all four of these MUST change together**
+— relaxing SPF alone would still be rejected by DMARC.
+
+### `www` redirects at the edge, NOT in the Worker
+
+**A Cloudflare Dynamic Redirect rule**, `http.host eq "www.flickrgroupaddr.com"` → 301 to
+`concat("https://flickrgroupaddr.com", http.request.uri)`, with `preserve_query_string` **off**
+because `http.request.uri` already carries the query and enabling both duplicates it.
+
+**Doing this in the Worker was tried in production and reverted.**
+`not_found_handling: "single-page-application"` serves `index.html` before the Worker is invoked for
+any path outside `run_worker_first`, so the redirect middleware never ran and `www` served the whole
+application on a second hostname — precisely what ADR-18 removes. A redirect rule runs ahead of both
+Workers and assets. The guard in `src/index.ts` stays, and says so.
+
 ## Seeing the app with data in it
 
 **A fresh local database means every screen is an empty state**, which is the one shape you cannot
