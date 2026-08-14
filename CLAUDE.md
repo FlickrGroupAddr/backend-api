@@ -205,11 +205,67 @@ suppression and always asks live.
 direct dependencies had drifted. `nanoid` sat at `3.3.18` against a latest of `6.0.1` because
 `postcss` pins it there, and **no command the owner can type changes that.**
 
+**The banner fires only when ALL THREE of these hold. Terry's wording, 2026-08-14:** *"we should
+only go LOUD when we have internet and we KNOW we are behind **and** Terry can take immediate action
+on it."*
+
+| # | Clause | What fails it |
+|---|---|---|
+| 1 | The network answered | Offline, a dead registry, a proxy eating the request |
+| 2 | The answer is a **confirmed** behind | An unparsed reply, a missing field, a version that will not compare |
+| 3 | **Terry can act this minute** | A fix needing an installer download, or a package pinned by somebody else |
+
 | Finding | Volume | Why |
 |---|---|---|
-| `node`, `npm`, `tsc`, or a **direct** dependency behind | **Unmissable banner** | Each is one command from fixed |
-| **Transitive** dependencies behind | One counted line, naming the parents | Not the owner's to fix. The parent must release, or the direct dependency that drags it in must move |
+| `npm`, `tsc`, or a **direct** dependency behind | **Unmissable banner** | Each is exactly one `npm install` |
+| `node` behind, **with** a version manager or a working `winget` upgrade | **Unmissable banner** | One command |
+| `node` behind with **no** such path | Quiet note | An installer download is real, and it is not *immediate* |
+| **Transitive** dependencies behind | One counted line, naming the parents | Not the owner's to fix |
 | Anything unreachable | A short quiet note | **Offline is not stale.** See the global `CLAUDE.md` |
+
+**A banner MUST name what it could not check.** A confirmed-behind on one probe and silence on
+another is not a complete picture, and a banner that implies otherwise is the same overclaim in a
+different costume.
+
+#### The defect this rule caught, and it had already shipped
+
+**`npm outdated` reports network failure as JSON on STDOUT with exit code 1**, not on stderr:
+
+```json
+{"error":{"code":"ECONNREFUSED","summary":"FetchError: request to ... failed", ...}}
+```
+
+**Parsed naively that is a dict whose one entry has no `current` field, so every filter skips it and
+the function returns "nothing is outdated."** The first version of this check did exactly that.
+**On a plane it produced a confirmed-current verdict for a query that never left the machine** —
+"could not confirm" wearing the costume of "current", which is the one substitution the whole
+doctrine exists to forbid.
+
+**Two guards now stand there**, and both were proven by pointing npm at an unreachable registry: an
+explicit `error`-key check, and a rule that **empty stdout only means "nothing outdated" when npm
+exited zero.**
+
+#### `winget` is not a Node upgrade path on this machine, and the check verifies rather than assumes
+
+**Established 2026-08-14 when Terry asked why the output said "22".** It does not: `node --version`
+is **24.19.0**, which is exactly the newest LTS. **The 22 is winget's package id, and winget's record
+here is wrong in a way that matters.**
+
+| | |
+|---|---|
+| Installed Node | **24.19.0** — the current LTS |
+| winget's package id for it | `OpenJS.NodeJS.22` |
+| That package's catalog version | **22.23.2** |
+| `winget upgrade --id OpenJS.NodeJS.22` | **`No available upgrade found`** |
+| An `OpenJS.NodeJS.24` package | **Does not exist** |
+
+winget compares the installed 24.19.0 against its catalog's 22.23.2, concludes the machine is ahead,
+and declines to act. **So `winget upgrade` will never move Node here**, and a check that offered it
+would hand over a command that runs, succeeds, and changes nothing.
+
+**The hook therefore asks winget whether it can actually perform the upgrade before offering it**, and
+treats `No available upgrade found` as "no path". **A fix that looks available and is not is worse
+than admitting there is no fix**, because it turns the banner from a call to action into a lie.
 
 **A banner listing two dozen unfixable packages would be red permanently, and a banner that is
 always red is scenery.** That is the erosion the global build-chain doctrine spends four paragraphs
