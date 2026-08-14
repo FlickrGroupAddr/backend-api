@@ -154,7 +154,7 @@ Summarized:
 |---|---|
 | Does Flickr accept our signature on an authenticated REST call? | Yes |
 | Which `throttle.mode` periods are real? | Five, not the one Flickr documents |
-| Is the allowance per-user or per-group? | Per-group, so a spent allowance cannot be inferred across queues |
+| Is the allowance per-user or per-group? | Per-user, so a spent allowance cannot be inferred across queues. Strong but not conclusive — confirming it needs one add and a re-read of the same group |
 | Is `ispoolmoderated` present? | Yes, and it is what a safe retry rule for unmoderated pools would key off |
 
 **It also produced a performance defect worth remembering rather than a clean pass.** The endpoint
@@ -166,9 +166,14 @@ group. **The fix was not concurrency; it was not making the calls.**
 ## 7. Deploy
 
 ```
-npm run check       # Typecheck, lint, and 154 tests. MUST be clean first.
+npm run check       # Typecheck, lint, and the whole suite. MUST be clean first.
 npx wrangler deploy
 ```
+
+**`npm run check` reports its own totals, so read the run rather than this page.** It was **178
+tests on 2026-08-14**, from a cold run with `node_modules/.vite` and `node_modules/.cache` removed.
+**A count written here goes stale the first time somebody adds a test, and this one already had** —
+it said 154. Same reasoning as the diagram build in `CLAUDE.md`: the run itself is the list.
 
 **The cron trigger starts firing as soon as this succeeds**, nightly at 00:15 UTC. With no queued
 requests it walks nothing and logs a report saying so.
