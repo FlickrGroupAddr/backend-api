@@ -122,6 +122,15 @@ them.**
 **`100::` is the IPv6 discard prefix.** Traffic never reaches it; Cloudflare intercepts at the edge.
 It is the conventional target for a hostname that exists only to be proxied.
 
+**Store TXT content WITH its surrounding quotes**, so `"v=spf1 -all"` and not `v=spf1 -all`. Both
+serve identically — Cloudflare adds the quotes on the wire either way — but the unquoted form draws
+a permanent warning triangle in the dashboard. **Three standing warnings nobody can act on is how a
+warning stops being read**, which is the same reason the admin surface in ADR-19 stays quiet.
+
+**Verified 2026-08-14 that supplying quotes does NOT double them:** the record was patched to
+`"\"v=DKIM1; p=\""` and the wire still answered `"v=DKIM1; p="`. Tested on the least critical of the
+three before touching SPF or DMARC.
+
 **The mail records are hard-fail on purpose.** ADR-07 holds no email address and FGA sends none, so
 the honest configuration says so rather than leaving the domain silently spoofable. **There is no
 `rua=` on the DMARC record**, because collecting aggregate reports would mean holding an address
