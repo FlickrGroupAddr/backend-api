@@ -42,5 +42,25 @@ export default defineConfig({
 			"/oauth": WORKER,
 			"/health": WORKER,
 		},
+
+		/**
+		 * **Polling is REQUIRED here, because this repository lives on a NAS share.**
+		 *
+		 * Node's native Windows watcher uses `ReadDirectoryChangesW`, which SMB does not
+		 * deliver reliably. `vite` died on startup with `Error: UNKNOWN: unknown error,
+		 * watch`, `errno: -4094`, `syscall: 'watch'` -- measured 2026-08-14 on `X:`.
+		 *
+		 * **The error names no filename and no permission**, which is why it reads like a
+		 * privilege problem and is not one. Running elevated changes nothing.
+		 *
+		 * Polling costs CPU proportional to the file count, so the interval is loose
+		 * rather than instant. `node_modules` is excluded because it is by far the
+		 * largest tree here and never changes during a dev session.
+		 */
+		watch: {
+			usePolling: true,
+			interval: 400,
+			ignored: ["**/node_modules/**", "**/.git/**", "**/.wrangler/**"],
+		},
 	},
 });

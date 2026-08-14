@@ -1,44 +1,41 @@
 /*
- * Deliberately small. This aims at legible and unfussy rather than designed, and leaves
- * room for that to change later.
+ * FlickrGroupAddr — visual system.
  *
- * Dark mode comes from `color-scheme` plus two custom-property blocks rather than a
- * toggle. Nobody wants to configure a queue viewer.
+ * THE SUBJECT, stated because every choice below derives from it. FGA is a patience
+ * machine. Flickr caps how many photos you may add to a group each day, so the product's
+ * whole job is to wait its turn, and ADR-01 says it stops rather than push a photo at a
+ * volunteer twice. The character is deference. Nothing here should feel urgent.
+ *
+ * COLOR IS SPENT ON STATE, because state is the content. The queue has exactly four
+ * outcomes and they get the four hues; everything else is ink on paper. Flickr's magenta
+ * appears in exactly two places -- the wordmark mark and the one button that commits --
+ * so that seeing it always means "this is the moment something happens."
+ *
+ * **Waiting is the NORMAL state here and MUST NOT read as a warning.** It gets a patient
+ * indigo, not amber. Amber is reserved for a human holding your photo, which is the one
+ * state a person can do nothing about.
+ *
+ * ONE WEBFONT, THREE ROLES. Inter is variable across 100-900, so the display voice comes
+ * from weight and negative tracking rather than a second family -- about 40 KB not spent.
+ * `ui-monospace` is the data face and costs nothing, which matters on a page full of
+ * Flickr ids and queue positions.
  */
 
-/*
- * Inter, one variable file covering weights 100-900 in 47 KB.
+/* ── Font ─────────────────────────────────────────────────────────────────────
  *
- * Served from `web/public/fonts/`, NOT imported from node_modules, so the URL is stable
- * and the `<link rel="preload">` in index.html can name it. A Vite-hashed filename
- * cannot be preloaded from static HTML, and the preload is what removes the last round
- * trip.
+ * Inter, one variable file covering 100-900 in 47 KB, served from web/public/fonts/
+ * rather than imported from node_modules so the URL is stable and index.html can
+ * preload it. A Vite-hashed filename cannot be named in static HTML.
  *
- * Provenance: `@fontsource-variable/inter` 5.3.0, kept as a devDependency purely so
- * updating the file is `npm update` plus a copy rather than a hunt. **Re-copy the file
- * when that package moves** -- nothing checks this automatically.
+ * Provenance: `@fontsource-variable/inter` 5.3.0, a devDependency so updating is
+ * `npm update` plus a copy. **Re-copy the file when that package moves** — nothing
+ * checks this automatically.
  *
- * `font-display: optional`, which is a deliberate upgrade on `block`.
- *
- * Three behaviors, and only one of them avoids BOTH problems:
- *
- *   swap      Paints a fallback, then reflows the page when Inter lands. This is the
- *             flicker worth avoiding, and it is the default nearly everywhere.
- *   block     Holds the text INVISIBLE for up to three seconds, then paints Inter. No
- *             flicker, but a blank screen on a cold or slow load.
- *   optional  The browser gives the font about 100 ms. If it makes it, Inter paints
- *             first and nothing ever swaps. If it does not, the fallback is used for
- *             THIS load and is never swapped out mid-page. Either way: no flicker, no
- *             invisible text, and no layout shift.
- *
- * **`optional` only behaves that way because the font is preloaded and same-origin.**
- * A 47 KB file on an already-open connection clears 100 ms comfortably, and once it is
- * in the HTTP cache every later visit is a guaranteed hit. Pointed at a third-party CDN
- * this would degrade to the fallback constantly, which is why the two decisions -- self
- * host, and `optional` -- have to be made together.
- *
- * If a cold first paint in the system font is ever unacceptable, `block` is a one-word
- * change. It buys guaranteed Inter and pays in blank text.
+ * `font-display: optional` is a deliberate upgrade on `block`. `swap` paints a fallback
+ * then reflows, which is the flicker worth avoiding. `block` holds text invisible for up
+ * to three seconds. `optional` gives the font ~100 ms and never swaps mid-page, so there
+ * is no flicker AND no blank text. **It only behaves that way because the file is
+ * preloaded and same-origin** — behind a CDN it would fall back constantly.
  */
 @font-face {
 	font-family: "Inter Variable";
@@ -51,176 +48,326 @@
 :root {
 	color-scheme: light dark;
 
-	--bg: #ffffff;
-	--fg: #1a1a1a;
-	--muted: #5c5c66;
-	--line: #d8d8de;
-	--accent: #0057b8;
-	--warn-bg: #fff5e0;
-	--warn-line: #d99b00;
-	--ok: #157347;
-	--stop: #a4262c;
+	/* Ink and paper. Slightly warm rather than pure grey, so long reading is easier. */
+	--ink: #16151a;
+	--ink-2: #4a4550;
+	--muted: #6b6570;
+	--paper: #fcfbfa;
+	--paper-2: #f5f3f1;
+	--rule: #e4dfdb;
 
-	--radius: 6px;
+	/* The four states. These ARE the data model: pending, resolved-good,
+	   queued_for_moderator, and terminal. Nothing else on the page may use them. */
+	--wait: #4f5f9c;
+	--done: #2c7355;
+	--human: #a8700f;
+	--stop: #9d3535;
+
+	/* Flickr's own magenta. TWO uses only: the wordmark mark, and commitment. */
+	--commit: #ff0084;
+	--commit-ink: #ffffff;
+
+	/* A type scale on a 1.25 ratio, so hierarchy is a system rather than three
+	   hand-picked sizes that happen to differ. */
+	--t-xs: 0.75rem;
+	--t-sm: 0.8125rem;
+	--t-base: 0.9375rem;
+	--t-md: 1.125rem;
+	--t-lg: 1.4375rem;
+
+	--radius: 7px;
+	--rail: 2px;
+
+	--display: 800;
+	--track-tight: -0.028em;
 }
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--bg: #16161a;
-		--fg: #ececf1;
-		--muted: #9b9ba6;
-		--line: #35353d;
-		--accent: #5aa2ff;
-		--warn-bg: #2e2410;
-		--warn-line: #d99b00;
-		--ok: #4ac07c;
-		--stop: #ff7b82;
+		--ink: #edeaf0;
+		--ink-2: #b8b2bd;
+		--muted: #8d8695;
+		--paper: #131217;
+		--paper-2: #1c1a21;
+		--rule: #302d38;
+
+		/* Lifted, because a saturated hue on a dark ground reads darker than it is. */
+		--wait: #8b9bdb;
+		--done: #52b489;
+		--human: #d9a13f;
+		--stop: #e0736f;
+
+		--commit: #ff3d9f;
+		--commit-ink: #16151a;
 	}
 }
 
-* {
+*,
+*::before,
+*::after {
 	box-sizing: border-box;
 }
 
 body {
 	margin: 0;
-	background: var(--bg);
-	color: var(--fg);
-
-	/* The fallback stack is the face `optional` may use on a cold load, so it is chosen
-	   to sit close to Inter's metrics rather than to be a generic escape hatch. */
+	background: var(--paper);
+	color: var(--ink);
 	font-family:
 		"Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-	font-size: 16px;
+	font-size: var(--t-base);
 	line-height: 1.55;
 
-	/* Inter ships these as opt-in OpenType features. `cv11` gives the single-storey
-	   lowercase g, `ss01` the disambiguated I/l, which is worth having on a page full of
-	   Flickr ids. */
+	/* Inter ships these opt-in. `cv11` is the single-storey g, `ss01` disambiguates
+	   I from l — worth having on a page full of Flickr ids. */
 	font-feature-settings: "cv11", "ss01";
-	font-variant-numeric: tabular-nums;
 	-webkit-font-smoothing: antialiased;
 }
 
-main {
-	max-width: 58rem;
-	margin: 0 auto;
-	padding: 1.5rem 1rem 4rem;
+/* The data face. Group ids, photo ids, positions, counts — anything a person compares
+   character by character rather than reads. */
+.mono,
+code {
+	font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+	font-size: 0.92em;
+	font-variant-numeric: tabular-nums;
 }
 
-h1 {
-	font-size: 1.4rem;
+/* ── Shell ──────────────────────────────────────────────────────────────────── */
+
+.shell {
+	max-width: 68rem;
+	margin: 0 auto;
+	padding: 0 1.25rem 5rem;
+}
+
+.topbar {
+	display: flex;
+	align-items: center;
+	gap: 1.75rem;
+	padding: 1.1rem 0 0.9rem;
+	border-bottom: 1px solid var(--rule);
+	margin-bottom: 1.75rem;
+	flex-wrap: wrap;
+}
+
+.wordmark {
+	font-size: var(--t-md);
+	font-weight: var(--display);
+	letter-spacing: var(--track-tight);
+	margin: 0;
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	white-space: nowrap;
+}
+
+/* One of the two magenta uses. A small filled square rather than a logo — the product
+   has no logo, and inventing one would be decoration. */
+.wordmark::before {
+	content: "";
+	width: 0.55rem;
+	height: 0.55rem;
+	background: var(--commit);
+	border-radius: 2px;
+	flex: none;
+}
+
+.navlinks {
+	display: flex;
+	gap: 1.1rem;
+	align-items: center;
+}
+
+.navlink {
+	color: var(--muted);
+	text-decoration: none;
+	font-size: var(--t-sm);
+	font-weight: 500;
+	padding: 0.2rem 0;
+	border-bottom: var(--rail) solid transparent;
+}
+
+.navlink:hover {
+	color: var(--ink);
+}
+
+.navlink[aria-current="page"] {
+	color: var(--ink);
+	border-bottom-color: var(--ink);
+}
+
+.spacer {
+	margin-left: auto;
+}
+
+/* ── Type ───────────────────────────────────────────────────────────────────── */
+
+h1,
+h2,
+h3 {
+	font-weight: var(--display);
+	letter-spacing: var(--track-tight);
 	margin: 0;
 }
 
+h1 {
+	font-size: var(--t-lg);
+}
+
 h2 {
-	font-size: 1.1rem;
-	margin: 1.75rem 0 0.5rem;
+	font-size: var(--t-md);
 }
 
-a {
-	color: var(--accent);
+h3 {
+	font-size: var(--t-base);
 }
 
-code {
-	font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
-	font-size: 0.9em;
+/* An eyebrow labels a region without spending a heading level on it. Used for the
+   two panels on the add page, which are peers rather than a hierarchy. */
+.eyebrow {
+	font-size: var(--t-xs);
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--muted);
+	margin: 0 0 0.55rem;
 }
 
-button {
-	font: inherit;
-	padding: 0.4rem 0.9rem;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--bg);
-	color: var(--fg);
-	cursor: pointer;
+p {
+	margin: 0 0 0.7rem;
 }
 
-button:hover:not(:disabled) {
-	border-color: var(--accent);
+.lede {
+	color: var(--ink-2);
+	max-width: 34rem;
 }
 
-button:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-button.primary {
-	background: var(--accent);
-	border-color: var(--accent);
-	color: #ffffff;
-}
-
-input[type="text"],
-input[type="search"] {
-	font: inherit;
-	padding: 0.45rem 0.6rem;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--bg);
-	color: var(--fg);
-	width: 100%;
+.small {
+	font-size: var(--t-sm);
 }
 
 .muted {
 	color: var(--muted);
 }
 
-.small {
-	font-size: 0.875rem;
+a {
+	color: var(--ink);
+	text-underline-offset: 2px;
+	text-decoration-color: var(--rule);
 }
 
-/* ADR-04's warning. Amber rather than red: it is a question, not a failure, and
-   styling it as an error is how a real warning gets trained into background noise. */
-.warn {
-	background: var(--warn-bg);
-	border: 1px solid var(--warn-line);
-	border-left-width: 4px;
+a:hover {
+	text-decoration-color: currentColor;
+}
+
+/* ── Controls ───────────────────────────────────────────────────────────────── */
+
+button {
+	font: inherit;
+	font-weight: 500;
+	padding: 0.42rem 0.85rem;
+	border: 1px solid var(--rule);
 	border-radius: var(--radius);
-	padding: 0.7rem 0.9rem;
-	margin: 0.6rem 0;
+	background: var(--paper);
+	color: var(--ink);
+	cursor: pointer;
 }
 
-.stop {
-	color: var(--stop);
+button:hover:not(:disabled) {
+	background: var(--paper-2);
+	border-color: var(--muted);
 }
 
-.ok {
-	color: var(--ok);
+button:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
 }
 
-nav {
-	display: flex;
-	gap: 1rem;
-	align-items: baseline;
-	border-bottom: 1px solid var(--line);
-	padding-bottom: 0.75rem;
-	margin-bottom: 1rem;
-	flex-wrap: wrap;
-}
-
-nav .spacer {
-	margin-left: auto;
-}
-
-nav a[aria-current="page"] {
+/* The second and last magenta use: the control that actually spends something. */
+button.commit {
+	background: var(--commit);
+	border-color: var(--commit);
+	color: var(--commit-ink);
 	font-weight: 600;
-	text-decoration: none;
+}
+
+button.commit:hover:not(:disabled) {
+	background: var(--commit);
+	filter: brightness(1.08);
+}
+
+input[type="text"],
+input[type="search"] {
+	font: inherit;
+	padding: 0.48rem 0.65rem;
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--paper);
+	color: var(--ink);
+	width: 100%;
+}
+
+input::placeholder {
+	color: var(--muted);
+}
+
+/* A URL is read left to right and never needs 68rem. Capping the measure is the
+   difference between a designed field and a generated one. */
+.measure {
+	max-width: 30rem;
+}
+
+/* Quality floor, not decoration: focus MUST be visible for keyboard users, and the
+   outline is offset so it never sits on the border it is announcing. */
+:focus-visible {
+	outline: 2px solid var(--commit);
+	outline-offset: 2px;
+	border-radius: 3px;
+}
+
+/*
+ * Reduced motion. **`!important` is correct here and MUST stay**, which is why the rule
+ * is suppressed rather than the declaration removed.
+ *
+ * Biome's `noImportantStyles` is right about the general case and wrong about this one.
+ * The whole job of this block is to beat any component that declared its own animation,
+ * and a component's rule is more specific than a universal selector. Take the "unsafe
+ * fix" Biome offers and the block silently stops working -- the CSS still parses, the
+ * lint goes quiet, and a user who asked their OS for less motion gets it anyway.
+ *
+ * `0.01ms` rather than `0` so animations still fire their `animationend` events; code
+ * that waits for one would hang on a flat zero.
+ */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		/* biome-ignore lint/complexity/noImportantStyles: must override component-level
+		   animations; that is the entire purpose of a reduced-motion reset */
+		animation-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: same reason as above */
+		transition-duration: 0.01ms !important;
+	}
+}
+
+/* ── Surfaces ───────────────────────────────────────────────────────────────── */
+
+.panel {
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--paper);
+	padding: 1rem 1.1rem;
+}
+
+.panel-quiet {
+	background: var(--paper-2);
+	border-color: transparent;
 }
 
 ul.plain {
 	list-style: none;
 	margin: 0;
 	padding: 0;
-}
-
-.row {
-	display: flex;
-	gap: 0.6rem;
-	align-items: center;
-	padding: 0.35rem 0;
-	border-bottom: 1px solid var(--line);
 }
 
 .grow {
@@ -232,4 +379,111 @@ ul.plain {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+/* ── State ──────────────────────────────────────────────────────────────────── */
+
+.s-waiting {
+	color: var(--wait);
+}
+.s-good {
+	color: var(--done);
+}
+.s-human {
+	color: var(--human);
+}
+.s-stopped {
+	color: var(--stop);
+}
+
+/* A left rail carries state down a list far better than a colored row, because the
+   sentence beside it stays plain ink and therefore stays readable. */
+.railed {
+	border-left: var(--rail) solid var(--rule);
+	padding-left: 0.8rem;
+}
+
+.railed.s-waiting {
+	border-left-color: var(--wait);
+}
+.railed.s-good {
+	border-left-color: var(--done);
+}
+.railed.s-human {
+	border-left-color: var(--human);
+}
+.railed.s-stopped {
+	border-left-color: var(--stop);
+}
+
+/*
+ * THE SIGNATURE. Queue position as literal ticks: two hollow, one filled means third
+ * in line.
+ *
+ * **This is data, not ornament.** ADR-03 attempts requests in append order within each
+ * (user, group) queue, and that is the single behavior a user is most likely to read as
+ * a bug — "why did my later photo go first somewhere else?" A number answers it weakly.
+ * A row of ticks shows a line, and a line explains itself.
+ *
+ * Capped in the markup at eight, with an overflow count, because 40 ticks stops being
+ * a glance and becomes a counting exercise.
+ */
+.queue-ticks {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	vertical-align: middle;
+}
+
+.tick {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	border: 1.5px solid var(--wait);
+	opacity: 0.5;
+}
+
+.tick.is-you {
+	background: var(--wait);
+	opacity: 1;
+	width: 7px;
+	height: 7px;
+}
+
+/* ── ADR-04's warning ───────────────────────────────────────────────────────── */
+
+/* Amber, never red. It is a question the user answers, not a failure the system had.
+   Styling it as an error is how a real warning gets trained into background noise. */
+.ask {
+	border: 1px solid var(--human);
+	border-left-width: 3px;
+	border-radius: var(--radius);
+	background: color-mix(in srgb, var(--human) 8%, transparent);
+	padding: 0.8rem 1rem;
+	margin: 0.75rem 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+
+.split {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 1.5rem;
+	align-items: start;
+}
+
+@media (max-width: 60rem) {
+	.split {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+@media (max-width: 34rem) {
+	.topbar {
+		gap: 0.85rem;
+	}
+
+	.spacer {
+		margin-left: 0;
+	}
 }

@@ -23,7 +23,14 @@ export type ItemState =
 			firstSeenAt: number;
 			stillPending: boolean;
 	  }
-	| { kind: "failed"; message: string };
+	/**
+	 * Carries the ERROR, not a message.
+	 *
+	 * A pre-rendered string here would either be developer text on the page -- which is
+	 * what `500 unparseable` was -- or would drag user-facing copy down into a module
+	 * that has no business holding it. The component calls `describeError` at render.
+	 */
+	| { kind: "failed"; error: unknown };
 
 export type Batch = ReadonlyMap<string, ItemState>;
 
@@ -88,10 +95,7 @@ export async function runBatch(
 			const reply = await submit(photoId, groupId, acknowledged.has(groupId));
 			batch.set(groupId, toState(reply));
 		} catch (error) {
-			batch.set(groupId, {
-				kind: "failed",
-				message: error instanceof Error ? error.message : "unknown error",
-			});
+			batch.set(groupId, { kind: "failed", error });
 		}
 
 		report(new Map(batch));

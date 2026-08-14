@@ -2,6 +2,7 @@
 import { SvelteSet } from "svelte/reactivity";
 import { api } from "../lib/api.js";
 import type { Group } from "../lib/contract.js";
+import { describeError } from "../lib/outcomes.js";
 import {
 	awaitingAcknowledgement,
 	type Batch,
@@ -12,11 +13,14 @@ import {
 /*
  * One photo, many groups.
  *
- * The picker is a combobox rather than a list of checkboxes. An account here holds
- * 372 groups, so a checkbox list is a scroll, not a choice -- you find a group by
- * typing its name, the way every tool people actually like works. Selected groups
- * become removable chips, so the answer to "what did I pick" is visible without
- * scrolling back.
+ * TWO PANELS SIDE BY SIDE, and the right one is not a preview. Submissions are
+ * sequential and land one at a time over ten-odd seconds, so the results column is a
+ * live log of something actually happening. That is what earns the width -- a static
+ * preview pane beside a form would just be a wider form.
+ *
+ * The picker is a combobox, not a checkbox list. An account here holds 372 groups, so a
+ * list is a scroll rather than a choice. You type a name; chosen groups become chips you
+ * can see without scrolling back.
  */
 
 let photoUrl = $state("");
@@ -52,6 +56,19 @@ const pendingAck = $derived(
 );
 const canSubmit = $derived(!running && photoId !== null && picked.size > 0);
 
+const hint = $derived.by(() => {
+	const seconds = Math.max(1, Math.ceil(picked.size * 0.4));
+	const pace = `one at a time, about ${seconds}s`;
+	return moderatedCount > 0 ? `${moderatedCount} moderated · ${pace}` : pace;
+});
+
+/** "that 1" reads wrong; "those 3" reads right. Grammar is part of the interface. */
+const ackLabel = $derived(
+	pendingAck.length === 1
+		? "Send it anyway"
+		: `Send those ${pendingAck.length} anyway`,
+);
+
 $effect(() => {
 	void (async () => {
 		try {
@@ -60,8 +77,8 @@ $effect(() => {
 				(a.name ?? a.id).localeCompare(b.name ?? b.id),
 			);
 		} catch (error) {
-			loadError =
-				error instanceof Error ? error.message : "Could not load your groups.";
+			console.error("GET /api/v001/groups failed", error);
+			loadError = describeError(error, "loading your groups");
 		} finally {
 			loading = false;
 		}
@@ -88,8 +105,8 @@ function onKeydown(event: KeyboardEvent): void {
 	} else if (event.key === "Escape") {
 		open = false;
 	} else if (event.key === "Backspace" && query === "") {
-		// Removing the last chip on an empty backspace is the behavior every token
-		// input has, and its absence is felt immediately.
+		// Backspace on an empty token input removes the last chip. Every token field
+		// does this, and its absence is felt immediately.
 		const last = chosen.at(-1);
 		if (last !== undefined) picked.delete(last.id);
 	}
@@ -117,176 +134,253 @@ async function send(only?: ReadonlySet<string>): Promise<void> {
 
 const nameOf = (groupId: string): string =>
 	groups.find((group) => group.id === groupId)?.name ?? groupId;
+
+/** Maps a per-group outcome onto the four state rails. */
+function railOf(kind: string): string {
+	if (kind === "resolved") return "s-good";
+	if (kind === "needsAcknowledgement") return "s-human";
+	if (kind === "failed") return "s-stopped";
+	return "s-waiting";
+}
 </script>
 
-<h2>Add a photo to groups</h2>
-
-<label class="field">
-	<span class="small muted">Flickr photo URL</span>
-	<input
-		type="text"
-		bind:value={photoUrl}
-		disabled={running}
-		placeholder="https://www.flickr.com/photos/you/54321098765"
-	/>
-</label>
-
-{#if photoUrl.trim() !== "" && photoId === null}
-	<p class="small stop">
-		That is not a Flickr photo URL. Paste the address of the photo page, or its numeric
-		id.
-	</p>
-{:else if photoId !== null}
-	<p class="small ok">Photo <code>{photoId}</code> — looks right.</p>
-{/if}
-
-{#if loading}
-	<p class="muted">Loading your groups...</p>
-{:else if loadError !== null}
-	<p class="stop">{loadError}</p>
-{:else}
-	<h2>Groups</h2>
-
-	{#if chosen.length > 0}
-		<ul class="chips plain">
-			{#each chosen as group (group.id)}
-				<li class="chip" class:moderated={group.poolModerated}>
-					<span class="truncate">{group.name ?? group.id}</span>
-					<button
-						type="button"
-						class="chip-x"
-						aria-label="Remove {group.name ?? group.id}"
-						disabled={running}
-						onclick={() => picked.delete(group.id)}>×</button
-					>
-				</li>
-			{/each}
-		</ul>
-	{/if}
-
-	<div class="combo">
+<section class="photo">
+	<p class="eyebrow">Photo</p>
+	<div class="measure">
 		<input
-			type="search"
-			role="combobox"
-			aria-expanded={open && matches.length > 0}
-			aria-controls="group-options"
-			autocomplete="off"
-			bind:value={query}
+			type="text"
+			aria-label="Flickr photo URL"
+			bind:value={photoUrl}
 			disabled={running}
-			placeholder={picked.size === 0
-				? `Search ${groups.length} groups`
-				: "Add another group"}
-			onfocus={() => (open = true)}
-			onblur={() => setTimeout(() => (open = false), 120)}
-			oninput={() => {
-				open = true;
-				cursor = 0;
-			}}
-			onkeydown={onKeydown}
+			placeholder="Paste a Flickr photo URL"
 		/>
+	</div>
 
-		{#if open && matches.length > 0}
-			<ul id="group-options" class="options plain" role="listbox">
-				{#each matches as group, index (group.id)}
-					<li role="option" aria-selected={index === cursor}>
-						<button
-							type="button"
-							class="option"
-							class:active={index === cursor}
-							onmouseenter={() => (cursor = index)}
-							onclick={() => choose(group)}
+	<p class="small verdict">
+		{#if photoUrl.trim() === ""}
+			<span class="muted">The photo page address, or just its numeric id.</span>
+		{:else if photoId === null}
+			<span class="s-stopped">That is not a Flickr photo URL.</span>
+		{:else}
+			<span class="s-good">Photo <span class="mono">{photoId}</span></span>
+		{/if}
+	</p>
+</section>
+
+<!--
+	One column until a batch exists, two once it does.
+
+	The render showed a permanently empty Results panel taking half the width, which is
+	the "form on the left, dead preview on the right" layout that made me suspicious of
+	the split in the first place. The second column now appears when it has something to
+	say, and its arrival is itself the signal that submitting started.
+-->
+<div class:split={batch !== null} class:solo={batch === null}>
+	<section>
+		<p class="eyebrow">Groups</p>
+
+		{#if loading}
+			<div class="panel panel-quiet"><p class="small muted" style="margin:0">Loading your groups…</p></div>
+		{:else if loadError !== null}
+			<div class="panel panel-quiet railed s-stopped">
+				<p class="small" style="margin:0">{loadError}</p>
+			</div>
+		{:else}
+			{#if chosen.length > 0}
+				<ul class="chips plain">
+					{#each chosen as group (group.id)}
+						<li class="chip" class:moderated={group.poolModerated}>
+							<span class="truncate">{group.name ?? group.id}</span>
+							<button
+								type="button"
+								class="chip-x"
+								aria-label="Remove {group.name ?? group.id}"
+								disabled={running}
+								onclick={() => picked.delete(group.id)}>&times;</button
+							>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+
+			<div class="combo">
+				<input
+					type="search"
+					role="combobox"
+					aria-label="Search groups"
+					aria-expanded={open && matches.length > 0}
+					aria-controls="group-options"
+					autocomplete="off"
+					bind:value={query}
+					disabled={running}
+					placeholder={picked.size === 0
+						? `Search ${groups.length} groups`
+						: "Add another"}
+					onfocus={() => (open = true)}
+					onblur={() => setTimeout(() => (open = false), 120)}
+					oninput={() => {
+						open = true;
+						cursor = 0;
+					}}
+					onkeydown={onKeydown}
+				/>
+
+				{#if open && matches.length > 0}
+					<ul id="group-options" class="options plain" role="listbox">
+						{#each matches as group, index (group.id)}
+							<li role="option" aria-selected={index === cursor}>
+								<button
+									type="button"
+									class="option"
+									class:active={index === cursor}
+									onmouseenter={() => (cursor = index)}
+									onclick={() => choose(group)}
+								>
+									<span class="truncate grow">{group.name ?? group.id}</span>
+									{#if group.poolModerated}
+										<span class="tag">Moderated</span>
+									{/if}
+									<span class="mono small muted"
+										>{group.photos.toLocaleString()}</span
+									>
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+
+			<div class="actions">
+				<button class="commit" disabled={!canSubmit} onclick={() => send()}>
+					{running
+						? "Adding…"
+						: picked.size === 0
+							? "Add to groups"
+							: `Add to ${picked.size} group${picked.size === 1 ? "" : "s"}`}
+				</button>
+
+				{#if picked.size > 0 && !running}
+					<!--
+						Built as one string rather than spliced fragments. The `{#if}` form
+						swallowed the space around its middle dot and rendered "·one at a
+						time" — the exact "conditional structure as spliced strings" failure
+						the house rules warn about.
+					-->
+					<span class="small muted">{hint}</span>
+				{/if}
+			</div>
+		{/if}
+	</section>
+
+	{#if batch !== null}
+		<section>
+			<p class="eyebrow">Results</p>
+
+			{#if pendingAck.length > 0 && !running}
+				<div class="ask">
+					<p class="small" style="margin:0 0 .35rem">
+						<strong
+							>{pendingAck.length}
+							{pendingAck.length === 1 ? "group has" : "groups have"} seen this photo
+							before.</strong
 						>
-							<span class="truncate grow">{group.name ?? group.id}</span>
-							{#if group.poolModerated}
-								<span class="badge">Moderated</span>
+					</p>
+					<p class="small muted" style="margin:0 0 .6rem">
+						It already reached a moderator's queue there. Flickr never reports what
+						they decided, so we stopped rather than put it in front of the same
+						volunteer again. Sending it a second time is your call.
+					</p>
+					<button disabled={running} onclick={() => send(new Set(pendingAck))}>
+						{ackLabel}
+					</button>
+				</div>
+			{/if}
+
+			<ul class="plain results">
+				{#each [...batch] as [groupId, state] (groupId)}
+					<li class="result railed {railOf(state.kind)}">
+						<div class="truncate grow">{nameOf(groupId)}</div>
+						<div class="small">
+							{#if state.kind === "waiting"}
+								<span class="muted">Waiting</span>
+							{:else if state.kind === "sending"}
+								<span class="muted">Sending…</span>
+							{:else if state.kind === "queued"}
+								<span class="s-waiting">In line — we keep trying nightly</span>
+							{:else if state.kind === "resolved"}
+								<span class="s-good">Added</span>
+							{:else if state.kind === "needsAcknowledgement"}
+								<span class="s-human">
+									{state.stillPending
+										? "Still with a moderator"
+										: "A moderator has seen this"}
+								</span>
+							{:else}
+								<span class="s-stopped"
+									>{describeError(state.error, "adding this group")}</span
+								>
 							{/if}
-							<span class="small muted">{group.photos.toLocaleString()} photos</span>
-						</button>
+						</div>
 					</li>
 				{/each}
 			</ul>
-		{/if}
-	</div>
-
-	<div class="actions">
-		<button class="primary" disabled={!canSubmit} onclick={() => send()}>
-			{running
-				? "Submitting..."
-				: `Add to ${picked.size} group${picked.size === 1 ? "" : "s"}`}
-		</button>
-
-		{#if moderatedCount > 0 && !running}
-			<span class="small muted">
-				{moderatedCount} of these {moderatedCount === 1 ? "is" : "are"} moderated — a volunteer
-				reviews the add.
-			</span>
-		{/if}
-	</div>
-
-	{#if picked.size > 4 && !running}
-		<p class="small muted">
-			Sent one at a time rather than all at once, so we do not hammer Flickr on your
-			account. About {Math.ceil(picked.size * 0.4)} seconds.
-		</p>
+		</section>
 	{/if}
-{/if}
-
-{#if batch !== null}
-	<h2>Results</h2>
-
-	{#if pendingAck.length > 0 && !running}
-		<div class="warn">
-			<p>
-				<strong>
-					{pendingAck.length}
-					{pendingAck.length === 1 ? "group has" : "groups have"} seen this photo before.
-				</strong>
-			</p>
-			<p class="small">
-				It already reached a moderator's queue there. Flickr never reports what they
-				decided, so we stopped rather than put it in front of the same volunteer again.
-				Sending it a second time is your call, not ours.
-			</p>
-			<p>
-				<button disabled={running} onclick={() => send(new Set(pendingAck))}>
-					Send those {pendingAck.length} anyway
-				</button>
-			</p>
-		</div>
-	{/if}
-
-	<ul class="plain">
-		{#each [...batch] as [groupId, state] (groupId)}
-			<li class="row">
-				<span class="grow truncate">{nameOf(groupId)}</span>
-				<span class="small">
-					{#if state.kind === "waiting"}
-						<span class="muted">Waiting</span>
-					{:else if state.kind === "sending"}
-						<span class="muted">Sending...</span>
-					{:else if state.kind === "queued"}
-						<span class="muted">Queued — we keep trying nightly</span>
-					{:else if state.kind === "resolved"}
-						<span class="ok">Added</span>
-					{:else if state.kind === "needsAcknowledgement"}
-						<span class="stop">
-							{state.stillPending
-								? "Still with a moderator from last time"
-								: "A moderator has seen this before"}
-						</span>
-					{:else}
-						<span class="stop">Stopped — {state.message}</span>
-					{/if}
-				</span>
-			</li>
-		{/each}
-	</ul>
-{/if}
+</div>
 
 <style>
-	.field {
-		display: block;
-		margin: 0.75rem 0;
+	.photo {
+		margin-bottom: 1.75rem;
+	}
+
+	/* Before a batch exists there is one column, and a picker does not want 68rem. */
+	.solo {
+		max-width: 34rem;
+	}
+
+	.verdict {
+		margin: 0.4rem 0 0;
+		min-height: 1.4em; /* Reserve the line so validity never shifts the layout. */
+	}
+
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+		margin: 0 0 0.55rem;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		max-width: 100%;
+		padding: 0.1rem 0.15rem 0.1rem 0.5rem;
+		border: 1px solid var(--rule);
+		border-radius: 999px;
+		font-size: var(--t-sm);
+		background: var(--paper);
+	}
+
+	/* Moderated groups are marked on the CHIP, not only in the dropdown. The decision
+	   to submit is made while looking at the chips. */
+	.chip.moderated {
+		border-color: var(--human);
+		color: var(--human);
+	}
+
+	.chip-x {
+		border: 0;
+		background: transparent;
+		padding: 0 0.3rem;
+		line-height: 1;
+		color: var(--muted);
+		font-size: 1rem;
+	}
+
+	.chip-x:hover:not(:disabled) {
+		background: transparent;
+		color: var(--ink);
 	}
 
 	.combo {
@@ -295,75 +389,54 @@ const nameOf = (groupId: string): string =>
 
 	.options {
 		position: absolute;
-		z-index: 10;
+		z-index: 20;
 		left: 0;
 		right: 0;
-		margin-top: 2px;
-		border: 1px solid var(--line);
+		margin-top: 3px;
+		border: 1px solid var(--rule);
 		border-radius: var(--radius);
-		background: var(--bg);
-		box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
-		max-height: 17rem;
+		background: var(--paper);
+		box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
+		max-height: 16rem;
 		overflow-y: auto;
 	}
 
 	.option {
 		display: flex;
 		align-items: center;
-		gap: 0.6rem;
+		gap: 0.55rem;
 		width: 100%;
 		border: 0;
 		border-radius: 0;
 		text-align: left;
-		padding: 0.45rem 0.7rem;
+		padding: 0.4rem 0.65rem;
 		background: transparent;
+		font-size: var(--t-sm);
 	}
 
 	.option.active {
-		background: color-mix(in srgb, var(--accent) 14%, transparent);
+		background: var(--paper-2);
 	}
 
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.35rem;
-		margin: 0 0 0.6rem;
+	/*
+	 * An outline on a focused option gets clipped by the list's own `overflow-y: auto`,
+	 * which showed up in the render as a stray magenta sliver at the left edge. An inset
+	 * shadow draws inside the element, so it survives the clip and still announces focus.
+	 */
+	.option:focus-visible {
+		outline: none;
+		box-shadow: inset 0 0 0 2px var(--commit);
 	}
 
-	.chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		max-width: 18rem;
-		padding: 0.15rem 0.2rem 0.15rem 0.55rem;
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		font-size: 0.875rem;
-	}
-
-	/* Moderated groups are marked in the chip too, not just in the dropdown. The
-	   decision to submit is made while looking at the chips. */
-	.chip.moderated {
-		border-color: var(--warn-line);
-	}
-
-	.chip-x {
-		border: 0;
-		background: transparent;
-		padding: 0 0.35rem;
-		line-height: 1;
-		font-size: 1.05rem;
-		color: var(--muted);
-	}
-
-	.badge {
-		font-size: 0.7rem;
+	.tag {
+		font-size: var(--t-xs);
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		border: 1px solid var(--warn-line);
-		color: var(--warn-line);
+		border: 1px solid var(--human);
+		color: var(--human);
 		border-radius: 999px;
-		padding: 0 0.4rem;
+		padding: 0 0.35rem;
+		flex: none;
 	}
 
 	.actions {
@@ -371,6 +444,21 @@ const nameOf = (groupId: string): string =>
 		align-items: center;
 		gap: 0.75rem;
 		flex-wrap: wrap;
-		margin: 1rem 0 0.25rem;
+		margin-top: 0.9rem;
+	}
+
+	.results {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.result {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding-top: 0.1rem;
+		padding-bottom: 0.1rem;
 	}
 </style>

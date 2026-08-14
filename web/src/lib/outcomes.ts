@@ -1,3 +1,4 @@
+import { ApiError } from "./api.js";
 import type { QueuedRequest } from "./contract.js";
 
 /**
@@ -28,7 +29,16 @@ export type Tone = "waiting" | "good" | "human" | "stopped";
 export type Explanation = {
 	readonly tone: Tone;
 	readonly headline: string;
-	readonly detail: string;
+	/**
+	 * **Null for the ordinary waiting case, and that is the point.**
+	 *
+	 * Found by looking at a rendered queue of ten: the same sentence about Flickr's
+	 * daily cap appeared on every row and drowned the one thing that varied. A detail
+	 * repeated on every row is not detail, it is wallpaper. The standing explanation
+	 * now sits once on the group card; this field carries only what is true of THIS
+	 * request and could not be guessed from its neighbours.
+	 */
+	readonly detail: string | null;
 };
 
 /** Flickr codes worth naming individually. Everything else is terminal-and-unknown. */
@@ -47,16 +57,10 @@ export function explain(request: QueuedRequest): Explanation {
 	if (request.state === "pending") {
 		return {
 			tone: "waiting",
-			headline:
-				request.position === null
-					? "Waiting"
-					: request.position === 1
-						? "Next in line"
-						: `Number ${request.position} in line`,
-			detail:
-				request.attempts === 0
-					? "We will try this tonight."
-					: `Tried ${request.attempts} ${request.attempts === 1 ? "time" : "times"} so far. Flickr caps how many photos you may add to a group each day, so we wait and try again.`,
+			// The ticks carry the position, so the headline does not repeat it. It says
+			// only whether tonight is this request's turn.
+			headline: request.position === 1 ? "Next tonight" : "In line",
+			detail: null,
 		};
 	}
 
@@ -80,8 +84,12 @@ export function explain(request: QueuedRequest): Explanation {
 			return {
 				tone: "human",
 				headline: "With a moderator",
+				// Three sentences got truncated mid-word in a table row -- found by
+				// looking at the render, where the single most important promise in the
+				// product read "...and your photo is in the…". Two sentences fit and
+				// keep both halves that matter: a person has it, and we stopped.
 				detail:
-					"A volunteer reviews adds for this group, and your photo is in their queue. Flickr never tells us what they decide, so we stop here rather than submit it to the same person again. If it does not appear, that was their call.",
+					"A volunteer has it in their review queue. Flickr never reports their decision, so we stop here rather than send it to the same person twice.",
 			};
 
 		case "withdrawn":
@@ -122,6 +130,70 @@ export function explain(request: QueuedRequest): Explanation {
 				detail: "This one is finished, and we cannot say more about it.",
 			};
 	}
+}
+
+/**
+ * A failure, as a sentence rather than a status line.
+ *
+ * **Found by looking at the running page, not by reading the code.** The group list
+ * failed and the UI rendered `500 unparseable` -- which is `ApiError.message`, a debug
+ * string of `${status} ${code}`. Nothing in the type system objects to printing it, and
+ * a passing build has no opinion about it either.
+ *
+ * **It matters for the same reason ADR-01 does.** A message that reads as a crash tells
+ * the user the tool is broken, and a user who believes that goes and adds the photo by
+ * hand -- which is the exact harm the project exists to avoid. The status code belongs
+ * in the console, never on the page.
+ */
+export function describeError(error: unknown, doing: string): string {
+	const code = error instanceof ApiError ? error.code : null;
+
+	switch (code) {
+		case "no_flickr_credentials":
+			return "Your Flickr sign-in is not linked any more. Sign in again to continue.";
+		case "flickr_unavailable":
+			return "Flickr did not answer. Nothing was changed, and trying again shortly usually works.";
+		case "invalid_request":
+			return "That request did not look right, so nothing was sent.";
+		case "unknown_cursor":
+			return "That page of the queue has moved on. Reload to start from the top.";
+		default:
+			// Deliberately says what FGA did NOT do. Silence about consequences is what
+			// makes an error feel like data loss.
+			return `Something went wrong while ${doing}. Nothing was submitted or changed.`;
+	}
+}
+
+/**
+ * Queue position as a row of ticks: hollow for each request ahead of yours, filled for
+ * yours. Null for a resolved request, which is in no line at all.
+ *
+ * **This is the one piece of ornament in the product that is actually data.** ADR-03
+ * attempts requests strictly in append order within each `(user, group)` queue, and
+ * that ordering is the single behavior a user is most likely to read as a bug — "why
+ * did the photo I added later go through first, over there?" A bare number answers it
+ * weakly. A line explains itself.
+ *
+ * **Capped at eight, because past that a glance becomes a counting exercise.** The
+ * overflow count carries the rest, so the precise position is never lost.
+ *
+ * Lives here rather than in the component so `tsc --noEmit -p web` checks it — nothing
+ * typechecks inside a `.svelte` file on this project. See ADR-18.
+ */
+export const TICK_CAP = 8;
+
+export function ticksFor(
+	position: number | null,
+): { marks: boolean[]; overflow: number } | null {
+	if (position === null || position < 1) return null;
+
+	const shown = Math.min(position, TICK_CAP);
+
+	// The last mark is yours; everything before it is somebody ahead of you.
+	return {
+		marks: Array.from({ length: shown }, (_, i) => i === shown - 1),
+		overflow: Math.max(0, position - TICK_CAP),
+	};
 }
 
 /** Relative time, because "3 hours ago" is read faster than a timestamp. */
