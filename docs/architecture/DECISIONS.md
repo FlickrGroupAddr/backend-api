@@ -33,6 +33,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `ad0b864` | **ADR-14 added: integrate when feasible, innovate otherwise.** The owner's standing order against reinventing wheels, with the four tests that permit hand-written code and a full survey of the OAuth 1.0a packages showing why the signer is the exception. Records `hono` and `zod` as the only runtime dependencies, both with zero transitive dependencies. |
 | `93c455a` | **ADR-13 added: the implementation language is TypeScript.** Rust and Python were each argued for and rejected — Rust on the `workers-rs` maintenance numbers, Python because it is in open beta and ADR-03 already refused a beta dependency for a smaller surface. Carries the version policy, the TypeScript 7 / `typescript-eslint` tradeoff, and a checkable list of the idioms that separate current Workers code from dated Workers code. |
 | `fd92693` | **Read replication removed from the architecture, on Terry's instruction.** ADR-09 had specified it since its first draft and it was never built; asked directly whether it was set up, the answer was no. Rather than build it, it is out: FGA has one user in ENAM and the database is in ENAM, while the bookmark plumbing replicas require fails silently and touches three reads that cannot tolerate a stale answer. ADR-09 keeps its surviving half — no application cache, nothing behind a session in a shared cache. The diagram loses its read-replica tile, two arrows, the dashed replication edge, its "Eventual consistency" label and the legend row that described it; the assertions protecting all of those are removed rather than relaxed. Reasoning preserved in "Considered and rejected" with a trigger for revisiting. |
+| *this commit* | **ADR-16 and ADR-17 added, from a day of the owner asking sharp questions.** ADR-16: a request has two identifiers with different jobs — `id` orders and never leaves the server, `public_id` is an opaque UUIDv4 handle. Records why the ordering key MUST NOT become a UUID, and why v4 beats the owner's preferred v7 for *this* column specifically. ADR-17: every list endpoint is paginated with a keyset cursor, with the worked example of how offset paging silently skips a row when the sweep resolves one between pages. The `/v001/queue` open question closes against it. ADR-14 gains the "is the platform already doing it?" pattern, now caught twice. |
 | `dd1e807`, `31c97d8` | Live-call findings folded in: the five `throttle.mode` values, `remaining` being per-user, 330 groups as a real account size, and Flickr needing no pre-registered callback. |
 | `5f43291` | **ADR-12 gains the `__Host-` cookie prefix, and records the defect it uncovered.** The attributes were specified in a helper the Worker never called, duplicated in the callback route, and duplicated again in logout — where `HttpOnly` had been lost. Five tests asserted on the dead helper and could not have failed. Replaced with assertions on the real `Set-Cookie` from a full stubbed login, verified by mutation. |
 | `1822e3d` | **ADR-10 added: FIFO per (user, group), and the queue is never jumped.** Settles that the API Worker attempts a new request immediately only when its queue is otherwise empty, and that the nightly sweep stops a queue at its first retryable failure. ADR-05 gained the `photos.getAllContexts` check. The Flickr API surface and OAuth 1.0a's signing of the request-token call were recorded as verified facts. |
@@ -1064,6 +1065,23 @@ ADR exists to force, and a true statement about the platform stood in for it.
 **The escaping is load-bearing rather than cosmetic**: a Flickr display name is a third-party string
 the user controls, rendered into a page served from the origin that holds the session cookie.
 
+#### The test that pays off most often is "is the platform already doing it?"
+
+**Twice now a dependency was about to be added for something the runtime already provides.**
+`crypto.subtle.timingSafeEqual` was the first. The second was UUID generation for ADR-16's
+`public_id`: `uuidv7@1.2.1` was surveyed, chosen, **installed**, and then removed minutes later on
+noticing `crypto.randomUUID()` in the generated runtime types — a v4 from a CSPRNG, zero bytes of
+bundle.
+
+**The tell is that the dependency search happened before the platform check.** Both times the
+question asked was *which library does this*, which is the third test, and the second test was
+skipped. **Ask them in order**: does it run here, is the platform already doing it, is it
+maintained, is the spec short with published vectors.
+
+**Reading the generated `worker-configuration.d.ts` is the cheap way to answer it** — one grep
+against the types `wrangler types` produced for this Worker's exact compatibility date, which is
+better evidence than documentation or recall.
+
 #### Cloudflare's own agent guidance is a source, and it corrected two things
 
 **`github.com/cloudflare/skills` publishes Cloudflare's rules for agents building on Workers**, and
@@ -1126,6 +1144,87 @@ is no other candidate, so it is absent from the design rather than merely unused
 
 **Where this rule and ADR-14 disagree, ADR-14 does not apply** — this is about placing state, not
 about taking dependencies.
+
+### ADR-16 — A request has two identifiers, and they have different jobs
+
+**`requests.id` orders. `requests.public_id` identifies. Neither MUST do the other's job.**
+
+| | `id` | `public_id` |
+|---|---|---|
+| Type | `INTEGER PRIMARY KEY AUTOINCREMENT` | `TEXT NOT NULL UNIQUE`, a UUID**v4** |
+| Job | ADR-10's FIFO ordering key | The handle in URLs and API responses |
+| Leaves the server | **Never** | Always |
+
+**The ordering key MUST NOT become a UUID.** ADR-10's guarantee is that the request waiting longest
+keeps its place, and `queueHeads` implements that as `SELECT MIN(q.id)`. Migration 0001 chose a
+monotonic integer because it is "safer than a timestamp, which can tie" — and every UUID form ties
+somewhere. **UUIDv7 ties within a millisecond**, and its optional sub-millisecond counter is
+per-process, so Workers isolates each keep their own. Bulk-queueing fifty photos into one group is
+an ordinary FGA action and exactly the case that would land inside one millisecond. In SQLite the
+change also costs the rowid: `INTEGER PRIMARY KEY` **is** the rowid, so a text key adds an index and
+turns a direct seek into an index lookup plus a row fetch.
+
+**The public identifier MUST NOT be sequential.** `POST /v001/requests/1/withdraw` announces that
+the system has issued one request, and invites probing at 2, 3, 4. Nothing is exploitable today —
+every query conditions on `nsid` — but **"safe because one check exists" is the shape that breaks
+when somebody adds an endpoint and forgets the check.** An unguessable handle makes that whole class
+of mistake unreachable rather than defended.
+
+#### v4 rather than v7, and the reasoning is the split above
+
+**The owner's stated preference was v7 and he delegated the choice.** v7 is the better default for a
+**primary key**, where the embedded timestamp buys index locality on insert. That is not this
+column's job, precisely because ADR-16 declined to make it the primary key.
+
+**For an opaque public handle, v7 is the wrong tool twice over.** It spends its first 48 bits on a
+plaintext millisecond timestamp — 74 random bits against v4's 122 — and **it republishes its own
+creation time to anyone holding it**, which is exactly the incidental meaning this column exists to
+remove. Having deliberately separated ordering from identity, using a time-ordered value for the
+identity half drags the ordering back in.
+
+**Generated by `crypto.randomUUID()`, with no dependency.** `uuidv7@1.2.1` was installed and then
+removed: the runtime provides a v4 from a CSPRNG, so ADR-14's second test — *is the platform already
+doing it?* — answers yes. **SQLite's `random()` MUST NOT be used for these**; it is a PRNG, not a
+CSPRNG, and the only values it has produced are the handful backfilled by migration 0003.
+
+### ADR-17 — Every list endpoint is paginated, with a cursor rather than a page number
+
+**A list endpoint MUST NOT return an unbounded result set.** `/v001/queue` did, until 2026-08-13:
+every request a user had ever made, resolved rows included, no `LIMIT`. **This is the second time
+the same defect shipped** — the groups endpoint returned 979 KB over 53 seconds for the same reason
+— so it is written down as a rule rather than fixed twice more.
+
+**Pagination MUST be keyset, not offset.** `OFFSET n` means *skip the first n rows of whatever this
+query returns right now*, which has no memory of what the previous page contained. **FGA is a
+worst case for that**: the nightly sweep resolves rows continuously and the default view is
+pending-only, so rows leave the set on their own schedule.
+
+| | Pending set | Caller gets |
+|---|---|---|
+| Page 1, `OFFSET 0` | `p0 p1 p2 p3` | `p0 p1` |
+| *sweep resolves `p0`* | `p1 p2 p3` | |
+| Page 2, `OFFSET 2` | `p1 p2 p3` | `p3` — **`p2` is never shown** |
+
+Nothing errors; the request simply vanishes from the user's view. A cursor names a **position in the
+sort order** rather than a count from the start, so rows appearing or vanishing cannot move the
+boundary. It is also faster at depth — `OFFSET 10000` walks and discards 10,000 rows per call — and
+it cannot be turned into a scan by a hand-written `?page=99999`.
+
+**The cursor MUST be opaque to the client.** FGA's is a `public_id` the caller already holds,
+resolved server-side to its `(group_id, id)`. The moment the encoding is legible somebody constructs
+one by hand, and the sort order becomes a public API contract that cannot change.
+
+**The end of a list is a fact the server states, never one the client infers.** The query fetches
+`limit + 1` as a probe and returns an explicit `nextCursor: null`. The tempting shortcut — *a short
+page means the end* — is wrong exactly when the final page is `limit` long, and the caller either
+requests an empty page or loops.
+
+**A `limit` parameter MUST be capped, not merely defaulted.** An uncapped `?limit=` is the same
+unbounded query with the caller holding the trigger. FGA's is 1–200, default 50.
+
+**And a filter MUST default to the question the endpoint answers.** `/v001/queue` defaults to
+pending, because "what is FGA still going to do for me" is the reason the page exists. History is
+`state=all`, and being the rarer ask it is the one that pays for itself.
 
 ## The indexes, and the query each one serves
 
@@ -1215,15 +1314,12 @@ groups endpoint that took 53 seconds — a query sized against an assumption tha
   rather than retrying nightly forever — **the failure mode this bullet was worried about does not
   exist.** What is left is one wasted Flickr call per disabled pool, once. Skipping them is still
   worth doing and is no longer urgent.
-- **`/v001/queue` is unbounded and MUST gain a limit before anyone has a long history.** Found
-  2026-08-13 while auditing indexes. It selects every request a user has ever made, resolved rows
-  included, ordered but never limited — so the response and the rows read both grow forever, and a
-  user who has queued ten thousand photos over a year downloads all of them to look at what is
-  pending today. **This is the same defect as the 53-second groups endpoint**, which returned 979 KB
-  because it was sized against an assumption nobody checked. **An index does not fix it**; the fix
-  is a `LIMIT` with pagination, and probably a default that returns pending work only, since that is
-  what the page is for. Recorded rather than fixed because the right shape depends on what the
-  interface shows, and no interface exists yet.
+- **~~`/v001/queue` is unbounded~~ — CLOSED 2026-08-13, see ADR-17.** Found while auditing indexes:
+  the endpoint selected every request a user had ever made, with no `LIMIT`. Fixed the same day with
+  keyset pagination, a capped `limit`, and a pending-only default. **Recorded here rather than
+  deleted because the way it was found generalizes** — it surfaced during an index audit, as the one
+  query whose plan needed a sort, and the sort turned out to be the least of it. **The index was the
+  wrong thing to look at and led to the right place anyway.**
 - **Whether D1 needs a separate group-metadata cache.** Currently assumed not: group rules can be
   read from Flickr on demand. Revisit if that read turns out to be slow or rate-limited.
 - **The wording a user sees when FGA has deliberately stopped.** *That* the queue is shown and
