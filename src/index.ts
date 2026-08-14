@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { createAttempt } from "./adds/attempt.js";
+import { apiRoutes } from "./routes/api.js";
 import { oauthRoutes } from "./routes/oauth.js";
+import { sweep } from "./sweep.js";
 
 export { OAuthLoginAttempt } from "./oauth/login-attempt.js";
 
@@ -31,6 +34,7 @@ app.use("/v001/*", (c, next) =>
 );
 
 app.route("/", oauthRoutes);
+app.route("/", apiRoutes);
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 
@@ -38,14 +42,18 @@ export default {
 	fetch: app.fetch,
 
 	/**
-	 * ADR-04: the nightly sweep is the v1 work engine. Not yet implemented --
-	 * it needs the Flickr group-add call, which is the next piece of work.
+	 * ADR-04's nightly work engine.
+	 *
+	 * The report is logged as structured JSON rather than prose so a bad night is
+	 * queryable rather than readable-if-you-happen-to-look. `stoppedOnThrottle`
+	 * is expected and is not an error -- it is the product working.
 	 */
 	async scheduled(
 		_controller: ScheduledController,
-		_env: Env,
+		env: Env,
 		_ctx: ExecutionContext,
 	): Promise<void> {
-		// Intentionally empty for now.
+		const report = await sweep(env.DB, createAttempt(env));
+		console.log(JSON.stringify({ event: "nightly_sweep", ...report }));
 	},
 } satisfies ExportedHandler<Env>;

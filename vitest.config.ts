@@ -16,12 +16,39 @@ import { defineConfig } from "vitest/config";
 // than against a hand-copied approximation of it.
 const migrations = await readD1Migrations("./migrations");
 
+/**
+ * Every outbound request from the Worker lands here.
+ *
+ * Two jobs, and the second matters more than the first. It gives the Flickr
+ * calls deterministic replies so the route tests can exercise the real code
+ * path -- and it makes any request to a host these tests do not expect a LOUD
+ * failure rather than a slow, flaky, occasionally-passing call to the actual
+ * Flickr API. A test suite that can reach the internet will eventually reach it
+ * by accident.
+ */
+function outboundService(request: Request): Response {
+	const url = new URL(request.url);
+
+	if (url.hostname === "api.flickr.com") {
+		// The method travels in the form-encoded body, so the stub keys off the
+		// path only and answers the shape both calls share.
+		return Response.json({ stat: "ok", pool: [] });
+	}
+
+	return new Response(
+		`Test suite tried to reach ${url.hostname}. Outbound network access is ` +
+			`blocked in tests -- add a stub in vitest.config.ts if this is intended.`,
+		{ status: 599 },
+	);
+}
+
 export default defineConfig({
 	plugins: [
 		cloudflareTest({
 			wrangler: { configPath: "./wrangler.jsonc" },
 			miniflare: {
 				bindings: { TEST_MIGRATIONS: migrations },
+				outboundService,
 			},
 		}),
 	],

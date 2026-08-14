@@ -23,6 +23,14 @@ export interface QueueHead {
  * behavior with `MIN()`. That shortcut works and is documented, but this form
  * is obviously correct to a reader who does not know the shortcut, and it uses
  * the partial index directly.
+ *
+ * **Users flagged `needs_relink` are excluded here rather than skipped later.**
+ * ADR-07 makes the request that met code 98 or 99 terminal, and after that the
+ * user's stored token is known bad -- every further attempt would burn a Flickr
+ * call to rediscover the same thing. Filtering at the query means their queues
+ * simply sit still, intact, and resume when they log in again. Failing those
+ * requests instead would silently empty a user's queue while they were unaware
+ * anything was wrong.
  */
 export async function queueHeads(db: D1Database): Promise<QueueHead[]> {
 	const { results } = await db
@@ -31,7 +39,9 @@ export async function queueHeads(db: D1Database): Promise<QueueHead[]> {
 			// here is a bare syntax error rather than anything subtle.
 			`SELECT r.id, r.nsid, r.photo_id, r.group_id
        FROM requests r
+       JOIN users u ON u.nsid = r.nsid
        WHERE r.state = 'pending'
+         AND u.needs_relink = 0
          AND r.id = (
            SELECT MIN(q.id) FROM requests q
            WHERE q.state = 'pending'
