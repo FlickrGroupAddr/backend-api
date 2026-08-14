@@ -52,8 +52,21 @@ never read it, so an unset value fails at deploy rather than silently pointing s
 npx wrangler d1 migrations apply fga --remote
 ```
 
-**`--remote` is what makes this the production database.** Omitting it migrates the local one,
-which is already migrated, and reports success — a clean run against the wrong target.
+**`--remote` is what makes this the production database.** Omitting it migrates the local one and
+reports success — a clean run against the wrong target.
+
+**And `--local` has a sharper version of the same trap, found 2026-08-13.** `wrangler d1 execute
+--local` and a running `wrangler dev` can resolve to **different SQLite files** under
+`.wrangler/state/v3/d1/miniflare-D1DatabaseObject/`, because the path is hashed from
+`database_id` and a running dev server keeps whichever file it opened at startup — hot reload
+reloads code, not bindings. The CLI then reports **`no such table`**, which reads as a missing
+schema rather than as the wrong database, and a `migrations apply --local` will "succeed" against
+the empty file.
+
+**So: after changing `database_id`, restart `wrangler dev` and re-apply local migrations**, and
+expect to log in again because the new file has no user row. **To check what local state really
+is, read the `.sqlite` directly** — the largest file in that directory is the live one — rather
+than trusting the CLI's answer.
 
 ## 3. Generate the two keys
 
