@@ -86,11 +86,38 @@ The GitHub org holds roughly a decade of abandoned attempts. **Mine them for dom
 per-group daily add limits, what the API surface had to cover — and **do not inherit their
 architecture**. Precedent is the weakest argument available here.
 
+## The Worker is TypeScript, and `npm run check` is the gate
+
+**ADR-13 and ADR-14 govern the toolchain and the dependency policy, and both are worth reading
+before adding either.** The short version: current stable TypeScript, never a `beta`/`rc`/`next`
+tag, and take a maintained dependency over hand-written code unless it fails one of ADR-14's four
+tests.
+
+```
+npm run check
+```
+
+runs typecheck, lint, and the whole suite. **It MUST be clean before a commit.**
+
+**Tests run inside real `workerd`** via `@cloudflare/vitest-pool-workers`, against real D1 and real
+Durable Objects — hand-mocked bindings would test the mock. Outbound `fetch` is routed to a stub in
+`vitest.config.ts`, so **a test that tries to reach the real Flickr fails loudly** rather than
+quietly succeeding over the network.
+
+**Recall about installed package APIs is unreliable and has already been wrong five times here.**
+Read `node_modules/<pkg>/package.json` for the exports and the `.d.ts` for the names; generate
+config files with the tool's own `init` rather than writing them from memory.
+
 ## Where things live
 
 | | |
 |---|---|
 | `docs/architecture/DECISIONS.md` | The ADRs, and a verified-facts table where every row records how it was established |
+| `docs/SETUP.md` | First-time bring-up, in dependency order. Needs Terry's credentials throughout. |
 | `docs/architecture/*.drawio` | Generated. Do not edit. |
+| `src/oauth/signature.ts` | OAuth 1.0a signing. Hand-written by ADR-14's documented exception, and checked against RFC 5849's own vectors. |
+| `src/adds/classify.ts` | **ADR-07 and ADR-08 as executable code.** The most consequential function here; widening its retryable set is the most dangerous edit available. |
+| `src/sweep.ts` | ADR-04's nightly engine and ADR-10's queue discipline. Its attempt function is injected so the walking rules test without a network. |
+| `migrations/` | The D1 schema. Constraints carry the rules rather than application code. |
 | `scripts/build-diagram.py` | The generator and its assertions |
 | `scripts/check-diagram-date.py` | SessionStart hook; reports whether the diagram's date is stale |
