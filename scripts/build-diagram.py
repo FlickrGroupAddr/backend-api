@@ -108,10 +108,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="940" y="1040" width="230" height="100" as="geometry" />
         </mxCell>
 
-        <mxCell id="d1replica" value="&lt;b&gt;Read-Only SQL DB&lt;/b&gt;&lt;br&gt;&lt;i&gt;D1 Read Replica&lt;br&gt;One replica per Cloudflare region&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4FC3E8;strokeColor=none;fontColor=#0B2E3D;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="940" y="915" width="230" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="d1" value="&lt;b&gt;Write-Only SQL DB&lt;/b&gt;&lt;br&gt;&lt;i&gt;D1 Primary&lt;br&gt;Users &#183; requests &#183; tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+        <mxCell id="d1" value="&lt;b&gt;SQL Database&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare D1&lt;br&gt;Users &#183; requests &#183; tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="1300" y="908" width="200" height="115" as="geometry" />
         </mxCell>
 
@@ -131,7 +128,7 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="1600" y="150" width="205" height="130" as="geometry" />
         </mxCell>
 
-        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#8211; &#8211; &#8211; Asynchronous replication&lt;br&gt;&#183; &#183; &#183; &#183; Scheduled trigger&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#183; &#183; &#183; &#183; Scheduled trigger&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="1600" y="368" width="205" height="125" as="geometry" />
         </mxCell>
 
@@ -197,22 +194,11 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="e6" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;dashPattern=1 4;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e7" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1replica">
+        <mxCell id="e14" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e8" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="d1replica">
+        <mxCell id="e15" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="d1">
           <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e14" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e15" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="d1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e16" value="Eventual&lt;br&gt;consistency" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;dashed=1;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.4;exitDx=0;exitDy=0;entryX=1;entryY=0.4875;entryDx=0;entryDy=0;" edge="1" parent="1" source="d1" target="d1replica">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="25" y="-18" as="offset" />
-          </mxGeometry>
         </mxCell>
         <mxCell id="e9" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.0925;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
@@ -377,11 +363,6 @@ MUST_BE_HORIZONTAL = {
     "e9": "api -> flickr (login)",
     "e17": "api -> flickr (as the user)",
     "e10": "retry -> flickr",
-    # Added after D1 Primary was resized to align with App Secrets Store. Both
-    # ends were anchored at 0.5, so they were level only while the two tiles
-    # happened to share a centre -- a coincidence, not a constraint. Resizing
-    # either one tilted the arrow, and nothing was watching.
-    "e16": "d1 -> replica",
 }
 for eid, label in MUST_BE_HORIZONTAL.items():
     if eid not in segments:
@@ -440,9 +421,8 @@ for eid, (src, tgt, p, q) in segments.items():
 IN_EDGE_POP = {
     "dns": True,  # authoritative DNS is anycast, answered at the nearest PoP
     "pages": True, "secrets": True, "cron": True, "api": True, "retry": True,
-    "d1replica": True,  # a read replica exists in every region, including this PoP's
     "oauthdo": False,   # single Durable Object instance, not edge-replicated
-    "d1": False,        # the primary is one location; every write crosses to it
+    "d1": False,        # D1 lives in one location; every query crosses to it
 }
 
 
@@ -888,7 +868,7 @@ if abs(tx - lx) > 0.5 or abs(tw - lw) > 0.5:
 # shift moved the tile under it.
 BADGES = [f"n{i}" for i in range(1, 12)]
 TILES = ["dns", "pages", "secrets", "cron", "oauthdo", "api", "retry",
-         "d1replica", "d1", "users", "flickrapi", "journey", "key", "justification"]
+         "d1", "users", "flickrapi", "journey", "key", "justification"]
 
 
 def overlaps(a, b):
@@ -976,30 +956,26 @@ for c in cells:
         problems += 1
 
 
-# Two properties settled deliberately on 2026-08-13 and protected here because
-# both are easy to undo while believing you are tidying up.
+# THE LINE STYLES, and the legend row each one owns.
 #
-# THE LABEL. "Eventual consistency" is the only arrow label left, after sixteen
-# others were removed the same afternoon as redundant -- which is exactly what
-# will make a later pass reach for it. It is not a leftover. Every other arrow
-# takes its meaning from the two tiles it joins; this one cannot, because both
-# ends are D1 and both hold the same rows, so the entire difference between them
-# is the lag this label names. ADR-09 exists because that lag produces a specific
-# failure -- a write that appears not to have persisted -- which is close to
-# undiagnosable unless the reader knows replication is in play. Without the label
-# the primary/replica split is decoration.
+# Two styles remain. Solid is a request and its response; dotted is the nightly
+# scheduled trigger, drawn weaker because a clock firing is notional rather than
+# a data path. The legend has a row per style written against these exact edges,
+# so making one solid does not merely change a line -- it orphans a legend entry
+# that then explains nothing.
 #
-# THE LINE STYLES. Three of them, and the difference between the two broken ones
-# carries meaning: dotted reads as weaker than dashed, so the nightly trigger --
-# notional, a clock firing -- is dotted, while replication lag, which is a real
-# data-consistency property with a failure mode behind it, is dashed. The legend
-# has a row per style written against these exact edges. Making one solid, or
-# collapsing dotted back into dashed, does not merely change a line: it orphans a
-# legend entry that then explains nothing.
-REQUIRED_EDGE_LABEL = {"e16": "Eventual"}
+# DASHED IS GONE, and so is the label that rode on it. Read replicas were removed
+# from the architecture on 2026-08-13 (Terry's call; see ADR-09), which deleted
+# the only dashed edge -- `e16`, D1 primary to replica -- and with it the
+# "Eventual consistency" label this build used to protect as load-bearing. That
+# protection was correct while the split existed: the label was the entire
+# difference between two tiles holding identical rows. With one database there is
+# no lag to name, so the check is not relaxed here, it is obsolete. The legend
+# lost its dashed row in the same change, because a legend entry for a style no
+# edge uses is worse than no entry at all.
+REQUIRED_EDGE_LABEL: dict[str, str] = {}
 LINE_STYLE = {
     "e6": ("dotted", "cron -> retry, a scheduled trigger"),
-    "e16": ("dashed", "d1 -> replica, asynchronous replication"),
 }
 print("  Load-bearing edge labels still present:")
 for eid, needle in REQUIRED_EDGE_LABEL.items():

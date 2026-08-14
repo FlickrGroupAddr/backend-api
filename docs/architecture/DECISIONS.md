@@ -32,6 +32,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `cccd677` | **ADR-15 added: which store holds what, and ADR-02 corrected.** The owner could not derive the D1-versus-Durable-Object split from the diagram, and the split turned out to rest on an argument ADR-02 never made: it compared the Durable Object against KV and never against D1, which would also have worked. Consistency does not distinguish them; lifecycle does. Both now say so. |
 | `ad0b864` | **ADR-14 added: integrate when feasible, innovate otherwise.** The owner's standing order against reinventing wheels, with the four tests that permit hand-written code and a full survey of the OAuth 1.0a packages showing why the signer is the exception. Records `hono` and `zod` as the only runtime dependencies, both with zero transitive dependencies. |
 | `93c455a` | **ADR-13 added: the implementation language is TypeScript.** Rust and Python were each argued for and rejected — Rust on the `workers-rs` maintenance numbers, Python because it is in open beta and ADR-03 already refused a beta dependency for a smaller surface. Carries the version policy, the TypeScript 7 / `typescript-eslint` tradeoff, and a checkable list of the idioms that separate current Workers code from dated Workers code. |
+| *this commit* | **Read replication removed from the architecture, on Terry's instruction.** ADR-09 had specified it since its first draft and it was never built; asked directly whether it was set up, the answer was no. Rather than build it, it is out: FGA has one user in ENAM and the database is in ENAM, while the bookmark plumbing replicas require fails silently and touches three reads that cannot tolerate a stale answer. ADR-09 keeps its surviving half — no application cache, nothing behind a session in a shared cache. The diagram loses its read-replica tile, two arrows, the dashed replication edge, its "Eventual consistency" label and the legend row that described it; the assertions protecting all of those are removed rather than relaxed. Reasoning preserved in "Considered and rejected" with a trigger for revisiting. |
 | `dd1e807`, `31c97d8` | Live-call findings folded in: the five `throttle.mode` values, `remaining` being per-user, 330 groups as a real account size, and Flickr needing no pre-registered callback. |
 | `5f43291` | **ADR-12 gains the `__Host-` cookie prefix, and records the defect it uncovered.** The attributes were specified in a helper the Worker never called, duplicated in the callback route, and duplicated again in logout — where `HttpOnly` had been lost. Five tests asserted on the dead helper and could not have failed. Replaced with assertions on the real `Set-Cookie` from a full stubbed login, verified by mutation. |
 | `1822e3d` | **ADR-10 added: FIFO per (user, group), and the queue is never jumped.** Settles that the API Worker attempts a new request immediately only when its queue is otherwise empty, and that the nightly sweep stops a queue at its first retryable failure. ADR-05 gained the `photos.getAllContexts` check. The Flickr API surface and OAuth 1.0a's signing of the request-token call were recorded as verified facts. |
@@ -53,7 +54,7 @@ beta-era numbers that will move.
 | `flickr.groups.pools.add` returns a numeric error code | Flickr API docs. Relevant codes: **1** photo not found, **2** group not found, **3** photo already in pool, **4** photo in maximum number of pools, **5** photo limit reached, **6** photo added to the Pending Queue for this pool, **7** photo already in the Pending Queue, **8** content not allowed, **10** maximum number of photos in group pool, **11** group pool is disabled. Transient: **105** service unavailable, **106** write operation failed. | 2026-08-13 |
 | A moderator's decision on a queued photo is invisible to the API | There is no error code, callback, or endpoint that reports a rejection. After code **6** the photo sits in the pool's pending queue; if a moderator rejects it, it simply never appears in the pool. `flickr.photos.getAllContexts` can show whether a photo landed, but "not in the pool" cannot distinguish *still pending* from *rejected*. | 2026-08-13 |
 | D1 bills reads at $0.001/M rows and writes at $1.00/M — writes cost 1,000× more | Cloudflare pricing. Workers Paid includes **25 billion rows read** and **50 million rows written** per month, plus 5 GB storage, then $0.001/M read, $1.00/M written, $0.75/GB-mo. | 2026-08-13 |
-| D1 read replication is free and automatic in six regions | Cloudflare docs: *"Read replication does not charge extra for read replicas. You incur the same usage billing based on `rows_read` and `rows_written` by your queries."* No per-replica storage charge, and a write is not billed once per replica. Replicas are placed automatically in **ENAM, WNAM, WEUR, EEUR, APAC, OC** — the count is not configurable. Enabled with `read_replication.mode: auto`; reads must go through the Sessions API (`withSession()`) or they hit the primary regardless. | 2026-08-13 |
+| A D1 read is strongly consistent unless read replication is deliberately opted into | Cloudflare docs: replicas are reached only through the Sessions API, so an ordinary `db.prepare()` read goes to the database itself whether or not replication is configured. **FGA does not use read replication** — see "Considered and rejected" — so every read in this system is strongly consistent, which ADR-02, ADR-10 and ADR-15 all rely on. | 2026-08-13 |
 | Durable Objects have no TTL, and an idle one is free | Cloudflare docs: there is no automatic expiry, but "inactive objects receiving no requests do not incur any duration charges." Storage is metered separately and "Durable Objects will be billed for stored data until the data is removed"; once deleted through the Storage API the object is cleaned up and stops incurring storage fees. **There is no runtime API to enumerate the objects in a namespace** — a Worker cannot list them. | 2026-08-13 |
 | The Flickr API surface FGA needs is six calls | Read from the 2022 code in the old repos, which is working precedent rather than a guess. Login: `oauth/request_token`, then `oauth/authorize` with `perms=write` in the browser, then `oauth/access_token`. Runtime: `flickr.groups.pools.getGroups` for the groups a user may post to, `flickr.photos.getAllContexts` for the pools a photo is already in, and `flickr.groups.pools.add` for the add. Mined for the domain facts only — the architecture around them is not inherited. | 2026-08-13 |
 | OAuth 1.0a signs the request-token call itself | RFC 5849 §3.4: the signing key is `consumer_secret&token_secret`, with an empty token secret for the temporary-credentials request, and `oauth_consumer_key` travels in the parameters. **The first call of a login therefore already needs the FGA Flickr API credentials** — there is no unauthenticated leg anywhere in the flow. | 2026-08-13 |
@@ -201,10 +202,10 @@ paragraphs above argue against **KV** and stop there. D1 was never evaluated for
 already being in the design, and the omission mattered: a reader would reasonably conclude D1 had
 been rejected on consistency grounds, **which is false.**
 
-**D1 does not have KV's problem.** Reads go to the primary unless the Sessions API is used to opt
-into a replica — see the verified-facts row on read replication — so **an ordinary D1 read is
-strongly consistent** and would have satisfied the read-after-write requirement above perfectly
-well. The consistency argument simply does not distinguish these two options.
+**D1 does not have KV's problem.** FGA runs D1 without read replication, so every read goes to the
+database itself — **an ordinary D1 read is strongly consistent** and would have satisfied the
+read-after-write requirement above perfectly well. The consistency argument simply does not
+distinguish these two options.
 
 **What actually decides it is lifecycle, not consistency:**
 
@@ -449,84 +450,37 @@ front of a person who did not ask for it — a report, a message, a notification
 falls under the same rule. If FGA cannot tell whether a person already said no, it MUST assume
 they did.
 
-### ADR-09 — Read latency is answered with D1 read replication, not an application cache
+### ADR-09 — Read latency is not answered with an application cache
 
-Reads **SHOULD** go through the D1 Sessions API with `read_replication.mode: auto`. Per-user API
-responses **MUST NOT** be written to the shared edge cache (`caches.default`) unless the cache key
-includes the user; `Cache-Control: private` is the default for anything behind a session.
+**Superseded in part on 2026-08-13.** This ADR originally answered read latency with D1 read
+replication. **Read replicas were removed from the architecture** — see "Considered and rejected"
+for the reasoning and the trigger for revisiting. What survives is the half that was always the
+point: **FGA MUST NOT build an application cache in front of D1**, and per-user responses **MUST
+NOT** reach a shared cache.
+
+Every read goes to D1 directly. **Reads are therefore strongly consistent**, which is what ADR-15
+relies on and what makes the rest of this document simple.
+
+Per-user API responses **MUST NOT** be written to the shared edge cache (`caches.default`) unless
+the cache key includes the user, and **every response behind a session MUST carry a
+`Cache-Control` header that keeps it out of shared caches.**
 
 **Cost is not the reason to cache here.** D1 bills reads at $0.001 per million rows. At any scale
 this project plausibly reaches, the query volume is free, and a cache built to save money would be
 saving nothing.
 
-**Latency is the real cost, and it comes from a fact already recorded in ADR-02's neighbourhood:
-the D1 primary lives in one location, outside the edge PoP.** A user in Sydney reaches a Worker in
-Sydney in a few milliseconds, and that Worker then crosses the planet to the primary. The
-anycast win is spent on the first query.
-
-**Read replication fixes that at the source.** Replicas exist in every region at no extra cost,
-and the Sessions API provides sequential consistency **including read-your-own-writes**. That last
-property is the one that matters: an application cache would have to be invalidated the instant a
-user submits a request, because a user who adds a photo and does not see it appear concludes the
-product is broken. Cloudflare has solved the hard half of the problem already; reimplementing it
-in cache-invalidation logic would be strictly worse.
+**And a cache would have to be invalidated the instant a user submits a request**, because a user
+who adds a photo and does not see it appear concludes the product is broken. That invalidation is
+the hard half, and it is hard in a way that produces intermittent, user-specific bugs rather than
+loud ones.
 
 **The premise that state changes only once a day is true of the nightly sweep and false of the
 user.** The cron mutates each `(photo, group)` row at most daily, but a person can submit at any
-moment, and their own change is the one they watch for. Any caching scheme MUST treat the user's
-own mutation as the common case rather than the edge case.
+moment, and their own change is the one they watch for. **Any future caching scheme MUST treat the
+user's own mutation as the common case rather than the edge case** — which is the argument that
+rejected replication too, and it generalizes past both.
 
-### The stale-read failure, and where it will actually come from
-
-**If a write appears not to have persisted, the first suspect is bookmark propagation, not
-Cloudflare's replication.** Replication rarely breaks. Bookmarks get dropped constantly, because
-doing it right requires deliberate plumbing that is easy to omit and produces no error when
-omitted.
-
-`withSession()` guarantees read-your-own-writes **within a session**. A session is identified by a
-**bookmark** — an opaque token D1 returns after a query, marking how far along the database state
-that session has seen. Pass it into the next `withSession()` call and D1 guarantees the replica
-serving you is at least that current, waiting or falling back to the primary if it is not. Fail to
-pass it and the next request starts unconstrained, free to be served by any replica, including one
-that has not yet received the write made moments earlier.
-
-**FGA runs over HTTP, so consecutive requests are different Worker invocations with no shared
-memory.** A user submitting a request and then loading their dashboard is two invocations. Unless
-the bookmark from the write travels to the read — in a cookie, a response header the client echoes
-back, or similar — **the dashboard read is unconstrained and may legitimately miss the row that was
-just written.** Nothing is broken. The guarantee simply was not asked for.
-
-| Symptom | Likely cause |
-|---|---|
-| User adds a request, dashboard does not show it | Bookmark not carried from the write response into the next read |
-| Intermittent, and worse for distant users | Same — a nearby replica lags the primary by more than the round trip |
-| Reproducible on every read, all users | Not replication. Look at the write path. |
-
-**So: the write response MUST return its bookmark, and the client MUST send it back on subsequent
-reads.** This is cheap to build in and unpleasant to retrofit, because by then the symptom has been
-misdiagnosed at least once as a caching bug or a phantom write.
-
-#### This MUST be made unreachable rather than remembered
-
-A rule of the form "remember to carry the bookmark" fails the moment anyone writes a query without
-thinking about it, and it fails **silently** — no error, no warning, just an occasional missing
-row that reproduces for nobody. A convention is the wrong instrument for a failure mode with no
-symptom at the point of the mistake.
-
-**The D1 binding MUST NOT be reachable from request-handling code.** All database access **MUST**
-go through a single accessor that takes the incoming `Request`, extracts the bookmark, opens the
-session, and hands back a session-scoped handle. Writing a query that skips the bookmark then
-stops being a thing a person could forget, because there is no un-sessioned handle to reach for.
-
-**The response layer MUST attach the resulting bookmark on the way out**, in the same one place, so
-returning it is not a per-endpoint decision either.
-
-Both halves belong in one module, and **a build check SHOULD assert that the raw binding name
-appears nowhere outside it.** That converts the whole class of bug from a runtime surprise into a
-failed build — the outcome this project prefers wherever it is available.
-
-**Recorded before any code exists, deliberately.** Wrapping the binding costs nothing today and is
-a refactor across every handler once the direct calls are written.
+### What a shared cache MAY still hold, and the trap beside it
 
 **Where a cache still earns its place:** group metadata — name, icon, rules — is identical for
 every user and changes rarely, so it **MAY** be held in the shared edge cache with a normal TTL.
@@ -568,41 +522,9 @@ history table has a shape people depend on. **This is recorded now because it is
 invisible later**, when someone reasonably adds "just one more column, written every run" to a
 table that is already the most expensive thing in the system.
 
-#### Implementation status, 2026-08-13: the cache half is done and the replication half is not
+#### Implementation status, 2026-08-13
 
-**Asked directly, and worth recording because the honest answer is "no".** Neither
-`read_replication.mode: auto` nor a single `withSession()` call exists in the codebase. **ADR-09
-predicted this exact omission** — it says bookmarks "get dropped constantly, because doing it right
-requires deliberate plumbing that is easy to omit and produces no error when omitted" — and then
-the implementation omitted the plumbing and the mode alongside it.
-
-**The current state is correct, merely not fast.** With replication off, every read goes to the
-primary and is strongly consistent, which is what ADR-15 relies on. **Nothing is broken and nothing
-is stale.**
-
-**Enabling the mode alone is inert, and this is the part that misleads.** A plain `db.prepare()`
-read hits the primary whether or not replication is on — replicas are reached only through the
-Sessions API. So `read_replication.mode: auto` is not a switch that makes reads faster; **the
-bookmark plumbing is the entire feature**, and turning the mode on without it buys nothing while
-looking like progress.
-
-**Three reads MUST NOT be served from an unconstrained replica when this is built:**
-
-| Read | What a stale answer does |
-|---|---|
-| `pendingCount` before ADR-10's immediate attempt | Returns 1 when two are pending, so a new request jumps a queue that had someone waiting |
-| `pairReachedAModerator` before ADR-11's warning | Misses a recent moderation record and submits to a volunteer with no warning shown |
-| A user's own queue view after submitting or withdrawing | They do not see their own change and conclude the product is broken — ADR-09's own stated case |
-
-**The first two are correctness, not latency**, and they are why this is not a configuration change.
-The third is what bookmarks exist for.
-
-**Recommendation: leave it off until there is a user outside ENAM.** The database is in ENAM and so
-is the only user, so replicas would currently shorten a journey nobody makes, in exchange for
-plumbing that touches the two invariants above. **Revisit when a non-ENAM user appears** — that is
-the trigger, and it is a real one rather than a way of saying later.
-
-**The cache half of this ADR was implemented the same day it was checked.** Every `/v001/*`
+**Implemented.** Every `/v001/*`
 response now carries `Cache-Control: private, no-store`, set by a middleware registered **before**
 `requireSession` — a rejecting middleware never calls `next()`, so registering it after would have
 left precisely the 401s uncovered. `no-store` goes beyond ADR-09's `private` deliberately: the queue
@@ -610,6 +532,9 @@ view changes the moment a user withdraws something, and a browser reusing its ow
 show the request still sitting there. **Nothing was leaking before** — Cloudflare does not cache a
 Worker's JSON by default — **and it becomes real the day somebody adds a Cache Rule**, which is
 exactly the change made without auditing what is already behind a session.
+
+**No application cache exists and none is planned.** Reads go straight to D1 and are strongly
+consistent.
 
 ### ADR-10 — Requests are FIFO per (user, group), and the queue is never jumped
 
@@ -670,11 +595,12 @@ settles how the interface is scoped.
 alone, and both attempt. That is the forbidden queue-jump arriving by race rather than by design,
 and it will be rare enough to survive testing.
 
-**The queue-position read MUST NOT be served by a read replica.** Determining position straight
-after appending is a read-your-own-writes operation, and ADR-09 records that replicas are
-eventually consistent. A stale replica returns a count of zero, the Worker concludes the queue is
-empty, and it authorizes an immediate attempt in front of a queue that is not empty. **This is the
-exact trap ADR-09's binding wrapper exists to make unreachable** — it must be unreachable here too.
+**The queue-position read MUST be strongly consistent, which it is today for free.** Determining
+position straight after appending is a read-your-own-writes operation. FGA runs D1 without read
+replication, so this holds by construction — but **it is a requirement rather than a happy
+accident, and anything that would weaken it MUST be weighed against this line.** A stale count of
+zero makes the Worker conclude the queue is empty and authorize an immediate attempt in front of a
+queue that is not, which breaks the FIFO guarantee this ADR exists to provide.
 
 **Wall-clock time MUST NOT be the ordering key.** Timestamps collide at the resolution they are
 stored, and clocks move backwards. Order **MUST** come from a monotonic insert sequence, and rows
@@ -1213,6 +1139,7 @@ about taking dependencies.
 | Holding TypeScript at `6.0.3` to keep `typescript-eslint` | Considered seriously. Biome removes the need by not depending on the compiler API at all. See ADR-13. |
 | Cognito, or Google logins with a JWKS cache | Both exist to supply an identity FGA has decided not to hold. See ADR-01. |
 | Per-user Durable Objects with alarms | **Deferred, not rejected.** The right answer at a scale this project has not reached. See ADR-04 for the promotion criteria. |
+| **D1 read replication** | **Removed 2026-08-13, Terry's call, after ADR-09 had specified it for months without it ever being built.** Replicas are free and would cut read latency for distant users — but FGA has one user, in ENAM, and the database is in ENAM, so they would shorten a journey nobody makes. Against that, replicas are eventually consistent, and reaching one requires the Sessions API with a **bookmark** carried from each write to the next read. That plumbing is easy to omit and **produces no error when omitted**, so it fails as an intermittent, user-specific missing row rather than as anything loud. Three reads here cannot tolerate it: `pendingCount` before ADR-10's immediate attempt (a stale zero jumps a queue someone was waiting in), `pairReachedAModerator` before ADR-11's warning (a stale miss submits to a volunteer with no warning shown), and a user's own queue view after submitting or withdrawing. **The first two are correctness, not latency.** Without replication every read is strongly consistent by construction, which is what ADR-02, ADR-10 and ADR-15 all lean on. **Revisit only when there is a real user outside ENAM** — that is the trigger, and it is a measurable one rather than a way of saying later. |
 | Cloudflare Secrets Store | Correct product, wrong maturity and wrong ceiling. See ADR-03. |
 | Cloudflare Queues | Verified as available with dead-letter queues, retries, delays, and batching. Not needed while a nightly sweep does the work. Revisit alongside ADR-04's promotion criteria. |
 | Workers KV for session or OAuth state | Consistency model is wrong for the login path. See ADR-02. |
