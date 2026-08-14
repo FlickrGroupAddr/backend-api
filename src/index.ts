@@ -1,8 +1,10 @@
 import { Hono } from "hono";
+import { getCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { createAttempt } from "./adds/attempt.js";
 import { apiRoutes } from "./routes/api.js";
 import { oauthRoutes } from "./routes/oauth.js";
+import { SESSION_COOKIE, verifySession } from "./session.js";
 import { sweep } from "./sweep.js";
 
 export { OAuthLoginAttempt } from "./oauth/login-attempt.js";
@@ -41,28 +43,54 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 /**
  * A landing page, for local development and for confirming a deploy.
  *
- * In production the real UI lives on a different origin (ADR-12), so nothing
- * routes here. During local development the OAuth callback redirects to
- * `UI_ORIGIN`, which is localhost -- and landing on a bare 404 after a
- * successful login is a confusing way to discover that it worked.
+ * ADR-12 puts the real UI on a different origin, at which point nothing routes
+ * here. Until the domain lands, `UI_ORIGIN` is this same host, so the OAuth
+ * callback comes back to this page -- and a bare 404 is a confusing way to
+ * discover that a login worked.
  *
- * It reports the two configured origins deliberately. Neither is a secret --
+ * **It reports the SESSION, never the redirect.** `?login=ok` only means the
+ * callback believed it succeeded; a verified cookie means the browser actually
+ * kept what it was handed. Those two agree right up until something is wrong,
+ * which is the only moment anyone reads this page carefully.
+ *
+ * It also prints the two configured origins deliberately. Neither is a secret --
  * both are committed in `wrangler.jsonc` -- and seeing which values the Worker
  * actually resolved is the quickest way to catch a callback pointing at the
  * wrong host, which otherwise fails inside Flickr's redirect with nothing
  * useful to read.
  */
-app.get("/", (c) => {
+app.get("/", async (c) => {
 	const outcome = c.req.query("login");
 
+	// The NSID is free here: it is the `sub` claim of the cookie the Worker just
+	// verified, so showing it costs no database read. It is also not a secret --
+	// every Flickr NSID is public -- and the signature is what makes it
+	// trustworthy rather than the value itself.
+	const cookie = getCookie(c, SESSION_COOKIE);
+	const nsid =
+		cookie === undefined
+			? null
+			: await verifySession(cookie, c.env.SESSION_KEY);
+
+	// Report the SESSION, not the redirect. `?login=ok` only says the callback
+	// believed it succeeded; a valid cookie says the browser actually kept what
+	// it was given. Those come apart when a cookie fails to stick, and a page
+	// that trusted the query string would cheerfully claim success anyway.
+	const session =
+		nsid !== null
+			? `<p><strong>Signed in as <code>${nsid}</code></strong><br>
+<small>Read from the session cookie and signature-verified just now, not from the redirect.</small></p>`
+			: outcome === "ok"
+				? `<p><strong>The callback reported success, but no valid session cookie came back.</strong><br>
+<small>That is a cookie problem rather than a login problem -- check that the browser is not blocking it.</small></p>`
+				: "<p>Not signed in.</p>";
+
 	const banner =
-		outcome === "ok"
-			? "<p><strong>Logged in.</strong> The session cookie is set.</p>"
-			: outcome === "expired"
-				? "<p><strong>That login attempt expired or was already used.</strong> Start again.</p>"
-				: outcome === "invalid"
-					? "<p><strong>Flickr sent back an incomplete callback.</strong> Start again.</p>"
-					: "";
+		outcome === "expired"
+			? "<p><strong>That login attempt expired or was already used.</strong> Start again.</p>"
+			: outcome === "invalid"
+				? "<p><strong>Flickr sent back an incomplete callback.</strong> Start again.</p>"
+				: "";
 
 	return c.html(
 		`<!doctype html><meta charset="utf-8">
@@ -70,6 +98,7 @@ app.get("/", (c) => {
 <style>body{font:16px/1.5 system-ui,sans-serif;margin:3rem auto;max-width:40rem;padding:0 1rem}
 code{background:#f4f4f5;padding:.1em .35em;border-radius:3px}</style>
 <h1>FlickrGroupAddr API</h1>
+${session}
 ${banner}
 <ul>
   <li><a href="/oauth/login">Log in with Flickr</a></li>
