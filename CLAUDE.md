@@ -117,6 +117,7 @@ config files with the tool's own `init` rather than writing them from memory.
 | `docs/architecture/*.drawio` | Generated. Do not edit. |
 | `src/oauth/signature.ts` | OAuth 1.0a signing. Hand-written by ADR-14's documented exception, and checked against RFC 5849's own vectors. |
 | `src/adds/classify.ts` | **ADR-07 and ADR-08 as executable code.** The most consequential function here; widening its retryable set is the most dangerous edit available. |
+| `src/session.ts` | ADR-06 and ADR-12's cookie contract, and **the only place that knows the cookie's name or attributes.** Set, read and clear all go through it. They were once specified in a helper nothing called and duplicated at two call sites, one of which had silently lost `HttpOnly`. |
 | `src/sweep.ts` | ADR-04's nightly engine and ADR-10's queue discipline. Its attempt function is injected so the walking rules test without a network. |
 | `migrations/` | The D1 schema. Constraints carry the rules rather than application code. |
 | `scripts/build-diagram.py` | The generator and its assertions |

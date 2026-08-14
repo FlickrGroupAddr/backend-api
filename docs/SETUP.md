@@ -116,6 +116,17 @@ callback believed it worked; the page verifies the cookie's signature and shows 
 recovered. Those two agree right up until something is wrong, which is the only moment anybody
 reads that page carefully.
 
+**The `__Host-` prefix works on plain `http://localhost`, verified 2026-08-13.** The prefix requires
+the `Secure` attribute and `wrangler dev` serves no TLS, so this was an open risk; browsers treat
+localhost as a trustworthy origin and Chrome accepted, stored and returned the cookie. **The
+evidence is that `/v001/groups` and `/v001/queue` answered 200 rather than 401** — both sit behind
+the session middleware, which reads the prefixed name and nothing else.
+
+**If a local login ever does report success while showing no session, suspect this first**, because
+the failure mode is precisely the discrepancy the landing page exists to surface: the callback
+succeeds, the browser silently drops the cookie, and the page says so rather than claiming a
+session it does not have.
+
 ## 6. The diagnostic call
 
 ```
