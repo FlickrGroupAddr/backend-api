@@ -14,9 +14,20 @@
 	// Public configuration, not secrets. ADR-12: the UI and the API are separate
 	// origins, and the CORS allowlist is compared against this exact value --
 	// never against the request's own Origin header.
+	//
+	// Both point at the workers.dev hostname because flickrgroupaddr.com is not
+	// owned yet -- it is in pendingDelete and a watcher is waiting to buy it back.
+	// Aiming API_BASE_URL at a domain that does not resolve would send Flickr a
+	// callback URL it cannot reach, and the failure would happen inside Flickr's
+	// redirect where there is nothing useful to read.
+	//
+	// ADR-12 describes the END state, where the UI and API are separate origins.
+	// Today they are the same origin, which makes the CORS contract inert rather
+	// than wrong. **Both values MUST be revisited when the domain lands**, and
+	// ADR-12's contract only starts doing work at that point.
 	"vars": {
-		"UI_ORIGIN": "https://flickrgroupaddr.com",
-		"API_BASE_URL": "https://api.flickrgroupaddr.com"
+		"UI_ORIGIN": "https://fga-backend-api.terryott.workers.dev",
+		"API_BASE_URL": "https://fga-backend-api.terryott.workers.dev"
 	},
 
 	"observability": {
@@ -33,12 +44,13 @@
 
 	"d1_databases": [
 		{
+			// The binding is DB, not the `fga` wrangler suggests on creation --
+			// the code says env.DB and the two names are independent.
 			"binding": "DB",
 			"database_name": "fga",
-			// Placeholder. Filled by `wrangler d1 create fga`, which needs an API
-			// token with D1 scope -- the token in this session is Registrar-only.
-			// Local development and tests use Miniflare's own D1 and ignore this.
-			"database_id": "00000000-0000-0000-0000-000000000000"
+			// Created 2026-08-13, region ENAM. Local development and the test suite
+			// use Miniflare's own D1 and never read this value.
+			"database_id": "0a54cbfa-770e-4b6d-a792-a5b65e5fa6be"
 		}
 	],
 
