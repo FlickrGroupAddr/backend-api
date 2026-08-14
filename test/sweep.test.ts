@@ -4,8 +4,12 @@ import { classifyAdd } from "../src/adds/classify.js";
 import { enqueue, pairReachedAModerator } from "../src/db/requests.js";
 import { type AttemptFn, sweep } from "../src/sweep.js";
 
-/** ADR-10's walking rules, against real D1. The attempt is scripted, so these test the
- *  rules rather than Flickr -- and the rules are where an error is expensive. */
+/** ADR-04's nightly engine and ADR-10's walking rules, against real D1.
+ *
+ *  The attempt is scripted, so these test the RULES rather than Flickr -- and the rules
+ *  are where an error is expensive. Jumping a queue spends an allowance belonging to a
+ *  request that waited longer. Continuing past a moderated result shows a volunteer the
+ *  same photo twice. */
 
 const USER = "12345678@N00";
 const OTHER = "87654321@N00";

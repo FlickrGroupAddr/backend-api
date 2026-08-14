@@ -32,6 +32,7 @@ It is ADR-08. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.m
 |---|---|
 | Run it, or rebuild it | [docs/SETUP.md](docs/SETUP.md) |
 | Change the code | [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.md) |
+| Check every decision is tested | [docs/TRACEABILITY.md](docs/TRACEABILITY.md) — generated |
 | Call the Flickr API | [docs/FLICKR.md](docs/FLICKR.md) |
 | See the shape of it | [the architecture diagram](docs/architecture/) |
 

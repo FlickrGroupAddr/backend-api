@@ -58,13 +58,17 @@ describe("ADR-12, CORS", () => {
 	});
 });
 
+// TRACE-EXEMPT: hygiene, not a decision. A health endpoint answers 200 because that is
+// what a health endpoint is for, and no ADR asked for it.
 it("answers /health without a session", async () => {
 	const response = await SELF.fetch(`${API}/health`);
 	expect(response.status).toBe(200);
 	expect(await response.json()).toEqual({ status: "ok" });
 });
 
-describe("the landing page", () => {
+/** ADR-14 chose `hono/html` over a hand-written escape, and ADR-01 makes the Flickr
+ *  username the only identity there is to show. Both meet on this page. */
+describe("ADR-14 and ADR-01, the landing page", () => {
 	const load = async (query = "", cookie?: string): Promise<string> =>
 		await (
 			await SELF.fetch(`${API}/${query}`, {

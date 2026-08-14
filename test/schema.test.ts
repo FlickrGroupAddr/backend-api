@@ -30,7 +30,7 @@ beforeEach(async () => {
 		.run();
 });
 
-describe("requests: ordering", () => {
+describe("ADR-10 and ADR-16, requests: ordering", () => {
 	it("hands out ids in append order, and never reuses a deleted one", async () => {
 		// AUTOINCREMENT matters: a reused id would put a new request at the head of a
 		// queue it should have joined the back of.
@@ -60,7 +60,7 @@ describe("requests: ordering", () => {
 	});
 });
 
-describe("requests: the resolution invariant", () => {
+describe("ADR-07, requests: the resolution invariant", () => {
 	it.each([
 		["resolved with no outcome", "'resolved', NULL, 1"],
 		["resolved with no resolved_at", "'resolved', 'succeeded', NULL"],
@@ -89,7 +89,7 @@ describe("requests: the resolution invariant", () => {
 	});
 });
 
-describe("requests: one outstanding request per pair", () => {
+describe("ADR-11, requests: one outstanding request per pair", () => {
 	const pending = (photo: string, group: string) =>
 		insertRequest(
 			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
@@ -146,7 +146,7 @@ describe("moderated_pairs", () => {
 	});
 });
 
-describe("users", () => {
+describe("ADR-01 and ADR-03, users", () => {
 	it("constrains needs_relink to a boolean", async () => {
 		await expect(
 			env.DB.prepare("UPDATE users SET needs_relink = 2").run(),

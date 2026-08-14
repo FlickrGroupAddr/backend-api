@@ -12,6 +12,10 @@ import {
 /**
  * RFC 5849's own worked example, section 3.4.1, reproduced exactly.
  *
+ * **These exist because of ADR-14.** That decision permits hand-written code only where
+ * the spec is short, exact, and covered by published vectors -- and then requires the
+ * vectors to be used. This file is the payment for that exception.
+ *
  * The signer is hand-written, so "Flickr accepted it" is not good enough -- a rejected
  * signature tells you nothing about which of the four layers was wrong. The RFC example
  * is well chosen: duplicate parameter names, an empty value, a space, and a value that

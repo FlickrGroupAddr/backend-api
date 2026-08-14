@@ -88,7 +88,7 @@ beforeEach(async () => {
 	await addUser(OTHER);
 });
 
-describe("authentication", () => {
+describe("ADR-06, authentication", () => {
 	it.each([
 		["no cookie", undefined],
 		["a malformed cookie", `${SESSION_COOKIE}=a.b.c`],
@@ -126,7 +126,7 @@ describe("ADR-09, nothing behind a session reaches a shared cache", () => {
 	});
 });
 
-describe("queueing a request", () => {
+describe("ADR-10 and ADR-05, queueing a request", () => {
 	const submit = (body: unknown) =>
 		authed("/v001/requests", { method: "POST", body: JSON.stringify(body) });
 
@@ -149,6 +149,20 @@ describe("queueing a request", () => {
 		}>();
 		expect(row).toMatchObject({ state: "resolved", attempts: 1 });
 		expect(row?.last_attempt_at).not.toBeNull();
+	});
+
+	it("ADR-05: does not call Flickr for a pair that already succeeded", async () => {
+		// The cheap local guard. `alreadySucceeded` resolves it without a network call.
+		await seed(NSID, "p1", "g1", { outcome: "succeeded" });
+		const response = await submit({ photoId: "p1", groupId: "g1" });
+		expect(await response.json()).toMatchObject({
+			status: "resolved",
+			disposition: "resolved",
+		});
+		const row = await env.DB.prepare(
+			"SELECT outcome FROM requests WHERE photo_id='p1' ORDER BY id DESC LIMIT 1",
+		).first<{ outcome: string }>();
+		expect(row?.outcome).toBe("already_in_pool");
 	});
 
 	it("queues without attempting when something is already waiting", async () => {
@@ -270,7 +284,7 @@ describe("withdrawing a request", () => {
 	});
 });
 
-describe("the queue view", () => {
+describe("ADR-08, the queue view is where fail-polite becomes visible", () => {
 	type Page = {
 		queues: {
 			groupId: string;

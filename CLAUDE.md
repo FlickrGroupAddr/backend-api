@@ -74,6 +74,23 @@ because it counts as coverage.
 **Recall about installed package APIs is unreliable and has been wrong five times here.** Read
 `node_modules/<pkg>/package.json` and the `.d.ts`. Generate config with the tool's own `init`.
 
+### Every decision is verified, and every test defends one
+
+`npm run check` ends with `scripts/traceability.py --check`, which **fails the build** on any of:
+
+- An ADR that no test block verifies, unless it declares `**Verification: Inspection**`.
+- A test block that cites no ADR and carries no `TRACE-EXEMPT: <reason>`.
+- A test citing an ADR `DECISIONS.md` does not define.
+- `DECISIONS.md` sections out of ascending ADR order.
+
+`docs/TRACEABILITY.md` is **generated** by the same script. Do not edit it.
+
+**Tag at the `describe` level, not per test.** A block is one coherent risk, which is the
+unit an ADR maps onto. Put the tag in the block name so it shows in failure output.
+
+**An honest exemption beats a forced link.** `/health` answers 200 because a health
+endpoint should, not because a decision asked for it.
+
 ### Before changing the suite, prove it still bites
 
 ```

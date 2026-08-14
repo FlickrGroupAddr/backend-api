@@ -5,75 +5,17 @@ overrule. MAY is optional.**
 
 **The code is the specification. This file holds only what the code cannot say: why.**
 
+> **Read [ADR-08](#adr-08--fail-polite-this-one-outranks-the-rest) first. It outranks every other
+> decision here.** Where any two conflict, ADR-08 wins.
+
 Labels are `ADR-nn`, never `D-n` — Cloudflare's database is called D1 and the collision confuses
 everyone but its author. Numbers are cited from code comments, so they **MUST NOT** be renumbered.
 
+**Sections run in ascending ADR order** so a reader can find one by number. This is a reference, not
+a narrative — `scripts/traceability.py --check` fails the build if the order breaks.
+`docs/TRACEABILITY.md` maps each decision to the tests that verify it.
+
 ---
-
-## ADR-08 — Fail-polite. This one outranks the rest.
-
-**Where an outcome could mean a human declined, FGA MUST treat it as terminal.** Even when the same
-outcome could also mean something retryable. **When this conflicts with any other decision here,
-this one wins.**
-
-A moderated group does not reject an add. It puts the photo in a queue for an unpaid volunteer. If
-that person declines, the API says nothing — the photo simply never appears.
-
-**So a second add is not a retry. It is a fresh submission, and the moderator sees it again.**
-
-The asymmetry decides it. Wrongly terminal costs one request, visible to the user who chose to use
-FGA. Wrongly retried spends a stranger's attention, invisibly, every night.
-
-**The user MUST be told, in plain language, when a request stopped for this reason.** A silent stop
-reads as a bug, and a user who thinks FGA is broken adds the photo by hand — which recreates the
-exact harm.
-
-Lives in `src/adds/classify.ts`.
-
-## ADR-07 — Classify by Flickr's error code. Unknown means terminal.
-
-**Only codes 5, 105 and 106 MAY be retried. Everything else is terminal, including codes Flickr has
-not invented yet.**
-
-**The default is inverted from the 2022 version, and that is the point.** That version retried every
-unrecognized code nightly, forever — a bucket holding codes 1, 2, 4, 7, 8, 10 and 11, every one a
-permanent condition. **An unknown failure is the one most likely to be permanent.**
-
-**Widening the retryable set is the most dangerous edit available in this repository.**
-
-The table lives in `src/adds/classify.ts`. Read it there.
-
-## ADR-10 — FIFO per (user, group). The queue is never jumped.
-
-**Every request MUST be attempted in append order within its `(user, group)` queue.**
-
-**The API Worker MAY attempt a new request immediately only when it is the sole unresolved request
-in its queue.** A queue of length one is the only case where an immediate attempt cannot take an
-allowance slot from something that waited longer.
-
-**The nightly sweep MUST stop a queue at its first retryable failure.** Everything behind the head is
-blocked by the same daily cap, so trying the next one is the queue-jump this rule forbids, wearing an
-efficiency costume.
-
-**Order MUST come from `requests.id`, never a timestamp.** Timestamps tie.
-
-Queues keyed by different tuples are fully independent, so the sweep MAY run them in any order.
-
-Lives in `src/sweep.ts` and `src/db/requests.ts`.
-
-## ADR-11 — A pair that reached a moderator is remembered forever
-
-**Codes 6 and 7 MUST write a permanent `moderated_pairs` row**, and it MUST outlive the request.
-
-**On resubmission the interface MUST warn, and MUST NOT block.** The warning informs. The person
-decides. A block would override a human's judgment about their own photo, which is ADR-08 pointed the
-wrong way.
-
-**Check the pool first.** A photo now in the pool was approved, so the warning MUST NOT fire — a
-false alarm spends the credibility the real warning needs.
-
-The table is named for what is known. **No rejection signal exists in the Flickr API**, so nothing
-here may imply one.
 
 ## ADR-01 — The Flickr account is the identity
 
@@ -113,23 +55,6 @@ which is a ceiling you discover only once the product works.
 
 Lives in `src/crypto/tokens.ts`.
 
-## ADR-06 and ADR-12 — The session is a signed cookie, host-only
-
-**The cookie is `__Host-fga_session`: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, no `Domain`.**
-It carries the NSID. The Flickr token **MUST NOT** reach the browser.
-
-**The `__Host-` prefix is browser-enforced.** Without it, anything able to set cookies on the parent
-domain can plant a same-named cookie that shadows ours, and the API cannot tell them apart.
-
-**Every API response MUST carry `Access-Control-Allow-Origin` set to our own configured origin.**
-
-**The Worker MUST NOT reflect the request's `Origin` header.** With credentials enabled that lets any
-site on the internet make authenticated calls as a logged-in user. **It is a two-line mistake and it
-looks exactly like the fix.**
-
-`src/session.ts` is the only place that knows the cookie's name or attributes. Set, read and clear
-all go through it.
-
 ## ADR-04 — The work engine is a nightly cron over D1
 
 **Pending requests MUST be rows in D1.** A Cron Trigger is the engine. Per-user Durable Object alarms
@@ -148,6 +73,54 @@ Lives in `src/sweep.ts`.
 `flickr.photos.getAllContexts` beats the local check because it also sees adds FGA did not make.
 **"Already in the pool" MUST be treated as success.**
 
+## ADR-06 — The session is a stateless signed cookie
+
+**After the Flickr callback, the Worker mints a token carrying the NSID and sets it as a cookie.**
+The Flickr token **MUST NOT** reach the browser.
+
+It is stateless, so it costs no D1 read per request and there is no session table. **What that gives
+up is instant revocation**, which matters little here: the Flickr token never leaves the server, and
+a user who wants FGA cut off revokes it at Flickr, which is more thorough anyway.
+
+**This is the softest decision in this document and the cheapest to reverse.** An opaque session row
+in D1 replaces it without touching anything else.
+
+`src/session.ts` is the only place that knows the cookie's name or attributes. Set, read and clear
+all go through it.
+
+## ADR-07 — Classify by Flickr's error code. Unknown means terminal.
+
+**Only codes 5, 105 and 106 MAY be retried. Everything else is terminal, including codes Flickr has
+not invented yet.**
+
+**The default is inverted from the 2022 version, and that is the point.** That version retried every
+unrecognized code nightly, forever — a bucket holding codes 1, 2, 4, 7, 8, 10 and 11, every one a
+permanent condition. **An unknown failure is the one most likely to be permanent.**
+
+**Widening the retryable set is the most dangerous edit available in this repository.**
+
+The table lives in `src/adds/classify.ts`. Read it there.
+
+## ADR-08 — Fail-polite. This one outranks the rest.
+
+**Where an outcome could mean a human declined, FGA MUST treat it as terminal.** Even when the same
+outcome could also mean something retryable. **When this conflicts with any other decision here,
+this one wins.**
+
+A moderated group does not reject an add. It puts the photo in a queue for an unpaid volunteer. If
+that person declines, the API says nothing — the photo simply never appears.
+
+**So a second add is not a retry. It is a fresh submission, and the moderator sees it again.**
+
+The asymmetry decides it. Wrongly terminal costs one request, visible to the user who chose to use
+FGA. Wrongly retried spends a stranger's attention, invisibly, every night.
+
+**The user MUST be told, in plain language, when a request stopped for this reason.** A silent stop
+reads as a bug, and a user who thinks FGA is broken adds the photo by hand — which recreates the
+exact harm.
+
+Lives in `src/adds/classify.ts`.
+
 ## ADR-09 — No cache in front of D1
 
 **FGA MUST NOT build an application cache.** Every `/v001/*` response carries
@@ -164,7 +137,59 @@ one member's queue to another.
 and serves nothing. **Read a query plan only against populated tables** — on an empty one SQLite has
 no statistics and guesses.
 
+## ADR-10 — FIFO per (user, group). The queue is never jumped.
+
+**Every request MUST be attempted in append order within its `(user, group)` queue.**
+
+**The API Worker MAY attempt a new request immediately only when it is the sole unresolved request
+in its queue.** A queue of length one is the only case where an immediate attempt cannot take an
+allowance slot from something that waited longer.
+
+**The nightly sweep MUST stop a queue at its first retryable failure.** Everything behind the head is
+blocked by the same daily cap, so trying the next one is the queue-jump this rule forbids, wearing an
+efficiency costume.
+
+**Order MUST come from `requests.id`, never a timestamp.** Timestamps tie.
+
+Queues keyed by different tuples are fully independent, so the sweep MAY run them in any order.
+
+Lives in `src/sweep.ts` and `src/db/requests.ts`.
+
+## ADR-11 — A pair that reached a moderator is remembered forever
+
+**Codes 6 and 7 MUST write a permanent `moderated_pairs` row**, and it MUST outlive the request.
+
+**On resubmission the interface MUST warn, and MUST NOT block.** The warning informs. The person
+decides. A block would override a human's judgment about their own photo, which is ADR-08 pointed the
+wrong way.
+
+**Check the pool first.** A photo now in the pool was approved, so the warning MUST NOT fire — a
+false alarm spends the credibility the real warning needs.
+
+The table is named for what is known. **No rejection signal exists in the Flickr API**, so nothing
+here may imply one.
+
+## ADR-12 — The UI and API are separate origins, so the cookie is host-only
+
+**The cookie is `__Host-fga_session`: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, no `Domain`.**
+
+**The `__Host-` prefix is browser-enforced.** Without it, anything able to set cookies on the parent
+domain can plant a same-named cookie that shadows ours, and the API cannot tell them apart because
+`Domain` is not sent back.
+
+**`SameSite=Lax` is the CSRF control**, and it works because the UI and API share a registrable
+domain. Same-site is not the same as same-origin.
+
+**Every API response MUST carry `Access-Control-Allow-Origin` set to our own configured origin.**
+
+**The Worker MUST NOT reflect the request's `Origin` header.** With credentials enabled that lets any
+site on the internet make authenticated calls as a logged-in user. **It is a two-line mistake and it
+looks exactly like the fix.**
+
 ## ADR-13 — TypeScript, on the current stable toolchain
+
+**Verification: Inspection.** Read package.json and wrangler.jsonc, plus the daily
+python ~/.claude/hooks/npm-toolchain-check.py --probe. **No runtime behavior to test.**
 
 **The project MUST track current stable and MUST NOT adopt a `beta`, `rc`, `next` or `dev` tag.**
 
@@ -182,6 +207,9 @@ lint rule this project needs, requiring full type information, that Biome does n
 
 ## ADR-14 — Integrate when feasible, innovate otherwise
 
+**Verification: Inspection**, for the policy. **Test**, for the signer it permitted --
+see 	est/signature.test.ts against RFC 5849's own vectors.
+
 **Where a maintained dependency runs in this runtime and does the job, take it.** Hand-written code
 **MUST** be justified against four tests: does it run here, **is the platform already doing it**, is
 it maintained, is the spec short with published vectors.
@@ -196,6 +224,9 @@ vectors, because a signature Flickr rejects tells you nothing about which layer 
 Lives in `src/oauth/signature.ts`.
 
 ## ADR-15 — Which store holds what
+
+**Verification: Inspection.** A placement rule, so it is verified by reading where state
+lives rather than by running anything.
 
 **New state goes in D1 if either answer is yes.** Does anything need to find this without already
 knowing its key? Does it outlive a single interaction?
