@@ -31,6 +31,44 @@
 		"API_BASE_URL": "https://flickrgroupaddr.com"
 	},
 
+	// ADR-18. The apex, as a Workers Custom Domain.
+	//
+	// Cloudflare provisions the A/AAAA records and the certificate itself. **Do
+	// NOT add DNS for the apex by hand** -- a manual record conflicts with the
+	// one this creates, and the conflict shows up as intermittent resolution
+	// rather than as an error.
+	//
+	// `custom_domain: true` rather than a zone route: a route pattern attaches
+	// the Worker to traffic that already reaches Cloudflare, while a custom
+	// domain also creates the DNS to get it there. The apex needs both.
+	// **`www` is deliberately NOT a route here, and the attempt is recorded
+	// because it looked obviously correct and was not.**
+	//
+	// Adding it as a custom domain and 301-ing in the Worker fails, and fails in
+	// the worst direction: `not_found_handling: "single-page-application"` serves
+	// index.html for /queue BEFORE the Worker is invoked, because /queue is not
+	// in `run_worker_first`. So the redirect never ran and www served the entire
+	// app on a second hostname -- precisely the thing ADR-18 removes. Measured in
+	// production 2026-08-14, then reverted.
+	//
+	// Making it work would mean `run_worker_first` covering navigations, which
+	// means the Worker must serve assets itself through an ASSETS binding. That
+	// is a lot of machinery to bounce a hostname.
+	//
+	// **www belongs in a Cloudflare Redirect Rule**, which runs at the edge
+	// before Workers and before assets. See "Still open" in DECISIONS.md.
+	"routes": [{ "pattern": "flickrgroupaddr.com", "custom_domain": true }],
+
+	// **ADR-18 says one origin, and this is what makes that true rather than
+	// merely intended.**
+	//
+	// Leaving workers.dev on would keep fga-backend-api.terryott.workers.dev
+	// serving the same Worker, which resurrects the second origin the decision
+	// removed -- and it would do so silently, since everything keeps working.
+	// The CORS contract compares against UI_ORIGIN, so a session minted on the
+	// workers.dev host would fail in ways that look like a cookie bug.
+	"workers_dev": false,
+
 	// ADR-18. The Svelte app is built by Vite into ./web/dist and served by this
 	// same Worker.
 	//

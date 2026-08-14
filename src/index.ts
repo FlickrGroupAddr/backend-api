@@ -15,6 +15,47 @@ export { OAuthLoginAttempt } from "./oauth/login-attempt.js";
 const app = new Hono<{ Bindings: Env }>();
 
 /**
+ * A `www` guard. **It does NOT currently handle `www` traffic, and that is not a bug in
+ * this function.**
+ *
+ * `www.flickrgroupaddr.com` is not routed to this Worker — see the note in
+ * `wrangler.jsonc`. Routing it here was tried on 2026-08-14 and failed in production:
+ * `not_found_handling: "single-page-application"` serves `index.html` before the Worker
+ * is invoked for any path outside `run_worker_first`, so this middleware never ran and
+ * `www` served the whole application on a second hostname. **The redirect belongs in a
+ * Cloudflare Redirect Rule**, which runs at the edge ahead of both Workers and assets.
+ *
+ * **It stays as a guard against that exact mistake being repeated.** If anything ever
+ * routes a `www` hostname here again, this bounces it instead of serving it.
+ *
+ * **Registered FIRST, before CORS and before any route.** A `www` request must never
+ * reach session handling, because anything that set a cookie there would set it on a
+ * hostname the rest of the system does not consider its own.
+ *
+ * **301, not 302.** The apex is the permanent home and browsers may cache that forever,
+ * which is the intent. A 302 would ask every visitor to make the round trip again.
+ *
+ * **The path and query survive**, so a deep link to `www.flickrgroupaddr.com/queue`
+ * lands on `flickrgroupaddr.com/queue` rather than the front page. A redirect that
+ * silently drops where you were going is worse than no redirect.
+ *
+ * **Matched on the `www.` prefix rather than against `UI_ORIGIN`**, so this keeps
+ * working if the apex ever changes, and so it cannot accidentally redirect the apex to
+ * itself and loop.
+ */
+app.use("*", async (c, next) => {
+	const url = new URL(c.req.url);
+
+	if (url.hostname.startsWith("www.")) {
+		url.hostname = url.hostname.slice(4);
+		return c.redirect(url.toString(), 301);
+	}
+
+	await next();
+	return undefined;
+});
+
+/**
  * ADR-11's CORS contract, and **the one place in this codebase where a two-line shortcut
  * is catastrophic.**
  *

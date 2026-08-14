@@ -480,6 +480,18 @@ skips.**
   when our own model says the user still has allowance** — needs it to exist at all. That last one
   is **informational only and MUST NOT gate an attempt.** `/api/v001/groups/:groupId` already
   fetches it, so recording it costs no extra Flickr calls.
+- **`www.flickrgroupaddr.com` needs a Cloudflare Redirect Rule, and currently answers 522.** The
+  DNS record exists but nothing is behind it. **Routing `www` to the Worker and 301-ing there was
+  tried in production on 2026-08-14 and reverted**: `not_found_handling: "single-page-application"`
+  serves `index.html` before the Worker runs for any path outside `run_worker_first`, so the
+  redirect never fired and `www` served the whole app on a second hostname — the exact thing ADR-18
+  removes. Making it work in the Worker would mean `run_worker_first` covering navigations and the
+  Worker serving assets itself through an `ASSETS` binding, which is a lot of machinery to bounce a
+  hostname. A Redirect Rule runs at the edge, ahead of both Workers and assets. **301, and it MUST
+  preserve the path and query.**
+- **The domain sends no mail and does not say so.** ADR-07 holds no email address and FGA sends
+  none, so a null MX plus a hard-fail SPF record is the honest configuration. Without them the
+  domain is spoofable as a sender.
 - **`remaining` has never been confirmed as per-user.** `docs/FLICKR.md` calls it "strong, not
   conclusive." One add followed by a re-read of the same group settles it, and several decisions
   are waiting on the answer.

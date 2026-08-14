@@ -154,6 +154,34 @@ describe("ADR-18, one origin split by an /api prefix", () => {
 		expect((await SELF.fetch(`${ORIGIN}/`)).status).toBe(404);
 	});
 
+	it("bounces www to the apex, permanently, keeping the path and query", async () => {
+		const response = await SELF.fetch(
+			"https://www.flickrgroupaddr.com/queue?state=all",
+			{ redirect: "manual" },
+		);
+		// 301 rather than 302: the apex is the permanent home, and a browser
+		// caching that forever is the intent.
+		expect(response.status).toBe(301);
+		expect(response.headers.get("Location")).toBe(
+			"https://flickrgroupaddr.com/queue?state=all",
+		);
+	});
+
+	it("redirects www BEFORE any session handling", async () => {
+		// A www request must never reach the session layer. If it did, anything
+		// setting a cookie would set it on a hostname nothing else considers ours.
+		const response = await SELF.fetch(
+			"https://www.flickrgroupaddr.com/api/v001/me",
+			{ redirect: "manual" },
+		);
+		expect(response.status).toBe(301);
+		expect(response.headers.get("Set-Cookie")).toBeNull();
+	});
+
+	it("does NOT redirect the apex, so there is no loop", async () => {
+		expect((await SELF.fetch(`${ORIGIN}/health`)).status).toBe(200);
+	});
+
 	it("keeps the worker-first paths answering", async () => {
 		// Each of these is named in `run_worker_first`. If one stops answering here, the
 		// config entry is pointing at nothing.
