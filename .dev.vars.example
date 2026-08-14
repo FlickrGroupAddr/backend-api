@@ -19,3 +19,15 @@ TOKEN_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 # makes the cheap rotation as expensive as the dear one, so neither ever happens.
 # Generate with: openssl rand -base64 32
 SESSION_KEY="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+
+# Local-only overrides, and they DO take precedence over the `vars` block in
+# wrangler.jsonc -- verified 2026-08-13 by reading them back out of a running
+# Worker rather than trusting the binding table, which shows .dev.vars values
+# as "(hidden)" either way.
+#
+# These matter because the committed config points at flickrgroupaddr.com, which
+# is not owned yet. Without them the OAuth callback would be sent to a domain
+# that does not resolve, and the failure happens inside Flickr's redirect where
+# there is nothing useful to read.
+API_BASE_URL="http://localhost:8787"
+UI_ORIGIN="http://localhost:8787"

@@ -38,6 +38,50 @@ app.route("/", apiRoutes);
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 
+/**
+ * A landing page, for local development and for confirming a deploy.
+ *
+ * In production the real UI lives on a different origin (ADR-12), so nothing
+ * routes here. During local development the OAuth callback redirects to
+ * `UI_ORIGIN`, which is localhost -- and landing on a bare 404 after a
+ * successful login is a confusing way to discover that it worked.
+ *
+ * It reports the two configured origins deliberately. Neither is a secret --
+ * both are committed in `wrangler.jsonc` -- and seeing which values the Worker
+ * actually resolved is the quickest way to catch a callback pointing at the
+ * wrong host, which otherwise fails inside Flickr's redirect with nothing
+ * useful to read.
+ */
+app.get("/", (c) => {
+	const outcome = c.req.query("login");
+
+	const banner =
+		outcome === "ok"
+			? "<p><strong>Logged in.</strong> The session cookie is set.</p>"
+			: outcome === "expired"
+				? "<p><strong>That login attempt expired or was already used.</strong> Start again.</p>"
+				: outcome === "invalid"
+					? "<p><strong>Flickr sent back an incomplete callback.</strong> Start again.</p>"
+					: "";
+
+	return c.html(
+		`<!doctype html><meta charset="utf-8">
+<title>FlickrGroupAddr API</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;margin:3rem auto;max-width:40rem;padding:0 1rem}
+code{background:#f4f4f5;padding:.1em .35em;border-radius:3px}</style>
+<h1>FlickrGroupAddr API</h1>
+${banner}
+<ul>
+  <li><a href="/oauth/login">Log in with Flickr</a></li>
+  <li><a href="/v001/groups">Your groups, with throttle and moderation info</a></li>
+  <li><a href="/v001/queue">Your queue</a></li>
+  <li><a href="/health">Health</a></li>
+</ul>
+<p>API base <code>${c.env.API_BASE_URL}</code><br>
+UI origin <code>${c.env.UI_ORIGIN}</code></p>`,
+	);
+});
+
 export default {
 	fetch: app.fetch,
 
