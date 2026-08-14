@@ -74,6 +74,23 @@ because it counts as coverage.
 **Recall about installed package APIs is unreliable and has been wrong five times here.** Read
 `node_modules/<pkg>/package.json` and the `.d.ts`. Generate config with the tool's own `init`.
 
+### Before changing the suite, prove it still bites
+
+```
+python scripts/mutation-check.py
+```
+
+**It breaks the source in 20 specific ways and checks the suite screams at each.** Every mutation is
+a decision this project made against — retry a photo a moderator saw, drop `HttpOnly`, reflect the
+CORS origin, reuse a crypto nonce.
+
+**A green suite proves it AGREES with the code, never that it would NOTICE the code being wrong.**
+Those are different claims, and only the second one matters when tests are being deleted or
+rewritten. **Run it before and after any change to `test/`, and a survivor is a hole.**
+
+**Adding a decision to `docs/architecture/DECISIONS.md` SHOULD add a mutation here.** A rule nothing
+can break is a rule nothing is enforcing.
+
 ## Know the tools before writing code that replaces one
 
 **This is ADR-14 pointed at the toolbox**, and it fails the same way: the cheapest tool is the one

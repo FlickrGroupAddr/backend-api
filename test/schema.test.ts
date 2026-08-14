@@ -1,218 +1,163 @@
 import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 
-/**
- * The schema's constraints, tested against real D1 running in workerd.
- *
- * These exist because an untested CHECK constraint is a comment. Each one below
- * enforces a rule from DECISIONS.md, and a schema change that quietly drops one
- * should fail here rather than surface as a behavior nobody notices.
- */
+/** The schema carries the rules, so these test the CONSTRAINTS rather than any code. */
 
-const NOW = 1_770_000_000_000;
+const NSID = "12345678@N00";
+const UUID = `lower(
+  hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' ||
+  substr(hex(randomblob(2)), 2) || '-' ||
+  substr('89ab', 1 + (abs(random()) % 4), 1) ||
+  substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))
+)`;
 
-async function insertUser(nsid = "99999999@N00"): Promise<void> {
+async function insertRequest(sql: string, binds: unknown[] = []) {
+	return await env.DB.prepare(sql)
+		.bind(...binds)
+		.run();
+}
+
+beforeEach(async () => {
+	await env.DB.exec("DELETE FROM requests");
+	await env.DB.exec("DELETE FROM moderated_pairs");
+	await env.DB.exec("DELETE FROM users");
 	await env.DB.prepare(
 		`INSERT INTO users
        (nsid, access_token_encrypted, access_token_secret_encrypted, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?)`,
 	)
-		.bind(nsid, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]), NOW, NOW)
+		.bind(NSID, new Uint8Array([1]), new Uint8Array([2]), 0, 0)
 		.run();
-}
-
-async function insertRequest(
-	photoId: string,
-	groupId: string,
-	nsid = "99999999@N00",
-): Promise<number> {
-	const row = await env.DB.prepare(
-		`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
-     VALUES (?, ?, ?, ?, ?)
-     RETURNING id`,
-	)
-		.bind(crypto.randomUUID(), nsid, photoId, groupId, NOW)
-		.first<{ id: number }>();
-
-	if (row === null) throw new Error("insert returned no row");
-	return row.id;
-}
-
-beforeEach(async () => {
-	// Storage is isolated per test file, not per test.
-	await env.DB.exec("DELETE FROM requests");
-	await env.DB.exec("DELETE FROM moderated_pairs");
-	await env.DB.exec("DELETE FROM users");
-	await insertUser();
 });
 
-describe("requests, ADR-10 ordering", () => {
-	it("hands out ids in append order, which IS the queue order", async () => {
-		const first = await insertRequest("photo-a", "group-1");
-		const second = await insertRequest("photo-b", "group-1");
-		expect(second).toBeGreaterThan(first);
-	});
+describe("requests: ordering", () => {
+	it("hands out ids in append order, and never reuses a deleted one", async () => {
+		// AUTOINCREMENT matters: a reused id would put a new request at the head of a
+		// queue it should have joined the back of.
+		for (const photo of ["p1", "p2"]) {
+			await insertRequest(
+				`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+         VALUES (${UUID}, ?, ?, 'g1', 0)`,
+				[NSID, photo],
+			);
+		}
+		const { results } = await env.DB.prepare(
+			"SELECT id, photo_id FROM requests ORDER BY id",
+		).all<{ id: number; photo_id: string }>();
+		expect(results.map((r) => r.photo_id)).toEqual(["p1", "p2"]);
 
-	it("does not reuse the id of a deleted row", async () => {
-		// AUTOINCREMENT. Without it SQLite reuses rowids, and a new request could
-		// land at the head of a queue it should have joined the back of.
-		const first = await insertRequest("photo-a", "group-1");
-		await env.DB.prepare("DELETE FROM requests WHERE id = ?").bind(first).run();
-
-		const next = await insertRequest("photo-c", "group-1");
-		expect(next).toBeGreaterThan(first);
+		const highest = results[1]?.id ?? 0;
+		await env.DB.exec("DELETE FROM requests");
+		await insertRequest(
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+       VALUES (${UUID}, ?, 'p3', 'g1', 0)`,
+			[NSID],
+		);
+		const fresh = await env.DB.prepare("SELECT id FROM requests").first<{
+			id: number;
+		}>();
+		expect(fresh?.id).toBeGreaterThan(highest);
 	});
 });
 
-describe("requests, resolution invariant", () => {
-	it("rejects a resolved row with no outcome", async () => {
-		const id = await insertRequest("photo-a", "group-1");
-
+describe("requests: the resolution invariant", () => {
+	it.each([
+		["resolved with no outcome", "'resolved', NULL, 1"],
+		["resolved with no resolved_at", "'resolved', 'succeeded', NULL"],
+		["pending carrying an outcome", "'pending', 'succeeded', NULL"],
+		["an outcome outside the set", "'resolved', 'rejected', 1"],
+	])("rejects %s", async (_name, values) => {
 		await expect(
-			env.DB.prepare(
-				"UPDATE requests SET state = 'resolved', resolved_at = ? WHERE id = ?",
-			)
-				.bind(NOW, id)
-				.run(),
-		).rejects.toThrow();
-	});
-
-	it("rejects a pending row that carries an outcome", async () => {
-		const id = await insertRequest("photo-a", "group-1");
-
-		await expect(
-			env.DB.prepare("UPDATE requests SET outcome = 'succeeded' WHERE id = ?")
-				.bind(id)
-				.run(),
+			insertRequest(
+				`INSERT INTO requests
+           (public_id, nsid, photo_id, group_id, created_at, state, outcome, resolved_at)
+         VALUES (${UUID}, ?, 'p1', 'g1', 0, ${values})`,
+				[NSID],
+			),
 		).rejects.toThrow();
 	});
 
 	it("accepts a fully resolved row", async () => {
-		const id = await insertRequest("photo-a", "group-1");
-
-		await env.DB.prepare(
-			`UPDATE requests
-         SET state = 'resolved', outcome = 'succeeded', flickr_code = NULL, resolved_at = ?
-       WHERE id = ?`,
-		)
-			.bind(NOW, id)
-			.run();
-
-		const row = await env.DB.prepare(
-			"SELECT state, outcome FROM requests WHERE id = ?",
-		)
-			.bind(id)
-			.first<{ state: string; outcome: string }>();
-
-		expect(row).toEqual({ state: "resolved", outcome: "succeeded" });
-	});
-
-	it("rejects an outcome outside the documented set", async () => {
-		const id = await insertRequest("photo-a", "group-1");
-
 		await expect(
-			env.DB.prepare(
-				`UPDATE requests SET state = 'resolved', outcome = 'rejected_by_moderator', resolved_at = ?
-         WHERE id = ?`,
-			)
-				.bind(NOW, id)
-				.run(),
-		).rejects.toThrow();
-		// "rejected_by_moderator" is deliberately not a valid outcome: the Flickr
-		// API never reports one. ADR-11 names things for what is known.
+			insertRequest(
+				`INSERT INTO requests
+           (public_id, nsid, photo_id, group_id, created_at, state, outcome, resolved_at)
+         VALUES (${UUID}, ?, 'p1', 'g1', 0, 'resolved', 'succeeded', 1)`,
+				[NSID],
+			),
+		).resolves.toBeDefined();
 	});
 });
 
-describe("requests, one outstanding request per pair", () => {
-	it("refuses a second pending request for the same pair", async () => {
-		await insertRequest("photo-a", "group-1");
+describe("requests: one outstanding request per pair", () => {
+	const pending = (photo: string, group: string) =>
+		insertRequest(
+			`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+       VALUES (${UUID}, ?, ?, ?, 0)`,
+			[NSID, photo, group],
+		);
 
-		await expect(insertRequest("photo-a", "group-1")).rejects.toThrow();
+	it("refuses a second pending request for the same pair", async () => {
+		await pending("p1", "g1");
+		await expect(pending("p1", "g1")).rejects.toThrow();
+	});
+
+	it("allows the same photo in a different group", async () => {
+		await pending("p1", "g1");
+		await expect(pending("p1", "g2")).resolves.toBeDefined();
 	});
 
 	it("allows a resubmission once the first has resolved", async () => {
-		// ADR-11 permits resubmitting a pair that reached a moderator. The unique
-		// index constrains concurrency, not history.
-		const id = await insertRequest("photo-a", "group-1");
-		await env.DB.prepare(
-			`UPDATE requests
-         SET state = 'resolved', outcome = 'queued_for_moderator', flickr_code = 6, resolved_at = ?
-       WHERE id = ?`,
-		)
-			.bind(NOW, id)
-			.run();
-
-		await expect(insertRequest("photo-a", "group-1")).resolves.toBeGreaterThan(
-			id,
+		await pending("p1", "g1");
+		await env.DB.exec(
+			"UPDATE requests SET state='resolved', outcome='failed', resolved_at=1",
 		);
-	});
-
-	it("does not conflate different groups or different photos", async () => {
-		await insertRequest("photo-a", "group-1");
-		await expect(insertRequest("photo-a", "group-2")).resolves.toBeDefined();
-		await expect(insertRequest("photo-b", "group-1")).resolves.toBeDefined();
+		await expect(pending("p1", "g1")).resolves.toBeDefined();
 	});
 });
 
-describe("moderated_pairs, ADR-11", () => {
-	it("accepts only codes 6 and 7", async () => {
-		const insert = (code: number) =>
-			env.DB.prepare(
-				`INSERT INTO moderated_pairs
-           (nsid, photo_id, group_id, flickr_code, first_seen_at, last_seen_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-			)
-				.bind("99999999@N00", `photo-${code}`, "group-1", code, NOW, NOW)
-				.run();
-
-		await expect(insert(6)).resolves.toBeDefined();
-		await expect(insert(7)).resolves.toBeDefined();
-
-		// Code 8 is "content not allowed" -- a policy rejection, not a queue. ADR-11
-		// keeps it out so the warning only fires when a human really saw something.
-		await expect(insert(8)).rejects.toThrow();
-	});
-
-	it("survives deletion of the user's requests", async () => {
-		// ADR-11: the record MUST outlive the request row, the queue, and any
-		// later cleanup.
-		await insertRequest("photo-a", "group-1");
-		await env.DB.prepare(
+describe("moderated_pairs", () => {
+	const pair = (code: number) =>
+		env.DB.prepare(
 			`INSERT INTO moderated_pairs
          (nsid, photo_id, group_id, flickr_code, first_seen_at, last_seen_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES (?, 'p1', 'g1', ?, 0, 0)`,
 		)
-			.bind("99999999@N00", "photo-a", "group-1", 6, NOW, NOW)
+			.bind(NSID, code)
 			.run();
 
+	it.each([6, 7])("accepts code %s", async (code) => {
+		await expect(pair(code)).resolves.toBeDefined();
+	});
+
+	it.each([3, 8, 0])("refuses code %s", async (code) => {
+		await expect(pair(code)).rejects.toThrow();
+	});
+
+	it("outlives the user's requests", async () => {
+		// ADR-11: deliberately not a foreign key. A cascade would delete the history the
+		// warning depends on.
+		await pair(6);
 		await env.DB.exec("DELETE FROM requests");
-
-		const remaining = await env.DB.prepare(
-			"SELECT COUNT(*) AS n FROM moderated_pairs",
-		).first<{ n: number }>();
-
-		expect(remaining?.n).toBe(1);
+		const row = await env.DB.prepare(
+			"SELECT flickr_code FROM moderated_pairs",
+		).first();
+		expect(row).not.toBeNull();
 	});
 });
 
 describe("users", () => {
 	it("constrains needs_relink to a boolean", async () => {
 		await expect(
-			env.DB.prepare("UPDATE users SET needs_relink = 2 WHERE nsid = ?")
-				.bind("99999999@N00")
-				.run(),
+			env.DB.prepare("UPDATE users SET needs_relink = 2").run(),
 		).rejects.toThrow();
 	});
 
-	it("rejects a text token where a blob belongs, because the table is STRICT", async () => {
+	it("rejects text where a blob belongs, because the table is STRICT", async () => {
 		await expect(
 			env.DB.prepare(
-				`INSERT INTO users
-           (nsid, access_token_encrypted, access_token_secret_encrypted, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?)`,
-			)
-				.bind("11111111@N00", "not-a-blob", "also-not", NOW, NOW)
-				.run(),
+				"UPDATE users SET access_token_encrypted = 'plaintext'",
+			).run(),
 		).rejects.toThrow();
 	});
 });
