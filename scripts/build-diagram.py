@@ -445,6 +445,43 @@ for tile, expected in IN_EDGE_POP.items():
         problems += 1
 
 
+# THE OPEN CHANNEL, and the diamond it makes. Settled 2026-08-13, and asserted
+# because it looks like an oversight and is not.
+#
+# Removing the read-replica tile left a gap in the middle column between the API
+# Worker and the Nightly Retry Worker. Terry rendered the result and kept it --
+# "I like it as is, the diamond shape works for me" -- so the gap is a decision.
+#
+# What the shape says: two Workers on the left, one database off to the right
+# OUTSIDE the edge PoP, and both Workers reaching across to it. The empty channel
+# is what lets those two arrows read as converging on one thing rather than as a
+# column with something missing from the middle. D1 sits vertically WITHIN that
+# channel, which is what closes the diamond.
+#
+# The failure this prevents is a later pass closing the gap to "tidy up the
+# column" -- the same instinct that would have deleted the "Eventual consistency"
+# label, and the reason that one needed a check too. Sliding D1 up or down out of
+# the channel breaks it just as effectively and far less visibly.
+api_bottom = boxes["api"][1] + boxes["api"][3]
+retry_top = boxes["retry"][1]
+d1_top, d1_bottom = boxes["d1"][1], boxes["d1"][1] + boxes["d1"][3]
+channel = retry_top - api_bottom
+
+print("  Open channel between the two Workers, with D1 in it:")
+print(f"    channel  y {api_bottom:.0f} -> {retry_top:.0f}  height {channel:.0f}px", end="")
+if channel < 120:
+    print("  TOO NARROW -- read the comment above this check")
+    problems += 1
+else:
+    print("  ok")
+
+in_channel = d1_top >= api_bottom and d1_bottom <= retry_top
+print(f"    d1       y {d1_top:.0f} -> {d1_bottom:.0f}  "
+      f"{'within the channel' if in_channel else 'OUTSIDE the channel -- the diamond is broken'}")
+if not in_channel:
+    problems += 1
+
+
 # The right-hand column is deliberately flush: legend, Flickr tile, and the note
 # beneath it share a left edge and a width. Ragged edges there read as sloppiness
 # rather than as meaning, and a resize elsewhere is what would quietly break it.
