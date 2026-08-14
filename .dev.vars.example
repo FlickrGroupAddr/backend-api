@@ -36,9 +36,12 @@ ADMIN_NSIDS='["00000000@N00"]'
 # Worker rather than trusting the binding table, which shows .dev.vars values
 # as "(hidden)" either way.
 #
-# These matter because the committed config points at flickrgroupaddr.com, which
-# is not owned yet. Without them the OAuth callback would be sent to a domain
-# that does not resolve, and the failure happens inside Flickr's redirect where
-# there is nothing useful to read.
-API_BASE_URL="http://localhost:8787"
-UI_ORIGIN="http://localhost:8787"
+# BOTH point at the VITE port, not the Worker port. ADR-18 makes development
+# same-origin through Vite's proxy: /api, /oauth and /health on :5173 are
+# forwarded to the Worker on :8787, so the browser only ever sees :5173.
+#
+# Pointed at :8787 instead, the OAuth callback redirects to UI_ORIGIN and lands
+# the browser on the Worker rather than the app, and the __Host- cookie is set
+# on the wrong origin. That reads as a broken login, not a wrong port.
+API_BASE_URL="http://localhost:5173"
+UI_ORIGIN="http://localhost:5173"

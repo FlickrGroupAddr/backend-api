@@ -237,6 +237,31 @@ Rust was rejected on maintenance — `workers-rs` had 9 commits in 13 weeks agai
 **TypeScript 7 costs the project `typescript-eslint`, which cannot consume the Go-native compiler
 until 7.1.** Biome parses TypeScript itself and is unaffected.
 
+**It costs `svelte-check` too**, found 2026-08-14 while adding ADR-18's UI. It peers on
+`typescript: ^5 || ^6`, so nothing typechecks inside a `.svelte` file — not `tsc`, not Biome.
+**The mitigation is placement rather than tooling:** logic lives in `web/src/lib/*.ts` under
+`web/tsconfig.json`, and components stay thin enough that a mistake is visible.
+
+### The Go compiler is real, and npm is now the slow part
+
+**Measured 2026-08-14, warm, on this machine.** The binary is
+`node_modules/@typescript/typescript-win32-x64/lib/tsc.exe`, 18 MB of native Go.
+
+| | |
+|---|---|
+| `tsc.exe --noEmit` (Worker config) | **~330 ms** |
+| `tsc.exe --noEmit -p web` | **~160 ms** |
+| `tsc.exe --version`, pure startup | 52 ms |
+| The same two through `npm run typecheck` | 960–2,160 ms |
+
+**So TypeScript spends about 280 ms checking the Worker and 110 ms on the web app, and process
+spin-up costs three to six times that.** Optimizing the typecheck would be optimizing the wrong
+thing.
+
+**The inputs are small and one of them dominates.** 3,070 lines across `src/` and `test/`, 651 in
+`web/src/` — against the generated `worker-configuration.d.ts` at **15,188 lines**, five times all
+the hand-written code combined.
+
 **ESLint was never in this project.** Biome went in at the scaffold commit. This was a choice, not a
 migration.
 

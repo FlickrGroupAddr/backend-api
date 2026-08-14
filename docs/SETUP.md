@@ -105,6 +105,25 @@ The cron trigger starts firing at once, nightly at 00:15 UTC.
 attached to the Worker.** A mismatch sends Flickr an `oauth_callback` it cannot reach, and that
 fails inside Flickr's redirect where there is nothing useful to read.
 
+## Seeing the app with data in it
+
+**A fresh local database means every screen is an empty state**, which is the one shape you cannot
+judge a queue view by. Two things are worth knowing.
+
+**Apply the migrations locally, or every `/api/v001/*` call answers 500.** The failure reads
+`D1_ERROR: no such table: users`, which looks like a code bug and is not:
+
+```
+npx wrangler d1 migrations apply fga --local
+```
+
+**Then seed rows straight into the tables** with `npx wrangler d1 execute fga --local --file=...`.
+The queue view needs no Flickr call at all — it is pure D1 — so a user row plus some `requests`
+rows renders the whole screen. `/api/v001/groups` is the exception and does need a real login.
+
+**`/api/v001/me` keeps working through a completely broken database**, which is ADR-10 behaving as
+designed rather than a fluke: a stateless signed cookie needs no read.
+
 ## Four traps that cost real time
 
 **Local D1 is two different files.** `wrangler d1 execute --local` and a running `wrangler dev` can
