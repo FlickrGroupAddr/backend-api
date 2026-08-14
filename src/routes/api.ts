@@ -9,7 +9,7 @@ import {
 	resolveRequest,
 } from "../db/requests.js";
 import { getFlickrTokens } from "../db/users.js";
-import { getPhotoPools } from "../flickr/api.js";
+import { getGroupInfo, getPhotoPools, getUserGroups } from "../flickr/api.js";
 import {
 	requireSession,
 	type SessionVariables,
@@ -117,6 +117,68 @@ apiRoutes.post("/v001/requests", async (c) => {
 	}
 
 	return c.json({ status: "queued", id }, 202);
+});
+
+/**
+ * The groups this user may post to, with each one's moderation status and add
+ * allowance.
+ *
+ * **This endpoint is also the diagnostic that closes three open questions**, and
+ * the first authenticated call made against a real Flickr key will answer all of
+ * them at once: whether Flickr accepts our OAuth 1.0a signature at all, what
+ * values `throttle.mode` actually takes, and whether `remaining` is per-user or
+ * per-group. `raw` carries the unparsed group list for exactly that reason and
+ * SHOULD be dropped once the shapes are confirmed.
+ */
+apiRoutes.get("/v001/groups", async (c) => {
+	const nsid = c.get("nsid");
+
+	const tokens = await getFlickrTokens(c.env.DB, nsid, c.env.TOKEN_KEY);
+	if (tokens === null) {
+		return c.json({ error: "no_flickr_credentials" }, 409);
+	}
+
+	const credentials = {
+		consumerKey: c.env.FLICKR_CONSUMER_KEY,
+		consumerSecret: c.env.FLICKR_CONSUMER_SECRET,
+		token: tokens.token,
+		tokenSecret: tokens.tokenSecret,
+	};
+
+	const listed = await getUserGroups(credentials);
+	if (listed.kind !== "ok") {
+		return c.json(
+			{
+				error: "flickr_unavailable",
+				detail: listed.kind === "error" ? listed.code : listed.detail,
+			},
+			502,
+		);
+	}
+
+	// The JSON shape here is documented loosely and unconfirmed against a live
+	// reply, so read it defensively rather than trusting a path.
+	const container = listed.body.groups;
+	const rawGroups =
+		typeof container === "object" &&
+		container !== null &&
+		Array.isArray((container as { group?: unknown }).group)
+			? ((container as { group: unknown[] }).group as Record<string, unknown>[])
+			: [];
+
+	const ids = rawGroups
+		.map((group) => group.nsid ?? group.id)
+		.filter((id): id is string => typeof id === "string");
+
+	// Sequential rather than concurrent. This runs once when a user opens the
+	// page, and a burst of parallel calls into an API this project depends on
+	// staying friendly with is the wrong instinct.
+	const groups = [];
+	for (const id of ids) {
+		groups.push((await getGroupInfo(id, credentials)) ?? { id, error: true });
+	}
+
+	return c.json({ groups, raw: rawGroups });
 });
 
 /**

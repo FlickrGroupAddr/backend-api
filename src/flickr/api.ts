@@ -166,3 +166,96 @@ export async function getUserGroups(
 ): Promise<FlickrResult> {
 	return await callFlickr("flickr.groups.pools.getGroups", {}, credentials);
 }
+
+/**
+ * What `flickr.groups.getInfo` tells us about one group.
+ *
+ * **The field shapes here are read from Flickr's documentation and have not yet
+ * been confirmed against a live reply.** The JSON form of this API wraps some
+ * values in `_content` and leaves others bare, inconsistently, so every access
+ * below is defensive and `null` means "not present in the shape we expected"
+ * rather than "absent from the group".
+ */
+export interface GroupInfo {
+	readonly id: string;
+	readonly name: string | null;
+	/**
+	 * Whether the pool is moderated. This is the field that would let an
+	 * unanswered add be retried safely for UNmoderated pools -- see the open
+	 * question on unconfirmed adds.
+	 *
+	 * **Not the same as `restrictions.moderate_ok`**, which is about permitted
+	 * content ratings and is a different thing entirely.
+	 */
+	readonly poolModerated: boolean | null;
+	/**
+	 * The per-group add allowance. `mode` is the period; only "month" appears in
+	 * Flickr's own example, and day and week are expected but unconfirmed.
+	 * Whether `remaining` is per-user or per-group is also unconfirmed and
+	 * matters a great deal -- the call is authenticated, so per-user is the
+	 * reasonable reading.
+	 */
+	readonly throttle: {
+		readonly count: number | null;
+		readonly mode: string | null;
+		readonly remaining: number | null;
+	} | null;
+}
+
+function asNumber(value: unknown): number | null {
+	if (typeof value === "number") return value;
+	if (typeof value === "string" && value.trim() !== "") {
+		const parsed = Number(value);
+		return Number.isFinite(parsed) ? parsed : null;
+	}
+	return null;
+}
+
+function asText(value: unknown): string | null {
+	if (typeof value === "string") return value;
+	if (typeof value === "object" && value !== null && "_content" in value) {
+		const content = (value as { _content: unknown })._content;
+		return typeof content === "string" ? content : null;
+	}
+	return null;
+}
+
+/** `flickr.groups.getInfo`. Moderation status and the add throttle. */
+export async function getGroupInfo(
+	groupId: string,
+	credentials: UserCredentials,
+): Promise<GroupInfo | null> {
+	const result = await callFlickr(
+		"flickr.groups.getInfo",
+		{ group_id: groupId },
+		credentials,
+	);
+
+	if (result.kind !== "ok") return null;
+
+	const group = result.body.group;
+	if (typeof group !== "object" || group === null) return null;
+
+	const fields = group as Record<string, unknown>;
+	const moderated = asNumber(fields.ispoolmoderated);
+
+	const rawThrottle = fields.throttle;
+	const throttle =
+		typeof rawThrottle === "object" && rawThrottle !== null
+			? (rawThrottle as Record<string, unknown>)
+			: null;
+
+	return {
+		id: groupId,
+		name: asText(fields.name),
+		poolModerated: moderated === null ? null : moderated === 1,
+		throttle:
+			throttle === null
+				? null
+				: {
+						count: asNumber(throttle.count),
+						mode: asText(throttle.mode),
+						remaining: asNumber(throttle.remaining),
+					},
+	};
+}
