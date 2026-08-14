@@ -36,6 +36,7 @@ and left uncommitted while an unrelated domain emergency was handled.
 | `8458df3` | **ADR-16 and ADR-17 added, from a day of the owner asking sharp questions.** ADR-16: a request has two identifiers with different jobs — `id` orders and never leaves the server, `public_id` is an opaque UUIDv4 handle. Records why the ordering key MUST NOT become a UUID, and why v4 beats the owner's preferred v7 for *this* column specifically. ADR-17: every list endpoint is paginated with a keyset cursor, with the worked example of how offset paging silently skips a row when the sweep resolves one between pages. The `/v001/queue` open question closes against it. ADR-14 gains the "is the platform already doing it?" pattern, now caught twice. |
 | `dd1e807`, `31c97d8` | Live-call findings folded in: the five `throttle.mode` values, `remaining` being per-user, 330 groups as a real account size, and Flickr needing no pre-registered callback. |
 | `5f43291` | **ADR-12 gains the `__Host-` cookie prefix, and records the defect it uncovered.** The attributes were specified in a helper the Worker never called, duplicated in the callback route, and duplicated again in logout — where `HttpOnly` had been lost. Five tests asserted on the dead helper and could not have failed. Replaced with assertions on the real `Set-Cookie` from a full stubbed login, verified by mutation. |
+| *this commit* | **ADR-13 gains a revisit trigger, because its blocking condition expires.** The `typescript-eslint` incompatibility is explicitly "until 7.1", and a decision resting on a temporary condition outlives its own reason unless the expiry is written down. Re-evaluate when TypeScript 7.1 ships stable — checked live 2026-08-14, `7.1` is still daily `-dev` builds only. **Returning is NOT automatic**: the trigger reopens the question rather than answering it, and a switch back must clear ADR-14 on its own merits. Also corrects a sentence this document implied and Terry repeated back: **ESLint was never in this project.** It never appeared in `package.json`, no config was ever committed, and Biome went in at `9a166f4`, the scaffold commit — so this was a choice made before any code existed, not a migration. |
 | `1822e3d` | **ADR-10 added: FIFO per (user, group), and the queue is never jumped.** Settles that the API Worker attempts a new request immediately only when its queue is otherwise empty, and that the nightly sweep stops a queue at its first retryable failure. ADR-05 gained the `photos.getAllContexts` check. The Flickr API surface and OAuth 1.0a's signing of the request-token call were recorded as verified facts. |
 
 ## Verified facts
@@ -62,7 +63,7 @@ beta-era numbers that will move.
 | OAuth 1.0a signs the request-token call itself | RFC 5849 §3.4: the signing key is `consumer_secret&token_secret`, with an empty token secret for the temporary-credentials request, and `oauth_consumer_key` travels in the parameters. **The first call of a login therefore already needs the FGA Flickr API credentials** — there is no unauthenticated leg anywhere in the flow. | 2026-08-13 |
 | Workers language support is far more uneven than the docs imply | GitHub `stats/participation` for the thirteen weeks to 2026-08-13: `cloudflare/workerd` **1,360** commits, `cloudflare/workers-sdk` **649**, `cloudflare/workers-rs` **9**. `workers-rs` is at `v0.8.5` (2026-06-12), pre-1.0, with 184 open issues. All four languages are described as first-class on the languages page. **The commit list endpoint caps at 100 per page and must not be used for this** — it reports a flat "100" for both active repos and hides the real ratio. | 2026-08-13 |
 | Python Workers are in open beta | Cloudflare docs: the `python_workers` compatibility flag is required "while Python Workers are in open beta." Durable Objects, D1, and cron triggers are all documented as available. | 2026-08-13 |
-| TypeScript 7.0 is stable, and `typescript-eslint` cannot consume it | TypeScript 7.0 shipped 2026-07-08 as the first stable release built on the Go-native compiler, 8–12× faster on full builds; `npm dist-tags` gives `latest: 7.0.2`. It ships without a stable programmatic API until 7.1, so compiler-API consumers are blocked — `typescript-eslint@8.67.0` declares `peerDependencies.typescript` of `>=4.8.4 <6.1.0`, excluding 7.x. Biome (`2.5.8`) and oxlint (`1.78.0`) parse TypeScript themselves and are unaffected. | 2026-08-13 |
+| TypeScript 7.0 is stable, and `typescript-eslint` cannot consume it | TypeScript 7.0 shipped 2026-07-08 as the first stable release built on the Go-native compiler, 8–12× faster on full builds; `npm dist-tags` gives `latest: 7.0.2`. It ships without a stable programmatic API until 7.1, so compiler-API consumers are blocked — `typescript-eslint@8.67.0` declares `peerDependencies.typescript` of `>=4.8.4 <6.1.0`, excluding 7.x. Biome (`2.5.8`) and oxlint (`1.78.0`) parse TypeScript themselves and are unaffected. **Re-checked live 2026-08-14 and unchanged**: `typescript-eslint@8.67.0` still declares `>=4.8.4 <6.1.0`, `dist-tags.latest` is still `7.0.2`, and `7.1` exists only as daily `-dev` prereleases (most recent dated 2026-08-13). **The blocker is temporary and has not lifted** — see ADR-13's revisit trigger. | 2026-08-13, re-checked 2026-08-14 |
 | Cloudflare recommends `wrangler types` over `@cloudflare/workers-types` | Cloudflare docs: *"We recommend you use `wrangler types` to generate runtime types, rather than using the `@cloudflare/workers-types` package"* — the generated types match the Worker's own compatibility date and flags. The package is **not** deprecated and remains recommended for typing libraries and shared packages. | 2026-08-13 |
 | No maintained, Workers-native OAuth 1.0a signer exists on npm | Surveyed via `npm view` and `npm search`: `oauth-1.0a@2.2.6` (2019, synchronous `hash_function` incompatible with async WebCrypto), `oauth-signature@1.5.0` (2017, depends on `crypto-js@3.x`), `oauth@0.10.2` (Node-only, built on `http`/`https`), `node-oauth1@1.3.0` (2020), `axios-oauth-1.0a@0.4.1` (2026, but an axios interceptor). See ADR-14. | 2026-08-13 |
 | `hono` and `zod` both ship with zero transitive dependencies | `npm view hono dependencies` and `npm view zod dependencies` both return empty. Versions `4.13.2` and `4.4.3`, both published 2026-08-13. | 2026-08-13 |
@@ -944,6 +945,33 @@ alternative was holding TypeScript at `6.0.3` to keep ESLint; that was rejected 
 checking via `tsc --noEmit` is the safety net that matters here and it is unaffected either way.
 **If Biome proves insufficient, the correct response is to hold TypeScript at 6.0.3 in the same
 commit — not to run unlinted.**
+
+**One correction to the sentence above, and it matters for how this reads later: ESLint was never
+in this project.** Established 2026-08-14 from this repository's own history — `eslint` has never
+appeared in `package.json`, no ESLint config was ever committed, and `@biomejs/biome` went in at
+`9a166f4`, the scaffold commit. **So this was a choice made before any code existed, not a
+migration away from something.** Nothing was installed and then removed, and a future reader
+**MUST NOT** describe it as a pivot.
+
+##### The blocking condition EXPIRES, and this is the trigger to revisit it
+
+**The constraint above is explicitly temporary — "until 7.1" — and a decision resting on a
+temporary condition needs a stated expiry, or it outlives its own reason.**
+
+**Re-evaluate when TypeScript 7.1 ships STABLE.** Checked live on 2026-08-14: `7.1` exists only as
+daily `-dev` prereleases, the most recent dated 2026-08-13, and `dist-tags.latest` is still `7.0.2`.
+**`typescript-eslint@8.67.0` still declares `>=4.8.4 <6.1.0`**, so the incompatibility holds today.
+
+**Returning to `typescript-eslint` MUST NOT be automatic when it does.** The trigger reopens the
+question; it does not answer it. Biome was not a consolation prize — it has no compiler-API
+dependency at all, which is why the incompatibility is *irrelevant* here rather than *tolerated*,
+and it is a single zero-dependency tool doing lint and format together. **A switch back has to be
+argued on its own merits and MUST clear ADR-14**, not justified by "the reason we left has gone
+away." **We never left.**
+
+**What would genuinely justify reopening it:** a lint rule the project needs that requires full type
+information and that Biome does not implement. That is a concrete test, and until something fails
+it, the current toolchain answers the question.
 
 #### What "modern" means concretely, so it is checkable rather than a vibe
 
