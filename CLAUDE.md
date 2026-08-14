@@ -108,6 +108,74 @@ quietly succeeding over the network.
 Read `node_modules/<pkg>/package.json` for the exports and the `.d.ts` for the names; generate
 config files with the tool's own `init` rather than writing them from memory.
 
+## Know the tools on this machine before writing code that replaces one
+
+**Standing order, Terry, 2026-08-14.** Claude **MUST** know what is already installed and reach for
+it first. **This is ADR-14 pointed at the toolbox instead of at `package.json`**, and it fails the
+same way: the cheapest tool is the one already on the machine, and it is the one most easily skipped,
+because using it never feels like a decision.
+
+### Cloudflare publishes agent rules, they are on disk, and they MUST be read before Workers code
+
+**`wrangler login` installed Cloudflare's own guidance for agents under `~/.claude/skills/`.** Read
+them from disk rather than fetching them. **Claude MUST consult the covering skill before writing
+Workers code and MUST NOT answer from recall where one applies** — that instruction is the skills'
+own first line, and ADR-14 records the two runtime gotchas it has already corrected here:
+`crypto.subtle.timingSafeEqual` exists in this runtime, and `ctx` **MUST NOT** be destructured.
+
+| Skill | Owns | Load-bearing for FGA |
+|---|---|---|
+| `cloudflare` | Workers, D1, KV, R2, Pages, bindings, the platform generally | **Yes** |
+| `workers-best-practices` | Whether Worker code is idiomatic, and the anti-patterns | **Yes** |
+| `durable-objects` | Durable Object classes, RPC methods, alarms, SQLite storage, testing | **Yes** — ADR-02 |
+| `wrangler` | Any `wrangler` command, and `wrangler.jsonc` fields | **Yes** |
+| `agents-sdk` | Stateful agents, Workflows, queues, scheduled tasks | Adjacent. Read before promoting ADR-04 |
+| `web-perf` | Core Web Vitals, load performance | Only once a frontend exists |
+| `turnstile-spin` | Bot protection on a form or endpoint | Only if FGA ever takes public writes |
+| `cloudflare-email-service` | Sending and routing mail | **No.** ADR-01 holds no email address |
+| `cloudflare-one`, `cloudflare-one-migrations` | Zero Trust, SASE, Access, Gateway | **No** |
+| `sandbox-stable`, `sandbox-next`, `sandbox-migrate-to-next` | The Sandbox SDK | **No** |
+
+**The right-hand column exists so the list stays usable.** A future session that reaches for
+`cloudflare-one-migrations` on this project has been misled by a long list, and a session that never
+opens `durable-objects` has been failed by one.
+
+**Where a skill and this repository disagree, the repository wins and the divergence gets recorded.**
+ADR-14 already carries the live example: Cloudflare's skill advises enabling `nodejs_compat` broadly,
+and ADR-13 refuses it unless a dependency forces the flag.
+
+### `jq` owns JSON, and `wrangler.jsonc` is the trap
+
+**`jq` is installed. Use it for `package.json`, `package-lock.json`, `wrangler d1 ... --json` output,
+saved Flickr replies, and the nightly sweep's structured log line.** The sweep logs one JSON object
+per run by design — `console.log(JSON.stringify({ event: "nightly_sweep", ... }))` — specifically so a
+bad night is queryable rather than readable-if-somebody-happens-to-look.
+
+**`jq` MUST NOT be pointed at `wrangler.jsonc`.** That file is JSONC and carries comments, so `jq`
+fails on it. **Verified 2026-08-14:** `jq -e '.name' wrangler.jsonc` reports
+`parse error: Invalid numeric literal at line 6, column 4`, and line 6 is the first `//` comment.
+
+**Record the error text, because it misdirects.** "Invalid numeric literal" points at a number, and
+there is no number involved — the reader goes hunting through the D1 id and the cron expression for a
+malformed value that does not exist. **Read `wrangler.jsonc` with `Read`.** Same shape as the local-D1
+`no such table` trap in `docs/SETUP.md`: a confident error message naming the wrong cause.
+
+### The rest of the belt, in one place
+
+| The question | The tool | Not |
+|---|---|---|
+| A range of lines in a file | `Read` with `offset` and `limit` | `sed`, `awk`, `head`, `tail`, `cat` — **permission-gated in the global `CLAUDE.md`, and the bar is high** |
+| Where does this string appear | `Grep` with `output_mode: "content"` | A language server, which has no symbol graph for prose |
+| What shape does this installed package expose | `node_modules/<pkg>/package.json` and its `.d.ts` | Recall. **It has been wrong five times here** |
+| Anything in the old FlickrGroupAddr org on GitHub | `gh` | The web, or guessing |
+| Is the code correct | `npm run check` | Reasoning about it |
+| What is a long run doing right now | `Monitor`, filtered to progress **and** failure | Re-reading a log on a hunch |
+| Is a domain still `pendingDelete` | RDAP, plus DoH with a control | The Cloudflare dashboard, which has been stale here |
+
+**The global `CLAUDE.md` carries the full table and the reasoning behind each row.** This section
+names only what is specific to this project, and it exists because the general rule kept losing to
+whatever tool was already in hand.
+
 ## Where things live
 
 | | |
