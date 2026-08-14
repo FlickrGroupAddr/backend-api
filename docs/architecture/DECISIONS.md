@@ -63,6 +63,9 @@ beta-era numbers that will move.
 | `hono` and `zod` both ship with zero transitive dependencies | `npm view hono dependencies` and `npm view zod dependencies` both return empty. Versions `4.13.2` and `4.4.3`, both published 2026-08-13. | 2026-08-13 |
 | `flickr.groups.getInfo` reports whether a pool is moderated | Flickr API docs: the group element carries an **`ispoolmoderated`** attribute, `0` or `1`. This is the signal that would let an unanswered add be retried safely for unmoderated pools — see the open question on unconfirmed adds. **Not the same field as `restrictions.moderate_ok`**, which is about permitted *content* ratings and is a different thing entirely. | 2026-08-13 |
 | `flickr.groups.getInfo` also quantifies the per-group add throttle | Flickr API docs, example response: `<throttle count="10" mode="month" remaining="3" />`. **`count`** is the allowance, **`mode`** its period, and **`remaining`** how much is left. The docs do **not** enumerate the legal values of `mode` — only `month` appears in the example, and day and week are expected but unconfirmed. **Whether `remaining` is per-user or per-group is also unconfirmed** and matters enormously; the call is authenticated, so per-user is the reasonable reading. Both gaps need one live call to close. | 2026-08-13 |
+| `throttle.mode` takes five values, not three | Live `groups.getInfo` across 330 of the owner's real groups, 2026-08-13: **`day`**, **`week`**, **`month`**, **`none`** (no limit) and **`disabled`** (always paired with `count: 0`). The documentation shows only `month`. **`disabled` is the operationally important one** — those pools accept no adds at all, so FGA **SHOULD** skip them rather than spend an attempt discovering it. Seen on invite-only and showcase groups. | 2026-08-13 |
+| `throttle.remaining` is per-user, not per-group | Same live sample. **`remaining` equaled `count` in every one of 330 groups**, including `Amateurs` (95,352 members, 9.3M photos) and `Bird Photos` (101,665 members). A group-wide counter on pools that busy could not sit at full allowance. The owner had posted nothing that day, which is exactly the shape a per-user counter takes. **Strong but not conclusive** — confirming it needs one add followed by a re-read of the same group. | 2026-08-13 |
+| One account can belong to hundreds of groups | The owner is in **330**. Recorded because it invalidated a design assumption rather than as trivia: an endpoint that made one call per group took **53 seconds** and returned **979 KB**. Any per-group work **MUST** be sized against hundreds, not a handful. | 2026-08-13 |
 | The account is on the Workers Paid plan | Purchase confirmed on the billing page. Included allowances: Workers and Pages Functions 10M requests/month with 30 s CPU per request and 30M ms/month; **Durable Objects 1M requests/month, 400K GB-s duration, 1 GB storage**; Workers Builds 6 slots and 6,000 minutes/month. Overage: Workers requests $0.30/M, Durable Object requests $0.15/M, KV operations $0.50/M, D1 rows $0.001/M. | 2026-08-12 |
 
 ## Why OAuth 1.0a shapes so much of this
@@ -1102,15 +1105,15 @@ about taking dependencies.
   about what `getInfo` actually returns. **Note the asymmetry that already exists and is
   deliberate:** Flickr's own 105 and 106 stay retryable because there Flickr is *telling* us the
   write did not happen, which a dead socket does not.
-- **Flickr's per-group add limits are quantifiable from the API, and the schema question is now
-  different from what was assumed.** `flickr.groups.getInfo` returns `<throttle count mode
-  remaining />` — see the verified-facts row. **FGA does not need to model the limits or count
-  attempts itself; it can ask.** That removes the per-group counter table this question was
-  written to design. What remains open is narrower and needs one live call: the legal values of
-  `mode`, and whether `remaining` is per-user or per-group. **If `remaining` is per-user, the
-  nightly sweep can skip a queue whose allowance is already spent rather than burning an attempt
-  to discover it** — which would make the sweep cheaper and quieter, though ADR-07's code 5 must
-  remain the authority, since a cached `remaining` can be stale in a way a live rejection is not.
+- **Flickr's per-group add limits are now quantified, and two changes follow that are not yet
+  made.** `flickr.groups.getInfo` returns `<throttle count mode remaining />`, the five `mode`
+  values are known, and `remaining` reads as per-user — see the three verified-facts rows added
+  2026-08-13. **FGA does not need to model the limits or count attempts itself; it can ask**,
+  which removes the per-group counter table this question was written to design. What remains:
+  **the sweep SHOULD skip a queue whose `remaining` is 0 and MUST skip a group whose `mode` is
+  `disabled`**, since a disabled pool accepts nothing and every attempt is wasted. ADR-07's code 5
+  stays the authority either way — a cached `remaining` can be stale in a way a live rejection
+  cannot — so this is an optimization on top of the classifier, never a replacement for it.
 - **Whether D1 needs a separate group-metadata cache.** Currently assumed not: group rules can be
   read from Flickr on demand. Revisit if that read turns out to be slow or rate-limited.
 - **The wording a user sees when FGA has deliberately stopped.** *That* the queue is shown and

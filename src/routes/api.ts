@@ -120,15 +120,11 @@ apiRoutes.post("/v001/requests", async (c) => {
 });
 
 /**
- * The groups this user may post to, with each one's moderation status and add
- * allowance.
+ * The groups this user may post to. One Flickr call, whatever the group count.
  *
- * **This endpoint is also the diagnostic that closes three open questions**, and
- * the first authenticated call made against a real Flickr key will answer all of
- * them at once: whether Flickr accepts our OAuth 1.0a signature at all, what
- * values `throttle.mode` actually takes, and whether `remaining` is per-user or
- * per-group. `raw` carries the unparsed group list for exactly that reason and
- * SHOULD be dropped once the shapes are confirmed.
+ * `poolModerated` and `inviteOnly` come free in this reply. The add THROTTLE
+ * does not -- it needs `groups.getInfo` per group, which is the sibling route
+ * below and is why this one does not fetch it.
  */
 apiRoutes.get("/v001/groups", async (c) => {
 	const nsid = c.get("nsid");
@@ -166,19 +162,57 @@ apiRoutes.get("/v001/groups", async (c) => {
 			? ((container as { group: unknown[] }).group as Record<string, unknown>[])
 			: [];
 
-	const ids = rawGroups
-		.map((group) => group.nsid ?? group.id)
-		.filter((id): id is string => typeof id === "string");
+	// Only what a picker needs. The raw reply carries every group's full
+	// description and rules -- HTML, award codes, decades of forum boilerplate --
+	// which came to 979 KB on a real account. None of it is useful here.
+	return c.json({
+		groups: rawGroups
+			.map((group) => ({
+				id:
+					typeof group.nsid === "string" ? group.nsid : String(group.id ?? ""),
+				name: typeof group.name === "string" ? group.name : null,
+				photos: Number(group.photos ?? 0),
+				members: Number(group.member_count ?? 0),
+				// Free signals already present in this reply. Fetching them here
+				// costs nothing; fetching the THROTTLE would cost a call per group.
+				poolModerated: Number(group.ispoolmoderated ?? 0) === 1,
+				inviteOnly: Number(group.invitation_only ?? 0) === 1,
+			}))
+			.filter((group) => group.id !== ""),
+	});
+});
 
-	// Sequential rather than concurrent. This runs once when a user opens the
-	// page, and a burst of parallel calls into an API this project depends on
-	// staying friendly with is the wrong instinct.
-	const groups = [];
-	for (const id of ids) {
-		groups.push((await getGroupInfo(id, credentials)) ?? { id, error: true });
+/**
+ * One group's moderation status and add allowance.
+ *
+ * Split out from the list deliberately, and the reason is worth recording. The
+ * first version fetched this inline for every group, reasoning that a burst of
+ * parallel calls would be rude to Flickr. That was right about the rudeness and
+ * wrong about the scale: the owner belongs to 330 groups, so it made 331
+ * SEQUENTIAL calls and took 53 seconds.
+ *
+ * The fix is not concurrency, it is not making the calls. A list view does not
+ * need throttle data for groups nobody is looking at.
+ */
+apiRoutes.get("/v001/groups/:groupId", async (c) => {
+	const nsid = c.get("nsid");
+	const groupId = c.req.param("groupId");
+
+	const tokens = await getFlickrTokens(c.env.DB, nsid, c.env.TOKEN_KEY);
+	if (tokens === null) {
+		return c.json({ error: "no_flickr_credentials" }, 409);
 	}
 
-	return c.json({ groups, raw: rawGroups });
+	const info = await getGroupInfo(groupId, {
+		consumerKey: c.env.FLICKR_CONSUMER_KEY,
+		consumerSecret: c.env.FLICKR_CONSUMER_SECRET,
+		token: tokens.token,
+		tokenSecret: tokens.tokenSecret,
+	});
+
+	return info === null
+		? c.json({ error: "flickr_unavailable" }, 502)
+		: c.json(info);
 });
 
 /**
