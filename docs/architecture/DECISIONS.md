@@ -568,6 +568,49 @@ history table has a shape people depend on. **This is recorded now because it is
 invisible later**, when someone reasonably adds "just one more column, written every run" to a
 table that is already the most expensive thing in the system.
 
+#### Implementation status, 2026-08-13: the cache half is done and the replication half is not
+
+**Asked directly, and worth recording because the honest answer is "no".** Neither
+`read_replication.mode: auto` nor a single `withSession()` call exists in the codebase. **ADR-09
+predicted this exact omission** — it says bookmarks "get dropped constantly, because doing it right
+requires deliberate plumbing that is easy to omit and produces no error when omitted" — and then
+the implementation omitted the plumbing and the mode alongside it.
+
+**The current state is correct, merely not fast.** With replication off, every read goes to the
+primary and is strongly consistent, which is what ADR-15 relies on. **Nothing is broken and nothing
+is stale.**
+
+**Enabling the mode alone is inert, and this is the part that misleads.** A plain `db.prepare()`
+read hits the primary whether or not replication is on — replicas are reached only through the
+Sessions API. So `read_replication.mode: auto` is not a switch that makes reads faster; **the
+bookmark plumbing is the entire feature**, and turning the mode on without it buys nothing while
+looking like progress.
+
+**Three reads MUST NOT be served from an unconstrained replica when this is built:**
+
+| Read | What a stale answer does |
+|---|---|
+| `pendingCount` before ADR-10's immediate attempt | Returns 1 when two are pending, so a new request jumps a queue that had someone waiting |
+| `pairReachedAModerator` before ADR-11's warning | Misses a recent moderation record and submits to a volunteer with no warning shown |
+| A user's own queue view after submitting or withdrawing | They do not see their own change and conclude the product is broken — ADR-09's own stated case |
+
+**The first two are correctness, not latency**, and they are why this is not a configuration change.
+The third is what bookmarks exist for.
+
+**Recommendation: leave it off until there is a user outside ENAM.** The database is in ENAM and so
+is the only user, so replicas would currently shorten a journey nobody makes, in exchange for
+plumbing that touches the two invariants above. **Revisit when a non-ENAM user appears** — that is
+the trigger, and it is a real one rather than a way of saying later.
+
+**The cache half of this ADR was implemented the same day it was checked.** Every `/v001/*`
+response now carries `Cache-Control: private, no-store`, set by a middleware registered **before**
+`requireSession` — a rejecting middleware never calls `next()`, so registering it after would have
+left precisely the 401s uncovered. `no-store` goes beyond ADR-09's `private` deliberately: the queue
+view changes the moment a user withdraws something, and a browser reusing its own cached copy would
+show the request still sitting there. **Nothing was leaking before** — Cloudflare does not cache a
+Worker's JSON by default — **and it becomes real the day somebody adds a Cache Rule**, which is
+exactly the change made without auditing what is already behind a session.
+
 ### ADR-10 — Requests are FIFO per (user, group), and the queue is never jumped
 
 **This governs ordering the way ADR-08 governs ambiguity, and it yields to ADR-08 where the two

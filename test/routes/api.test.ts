@@ -78,6 +78,21 @@ describe("authentication", () => {
 	});
 });
 
+describe("ADR-09, nothing behind a session reaches a shared cache", () => {
+	it("marks an authenticated response private and no-store", async () => {
+		const response = await authed("/v001/queue");
+		expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+	});
+
+	it("marks the 401 too, which is the one a middleware order gets wrong", async () => {
+		// A rejecting middleware never calls next(), so anything registered after
+		// it does not run on that path. This asserts the ordering, not the header.
+		const response = await SELF.fetch(`${API}/v001/queue`);
+		expect(response.status).toBe(401);
+		expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+	});
+});
+
 describe("queueing a request", () => {
 	it("rejects a malformed body", async () => {
 		for (const body of ["{}", '{"photoId":""}', "not json", '{"photoId":1}']) {

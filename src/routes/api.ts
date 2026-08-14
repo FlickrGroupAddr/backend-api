@@ -28,6 +28,32 @@ export const apiRoutes = new Hono<{
 	Variables: SessionVariables;
 }>();
 
+/**
+ * ADR-09: nothing behind a session may reach a shared cache.
+ *
+ * **Registered BEFORE `requireSession` deliberately.** A middleware that
+ * rejects a request never calls `next()`, so anything registered after it does
+ * not run on that path -- putting this second would have left exactly the 401s
+ * uncovered. Sitting first, it sets the header on the way back out and covers
+ * every response the group can produce.
+ *
+ * ADR-09 specifies `private`; this adds `no-store`, and the extra word earns its
+ * place twice. Correctness: the queue view changes the instant a user withdraws
+ * something, and a browser reusing its own cached copy would show the request
+ * still sitting there. Safety: `private` asks shared caches not to store, while
+ * `no-store` asks everything not to, and the difference costs nothing on
+ * responses this small.
+ *
+ * **The risk today is latent rather than live** — Cloudflare does not cache JSON
+ * from a Worker by default, so nothing is leaking now. It becomes real the day
+ * somebody adds a Cache Rule or "Cache Everything", which is exactly the change
+ * that gets made without auditing what is already behind a session.
+ */
+apiRoutes.use("/v001/*", async (c, next) => {
+	await next();
+	c.header("Cache-Control", "private, no-store");
+});
+
 apiRoutes.use("/v001/*", requireSession);
 
 /** Flickr IDs are opaque strings. Validated for shape, never interpreted. */
