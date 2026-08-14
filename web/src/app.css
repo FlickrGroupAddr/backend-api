@@ -1,0 +1,235 @@
+/*
+ * Deliberately small. This aims at legible and unfussy rather than designed, and leaves
+ * room for that to change later.
+ *
+ * Dark mode comes from `color-scheme` plus two custom-property blocks rather than a
+ * toggle. Nobody wants to configure a queue viewer.
+ */
+
+/*
+ * Inter, one variable file covering weights 100-900 in 47 KB.
+ *
+ * Served from `web/public/fonts/`, NOT imported from node_modules, so the URL is stable
+ * and the `<link rel="preload">` in index.html can name it. A Vite-hashed filename
+ * cannot be preloaded from static HTML, and the preload is what removes the last round
+ * trip.
+ *
+ * Provenance: `@fontsource-variable/inter` 5.3.0, kept as a devDependency purely so
+ * updating the file is `npm update` plus a copy rather than a hunt. **Re-copy the file
+ * when that package moves** -- nothing checks this automatically.
+ *
+ * `font-display: optional`, which is a deliberate upgrade on `block`.
+ *
+ * Three behaviors, and only one of them avoids BOTH problems:
+ *
+ *   swap      Paints a fallback, then reflows the page when Inter lands. This is the
+ *             flicker worth avoiding, and it is the default nearly everywhere.
+ *   block     Holds the text INVISIBLE for up to three seconds, then paints Inter. No
+ *             flicker, but a blank screen on a cold or slow load.
+ *   optional  The browser gives the font about 100 ms. If it makes it, Inter paints
+ *             first and nothing ever swaps. If it does not, the fallback is used for
+ *             THIS load and is never swapped out mid-page. Either way: no flicker, no
+ *             invisible text, and no layout shift.
+ *
+ * **`optional` only behaves that way because the font is preloaded and same-origin.**
+ * A 47 KB file on an already-open connection clears 100 ms comfortably, and once it is
+ * in the HTTP cache every later visit is a guaranteed hit. Pointed at a third-party CDN
+ * this would degrade to the fallback constantly, which is why the two decisions -- self
+ * host, and `optional` -- have to be made together.
+ *
+ * If a cold first paint in the system font is ever unacceptable, `block` is a one-word
+ * change. It buys guaranteed Inter and pays in blank text.
+ */
+@font-face {
+	font-family: "Inter Variable";
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: optional;
+	src: url("/fonts/inter-var-latin.woff2") format("woff2-variations");
+}
+
+:root {
+	color-scheme: light dark;
+
+	--bg: #ffffff;
+	--fg: #1a1a1a;
+	--muted: #5c5c66;
+	--line: #d8d8de;
+	--accent: #0057b8;
+	--warn-bg: #fff5e0;
+	--warn-line: #d99b00;
+	--ok: #157347;
+	--stop: #a4262c;
+
+	--radius: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #16161a;
+		--fg: #ececf1;
+		--muted: #9b9ba6;
+		--line: #35353d;
+		--accent: #5aa2ff;
+		--warn-bg: #2e2410;
+		--warn-line: #d99b00;
+		--ok: #4ac07c;
+		--stop: #ff7b82;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+
+	/* The fallback stack is the face `optional` may use on a cold load, so it is chosen
+	   to sit close to Inter's metrics rather than to be a generic escape hatch. */
+	font-family:
+		"Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+	font-size: 16px;
+	line-height: 1.55;
+
+	/* Inter ships these as opt-in OpenType features. `cv11` gives the single-storey
+	   lowercase g, `ss01` the disambiguated I/l, which is worth having on a page full of
+	   Flickr ids. */
+	font-feature-settings: "cv11", "ss01";
+	font-variant-numeric: tabular-nums;
+	-webkit-font-smoothing: antialiased;
+}
+
+main {
+	max-width: 58rem;
+	margin: 0 auto;
+	padding: 1.5rem 1rem 4rem;
+}
+
+h1 {
+	font-size: 1.4rem;
+	margin: 0;
+}
+
+h2 {
+	font-size: 1.1rem;
+	margin: 1.75rem 0 0.5rem;
+}
+
+a {
+	color: var(--accent);
+}
+
+code {
+	font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+	font-size: 0.9em;
+}
+
+button {
+	font: inherit;
+	padding: 0.4rem 0.9rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--bg);
+	color: var(--fg);
+	cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+	border-color: var(--accent);
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+button.primary {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: #ffffff;
+}
+
+input[type="text"],
+input[type="search"] {
+	font: inherit;
+	padding: 0.45rem 0.6rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--bg);
+	color: var(--fg);
+	width: 100%;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+.small {
+	font-size: 0.875rem;
+}
+
+/* ADR-04's warning. Amber rather than red: it is a question, not a failure, and
+   styling it as an error is how a real warning gets trained into background noise. */
+.warn {
+	background: var(--warn-bg);
+	border: 1px solid var(--warn-line);
+	border-left-width: 4px;
+	border-radius: var(--radius);
+	padding: 0.7rem 0.9rem;
+	margin: 0.6rem 0;
+}
+
+.stop {
+	color: var(--stop);
+}
+
+.ok {
+	color: var(--ok);
+}
+
+nav {
+	display: flex;
+	gap: 1rem;
+	align-items: baseline;
+	border-bottom: 1px solid var(--line);
+	padding-bottom: 0.75rem;
+	margin-bottom: 1rem;
+	flex-wrap: wrap;
+}
+
+nav .spacer {
+	margin-left: auto;
+}
+
+nav a[aria-current="page"] {
+	font-weight: 600;
+	text-decoration: none;
+}
+
+ul.plain {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.row {
+	display: flex;
+	gap: 0.6rem;
+	align-items: center;
+	padding: 0.35rem 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.grow {
+	flex: 1;
+	min-width: 0;
+}
+
+.truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}

@@ -8,15 +8,17 @@
 	},
 	"scripts": {
 		"dev": "wrangler dev",
-		"deploy": "wrangler deploy",
+		"dev:web": "vite",
+		"deploy": "npm run build:web && wrangler deploy",
+		"build:web": "vite build",
 		"types": "wrangler types",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "tsc --noEmit && tsc --noEmit -p web",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"trace": "python scripts/traceability.py --check",
-		"check": "npm run typecheck && npm run lint && npm run test && npm run trace"
+		"check": "npm run typecheck && npm run lint && npm run test && npm run trace && npm run build:web"
 	},
 	"dependencies": {
 		"hono": "4.13.2",
@@ -26,7 +28,11 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.5.8",
 		"@cloudflare/vitest-pool-workers": "0.21.3",
+		"@fontsource-variable/inter": "5.3.0",
+		"@sveltejs/vite-plugin-svelte": "7.3.0",
+		"svelte": "5.56.9",
 		"typescript": "7.0.2",
+		"vite": "8.2.1",
 		"vitest": "4.1.10",
 		"wrangler": "4.123.0"
 	},

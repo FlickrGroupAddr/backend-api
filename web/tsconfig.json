@@ -1,0 +1,21 @@
+{
+	// ADR-18. A SECOND config, not a widened first one.
+	//
+	// The Worker config deliberately has no DOM lib -- a Worker that can see `document`
+	// invites code that will fail at runtime. The browser needs exactly the opposite,
+	// and it MUST NOT see the Worker's `Env` bindings for the same reason.
+	//
+	// `types: []` clears the inherited Worker types rather than adding to them.
+	"extends": "../tsconfig.json",
+
+	"compilerOptions": {
+		"lib": ["es2023", "dom", "dom.iterable"],
+		"types": [],
+
+		// Svelte compiles each component in isolation, same as the Worker build, so the
+		// inherited `isolatedModules` and `verbatimModuleSyntax` are correct here too.
+		"noEmit": true
+	},
+
+	"include": ["src/**/*.ts", "src/**/*.d.ts"]
+}

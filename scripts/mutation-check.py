@@ -144,6 +144,14 @@ MUTATIONS = [
         "\tlimit: z.coerce.number().int().min(1).max(200).default(50),",
         "\tlimit: z.coerce.number().int().min(1).default(50),",
     ),
+    (
+        # The defect only shows in production, where the assets binding exists and this
+        # route wins the race for `/`. Locally it looks like a working diagnostic page.
+        "ADR-18: claim / in the Worker, shadowing the app shell",
+        "src/index.ts",
+        'app.get("/api/debug", async (c) => {',
+        'app.get("/", async (c) => {',
+    ),
 ]
 
 

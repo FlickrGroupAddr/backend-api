@@ -17,7 +17,14 @@ import {
 	type SessionVariables,
 } from "../middleware/session.js";
 
-/** The authenticated surface, `/v001/*`. */
+/**
+ * The authenticated surface, `/api/v001/*`.
+ *
+ * **The `/api` prefix exists because the UI and the API share one hostname.** Static
+ * assets answer everything else, so the prefix is what tells the Worker apart from the
+ * app shell -- it is `run_worker_first` in `wrangler.jsonc` that makes it load-bearing
+ * rather than decorative.
+ */
 
 export const apiRoutes = new Hono<{
 	Bindings: Env;
@@ -31,12 +38,12 @@ export const apiRoutes = new Hono<{
  * `no-store` goes beyond ADR-12's `private` because the queue view changes the instant a
  * user withdraws something, and a browser reusing its own cached copy would still show it.
  */
-apiRoutes.use("/v001/*", async (c, next) => {
+apiRoutes.use("/api/v001/*", async (c, next) => {
 	await next();
 	c.header("Cache-Control", "private, no-store");
 });
 
-apiRoutes.use("/v001/*", requireSession);
+apiRoutes.use("/api/v001/*", requireSession);
 
 /** Flickr IDs are opaque strings. Validated for shape, never interpreted. */
 const submission = z.object({
@@ -54,11 +61,11 @@ const queueQuery = z.object({
 	state: z.enum(["pending", "all"]).default("pending"),
 });
 
-apiRoutes.get("/v001/me", (c) => c.json({ nsid: c.get("nsid") }));
+apiRoutes.get("/api/v001/me", (c) => c.json({ nsid: c.get("nsid") }));
 
 /** Three rules meet here in order: ADR-04's warning, ADR-03's ordering, then ADR-03's
  *  narrow permission to attempt immediately. */
-apiRoutes.post("/v001/requests", async (c) => {
+apiRoutes.post("/api/v001/requests", async (c) => {
 	const parsed = submission.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success) {
 		return c.json({ error: "invalid_request" }, 400);
@@ -140,7 +147,7 @@ apiRoutes.post("/v001/requests", async (c) => {
  *
  * POST rather than DELETE for the same reason: this is a state transition, not a removal.
  */
-apiRoutes.post("/v001/requests/:publicId/withdraw", async (c) => {
+apiRoutes.post("/api/v001/requests/:publicId/withdraw", async (c) => {
 	// Not a security control -- `withdrawRequest` conditions on `nsid` and that is what
 	// makes it safe. This just turns a malformed id into a clean 400 rather than a 404
 	// that reads as "your request vanished".
@@ -176,7 +183,7 @@ apiRoutes.post("/v001/requests/:publicId/withdraw", async (c) => {
 /** One Flickr call whatever the group count. `poolModerated` and `inviteOnly` come free
  *  in this reply. **The throttle does not** -- it needs `groups.getInfo` per group, which
  *  is the sibling route below and is why this one does not fetch it. */
-apiRoutes.get("/v001/groups", async (c) => {
+apiRoutes.get("/api/v001/groups", async (c) => {
 	const nsid = c.get("nsid");
 
 	const tokens = await getFlickrTokens(c.env.DB, nsid, c.env.TOKEN_KEY);
@@ -235,7 +242,7 @@ apiRoutes.get("/v001/groups", async (c) => {
  * the rudeness and wrong about the scale:** 330 groups meant 331 sequential calls and
  * 53 seconds. **The fix was not concurrency. It was not making the calls.**
  */
-apiRoutes.get("/v001/groups/:groupId", async (c) => {
+apiRoutes.get("/api/v001/groups/:groupId", async (c) => {
 	const nsid = c.get("nsid");
 	const groupId = c.req.param("groupId");
 
@@ -261,7 +268,7 @@ apiRoutes.get("/v001/groups/:groupId", async (c) => {
  * the only place the user finds out, and without it fail-polite is a promise the product
  * never keeps.
  */
-apiRoutes.get("/v001/queue", async (c) => {
+apiRoutes.get("/api/v001/queue", async (c) => {
 	const nsid = c.get("nsid");
 
 	const params = queueQuery.safeParse({

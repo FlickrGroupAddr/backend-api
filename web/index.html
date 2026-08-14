@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>FlickrGroupAddr</title>
+		<meta
+			name="description"
+			content="Queue photos into Flickr groups and wait out the daily limits."
+		/>
+
+		<!--
+			Inter, self-hosted, preloaded, and blocking. Same three properties the
+			ItineraryWatch head was reaching for, arrived at a shorter way.
+
+			NO preconnect, because there is nothing to preconnect TO. Self-hosting puts
+			the font on the connection that already delivered this document, which beats
+			warming a second and third connection to fonts.googleapis.com and
+			fonts.gstatic.com. Preconnect saves the DNS and TLS handshake; it does not
+			save the round trip. Same origin saves both.
+
+			It also stops a page that carries a session cookie from telling Google about
+			every visit, which matters more here than the milliseconds.
+
+			`as="font"` plus `crossorigin` is mandatory even same-origin: a font is always
+			fetched in CORS mode, and a preload without it fetches the file TWICE. That is
+			the classic way a preload makes a page slower.
+
+			`display: block` lives in app.css beside the @font-face. It is the anti-flicker
+			half -- text stays invisible briefly rather than painting in a fallback and
+			reflowing when Inter lands.
+		-->
+		<link
+			rel="preload"
+			href="/fonts/inter-var-latin.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+	</head>
+	<body>
+		<div id="app"></div>
+		<script type="module" src="/src/main.ts"></script>
+	</body>
+</html>

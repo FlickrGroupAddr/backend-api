@@ -186,7 +186,11 @@ in D1 replaces it without touching anything else.
 `src/session.ts` is the only place that knows the cookie's name or attributes. Set, read and clear
 all go through it.
 
-## ADR-11 — The UI and API are separate origins, so the cookie is host-only
+## ADR-11 — The session cookie is host-only, and `Origin` is never reflected
+
+**Amended by ADR-18 on 2026-08-14.** This decision was written when the UI and the API were
+planned as separate origins. **They now share one.** Everything below still holds; the CORS half
+is inert rather than wrong, and it MUST NOT be deleted on that basis.
 
 **The cookie is `__Host-fga_session`: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, no `Domain`.**
 
@@ -194,8 +198,9 @@ all go through it.
 domain can plant a same-named cookie that shadows ours, and the API cannot tell them apart because
 `Domain` is not sent back.
 
-**`SameSite=Lax` is the CSRF control**, and it works because the UI and API share a registrable
-domain. Same-site is not the same as same-origin.
+**`SameSite=Lax` is the CSRF control.** It worked when the two shared a registrable domain, and
+under ADR-18 they share the whole origin, which is strictly stronger. Same-site is not the same
+as same-origin.
 
 **Every API response MUST carry `Access-Control-Allow-Origin` set to our own configured origin.**
 
@@ -205,7 +210,7 @@ looks exactly like the fix.**
 
 ## ADR-12 — No cache in front of D1
 
-**FGA MUST NOT build an application cache.** Every `/v001/*` response carries
+**FGA MUST NOT build an application cache.** Every `/api/v001/*` response carries
 `Cache-Control: private, no-store`.
 
 **Cost is not the reason to cache.** D1 bills reads at $0.001 per million rows. **Writes cost 1,000×
@@ -292,6 +297,63 @@ the end — that is wrong exactly when the last page is full.
 
 **A `limit` MUST be capped, not merely defaulted.** FGA's is 1–200, default 50.
 
+## ADR-18 — One origin, an `/api` prefix, and a Svelte app shell
+
+**The UI is a prebuilt single-page app served as static assets by the SAME Worker that
+answers the API.** One hostname, `flickrgroupaddr.com`, at the apex. `wrangler.jsonc` routes
+`/api/*`, `/oauth/*` and `/health` to the Worker with `run_worker_first`, and everything else
+falls through to `index.html` via `not_found_handling: "single-page-application"`.
+
+**The Worker MUST NOT claim `/`.** The app shell owns it. A Worker route there shadows
+`index.html` for every visitor, and it does so only in production, where the assets binding
+exists and local tests have nothing to notice.
+
+### One origin, because the safest CORS code is the code that is not reachable
+
+**ADR-11 assumed two origins and its CORS contract was the price.** That contract is now
+inert: a same-origin browser sends no `Origin` worth checking. **ADR-11 is amended, not
+repealed** — the `__Host-` prefix still matters, `SameSite=Lax` still works, and the
+prohibition on reflecting the request's `Origin` is still absolute.
+
+**The middleware and its tests MUST stay.** A control deleted because it is currently
+unreachable is a control nobody restores when a second origin appears. ADR-11 itself calls
+reflection "a two-line mistake and it looks exactly like the fix," which is the argument for
+keeping a test that can still catch it.
+
+**The registrar was never the constraint, and that is worth writing down because it nearly
+drove the design.** A Cloudflare zone is not a registration. `flickrgroupaddr.com` is
+registered at Amazon Registrar and its nameservers point at Cloudflare, which is all a Workers
+custom domain at the apex requires.
+
+### Svelte, and specifically not React
+
+**The framework MUST compile away.** Svelte generates DOM operations at build time rather than
+shipping a runtime and a virtual DOM, which is what makes a framework defensible on a
+three-screen console at all.
+
+**React was proposed first and withdrawn.** It entered on conventionality, which is the weakest
+argument available here, and it costs four dependencies against a backend that runs on three
+zero-dependency ones. **Conventionality is a real criterion and it lost to a stronger one.**
+
+**No framework was the other candidate, and it is refused for one specific screen.** Submitting
+one photo to forty groups fans out forty requests that resolve independently — some `202`, some
+resolved, some `409 needs_acknowledgement`. Hand-written DOM code tracking forty small state
+machines is where the 2021 UI became unmaintainable, and it is also where ADR-01 is finally kept
+or broken. **That screen MUST be declarative.**
+
+**`{expr}` escapes by default**, which retires the hand-rolled `innerHTML` string building that
+the previous UI used. Same class of fix as ADR-14 choosing `hono/html`.
+
+### Two things this decision does NOT settle
+
+**The traceability gate cannot see UI tests.** `scripts/traceability.py` globs `test/*.test.ts`
+only. ADR-01's user-facing wording will live in `web/`, so **a future session MUST decide
+whether to widen that glob rather than let the most important copy in the product go
+unverified.**
+
+**A batch preflight endpoint is still missing.** Without it the picker discovers ADR-04
+warnings as N separate `409`s. See "Still open."
+
 ---
 
 ## Considered and rejected
@@ -305,6 +367,11 @@ the end — that is wrong exactly when the last page is full.
 | Cloudflare Secrets Store | Right product, wrong maturity, and a 100-secret ceiling |
 | Workers KV | Consistency model is wrong for the login path |
 | Cognito or Google login | Both supply an identity ADR-07 declines to hold |
+| React for the UI | Proposed, then withdrawn. It entered on conventionality and costs four dependencies to a compiler's one. See ADR-18 |
+| Astro | Its islands and zero-JS pages buy nothing when every view is authenticated and client-rendered. There is nothing to prerender |
+| Cloudflare Pages | Cloudflare's own static-assets guidance routes "API routes + SPA" to Workers static assets, which is one deploy rather than two |
+| Hand-written DOM code, no framework | Refused for the batch-submit screen specifically. Forty independent request outcomes is where the 2021 UI became unmaintainable |
+| Separate UI and API hostnames | **Reversed by ADR-18.** It was the plan until the domain landed; one origin makes the CORS contract inert instead of load-bearing |
 
 ## Still open
 
@@ -316,3 +383,10 @@ the end — that is wrong exactly when the last page is full.
   disabled pool. Not urgent: a live add into one returns code 11, which ADR-02 already resolves.
 - **The wording a user sees when FGA has deliberately stopped.** That the queue is shown is settled.
   The sentence itself is not, and it either delivers ADR-01's promise or quietly undercuts it.
+- **No endpoint answers "which of my groups already hold this photo."** `getPhotoPools` exists in
+  `src/flickr/api.ts` but is reachable only inside `POST /api/v001/requests`. Without a batch
+  preflight the picker discovers ADR-04 warnings as N separate `409`s, one round trip each, which
+  is unusable at forty groups. **The shape is not settled** — one call per photo returning its
+  pools, or one call taking a group list and returning warnings for each.
+- **Whether `scripts/traceability.py` should scan `web/`.** It globs `test/*.test.ts`, so no UI test
+  can verify a decision today. ADR-01's user-facing copy will live there.

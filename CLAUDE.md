@@ -22,7 +22,7 @@ diagram build fails if a standalone `DO` reaches the canvas.**
 
 **Decisions are `ADR-nn`, never `D-n`.** Cloudflare's database is called D1.
 
-**Zero-pad anything that will ever sort.** `ADR-02`, not `ADR-7`. The API is `/v001/*`. Unpadded
+**Zero-pad anything that will ever sort.** `ADR-02`, not `ADR-7`. The API is `/api/v001/*`. Unpadded
 numbers sort `1, 10, 2` and cannot be fixed cheaply once cited.
 
 **Every line a human reads starts with a capital.** Tile labels, edge labels, table cells that are
@@ -58,7 +58,12 @@ because a box that is too large passes.
 npm run check
 ```
 
-Typecheck, lint, 178 tests. **It MUST be clean before a commit.**
+Typecheck (both tsconfigs), lint, 160 tests, the traceability gate, and the web build. **It MUST be
+clean before a commit.**
+
+**The count was documented as 178 and was wrong for a week.** The suite rebuild took it to 156 and
+neither this file nor the README was updated. **Quote the number the runner prints, never one read
+from a document.**
 
 **Tests run inside real `workerd`** against real D1 and real Durable Objects. Outbound `fetch` is
 stubbed in `vitest.config.ts`, so **a test reaching the real Flickr fails loudly.**
@@ -202,3 +207,19 @@ their architecture.** Precedent is the weakest argument available here.
 | `src/oauth/signature.ts` | ADR-14's documented exception. Checked against RFC 5849's own vectors |
 | `migrations/` | The schema. Constraints carry the rules, not application code |
 | `scripts/build-diagram.py` | The diagram generator and its assertions |
+| `web/src/lib/*.ts` | **Where the UI's real logic MUST live.** `tsc` checks these |
+| `web/src/**/*.svelte` | Markup and wiring only. Nothing here is typechecked — see below |
+| `web/src/lib/outcomes.ts` | **ADR-01's promise, as the sentences a user reads.** Still-open copy |
+
+### The UI has a typechecking hole, and it is architectural
+
+**`svelte-check` peers on TypeScript `^5 || ^6`, and ADR-13 pins 7.0.2.** So nothing typechecks the
+inside of a `.svelte` file — not `tsc`, not Biome. This is the same bill TypeScript 7 already
+charged for `typescript-eslint`.
+
+**The mitigation is placement, not tooling.** Logic goes in `web/src/lib/*.ts` where `tsc --noEmit
+-p web` reads it properly, and components stay thin enough that a mistake is visible. **A component
+growing real branching logic is a signal to move it into `lib/`.**
+
+`web/src/shims.d.ts` declares `*.svelte` loosely because Svelte ships no ambient declaration —
+verified against `node_modules/svelte` 5.56.9, not assumed.

@@ -1,0 +1,74 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"includes": [
+			"**",
+			"!docs",
+			"!.claude",
+			"!worker-configuration.d.ts",
+			"!package-lock.json",
+			"!web/dist",
+			"!web/public",
+
+			// WHY `!**/*.svelte` IS HERE, AND WHY IT MUST STAY.
+			//
+			// Biome 2.5.8 parses a Svelte file's <script> block and does NOT analyze
+			// its template. Every identifier used only in markup therefore looks dead,
+			// so noUnusedImports and noUnusedVariables fire on all of them. Measured
+			// 2026-08-14: 23 false positives across three components, including
+			// `route`, `session`, `beginLogin`, `handleLinkClick` and both imported
+			// route components.
+			//
+			// **Every one is reported FIXABLE.** `biome check --write` would DELETE
+			// working component state and imports, and the build would then fail
+			// somewhere unrelated. That is worse than no linting.
+			//
+			// The FILES are excluded rather than the rules disabled, because a disabled
+			// rule quietly returns with the next preset bump.
+			//
+			// Re-enable only after confirming Biome analyzes Svelte templates, and
+			// prove it against a component whose state is used ONLY in markup. A clean
+			// run on a component that also uses its state in script proves nothing.
+			"!**/*.svelte"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"nursery": {
+				"noFloatingPromises": "error",
+				"noMisusedPromises": "error",
+				"useAwaitThenable": "error",
+				"noBaseToString": "error",
+				"useExhaustiveSwitchCases": "error"
+			},
+			"suspicious": {
+				"noExplicitAny": "error"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}

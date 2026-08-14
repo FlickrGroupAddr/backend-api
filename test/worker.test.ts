@@ -2,14 +2,22 @@ import { env, SELF } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mintSession, SESSION_COOKIE } from "../src/session.js";
 
-/** The unauthenticated surface: CORS, health, and the landing page. */
+/** The unauthenticated surface: CORS, health, and the diagnostic page. */
 
-const API = "https://api.flickrgroupaddr.com";
-const UI = "https://flickrgroupaddr.com";
+/**
+ * One origin serves the app shell, the API and the OAuth legs, so there is no second
+ * hostname to name here.
+ *
+ * The CORS block below still earns its place. A same-origin browser sends no `Origin`
+ * worth checking, so the middleware is inert in normal use -- but the prohibition on
+ * reflecting the header MUST hold if a second origin ever appears, and a test deleted
+ * because the code path is currently unreachable is a test nobody writes again.
+ */
+const ORIGIN = "https://flickrgroupaddr.com";
 const NSID = "12345678@N00";
 
 const originHeader = (origin: string) =>
-	SELF.fetch(`${API}/v001/me`, { headers: { Origin: origin } });
+	SELF.fetch(`${ORIGIN}/api/v001/me`, { headers: { Origin: origin } });
 
 beforeEach(async () => {
 	await env.DB.exec("DELETE FROM users");
@@ -19,8 +27,8 @@ describe("ADR-11, CORS", () => {
 	it("allows the configured UI origin", async () => {
 		// The positive case is the control: without it, the negative tests below would
 		// pass just as well against middleware that never ran.
-		const response = await originHeader(UI);
-		expect(response.headers.get("Access-Control-Allow-Origin")).toBe(UI);
+		const response = await originHeader(ORIGIN);
+		expect(response.headers.get("Access-Control-Allow-Origin")).toBe(ORIGIN);
 		expect(response.headers.get("Access-Control-Allow-Credentials")).toBe(
 			"true",
 		);
@@ -28,7 +36,7 @@ describe("ADR-11, CORS", () => {
 
 	it.each([
 		["an arbitrary origin", "https://evil.example"],
-		["a prefix-matching lookalike", `${UI}.evil.example`],
+		["a prefix-matching lookalike", `${ORIGIN}.evil.example`],
 		["a suffix lookalike", "https://evilflickrgroupaddr.com"],
 	])("does NOT reflect %s", async (_name, origin) => {
 		// Reflecting the header with credentials enabled lets any site on the internet
@@ -41,37 +49,37 @@ describe("ADR-11, CORS", () => {
 	});
 
 	it("varies on Origin, so no cache serves one origin's decision to another", async () => {
-		expect((await originHeader(UI)).headers.get("Vary")).toMatch(/Origin/);
+		expect((await originHeader(ORIGIN)).headers.get("Vary")).toMatch(/Origin/);
 	});
 
 	it("answers a preflight from the UI origin", async () => {
-		const response = await SELF.fetch(`${API}/v001/requests`, {
+		const response = await SELF.fetch(`${ORIGIN}/api/v001/requests`, {
 			method: "OPTIONS",
 			headers: {
-				Origin: UI,
+				Origin: ORIGIN,
 				"Access-Control-Request-Method": "POST",
 				"Access-Control-Request-Headers": "Content-Type",
 			},
 		});
 		expect(response.status).toBeLessThan(300);
-		expect(response.headers.get("Access-Control-Allow-Origin")).toBe(UI);
+		expect(response.headers.get("Access-Control-Allow-Origin")).toBe(ORIGIN);
 	});
 });
 
 // TRACE-EXEMPT: hygiene, not a decision. A health endpoint answers 200 because that is
 // what a health endpoint is for, and no ADR asked for it.
 it("answers /health without a session", async () => {
-	const response = await SELF.fetch(`${API}/health`);
+	const response = await SELF.fetch(`${ORIGIN}/health`);
 	expect(response.status).toBe(200);
 	expect(await response.json()).toEqual({ status: "ok" });
 });
 
 /** ADR-14 chose `hono/html` over a hand-written escape, and ADR-07 makes the Flickr
  *  username the only identity there is to show. Both meet on this page. */
-describe("ADR-14 and ADR-07, the landing page", () => {
+describe("ADR-14 and ADR-07, the diagnostic page", () => {
 	const load = async (query = "", cookie?: string): Promise<string> =>
 		await (
-			await SELF.fetch(`${API}/${query}`, {
+			await SELF.fetch(`${ORIGIN}/api/debug${query}`, {
 				headers: cookie ? { Cookie: cookie } : {},
 			})
 		).text();
@@ -121,5 +129,35 @@ describe("ADR-14 and ADR-07, the landing page", () => {
 		const forged = await mintSession(NSID, "a-completely-different-key-32b!!");
 		const body = await load("", `${SESSION_COOKIE}=${forged}`);
 		expect(body).toMatch(/Not signed in/);
+	});
+});
+
+/**
+ * ADR-18. **The Worker MUST claim only the paths `run_worker_first` routes to it**, and
+ * MUST leave everything else unclaimed so the static assets can answer.
+ *
+ * These assert the Worker HALF of that contract, which is the half that can regress in
+ * source. The `assets` block in `wrangler.jsonc` is the other half and is verified by
+ * inspection -- there is no asset binding in this pool to exercise.
+ */
+describe("ADR-18, one origin split by an /api prefix", () => {
+	it("serves the API under /api/v001 and NOT at the bare /v001 it used to use", async () => {
+		// The old path must be gone rather than quietly aliased. An alias would keep
+		// working, which is exactly how a half-finished migration hides.
+		expect((await SELF.fetch(`${ORIGIN}/api/v001/me`)).status).toBe(401);
+		expect((await SELF.fetch(`${ORIGIN}/v001/me`)).status).toBe(404);
+	});
+
+	it("leaves / unclaimed, so index.html can answer it", async () => {
+		// A Worker route at / would shadow the app shell for every visitor, and it would
+		// do so only in production where the assets binding exists.
+		expect((await SELF.fetch(`${ORIGIN}/`)).status).toBe(404);
+	});
+
+	it("keeps the worker-first paths answering", async () => {
+		// Each of these is named in `run_worker_first`. If one stops answering here, the
+		// config entry is pointing at nothing.
+		expect((await SELF.fetch(`${ORIGIN}/health`)).status).toBe(200);
+		expect((await SELF.fetch(`${ORIGIN}/api/debug`)).status).toBe(200);
 	});
 });

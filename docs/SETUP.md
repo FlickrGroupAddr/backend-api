@@ -60,26 +60,41 @@ npx wrangler secret put SESSION_KEY
 
 ## 5. Run it and log in
 
+**Two processes, and you need both.** ADR-18 puts the app and the API on one origin, so
+development mirrors that with a proxy rather than a second hostname.
+
 ```
-npm run dev
+npm run dev        # the Worker, on :8787
+npm run dev:web    # Vite, on :5173 -- proxies /api, /oauth and /health to :8787
 ```
 
-Open `http://localhost:8787/oauth/login`.
+Open `http://localhost:5173`. **Use that port, not 8787.** The browser must see one origin or the
+`__Host-` session cookie will not come back, and that failure reads as a broken login rather than a
+misconfigured proxy.
 
 **Reaching Flickr's authorize page proves the signature works.** The test suite cannot establish
 that; only a live call can.
 
-**The landing page reports the SESSION, never the redirect.** `?login=ok` means only that the
-callback believed it worked. The page verifies the cookie and shows the NSID it recovered.
+**The diagnostic page moved to `/api/debug`**, because `/` now serves the app shell. It reports the
+SESSION, never the redirect: `?login=ok` means only that the callback believed it worked, while the
+page verifies the cookie and shows the NSID it recovered.
 
 ## 6. Deploy
 
 ```
 npm run check
-npx wrangler deploy
+npm run deploy
 ```
 
+`npm run deploy` builds `web/dist` first and then runs `wrangler deploy`. **Running
+`npx wrangler deploy` by hand ships whatever is already in `web/dist`**, which on a fresh clone is
+nothing and on a stale one is worse than nothing.
+
 The cron trigger starts firing at once, nightly at 00:15 UTC.
+
+**`vars.UI_ORIGIN` and `vars.API_BASE_URL` in `wrangler.jsonc` MUST match the custom domain actually
+attached to the Worker.** A mismatch sends Flickr an `oauth_callback` it cannot reach, and that
+fails inside Flickr's redirect where there is nothing useful to read.
 
 ## Four traps that cost real time
 

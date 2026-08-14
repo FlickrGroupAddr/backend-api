@@ -11,10 +11,10 @@ coming back every day for weeks.
 |---|---|
 | API | <https://fga-backend-api.terryott.workers.dev> |
 | Health | `/health` answers `{"status":"ok"}` |
-| Auth | Every `/v001/*` route answers `401` without a session cookie |
+| Auth | Every `/api/v001/*` route answers `401` without a session cookie |
 | Nightly sweep | Cron `15 0 * * *` |
-| Frontend | None yet |
-| Domain | `flickrgroupaddr.com` is not owned yet |
+| Frontend | Svelte, scaffolded. Served by the same Worker. See ADR-18 |
+| Domain | `flickrgroupaddr.com`, registered 2026-08-14, nameservers on Cloudflare |
 
 ## Read this before anything else
 
@@ -42,9 +42,14 @@ It is ADR-01. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.m
 npm run check
 ```
 
-Typecheck, lint, and 178 tests. **It MUST be clean before a commit.**
+Typecheck, lint, 160 tests, the traceability gate, and the web build. **It MUST be clean before a
+commit.**
 
 ## What it is built on
 
 Cloudflare Workers, D1, and one Durable Object. TypeScript. Three runtime dependencies, each with
 no dependencies of its own: `hono`, `jose`, `zod`.
+
+The UI is Svelte, prebuilt by Vite into `web/dist` and served as static assets by the same Worker,
+on one origin. **Measured 2026-08-14: 39 kB gzipped**, of which `zod` is 17 kB — the framework and
+all three screens together are 21 kB.

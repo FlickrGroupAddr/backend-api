@@ -93,8 +93,12 @@ export default defineConfig({
 				 */
 				bindings: {
 					TEST_MIGRATIONS: migrations,
+					// ADR-18: one origin serves the app shell, the API and the OAuth
+					// legs, so these two are deliberately the SAME value. They stay as
+					// two bindings because the CORS contract still reads UI_ORIGIN and
+					// the OAuth callback still builds from API_BASE_URL.
 					UI_ORIGIN: "https://flickrgroupaddr.com",
-					API_BASE_URL: "https://api.flickrgroupaddr.com",
+					API_BASE_URL: "https://flickrgroupaddr.com",
 					FLICKR_CONSUMER_KEY: "test-consumer-key",
 					FLICKR_CONSUMER_SECRET: "test-consumer-secret",
 					TOKEN_KEY: "dGVzdC10b2tlbi1rZXktZXhhY3RseS0zMi1ieXRlcyE=",

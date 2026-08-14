@@ -24,8 +24,14 @@ const app = new Hono<{ Bindings: Env }>();
  * make authenticated calls as a logged-in FGA user and read the replies.**
  *
  * A wildcard is not an option either: browsers refuse one when credentials are included.
+ *
+ * **ADR-18 makes the UI same-origin, which makes this middleware inert rather than
+ * unnecessary.** A same-origin request sends no `Origin` header worth checking, so this
+ * never fires in normal use. It stays for two reasons: the reflection prohibition MUST
+ * survive any future second origin, and a control that is deleted because it is
+ * currently unreachable is a control nobody restores when it becomes reachable again.
  */
-app.use("/v001/*", (c, next) =>
+app.use("/api/v001/*", (c, next) =>
 	cors({
 		origin: (origin) => (origin === c.env.UI_ORIGIN ? c.env.UI_ORIGIN : null),
 		credentials: true,
@@ -41,14 +47,17 @@ app.route("/", apiRoutes);
 app.get("/health", (c) => c.json({ status: "ok" }));
 
 /**
- * A landing page, for local development and for confirming a deploy.
+ * A diagnostic page, for local development and for confirming a deploy.
  *
  * **It reports the SESSION, never the redirect.** `?login=ok` only means the callback
  * believed it succeeded; a verified cookie means the browser actually kept what it was
  * handed. Those two agree right up until something is wrong, which is the only moment
  * anyone reads this page carefully.
+ *
+ * **It lives at `/api/debug` and NOT at `/`, because ADR-18 gives `/` to the Svelte app
+ * shell.** A Worker route at `/` would shadow `index.html` for every visitor.
  */
-app.get("/", async (c) => {
+app.get("/api/debug", async (c) => {
 	const outcome = c.req.query("login");
 
 	const cookie = readSessionCookie(c);
@@ -88,9 +97,10 @@ code{background:#f4f4f5;padding:.1em .35em;border-radius:3px}</style>
 ${session}
 ${banner}
 <ul>
+  <li><a href="/">The app</a></li>
   <li><a href="/oauth/login">Log in with Flickr</a></li>
-  <li><a href="/v001/groups">Your groups, with throttle and moderation info</a></li>
-  <li><a href="/v001/queue">Your queue</a></li>
+  <li><a href="/api/v001/groups">Your groups, with throttle and moderation info</a></li>
+  <li><a href="/api/v001/queue">Your queue</a></li>
   <li><a href="/health">Health</a></li>
 </ul>
 <p>API base <code>${c.env.API_BASE_URL}</code><br>

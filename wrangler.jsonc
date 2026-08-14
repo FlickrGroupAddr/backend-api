@@ -11,23 +11,42 @@
 	// ADR-13 requires naming that dependency in the same commit.
 	"compatibility_flags": [],
 
-	// Public configuration, not secrets. ADR-11: the UI and the API are separate
-	// origins, and the CORS allowlist is compared against this exact value --
-	// never against the request's own Origin header.
+	// Public configuration, not secrets.
 	//
-	// Both point at the workers.dev hostname because flickrgroupaddr.com is not
-	// owned yet -- it is in pendingDelete and a watcher is waiting to buy it back.
-	// Aiming API_BASE_URL at a domain that does not resolve would send Flickr a
-	// callback URL it cannot reach, and the failure would happen inside Flickr's
-	// redirect where there is nothing useful to read.
+	// ADR-18: one origin serves the app shell, the API and the OAuth legs, so these
+	// two are deliberately the SAME value. They stay as two bindings because the
+	// CORS contract reads UI_ORIGIN and the OAuth callback builds from
+	// API_BASE_URL, and collapsing them would bury which one a future second
+	// origin has to change.
 	//
-	// ADR-11 describes the END state, where the UI and API are separate origins.
-	// Today they are the same origin, which makes the CORS contract inert rather
-	// than wrong. **Both values MUST be revisited when the domain lands**, and
-	// ADR-11's contract only starts doing work at that point.
+	// The domain landed 2026-08-14. It is registered at Amazon Registrar with its
+	// nameservers pointing at Cloudflare, which is all a Workers custom domain at
+	// the apex needs -- a Cloudflare zone is not a registration.
+	//
+	// **These MUST match the custom domain actually attached to the Worker.** A
+	// mismatch sends Flickr an oauth_callback it cannot reach, and that failure
+	// happens inside Flickr's redirect where there is nothing useful to read.
 	"vars": {
-		"UI_ORIGIN": "https://fga-backend-api.terryott.workers.dev",
-		"API_BASE_URL": "https://fga-backend-api.terryott.workers.dev"
+		"UI_ORIGIN": "https://flickrgroupaddr.com",
+		"API_BASE_URL": "https://flickrgroupaddr.com"
+	},
+
+	// ADR-18. The Svelte app is built by Vite into ./web/dist and served by this
+	// same Worker.
+	//
+	// `run_worker_first` is the whole routing contract. Everything NOT listed here
+	// is answered by the static assets without invoking the Worker at all, which
+	// is why `/` reaches index.html and why the Worker MUST NOT register a route
+	// there. The list is explicit rather than `true`: `true` would invoke the
+	// Worker for every image and hashed bundle, which costs money and buys nothing.
+	//
+	// `single-page-application` serves index.html for any unmatched path, so a deep
+	// link like /queue works on a cold load instead of 404ing. That replaces the
+	// five hand-written _redirects rules the 2021 UI needed.
+	"assets": {
+		"directory": "./web/dist",
+		"not_found_handling": "single-page-application",
+		"run_worker_first": ["/api/*", "/oauth/*", "/health"]
 	},
 
 	"observability": {
