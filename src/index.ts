@@ -1,7 +1,11 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { cors } from "hono/cors";
+// Hono's escaping tagged template. JavaScript has no built-in HTML escape, but
+// this dependency was already here -- ADR-14, found only after hand-writing one.
+import { html } from "hono/html";
 import { createAttempt } from "./adds/attempt.js";
+import { getUsername } from "./db/users.js";
 import { apiRoutes } from "./routes/api.js";
 import { oauthRoutes } from "./routes/oauth.js";
 import { SESSION_COOKIE, verifySession } from "./session.js";
@@ -72,28 +76,42 @@ app.get("/", async (c) => {
 			? null
 			: await verifySession(cookie, c.env.SESSION_KEY);
 
+	// The display name is the one value here that costs a database read, and the
+	// only one FGA does not control -- Flickr does. It falls back to the NSID
+	// alone rather than failing, because a missing name is cosmetic while the
+	// identity is the point.
+	//
+	// Note this stays a PLAIN string. Every `html` interpolation below is escaped
+	// by Hono, so pre-escaping here would double-encode it.
+	const username = nsid === null ? null : await getUsername(c.env.DB, nsid);
+	const who =
+		username === null ? (nsid ?? "") : `${username} (NSID: ${nsid ?? ""})`;
+
 	// Report the SESSION, not the redirect. `?login=ok` only says the callback
 	// believed it succeeded; a valid cookie says the browser actually kept what
 	// it was given. Those come apart when a cookie fails to stick, and a page
 	// that trusted the query string would cheerfully claim success anyway.
 	const session =
 		nsid !== null
-			? `<p><strong>Signed in as <code>${nsid}</code></strong><br>
+			? html`<p><strong>Signed in as <code>${who}</code></strong><br>
 <small>Read from the session cookie and signature-verified just now, not from the redirect.</small></p>`
 			: outcome === "ok"
-				? `<p><strong>The callback reported success, but no valid session cookie came back.</strong><br>
+				? html`<p><strong>The callback reported success, but no valid session cookie came back.</strong><br>
 <small>That is a cookie problem rather than a login problem -- check that the browser is not blocking it.</small></p>`
-				: "<p>Not signed in.</p>";
+				: html`<p>Not signed in.</p>`;
 
 	const banner =
 		outcome === "expired"
-			? "<p><strong>That login attempt expired or was already used.</strong> Start again.</p>"
+			? html`<p><strong>That login attempt expired or was already used.</strong> Start again.</p>`
 			: outcome === "invalid"
-				? "<p><strong>Flickr sent back an incomplete callback.</strong> Start again.</p>"
+				? html`<p><strong>Flickr sent back an incomplete callback.</strong> Start again.</p>`
 				: "";
 
+	// `html` escapes every interpolated value, and leaves nested `html` results
+	// alone because they are already marked escaped. That is the whole reason
+	// `session` and `banner` are built with it too.
 	return c.html(
-		`<!doctype html><meta charset="utf-8">
+		html`<!doctype html><meta charset="utf-8">
 <title>FlickrGroupAddr API</title>
 <style>body{font:16px/1.5 system-ui,sans-serif;margin:3rem auto;max-width:40rem;padding:0 1rem}
 code{background:#f4f4f5;padding:.1em .35em;border-radius:3px}</style>

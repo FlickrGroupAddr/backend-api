@@ -90,6 +90,27 @@ export async function getFlickrTokens(
 	return { token, tokenSecret };
 }
 
+/**
+ * A user's Flickr display name, or null if there is no such user.
+ *
+ * Separate from `getFlickrTokens` on purpose: this reads one column and does no
+ * decryption, so a page that only wants a name never touches key material.
+ *
+ * **The value is controlled by Flickr, not by FGA.** Anything rendering it into
+ * markup MUST escape it — see the landing page.
+ */
+export async function getUsername(
+	db: D1Database,
+	nsid: string,
+): Promise<string | null> {
+	const row = await db
+		.prepare("SELECT flickr_username FROM users WHERE nsid = ?")
+		.bind(nsid)
+		.first<{ flickr_username: string | null }>();
+
+	return row?.flickr_username ?? null;
+}
+
 /** ADR-07: Flickr answered 98 or 99, so the user must re-link before FGA can act. */
 export async function markNeedsRelink(
 	db: D1Database,

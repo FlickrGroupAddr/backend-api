@@ -1,6 +1,22 @@
 import { env, SELF } from "cloudflare:test";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { mintSession, SESSION_COOKIE } from "../src/session.js";
+
+/** Inserts a user row so the landing page has a display name to render. */
+async function addUser(nsid: string, username: string): Promise<void> {
+	await env.DB.prepare(
+		`INSERT INTO users
+       (nsid, flickr_username, access_token_encrypted,
+        access_token_secret_encrypted, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 0, 0)`,
+	)
+		.bind(nsid, username, new Uint8Array([1]), new Uint8Array([2]))
+		.run();
+}
+
+beforeEach(async () => {
+	await env.DB.exec("DELETE FROM users");
+});
 
 /**
  * The landing page, which exists to answer one question honestly: am I actually
@@ -25,7 +41,20 @@ describe("the landing page", () => {
 		expect(await landing()).toContain("Not signed in");
 	});
 
-	it("shows the NSID from a valid session cookie", async () => {
+	it("shows the username and NSID from a valid session cookie", async () => {
+		await addUser(NSID, "TerryDOtt");
+		const token = await mintSession(NSID, env.SESSION_KEY);
+		const body = await landing({
+			headers: { Cookie: `${SESSION_COOKIE}=${token}` },
+		});
+
+		expect(body).toContain("Signed in as");
+		expect(body).toContain(`TerryDOtt (NSID: ${NSID})`);
+	});
+
+	it("falls back to the NSID alone when no user row exists", async () => {
+		// A missing display name is cosmetic; the identity is the point. This also
+		// covers a valid session outliving its row.
 		const token = await mintSession(NSID, env.SESSION_KEY);
 		const body = await landing({
 			headers: { Cookie: `${SESSION_COOKIE}=${token}` },
@@ -33,6 +62,31 @@ describe("the landing page", () => {
 
 		expect(body).toContain("Signed in as");
 		expect(body).toContain(NSID);
+	});
+
+	it("escapes a username that contains markup", async () => {
+		// A Flickr display name is a third-party string a user can change at will.
+		// Rendered raw, a chosen username would inject script into a page served
+		// from the same origin that holds the session cookie.
+		await addUser(NSID, '<script>alert("xss")</script>');
+		const token = await mintSession(NSID, env.SESSION_KEY);
+		const body = await landing({
+			headers: { Cookie: `${SESSION_COOKIE}=${token}` },
+		});
+
+		expect(body).not.toContain("<script>alert");
+		expect(body).toContain("&lt;script&gt;");
+	});
+
+	it("escapes ampersands without double-encoding the rest", async () => {
+		await addUser(NSID, 'Terry & "Friends"');
+		const token = await mintSession(NSID, env.SESSION_KEY);
+		const body = await landing({
+			headers: { Cookie: `${SESSION_COOKIE}=${token}` },
+		});
+
+		expect(body).toContain("Terry &amp; &quot;Friends&quot;");
+		expect(body).not.toContain("&amp;quot;");
 	});
 
 	it("does NOT claim a session for a cookie signed with the wrong key", async () => {
