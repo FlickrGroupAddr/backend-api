@@ -104,6 +104,32 @@ Durable Objects — hand-mocked bindings would test the mock. Outbound `fetch` i
 `vitest.config.ts`, so **a test that tries to reach the real Flickr fails loudly** rather than
 quietly succeeding over the network.
 
+### The lint step is TYPE-AWARE, and a new rule MUST be proven able to fire
+
+**Biome 2.x carries a `types` domain**, so `npm run check` does analysis that normally requires
+`typescript-eslint`. Five of those rules are enforced here, and `biome.json` is the record:
+
+| Rule | Catches | Why it is on |
+|---|---|---|
+| `noFloatingPromises` | A promise with nothing handling its rejection | |
+| `noMisusedPromises` | A promise where a boolean or void is expected | **Everything here is async** — D1 `batch`, `fetch`, WebCrypto, Durable Object RPC. `tsc` does not fully catch this |
+| `useAwaitThenable` | `await` on a non-thenable | |
+| `noBaseToString` | An object stringified to `[object Object]` | A Flickr display name is third-party text; see the landing page |
+| `useExhaustiveSwitchCases` | A union member no `case` handles | `classify.ts` switches on a discriminated union. **A new `Disposition` kind SHOULD be a build failure, not a runtime surprise** |
+
+**Adding a lint rule MUST include proving it can fire.** Write a throwaway file carrying one
+deliberate violation, confirm the rule reports it, then delete the file. **A clean run from an inert
+rule is indistinguishable from a clean run from a satisfied one**, and a rule silently doing nothing
+is worse than no rule, because it is counted as coverage.
+
+**All five were proven this way on 2026-08-14** — five deliberate violations produced exactly five
+diagnostics, one naming each rule. **They then found nothing in the real code**, and that zero means
+something only because of the step before it.
+
+**These live in `nursery`, so they MAY be renamed or graduated between Biome releases.** A rule name
+Biome does not recognize is a **hard config error** rather than a silent skip, which is the right
+failure and is how a bad name was caught the day these were added.
+
 **Recall about installed package APIs is unreliable and has already been wrong five times here.**
 Read `node_modules/<pkg>/package.json` for the exports and the `.d.ts` for the names; generate
 config files with the tool's own `init` rather than writing them from memory.
