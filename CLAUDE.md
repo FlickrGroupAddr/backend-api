@@ -179,8 +179,11 @@ whatever tool was already in hand.
 ## The toolchain freshness check is live, daily, and MUST NOT be answered from memory
 
 **Standing order, Terry, 2026-08-14:** on the first build of each day, confirm that this project has
-the latest stable `tsc`, the latest of every direct **and** indirect npm dependency, the latest
-`npm`, and the **LTS** `node`. **Quiet when current. Very loud when not.**
+the latest stable `tsc`, the latest of every **direct** npm dependency, the latest `npm`, and the
+**LTS** `node`. **Quiet when current. Very loud when not.**
+
+**Transitive dependencies are deliberately NOT checked**, and that **MUST NOT** be reinstated as an
+improvement. See below.
 
 **Every answer MUST come from the network, on every run.** Not from training data, not from a memory
 file, not from ADR-13's version table, and not from this file. **A freshness check sourced from
@@ -191,7 +194,7 @@ recall is worse than no check at all**, because it looks like a record and is no
 | `node` | `https://nodejs.org/dist/index.json`, newest entry with `lts != false` |
 | `npm` | `https://registry.npmjs.org/npm/latest` |
 | `typescript` | `https://registry.npmjs.org/typescript/latest`, compared against `node_modules/typescript/package.json` |
-| Every dependency, direct and indirect | `npm outdated --all --json`, which queries the registry itself |
+| Every **direct** dependency | `npm outdated --json`, which queries the registry itself |
 
 **It runs as `~/.claude/hooks/npm-toolchain-check.py`**, a `PreToolUse` hook gated on this project
 appearing in `~/.claude/toolchain-projects.json` with `"npm"` in its `toolchains`. It **never
@@ -204,6 +207,29 @@ suppression and always asks live.
 **Measured here 2026-08-14: 23 packages were behind and every single one was transitive.** Zero
 direct dependencies had drifted. `nanoid` sat at `3.3.18` against a latest of `6.0.1` because
 `postcss` pins it there, and **no command the owner can type changes that.**
+
+#### Transitive drift is NOT REPORTED, and reinstating it would be a regression
+
+**Terry's instruction, 2026-08-14, in his words: *"let's drop the warning on outdated
+indirect/transitive deps — I want to focus on what I can control. If direct deps pin outdated
+indirect deps, telling me that is only wasting my time; I'm not able to fix that."***
+
+**The position moved three times in one afternoon, and the history is the argument.** The first
+version put transitive drift in the banner. The measurement above killed that — all 23 were
+unfixable, so the banner would have been permanently red. It moved to a quiet counted line. **Terry
+then removed it entirely, and that is correct**: a line he cannot act on still costs attention, and
+in the npm ecosystem it is non-empty essentially always.
+
+**A future session WILL be tempted to add it back**, because "we check every dependency" sounds more
+thorough than "we check the ones you can fix. **It is not.** A checker that reports only actionable
+findings is a checker that keeps being read, which is the entire point of the volume doctrine.
+
+**The scope is now exactly what one `npm install` can move.** `npm outdated` runs **without**
+`--all`, so transitive packages are never even fetched.
+
+**The speedup is a consequence rather than the motive, and it is large.** Dropping `--all` took the
+dependency query from **26.3 s to 1.2 s**, and the whole check from roughly 30 s to **1.5 s** —
+measured both ways on this project.
 
 **The banner fires only when ALL THREE of these hold. Terry's wording, 2026-08-14:** *"we should
 only go LOUD when we have internet and we KNOW we are behind **and** Terry can take immediate action
@@ -220,7 +246,7 @@ on it."*
 | `npm`, `tsc`, or a **direct** dependency behind | **Unmissable banner** | Each is exactly one `npm install` |
 | `node` behind, **with** a version manager or a working `winget` upgrade | **Unmissable banner** | One command |
 | `node` behind with **no** such path | Quiet note | An installer download is real, and it is not *immediate* |
-| **Transitive** dependencies behind | One counted line, naming the parents | Not the owner's to fix |
+| **Transitive** dependencies behind | **Not reported at all** | Not the owner's to fix, so saying it only spends attention |
 | Anything unreachable | A short quiet note | **Offline is not stale.** See the global `CLAUDE.md` |
 
 **A banner MUST name what it could not check.** A confirmed-behind on one probe and silence on
@@ -269,9 +295,11 @@ than admitting there is no fix**, because it turns the banner from a call to act
 
 **A banner listing two dozen unfixable packages would be red permanently, and a banner that is
 always red is scenery.** That is the erosion the global build-chain doctrine spends four paragraphs
-refusing, and this is that doctrine applied to the one ecosystem where most drift belongs to
-somebody else. **Bumping a direct dependency usually carries its transitive tree forward**, which is
-the incremental lever Terry asked for.
+refusing, and it is why those packages are not reported at all rather than merely reported softly.
+
+**The direct dependencies ARE the incremental lever**, which is what makes the narrower scope
+sufficient rather than merely quieter: bumping one usually carries its transitive tree forward as a
+side effect, without anybody having to read a list of things they cannot fix.
 
 **Fixes MUST be offered one at a time**, smallest first, with `npm run check` re-run after each.
 **MUST NOT** propose a big-bang update of everything at once.
