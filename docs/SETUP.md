@@ -183,6 +183,25 @@ Cloudflare's edge returns error `1010` to a `Python-urllib` user-agent before th
 and `wrangler types` reports Node.js compatibility as enabled when it is not. Use `curl` with a
 normal user-agent, and check `wrangler.jsonc` for the flags.
 
+## The toolchain freshness check lives OUTSIDE this repository
+
+**A clone of this repo does not bring the daily freshness check with it**, and that is worth knowing
+before somebody concludes the toolchain is being watched when it is not.
+
+| | |
+|---|---|
+| The check | `~/.claude/hooks/npm-toolchain-check.py` |
+| What turns it on | An entry in `~/.claude/toolchain-projects.json` with `"npm"` in its `toolchains` |
+| When it fires | The first `npm run build\|test\|check\|dev\|deploy` of each day, inside a registered root |
+| Run it by hand | `python ~/.claude/hooks/npm-toolchain-check.py --probe` |
+
+**On a fresh machine, register the checkout or the check stays silent.** Silence from an
+unregistered project is indistinguishable from a clean result, which is the failure this project
+keeps writing down in other forms.
+
+**The probe ignores the daily suppression and always asks live**, so it is the right thing to run
+before quoting any version number. `CLAUDE.md` carries the loudness rules and what each source is.
+
 ## What is deliberately not here
 
 **No frontend exists.** The API can drive one and it would be a separate Cloudflare Pages project.

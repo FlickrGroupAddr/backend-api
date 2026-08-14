@@ -916,9 +916,24 @@ project **MUST** either drop that tool or hold back, and **MUST** record which i
 |---|---|---|
 | TypeScript | `7.0.2` | The Go-native compiler. Stable since 2026-07-08. |
 | Node.js | `24.x` (Krypton) | Active LTS. Build-time only; it is not the runtime. |
+| npm | `12.0.2` | Updated from `11.17.0` on 2026-08-14. Not a project dependency — it is machine-wide. |
 | Wrangler | `4.123.0` | |
 | Vitest | `4.1.10` | With `@cloudflare/vitest-pool-workers` `0.21.3`. |
 | Biome | `2.5.8` | Lint and format. See the tradeoff below. |
+
+**This table is a SNAPSHOT, and the live check outranks it.** Added 2026-08-14, when a daily
+freshness check began asking the network for these same answers. **Where the two disagree, the
+network is right and this table is stale** — it records what was current on the date beside each
+row, not what is current now.
+
+**It is kept anyway, and the reason is not sentiment.** A version here carries the *argument* for
+that version — why TypeScript 7 rather than 6, why Node is build-time only. **A live check reports
+numbers and cannot report reasons.** Deleting the table to avoid rot would delete the reasoning with
+it, which is the more expensive loss.
+
+**So a reader MUST NOT quote a number from this table as current.** Run the check:
+`python ~/.claude/hooks/npm-toolchain-check.py --probe`. It queries the registry on every run and
+answers in about a second and a half.
 
 **TypeScript 7 costs the project `typescript-eslint`, and that is an accepted trade.** The Go-native
 compiler ships without a stable programmatic API until 7.1, so tools built on the compiler API
