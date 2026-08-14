@@ -26,14 +26,23 @@
 export type Route =
 	| { name: "add" }
 	| { name: "queue" }
+	| { name: "admin" }
 	| { name: "notFound"; path: string };
 
+/**
+ * **`/admin` resolves for everybody, and that is correct.** The route is not a
+ * permission; the server is. A non-admin who types the path gets the page, the page asks
+ * the API, the API answers 404, and the page says there is no such page. Hiding the
+ * route here would only look like security while the API did the actual work.
+ */
 export function parse(pathname: string): Route {
 	const segments = pathname.split("/").filter((segment) => segment.length > 0);
 
 	if (segments.length === 0) return { name: "add" };
 	if (segments.length === 1 && segments[0] === "queue")
 		return { name: "queue" };
+	if (segments.length === 1 && segments[0] === "admin")
+		return { name: "admin" };
 
 	return { name: "notFound", path: pathname };
 }

@@ -99,6 +99,10 @@ export default defineConfig({
 					// the OAuth callback still builds from API_BASE_URL.
 					UI_ORIGIN: "https://flickrgroupaddr.com",
 					API_BASE_URL: "https://flickrgroupaddr.com",
+					// ADR-19. NSID matches `NSID` in api.test.ts and deliberately NOT
+					// `OTHER`, so both sides of the allowlist are reachable with the
+					// helpers the suite already has.
+					ADMIN_NSIDS: '["12345678@N00"]',
 					FLICKR_CONSUMER_KEY: "test-consumer-key",
 					FLICKR_CONSUMER_SECRET: "test-consumer-secret",
 					TOKEN_KEY: "dGVzdC10b2tlbi1rZXktZXhhY3RseS0zMi1ieXRlcyE=",

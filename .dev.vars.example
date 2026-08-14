@@ -20,6 +20,17 @@ TOKEN_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 # Generate with: openssl rand -base64 32
 SESSION_KEY="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
 
+# ADR-19. A JSON array of the NSIDs allowed to reach /api/v001/admin/*.
+#
+# A secret rather than a `vars` entry not because an NSID is confidential -- it is
+# on every Flickr profile -- but because wrangler.jsonc is committed to a public
+# repository, and publishing who can read operational data is free reconnaissance.
+#
+# MISSING, MALFORMED OR EMPTY ADMITS NOBODY. The parse fails closed on purpose:
+# the tempting failure is the other way, where a config mistake reads as "no
+# restriction" and quietly opens the dashboard to every signed-in user.
+ADMIN_NSIDS='["00000000@N00"]'
+
 # Local-only overrides, and they DO take precedence over the `vars` block in
 # wrangler.jsonc -- verified 2026-08-13 by reading them back out of a running
 # Worker rather than trusting the binding table, which shows .dev.vars values

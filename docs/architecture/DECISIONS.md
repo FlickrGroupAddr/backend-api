@@ -354,6 +354,74 @@ unverified.**
 **A batch preflight endpoint is still missing.** Without it the picker discovers ADR-04
 warnings as N separate `409`s. See "Still open."
 
+## ADR-19 — The admin surface reports findings, not figures
+
+**`/api/v001/admin/*` is gated by an NSID allowlist in the `ADMIN_NSIDS` Worker secret, a JSON
+array.** It is a secret rather than a `vars` entry because `wrangler.jsonc` is committed publicly,
+and publishing who reads operational data is free reconnaissance.
+
+**The allowlist MUST fail closed.** Missing, malformed, or empty admits nobody. **The tempting
+failure is the other way** — a config mistake where "no allowlist" reads as "no restriction", which
+opens the dashboard to every signed-in user and reports nothing.
+
+**A signed-in non-admin gets 404, never 403.** A 403 confirms the surface exists and that this
+account merely is not on the list. That is worth nothing to the caller and something to a prober.
+
+**The allowlist is deliberately NOT compared in constant time.** The caller's NSID comes from their
+own verified session, so they already know it, and list membership is not a value anyone can grind
+for. A constant-time compare here would imply a threat model that does not exist.
+
+### Volume tracks actionability, which is why this is findings and not a dashboard
+
+**The endpoint returns things an admin can DO something about, and says nothing when there is
+nothing.** This is the toolchain-check doctrine applied to operations: a page that always shows
+twelve numbers teaches its reader to skim, and then the one night a number matters they scroll past.
+
+Three severities, and **the middle one MUST NOT be collapsed into either neighbor**:
+
+| | |
+|---|---|
+| `act` | Confirmed, and something fixes it now. MUST carry an action |
+| `watch` | Real, nothing to do this minute |
+| `info` | We cannot currently tell. Naming the blindness beats implying health |
+
+**The load-bearing check is a queue HEAD not attempted in 48 hours**, not silence in resolutions. A
+sweep can run correctly and resolve nothing — every queue throttled is the product working, and
+`stoppedOnThrottle` is expected. **An attempt is recorded before the Flickr call regardless of
+outcome**, so a stale head proves the sweep never reached it. Accounts flagged `needs_relink` are
+excluded, matching `queueHeads()`, because the sweep skips them by design.
+
+**Queue length and attempt count MUST NOT raise a finding.** Waiting is this product working, and
+`docs/FLICKR.md` measured throttle modes of `day`, `week` and `month` — a month-throttled group with
+forty ahead legitimately takes years. Nothing stores a group's throttle mode, so a jammed queue and
+a patient one are identical from here. **Alerting on either would be a warning that fires when
+nobody can act**, which is the fastest way to make every warning worthless.
+
+### Predicting a throttle was considered and rejected. Detecting a surprising one was not.
+
+**The sweep MUST continue to attempt every eligible queue every night.** Skipping a queue because
+`flickr.groups.getInfo` suggests the user is throttled is refused on three grounds.
+
+**The cost inverts.** `getInfo` is itself a Flickr call, so you spend one call to save one call —
+net zero when the prediction is right, and net worse for every queue that was not throttled.
+
+**The premise is unconfirmed.** `docs/FLICKR.md` records `remaining` as reading per-user and marks
+it **"strong, not conclusive"**; confirming it needs one add followed by a re-read of the same
+group, which nobody has done. Skip logic built on it would be a well-argued design resting on a
+measurement that does not say what the design needs it to say.
+
+**A wrong skip fails silently and invisibly.** The photo waits an extra day and the queue looks
+exactly as it always looks. Flickr's code 5 already answers this authoritatively for the same one
+call, and ADR-02 already handles it.
+
+**The inversion IS worth building.** Persist `throttle.mode` when `/api/v001/groups/:groupId`
+happens to fetch it — no extra calls — and use it to explain rather than to decide. It turns the
+`throttle-mode-unknown` blind spot into a real alert, and it makes a genuine signal available: **a
+nightly attempt refused for throttle when our own model says the user has allowance left.** That
+disagreement means either our reading of `remaining` is wrong or something else is spending the
+allowance, and both are worth knowing. **Observation cannot cause a silent skip, because nothing
+skips.**
+
 ---
 
 ## Considered and rejected
@@ -372,6 +440,8 @@ warnings as N separate `409`s. See "Still open."
 | Cloudflare Pages | Cloudflare's own static-assets guidance routes "API routes + SPA" to Workers static assets, which is one deploy rather than two |
 | Hand-written DOM code, no framework | Refused for the batch-submit screen specifically. Forty independent request outcomes is where the 2021 UI became unmaintainable |
 | Separate UI and API hostnames | **Reversed by ADR-18.** It was the plan until the domain landed; one origin makes the CORS contract inert instead of load-bearing |
+| Skipping a queue the sweep predicts is throttled | `getInfo` costs the call it would save, `remaining` is unconfirmed as per-user, and a wrong skip is invisible. See ADR-19 |
+| A counters-and-charts admin dashboard | A page that always shows twelve numbers trains its reader to skim. ADR-19 emits findings and stays silent when there is nothing to do |
 
 ## Still open
 
@@ -379,8 +449,15 @@ warnings as N separate `409`s. See "Still open."
   code, and the pool may be moderated. `flickr.groups.getInfo` reports whether a pool is moderated,
   and **for an unmoderated pool the ambiguity disappears** — `getAllContexts` then answers
   definitively. Only moderated pools would stay terminal.
-- **The sweep SHOULD skip a group whose `throttle.mode` is `disabled`.** It costs one wasted call per
-  disabled pool. Not urgent: a live add into one returns code 11, which ADR-02 already resolves.
+- **Nothing persists a group's `throttle.mode`, and three things want it.** ADR-19's
+  `throttle-mode-unknown` finding cannot become a real alert without it; a `disabled` pool costs one
+  wasted call per request; and the signal ADR-19 names — **a nightly attempt refused for throttle
+  when our own model says the user still has allowance** — needs it to exist at all. That last one
+  is **informational only and MUST NOT gate an attempt.** `/api/v001/groups/:groupId` already
+  fetches it, so recording it costs no extra Flickr calls.
+- **`remaining` has never been confirmed as per-user.** `docs/FLICKR.md` calls it "strong, not
+  conclusive." One add followed by a re-read of the same group settles it, and several decisions
+  are waiting on the answer.
 - **The wording a user sees when FGA has deliberately stopped.** That the queue is shown is settled.
   The sentence itself is not, and it either delivers ADR-01's promise or quietly undercuts it.
 - **No endpoint answers "which of my groups already hold this photo."** `getPhotoPools` exists in

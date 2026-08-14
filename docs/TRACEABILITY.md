@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**18 decisions · 41 test blocks · 69 mutations**
+**19 decisions · 44 test blocks · 73 mutations**
 
 ## Forward: decision to verification
 
@@ -20,9 +20,9 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR | Decision | Method | Verified by | Mutation |
 |---|---|---|---|---|
 | **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`sweep.test.ts` queues are independent | yes |
-| **ADR-02** | Classify by Flickr's error code. Unknown means terminal. | Test | `classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-02, requests: the resolution invariant | yes |
+| **ADR-02** | Classify by Flickr's error code. Unknown means terminal. | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-02, requests: the resolution invariant | yes |
 | **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
-| **ADR-04** | A pair that reached a moderator is remembered forever | Test | `api.test.ts` ADR-04, the moderation warning<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
+| **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
 | **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request | — |
 | **ADR-06** | The work engine is a nightly cron over D1 | Test | `sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | — |
 | **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` answers /health without a session<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
@@ -30,19 +30,23 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-09** | Tokens are AES-GCM encrypted in D1, under a separate key | Test | `crypto.test.ts` round trip<br>`crypto.test.ts` nonce handling<br>`crypto.test.ts` rejection<br>`schema.test.ts` ADR-07 and ADR-09, users | — |
 | **ADR-10** | The session is a stateless signed cookie | Test | `api.test.ts` ADR-10, authentication<br>`session.test.ts` mint and verify<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op | — |
 | **ADR-11** | The session cookie is host-only, and `Origin` is never reflected | Test | `session.test.ts` mint and verify<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op<br>`worker.test.ts` ADR-11, CORS | — |
-| **ADR-12** | No cache in front of D1 | Test | `api.test.ts` ADR-12, nothing behind a session reaches a shared cache | — |
+| **ADR-12** | No cache in front of D1 | Test | `admin.test.ts` ADR-19, the admin gate<br>`api.test.ts` ADR-12, nothing behind a session reaches a shared cache | — |
 | **ADR-13** | TypeScript, on the current stable toolchain | Inspection | *by inspection* | — |
 | **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` answers /health without a session<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
 | **ADR-15** | Which store holds what | Inspection | *by inspection* | — |
 | **ADR-16** | A request has two identifiers | Test | `schema.test.ts` ADR-03 and ADR-16, requests: ordering | — |
 | **ADR-17** | Every list endpoint is paginated, with a cursor | Test | `api.test.ts` ADR-17, pagination | — |
 | **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-14 and ADR-07, the diagnostic page<br>`worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
+| **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication | yes |
 
 ## Backward: every test block defends something
 
 | File | Block | Defends |
 |---|---|---|
-| `api.test.ts` | ADR-10, authentication | ADR-10 |
+| `admin.test.ts` | ADR-19, the admin gate | ADR-12, ADR-19 |
+| `admin.test.ts` | ADR-19, the allowlist fails closed | ADR-19 |
+| `admin.test.ts` | ADR-19, findings only appear when there is something to do | ADR-02, ADR-04, ADR-19 |
+| `api.test.ts` | ADR-10, authentication | ADR-10, ADR-19 |
 | `api.test.ts` | ADR-12, nothing behind a session reaches a shared cache | ADR-12 |
 | `api.test.ts` | ADR-03 and ADR-05, queueing a request | ADR-03, ADR-05 |
 | `api.test.ts` | ADR-04, the moderation warning | ADR-04 |
@@ -157,3 +161,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | \tlimit: z.coerce.number().int().min(1).default(50), | — |
 | ADR-18: claim / in the Worker, shadowing the app shell | ADR-18 |
 | src/index.ts | — |
+| ADR-19: make a missing allowlist fail OPEN | ADR-19 |
+| src/admin/allowlist.ts | — |
+| ADR-19: answer 403 instead of 404, confirming the surface exists | ADR-19 |
+| src/middleware/admin.ts | — |

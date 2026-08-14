@@ -17,8 +17,53 @@ import { z } from "zod";
 /** ADR-04. Flickr reports no rejection, so 6 and 7 are all that is knowable. */
 export const moderationCode = z.union([z.literal(6), z.literal(7)]);
 
-/** `GET /api/v001/me` */
-export const me = z.object({ nsid: z.string() });
+/**
+ * `GET /api/v001/me`
+ *
+ * ADR-19: `admin` decides whether the shell renders a link. It is a hint, never a gate —
+ * every admin route re-checks the allowlist, so forging this buys a link that 404s.
+ */
+export const me = z.object({ nsid: z.string(), admin: z.boolean() });
+
+/** ADR-19. Severity tracks actionability, not importance. */
+export const finding = z.object({
+	id: z.string(),
+	severity: z.enum(["act", "watch", "info"]),
+	headline: z.string(),
+	detail: z.string(),
+	action: z.string(),
+});
+
+export const codeCount = z.object({
+	code: z.number().nullable(),
+	count: z.number(),
+	disposition: z.string(),
+	unrecognized: z.boolean(),
+});
+
+/** `GET /api/v001/admin/overview` */
+export const adminOverview = z.object({
+	generatedAt: z.number(),
+	findings: z.array(finding),
+	context: z.object({
+		windowDays: z.number(),
+		pendingTotal: z.number(),
+		resolvedLast24h: z.number(),
+		resolvedInWindow: z.number(),
+		lastResolvedAt: z.number().nullable(),
+		usersTotal: z.number(),
+		usersNeedingRelink: z.number(),
+		stalledHeads: z.number(),
+		oldestHeadTouchedAt: z.number().nullable(),
+		moderatedPairsTotal: z.number(),
+		moderatedPairsInWindow: z.number(),
+		reachedModeratorTwice: z.number(),
+		codes: z.array(codeCount),
+	}),
+});
+
+export type Finding = z.infer<typeof finding>;
+export type AdminOverview = z.infer<typeof adminOverview>;
 
 /**
  * `GET /api/v001/groups`

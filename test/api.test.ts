@@ -112,7 +112,9 @@ describe("ADR-10, authentication", () => {
 	it("accepts a valid session and reports the NSID", async () => {
 		const response = await authed("/api/v001/me");
 		expect(response.status).toBe(200);
-		expect(await response.json()).toEqual({ nsid: NSID });
+		// ADR-19 added `admin`. Kept as toEqual rather than toMatchObject so a future
+		// field cannot be added to this response without somebody deciding to.
+		expect(await response.json()).toEqual({ nsid: NSID, admin: true });
 	});
 });
 

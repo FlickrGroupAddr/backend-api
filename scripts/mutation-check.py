@@ -152,6 +152,23 @@ MUTATIONS = [
         'app.get("/api/debug", async (c) => {',
         'app.get("/", async (c) => {',
     ),
+    (
+        # The most dangerous edit on the admin surface. An unset secret reading as "no
+        # restriction" opens operational data to every signed-in user, and reports
+        # nothing anywhere -- the dashboard simply works, for everybody.
+        "ADR-19: make a missing allowlist fail OPEN",
+        "src/admin/allowlist.ts",
+        'return { admin: false, configError: "ADMIN_NSIDS is not set" };',
+        'return { admin: true, configError: "ADMIN_NSIDS is not set" };',
+    ),
+    (
+        # 403 confirms the admin surface exists and that this account is merely not on
+        # the list. The page still "works correctly" with this mutation applied.
+        "ADR-19: answer 403 instead of 404, confirming the surface exists",
+        "src/middleware/admin.ts",
+        'if (!admin) return c.json({ error: "not_found" }, 404);',
+        'if (!admin) return c.json({ error: "forbidden" }, 403);',
+    ),
 ]
 
 

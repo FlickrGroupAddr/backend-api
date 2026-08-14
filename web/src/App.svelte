@@ -8,6 +8,7 @@ import {
 	type Route,
 } from "./lib/router.js";
 import AddToGroups from "./routes/AddToGroups.svelte";
+import Admin from "./routes/Admin.svelte";
 import Queue from "./routes/Queue.svelte";
 
 // The shell owns exactly two pieces of state: who you are, and where you are.
@@ -18,7 +19,7 @@ onNavigate((path) => {
 
 type Session =
 	| { kind: "checking" }
-	| { kind: "in"; nsid: string }
+	| { kind: "in"; nsid: string; admin: boolean }
 	| { kind: "out" };
 let session = $state<Session>({ kind: "checking" });
 
@@ -28,7 +29,7 @@ let session = $state<Session>({ kind: "checking" });
 async function checkSession(): Promise<void> {
 	try {
 		const who = await api.me();
-		session = { kind: "in", nsid: who.nsid };
+		session = { kind: "in", nsid: who.nsid, admin: who.admin };
 	} catch (error) {
 		if (!(error instanceof NotAuthenticated)) {
 			console.error("session check failed", error);
@@ -65,6 +66,16 @@ async function signOut(): Promise<void> {
 					aria-current={route.name === "queue" ? "page" : undefined}
 					onclick={(event) => handleLinkClick(event, "/queue")}>Queue</a
 				>
+				{#if session.admin}
+					<!-- ADR-19: a hint, not a gate. The API re-checks the allowlist, so a
+					     forged flag buys a link that 404s. -->
+					<a
+						class="navlink"
+						href="/admin"
+						aria-current={route.name === "admin" ? "page" : undefined}
+						onclick={(event) => handleLinkClick(event, "/admin")}>Health</a
+					>
+				{/if}
 			</nav>
 
 			<div class="spacer who">
@@ -117,6 +128,8 @@ async function signOut(): Promise<void> {
 		<AddToGroups />
 	{:else if route.name === "queue"}
 		<Queue />
+	{:else if route.name === "admin"}
+		<Admin />
 	{:else}
 		<section>
 			<h2>No such page</h2>

@@ -101,6 +101,10 @@ export const api = {
 			`/api/v001/queue?state=${state}&limit=50${cursor ? `&after=${cursor}` : ""}`,
 		),
 
+	/** ADR-19. 404 for a non-admin, which the caller shows as "no such page". */
+	adminOverview: (days = 7) =>
+		call(contract.adminOverview, `/api/v001/admin/overview?days=${days}`),
+
 	withdraw: (publicId: string) =>
 		call(contract.withdrawn, `/api/v001/requests/${publicId}/withdraw`, {
 			method: "POST",

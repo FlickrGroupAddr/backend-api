@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { createAttempt } from "../adds/attempt.js";
 import { outcomeColumn } from "../adds/classify.js";
+import { checkAdmin } from "../admin/allowlist.js";
+import { overview } from "../db/metrics.js";
 import {
 	enqueue,
 	pairReachedAModerator,
@@ -12,6 +14,7 @@ import {
 } from "../db/requests.js";
 import { getFlickrTokens } from "../db/users.js";
 import { getGroupInfo, getPhotoPools, getUserGroups } from "../flickr/api.js";
+import { requireAdmin } from "../middleware/admin.js";
 import {
 	requireSession,
 	type SessionVariables,
@@ -45,6 +48,42 @@ apiRoutes.use("/api/v001/*", async (c, next) => {
 
 apiRoutes.use("/api/v001/*", requireSession);
 
+/**
+ * ADR-19. **Registered on `apiRoutes` rather than as its own app, deliberately.**
+ *
+ * Mounted here it provably inherits the two middlewares above -- `requireSession`, which
+ * is what puts `nsid` on the context for `requireAdmin` to read, and ADR-12's
+ * `no-store`. A separate Hono app would have to restate both, and a restated security
+ * rule is one that drifts.
+ *
+ * Order matters and is load-bearing: `requireAdmin` is registered AFTER `requireSession`
+ * so the session is verified first. Swapped, `c.get("nsid")` would be undefined and the
+ * allowlist would compare against nothing.
+ */
+apiRoutes.use("/api/v001/admin/*", requireAdmin);
+
+/**
+ * The admin surface is one endpoint on purpose.
+ *
+ * Four separate fetches would render four different instants and invite the reader to
+ * compare numbers that were never simultaneously true. `generatedAt` stamps the set.
+ */
+apiRoutes.get("/api/v001/admin/overview", async (c) => {
+	const days = z.coerce
+		.number()
+		.int()
+		.min(1)
+		.max(90)
+		.default(7)
+		.safeParse(c.req.query("days"));
+
+	// ADR-17's reasoning applied to a window: capped, not merely defaulted. An
+	// uncapped `?days=` is the same unbounded scan with the caller holding the trigger.
+	if (!days.success) return c.json({ error: "invalid_request" }, 400);
+
+	return c.json(await overview(c.env.DB, days.data));
+});
+
 /** Flickr IDs are opaque strings. Validated for shape, never interpreted. */
 const submission = z.object({
 	photoId: z.string().min(1).max(64),
@@ -61,7 +100,20 @@ const queueQuery = z.object({
 	state: z.enum(["pending", "all"]).default("pending"),
 });
 
-apiRoutes.get("/api/v001/me", (c) => c.json({ nsid: c.get("nsid") }));
+/**
+ * **`admin` is a hint for the interface, never a gate.** It exists so the shell can
+ * decide whether to render a link. Every admin route re-checks the allowlist itself, so
+ * forging this field client-side buys nothing but a link that 404s.
+ *
+ * Telling a user their own admin status leaks nothing: it is a fact about them, and they
+ * can already discover it by requesting the route.
+ */
+apiRoutes.get("/api/v001/me", (c) =>
+	c.json({
+		nsid: c.get("nsid"),
+		admin: checkAdmin(c.get("nsid"), c.env.ADMIN_NSIDS).admin,
+	}),
+);
 
 /** Three rules meet here in order: ADR-04's warning, ADR-03's ordering, then ADR-03's
  *  narrow permission to attempt immediately. */
