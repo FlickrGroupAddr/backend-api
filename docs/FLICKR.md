@@ -1,0 +1,106 @@
+# What Flickr actually does
+
+**Every row here was measured against the live API or read from Flickr's own docs.** Several
+contradict the documentation. **Re-verify before quoting any number.**
+
+## The six calls FGA needs
+
+| Stage | Call |
+|---|---|
+| Login | `oauth/request_token`, then `oauth/authorize`, then `oauth/access_token` |
+| List groups | `flickr.groups.pools.getGroups` |
+| Check a photo's pools | `flickr.photos.getAllContexts` |
+| Add | `flickr.groups.pools.add` |
+
+## OAuth 1.0a, and why it shapes the design
+
+**There is no unauthenticated leg.** The very first request-token call is signed, with an empty
+token-secret half. So nothing can reach Flickr before the FGA credentials are read.
+
+**The server gets a token SECRET, then walks the user away for two minutes.** That secret must
+survive a round trip through someone's browser. It cannot travel in the URL and cannot be
+recomputed. **That single fact is why ADR-02 exists.**
+
+**Access tokens never expire.** No refresh machinery is needed. A leaked token stays valid until the
+user revokes FGA at Flickr.
+
+**Flickr accepts any `oauth_callback` with no pre-registration** — confirmed 2026-08-13 by a
+production login. **FGA can change hostnames without touching anything at Flickr.**
+
+**`workerd` implements HMAC-SHA1.** Verified against RFC 2202 test vectors. It is a deprecated
+primitive a modern runtime could reasonably refuse, and **without it this project could not run on
+Cloudflare Workers at all.**
+
+## Permissions are coarse, and that is a security fact
+
+**Flickr offers exactly three levels: `read`, `write`, `delete`.**
+
+**There is no scope for "add photos to groups".** `write` is the narrowest that works, and it grants
+edit access to the user's entire account. See ADR-01.
+
+## A moderator's decision is invisible
+
+**No error code, no callback, no endpoint reports a rejection.**
+
+After code **6** the photo sits in the pool's pending queue. If a moderator declines it, the photo is
+simply removed and never appears. `flickr.photos.getAllContexts` shows whether a photo landed, but
+**"not in the pool" cannot distinguish *still pending* from *rejected*.**
+
+**Presence in the pool proves approval. Absence proves nothing.** This is the whole reason ADR-08
+exists.
+
+## `groups.pools.add` error codes
+
+Terminal unless marked. The executable version is `src/adds/classify.ts`.
+
+| Code | Meaning |
+|---|---|
+| *(none)* | Added |
+| 3 | Already in pool — **treat as success** |
+| **5** | **Photo limit reached — RETRYABLE. This is the throttle FGA exists to wait out** |
+| 6 | Added to the pending queue — **a person now has it** |
+| 7 | Already in the pending queue |
+| 1, 2, 4, 8, 10, 11 | Not found, no group, max pools, content refused, pool full, pool disabled |
+| 98, 99 | Auth failure — flag the user to re-link |
+| **105, 106** | **Service unavailable, write failed — RETRYABLE, transient** |
+
+## The throttle, measured across all 372 of one account's groups
+
+**`flickr.groups.getInfo` returns `<throttle count mode remaining />`.**
+
+**`mode` takes five values, not the one Flickr documents.** Measured 2026-08-13:
+
+| `mode` | Groups |
+|---|---|
+| `none` | 170 |
+| `day` | 167 |
+| `week` | 17 |
+| `month` | 13 — **the only value Flickr's docs show** |
+| `disabled` | 5 |
+
+**A `disabled` pool answers `groups.pools.add` with code 11.** Measured against a real add. FGA
+**SHOULD** skip those rather than spend an attempt discovering it.
+
+**Those five are not simply the moderated or invite-only ones** — three are moderated, two are not,
+and only one is invite-only. **A skip rule keyed on invite-only would miss four of them.**
+
+**`remaining` reads as per-user, not per-group.** It equaled `count` in every one of 330 groups,
+including pools with 95,000+ members. **Strong, not conclusive** — confirming it needs one add
+followed by a re-read of the same group.
+
+## Group size, and the trap in it
+
+**One account can belong to hundreds of groups, and the number moves.** The owner was in **330**
+early on 2026-08-13 and **372** later the same day.
+
+**Any per-group work MUST be sized against hundreds, and MUST NOT cache the count.**
+
+**A full `getInfo` sweep of 372 groups takes about 50 seconds**, at roughly 130 ms per call. An
+endpoint that made one call per group returned 979 KB and took **53 seconds**. The fix was not
+concurrency. **The fix was not making the calls.**
+
+## Two fields that look alike and are not
+
+**`ispoolmoderated`** on `groups.getInfo` is `0` or `1` and says whether adds go to a human queue.
+
+**`restrictions.moderate_ok`** is about permitted content ratings. **Different thing entirely.**
