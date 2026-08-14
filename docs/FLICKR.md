@@ -31,6 +31,17 @@ production login. **FGA can change hostnames without touching anything at Flickr
 primitive a modern runtime could reasonably refuse, and **without it this project could not run on
 Cloudflare Workers at all.**
 
+## Flickr has no group-creation API
+
+**The `flickr.groups.*` family is read and pool operations only.** There is no method to create a
+group, so a test group cannot be provisioned by script — it takes a browser, logged in as the
+account, and it is close to permanent afterward. Flickr provides no comfortable way to delete a
+group you own.
+
+**So there is no such thing as a throwaway Flickr group.** Any end-to-end test either uses a group
+the account is already in, or leaves a permanent artifact behind. Plan accordingly rather than
+discovering it after the fact.
+
 ## Permissions are coarse, and that is a security fact
 
 **Flickr offers exactly three levels: `read`, `write`, `delete`.**

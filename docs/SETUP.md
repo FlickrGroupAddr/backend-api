@@ -168,6 +168,42 @@ rows renders the whole screen. `/api/v001/groups` is the exception and does need
 **`/api/v001/me` keeps working through a completely broken database**, which is ADR-10 behaving as
 designed rather than a fluke: a stateless signed cookie needs no read.
 
+### A seeded user needs a REAL ciphertext, not placeholder bytes
+
+**Inserting `X'01'` as `access_token_encrypted` produces a 500, and it looks like a code bug.** The
+log says `Ciphertext is too short to contain an IV and a payload`, and every route that reads a
+token — `/groups`, `/groups/:id`, `POST /requests`, `/preflight` — fails the same way.
+
+**That 500 is CORRECT and MUST NOT be "fixed".** `getFlickrTokens` throws deliberately: a row that
+exists but will not decrypt means a wrong `TOKEN_KEY` or a tampered ciphertext, and neither may be
+papered over by behaving as though the user were merely absent. Read the comment above it before
+touching it.
+
+**Encrypt a local fake with the real scheme instead** — 12-byte IV prepended, NSID as additional
+authenticated data:
+
+```
+node --input-type=module -e '
+import { readFileSync } from "node:fs";
+import { webcrypto as crypto } from "node:crypto";
+const keyB64 = /TOKEN_KEY="([^"]+)"/.exec(readFileSync(".dev.vars","utf8"))[1];
+const key = await crypto.subtle.importKey("raw",
+  Uint8Array.from(Buffer.from(keyB64,"base64")), {name:"AES-GCM"}, false, ["encrypt"]);
+const nsid = "YOUR@NSID";
+const aad = new TextEncoder().encode(nsid);
+const iv = crypto.getRandomValues(new Uint8Array(12));
+const ct = new Uint8Array(await crypto.subtle.encrypt(
+  {name:"AES-GCM", iv, additionalData: aad}, key, new TextEncoder().encode("fake-token")));
+const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+console.log(Buffer.from(out).toString("hex"));
+'
+```
+
+Then `UPDATE users SET access_token_encrypted = X'<hex>' WHERE nsid = ...`.
+
+**A fake token still cannot reach Flickr**, so `/preflight` correctly answers `poolsKnown: false`
+and `/groups` returns `502`. That is the honest result, not a broken setup.
+
 ## Four traps that cost real time
 
 **Local D1 is two different files.** `wrangler d1 execute --local` and a running `wrangler dev` can
