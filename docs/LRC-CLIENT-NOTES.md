@@ -356,6 +356,65 @@ about to queue.
 
 ## Design settled 2026-08-15
 
+### TWO CLIENTS, BOTH FIRST-CLASS, RELEASED IN LOCKSTEP
+
+**Terry's decision, 2026-08-15. FGA has exactly two client classes and MUST treat both as
+first-class:**
+
+| Client | Surface |
+|---|---|
+| **Browser** | The Svelte app shell, ADR-18, served from the same Worker |
+| **Lightroom Classic plug-in** | Lua, talks only to `/api/v001/*` |
+
+**Neither is a secondary client, and neither MAY be allowed to rot.** The plug-in is not a
+convenience wrapper around the "real" web product, and the web app is not a fallback for people
+without Lightroom. **They are two front doors to one queue.**
+
+**They MUST be released in lockstep.** An API change that serves the browser and breaks the plug-in
+is a broken release, not a plug-in problem to fix later. In practice that means:
+
+- **A breaking API change MUST land with both clients updated**, or it does not land.
+- **A new capability SHOULD reach both**, and where it cannot, the asymmetry gets written down here
+  rather than discovered.
+- **The plug-in version and the API's `/api/v001` contract move together.** ADR-16's zero-padded
+  path version is what buys room to break the contract deliberately if it ever comes to that.
+
+**Why this is worth stating rather than assuming.** Terry's framing: *"very relevant for
+Terry-of-2031 who forgot 'oh shit right that LrC plug-in is fuggin amazing'."* **The failure mode is
+not malice, it is absence.** A future session works on the web app because that is what is open in
+the editor, ships an API change that suits it, and nobody notices the Lua client for eight months —
+by which time the plug-in is broken, undiagnosed, and looks abandoned rather than neglected.
+
+**And per [[fga-goal-is-terrys-lightroom-workflow]] the plug-in is arguably the MORE important of
+the two**, because the stated goal is queueing adds without leaving Lightroom. The web UI was built
+first; that is an accident of order, not a ranking.
+
+### The architecture diagram: NOT YET, deliberately
+
+**The diagram MUST NOT show the Lightroom client until the plug-in actually ships.**
+
+**This is the read-replica lesson applied forward.** D1 was once drawn as primary plus replica so a
+consistency failure had somewhere to live; when read replication left the architecture, the tile
+went with it, and the recorded conclusion was that **depicting something the system does not have is
+worse than silence** — a reader in five years designs around it.
+
+**A first-class LrC client on the canvas today would tell Terry-of-2031 it shipped.** If it never
+does, the diagram lies in exactly the mode this project is most careful about.
+
+**When it ships, the revision is pre-specified**, so it is a small job rather than a redesign:
+
+- Split the single `users` actor into two client tiles, browser and Lightroom Classic.
+- Both connect to the API Worker. **Only the browser connects to the app shell and to DNS**, since
+  the plug-in fetches no HTML.
+- **The plug-in gets NO edge to Flickr.** It makes no Flickr calls — see below — and drawing one
+  would assert a capability it deliberately does not have.
+- The User Journey key gains the device-link steps, and **`scripts/build-diagram.py` requires the
+  journey row count to equal the badge count**, so both move together.
+
+**Expect the build to fight the change, correctly.** A new tile becomes an obstacle for every
+straight edge, `e12` and `e13` currently attach to `users` and are asserted dead level, and the
+badge-to-edge map and badge overlap checks all key off those positions.
+
 ### The plug-in talks ONLY to FGA. It makes no Flickr calls, ever.
 
 **It has no Flickr credentials and MUST NOT acquire any.** FGA already holds the user's Flickr token,

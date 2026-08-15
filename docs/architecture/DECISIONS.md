@@ -620,6 +620,17 @@ it automatically. Both costs, no benefit.
   The sentence itself is not, and it either delivers ADR-01's promise or quietly undercuts it.
 - **Whether `scripts/traceability.py` should scan `web/`.** It globs `test/*.test.ts`, so no UI test
   can verify a decision today. ADR-01's user-facing copy will live there.
+- **FGA has exactly TWO client classes and both are first-class: the browser app and the Lightroom
+  Classic plug-in.** Decided 2026-08-15, and **they MUST be released in lockstep** — an API change
+  that serves the browser and breaks the plug-in is a broken release, not a plug-in problem to fix
+  later. **The failure mode is absence rather than malice:** a session works on whatever is open in
+  the editor and nobody notices the Lua client for months. Per ADR-18 the web app was simply built
+  first, which is an accident of order and not a ranking — the stated project goal is queueing
+  without leaving Lightroom. Detail in `docs/LRC-CLIENT-NOTES.md`.
+- **The architecture diagram MUST NOT show the Lightroom client until the plug-in ships.** Same
+  reasoning that deleted the D1 read-replica tile on 2026-08-13: depicting something the system does
+  not have is worse than silence, because a reader years later designs around it. The revision is
+  pre-specified in `docs/LRC-CLIENT-NOTES.md` so it is a small job when the time comes.
 - **Key management is DECIDED and unbuilt, in `docs/architecture/KEY-ROTATION-NOTES.md`.** Three
   pieces: a timestamped keyring replacing the single `TOKEN_KEY` and `SESSION_KEY`, opaque signed
   session handles amending ADR-10, and a deferred re-encryption cron. **It is not an ADR yet on
