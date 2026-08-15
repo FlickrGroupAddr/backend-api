@@ -51,9 +51,48 @@ CF = embed("cloudflare-mark.svg")
 FLICKR = embed("flickr-mark-tight.svg")
 USERS = embed("users.svg")
 
-TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
+# ---------------------------------------------------------------------------
+# PAGE SIZE: tabloid landscape, 11x17 inches.
+#
+# **drawio uses 100 units per inch**, so tabloid landscape is 1700 x 1100 and
+# US Letter landscape is 1100 x 850.
+#
+# **Terry printed this on Letter landscape and called it "a fuckin unusable
+# eyechart", which the arithmetic agrees with.** Measured content is 1770 x 1303
+# units, so fitting it to Letter scales to 65%. Fitting the same content to
+# tabloid scales to 84%, on a sheet 1.55x larger in each direction -- roughly
+# DOUBLE the physical text size.
+#
+# **DPI DOES NOT APPLY TO A PDF, and the distinction is worth one paragraph.** A
+# PDF stores shapes as coordinates and text as glyphs, so it re-renders sharp at
+# whatever resolution the viewer or printer asks for. There is no "300 DPI PDF" to
+# choose -- a 300 DPI printer draws it at 300, a 1200 DPI one at 1200, and zooming
+# in on screen keeps sharpening. **DPI is a raster setting**, and it matters only
+# for a PNG or JPG export.
+#
+# **What decides a PDF is the PAGE SIZE**, which is why these constants are in
+# hundredths of an inch and not in dots.
+PAGE_WIDTH = 1700  # 17 inches
+PAGE_HEIGHT = 1100  # 11 inches
+
+# **THE CONTENT DOES NOT FIT THIS PAGE, and that is stated rather than hidden.**
+# Measured content is 1770 x 1303 against 1700 x 1100 -- 4% over in width, 18%
+# over in height. `check_page_fit()` prints the overflow on every build.
+#
+# **So export with "Fit to Page" checked.** That yields a genuine 11x17 PDF
+# carrying the whole drawing at about 84%. Exporting without it tiles the drawing
+# across four sheets.
+#
+# **A 1:1 fit needs the canvas relaid out, and that is deferred deliberately.**
+# Height is the binding constraint: the Cloudflare frame is 1080 units tall on its
+# own, badge `n7` hangs to y=1327 beneath it, and every assertion in this file
+# keys off those positions. **Scaling every coordinate and font by 0.84 would
+# change no physical text size** -- it moves the same 84% out of the export dialog
+# and into the file -- so it buys tidiness rather than legibility.
+
+TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
   <diagram id="fga-architecture" name="FlickrGroupAddr Architecture">
-    <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1400" math="0" shadow="0">
+    <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="{PAGE_WIDTH}" pageHeight="{PAGE_HEIGHT}" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -1155,6 +1194,45 @@ for cid, line in bad_case:
     print(f"    {cid}: {line!r}")
 print(f"    -> {'clean' if not bad_case else f'{len(bad_case)} lowercase'}")
 problems += len(bad_case)
+
+def check_page_fit() -> None:
+    """Report how the content sits against an 11x17 sheet.
+
+    **This does NOT fail the build, and the restraint is the point.** The content
+    is known to exceed the page; a check that failed every run would be scenery
+    within a day. It prints the numbers so a layout change that makes the overflow
+    WORSE is visible in the same breath as the change.
+
+    **It also states the export setting**, because the file cannot enforce it and
+    the wrong choice tiles the drawing across four sheets.
+    """
+    xs, ys = [], []
+    for match in re.finditer(
+        r'<mxGeometry([^/>]*)(?:/>|>)', TEMPLATE.replace("&quot;", '"')
+    ):
+        attrs = match.group(1)
+        got = dict(re.findall(r'(\w+)="([-\d.]+)"', attrs))
+        if "x" not in got or "y" not in got:
+            continue
+        x, y = float(got["x"]), float(got["y"])
+        xs += [x, x + float(got.get("width", 0))]
+        ys += [y, y + float(got.get("height", 0))]
+
+    if not xs:
+        print("  page fit: NO GEOMETRY FOUND -- the check is broken, not the layout")
+        return
+
+    width, height = max(xs) - min(xs), max(ys) - min(ys)
+    scale = min(PAGE_WIDTH / width, PAGE_HEIGHT / height)
+
+    print(f"  11x17 page fit ({PAGE_WIDTH}x{PAGE_HEIGHT} = 17x11 inches):")
+    print(f"    content        {width:.0f} x {height:.0f}")
+    print(f"    fits at        {scale * 100:.0f}%  ({'1:1' if scale >= 1 else 'needs Fit to Page'})")
+    print("    export as PDF with FIT TO PAGE, or it tiles across four sheets")
+    print("    DPI is a raster setting and does not apply to a PDF")
+
+
+check_page_fit()
 
 if problems:
     raise SystemExit("Diagram geometry check failed -- fix the layout before committing.")

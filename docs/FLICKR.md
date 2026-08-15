@@ -106,6 +106,13 @@ early on 2026-08-13 and **372** later the same day.
 
 **Any per-group work MUST be sized against hundreds, and MUST NOT cache the count.**
 
+**372 is not the ceiling, and an independent source says so.** Jeffrey Friedl's Flickr plug-in for
+Lightroom shipped a fix in 2009 *"for a bug that prevented more than 400 groups from showing"*, with
+the aside *"(Yes, some people are members of more than 400 groups!)"*. **A second implementation hit
+this and capped at 400 by accident**, which is the shape ADR-17's walk-every-page rule exists to
+prevent. Terry raised the plug-in as a survey lead; its code is compiled and unreadable, so its
+changelog is the only evidence available.
+
 **A full `getInfo` sweep of 372 groups takes about 50 seconds**, at roughly 130 ms per call. An
 endpoint that made one call per group returned 979 KB and took **53 seconds**. The fix was not
 concurrency. **The fix was not making the calls.**
