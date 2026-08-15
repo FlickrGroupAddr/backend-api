@@ -313,7 +313,7 @@ for c in cells:
 
 
 def attach_point(box, style, prefix):
-    """Fixed exitX/entryX if the style pins one, otherwise the box centre."""
+    """Fixed exitX/entryX if the style pins one, otherwise the box center."""
     x, y, w, h = box
     fx = re.search(rf"{prefix}X=([\d.]+)", style)
     fy = re.search(rf"{prefix}Y=([\d.]+)", style)
@@ -418,7 +418,7 @@ for eid, label in MUST_BE_HORIZONTAL.items():
 # A label wider than the arrow it sits on hides that arrow: the white label
 # background masks the line, and on a short segment the text covers all of it.
 # Measured against the VISIBLE segment -- the part between the two box edges --
-# not the centre-to-centre distance, which is what makes short hops deceptive.
+# not the center-to-center distance, which is what makes short hops deceptive.
 def visible_span(a, b, box):
     """Walk from a toward b until leaving box; returns where the line emerges."""
     x, y, w, h = box
@@ -601,9 +601,9 @@ def point_to_segment(pt, a, b):
 print("  step badges hug their arrows without covering them:")
 for badge, eid in BADGE_ON_EDGE.items():
     bx, by, bw, bh = boxes[badge]
-    centre = (bx + bw / 2, by + bh / 2)
+    center = (bx + bw / 2, by + bh / 2)
     _, _, p, q = segments[eid]
-    d = point_to_segment(centre, p, q)
+    d = point_to_segment(center, p, q)
     if d < NEAR_MIN:
         verdict = "TOO CLOSE, masks the line"
     elif d > NEAR_MAX:
@@ -627,16 +627,16 @@ if not on_run:
 
 # n7 rides a 1,580px horizontal run, so nothing about the arrow decides where
 # along it the badge belongs -- which is exactly why it looked arbitrary. It is
-# pinned to the centre of App Secrets Store directly above it. An equality, not a
+# pinned to the center of App Secrets Store directly above it. An equality, not a
 # tolerance, because the alignment either reads or it does not.
 sx, _, sw, _ = boxes["secrets"]
 drift = n7c[0] - (sx + sw / 2)
-print(f"    n7 centred under App Secrets Store: off by {drift:.1f}px")
+print(f"    n7 centered under App Secrets Store: off by {drift:.1f}px")
 if abs(drift) > 0.5:
     problems += 1
 
 # Badges 8 and 10 both sit on browser-to-Worker arrows and are read as a pair, so
-# they straddle the centre line of the DNS / Pages / Cron column rather than each
+# they straddle the center line of the DNS / Pages / Cron column rather than each
 # landing wherever its own arrow allowed. Symmetry about a shared axis is the
 # thing the eye checks; an equality, not a band, for the same reason as n7 above.
 BADGE_PAIRS = {
@@ -670,23 +670,23 @@ for badge, eid in list(BADGE_ON_EDGE.items()) + [("n7", "e11")]:
 # any tile. The OAuth Durable Object was originally #0051C3 against badges at
 # 68 units apart in RGB, close enough to read as the same thing at a glance.
 BADGE_FILL = "#003087"
-MIN_COLOUR_DISTANCE = 90.0
+MIN_COLOR_DISTANCE = 90.0
 
 
-def rgb(hexcolour):
-    h = hexcolour.lstrip("#")
+def rgb(hexcolor):
+    h = hexcolor.lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
 
 badge_rgb = rgb(BADGE_FILL)
-print("  badge colour distinct from tile fills:")
+print("  badge color distinct from tile fills:")
 for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1", "lrc", "lrcat"]:
     style = next(c.get("style") for c in cells if c.get("id") == tile)
     fill = re.search(r"fillColor=(#[0-9A-Fa-f]{6})", style).group(1)
     dist = math.dist(badge_rgb, rgb(fill))
-    verdict = "ok" if dist >= MIN_COLOUR_DISTANCE else "TOO CLOSE TO BADGE BLUE"
+    verdict = "ok" if dist >= MIN_COLOR_DISTANCE else "TOO CLOSE TO BADGE BLUE"
     print(f"    {tile:9} {fill}  distance {dist:>5.0f}  {verdict}")
-    if dist < MIN_COLOUR_DISTANCE:
+    if dist < MIN_COLOR_DISTANCE:
         problems += 1
 
 
@@ -906,9 +906,9 @@ for cid, art in LOGO_ART.items():
         print(f"    -> {cid} is visibly stretched")
         problems += 1
 
-# Centred under the card, not merely near the middle.
+# Centered under the card, not merely near the middle.
 off = (lx + lw / 2) - (fx + fw / 2)
-print(f"    centred in the Flickr card: off by {off:.1f}px")
+print(f"    centered in the Flickr card: off by {off:.1f}px")
 if abs(off) > 0.5:
     problems += 1
 

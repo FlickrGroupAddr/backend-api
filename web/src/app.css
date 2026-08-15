@@ -75,7 +75,7 @@
 :root {
 	color-scheme: light dark;
 
-	/* Ink and paper. Slightly warm rather than pure grey, so long reading is easier. */
+	/* Ink and paper. Slightly warm rather than pure gray, so long reading is easier. */
 	--ink: #16151a;
 	--ink-2: #4a4550;
 	--muted: #6b6570;
