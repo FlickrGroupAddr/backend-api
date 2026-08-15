@@ -37,10 +37,24 @@ return {
 	-- The File entry is the one that matters here: it does NOT depend on the
 	-- Library module being active, so it shows up wherever Lightroom happens to
 	-- open. Two lines to delete a whole class of uncertainty.
+	-- 0.4 ADDS THE PICKER PROBE, and it measures rather than demonstrates.
+	--
+	-- Two questions decide how the real group picker feels, and both are
+	-- recorded UNMEASURED in docs/LRC-CLIENT-NOTES.md: whether rebinding
+	-- `simple_list.items` clears the selection, and how a 372-item list looks
+	-- and performs. The merge selection model is correct either way -- what
+	-- differs is the feel, and feel cannot be read out of a reference manual.
+	--
+	-- It makes no network call and touches no catalog. The 372 groups are
+	-- generated in the file.
 	LrLibraryMenuItems = {
 		{
 			title = "FGA: dump publish services (Library)",
 			file = "DumpPublishServices.lua",
+		},
+		{
+			title = "FGA: group picker probe (Library)",
+			file = "PickerProbe.lua",
 		},
 	},
 
@@ -49,7 +63,11 @@ return {
 			title = "FGA: dump publish services (File)",
 			file = "DumpPublishServices.lua",
 		},
+		{
+			title = "FGA: group picker probe (File)",
+			file = "PickerProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 3, revision = 0 },
+	VERSION = { major = 0, minor = 4, revision = 0 },
 }

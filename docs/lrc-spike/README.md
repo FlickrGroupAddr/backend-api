@@ -3,6 +3,38 @@
 **RFC 2119 keywords. MUST and MUST NOT are absolute. SHOULD is a strong default a good argument may
 overrule. MAY is optional.**
 
+## 0.4 adds a SECOND probe, and it measures the picker
+
+**`PickerProbe.lua` answers the two questions `docs/LRC-CLIENT-NOTES.md` records as unmeasured**,
+and it answers them by being used rather than by being read:
+
+1. **Does rebinding `simple_list.items` clear or corrupt the selection?**
+2. **How does a 372-item list look and perform**, and does `height` accept a large value? The
+   reference states a minimum of 80 and names no maximum.
+
+**The merge selection model is correct either way, which is why it is the design regardless of the
+answer.** What differs is the FEEL — a widget that visibly drops its highlighting on every keystroke
+is unpleasant even when the model underneath is right, and feel cannot be read out of a reference
+manual.
+
+**It makes no network call and touches no catalog.** The 372 groups are generated in the file, with
+deliberately long repetitive names: a picker that looks fine with `Group 12` and falls apart with
+`Canada Landscapes - pool 214` has not been tested.
+
+### How to run it
+
+**Remove then Add in the Plug-in Manager. Disable and re-enable is NOT enough** — `Info.lua`
+changed, and that combination once updated the version number while the new menu item never
+appeared.
+
+Then **File > Plug-in Extras > FGA: group picker probe (File)**. The File entry works in every
+module; the Library entry needs the Library module active.
+
+**What to look for:** type in the filter box and watch whether highlighted rows stay highlighted as
+the list narrows and widens. The line under the list reports `showing N of 372 · selected N`, which
+is the model's view — **if the count holds while the highlighting does not, the widget is dropping
+`value` on rebind and the merge model is doing its job.**
+
 ## This is EVIDENCE, not a decision
 
 **Nothing here commits FlickrGroupAddr to building a Lightroom client.** `docs/LRC-CLIENT-NOTES.md`
