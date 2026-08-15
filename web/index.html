@@ -26,9 +26,12 @@
 			fetched in CORS mode, and a preload without it fetches the file TWICE. That is
 			the classic way a preload makes a page slower.
 
-			`display: block` lives in app.css beside the @font-face. It is the anti-flicker
-			half -- text stays invisible briefly rather than painting in a fallback and
-			reflowing when Inter lands.
+			`font-display: optional` lives in app.css beside the @font-face, and THIS
+			PRELOAD IS WHAT MAKES IT WORK. `optional` gives the font about 100ms and then
+			never swaps mid-page, so there is neither a flicker nor a spell of blank text.
+			It only wins that race because the file is preloaded and same-origin. Behind a
+			CDN, or without this tag, `optional` would fall back constantly and Inter would
+			simply not appear.
 		-->
 		<link
 			rel="preload"
