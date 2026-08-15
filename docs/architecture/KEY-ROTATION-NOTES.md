@@ -210,15 +210,77 @@ lookup**. They would need the key *and* a live session id.
 **That is the direct answer to the question this file opens with.** `SESSION_KEY` stops being a
 single secret that grants account takeover.
 
+### What the runtime actually provides, probed 2026-08-15
+
+**Measured against real `workerd`, not recalled.** Recall about installed APIs has been wrong five
+times on this project.
+
+| | |
+|---|---|
+| Digests present | `SHA-1`, `SHA-256`, `SHA-384`, `SHA-512`, and `MD5` as a Cloudflare extension |
+| Digests **absent** | `SHA3-256`, `SHA3-512`, `BLAKE2b-256`, `BLAKE3` — *"Unrecognized or unimplemented digest algorithm requested"* |
+| HMAC hashes | `SHA-1`, `SHA-256`, `SHA-384`, `SHA-512`. **No SHA-3** |
+| `crypto.subtle.timingSafeEqual` | **Present and working** |
+
+**So SHA-3 is not a choice here.** It is not in the Web Crypto specification and Cloudflare has not
+extended it. Any design naming SHA-3 is unimplementable on this runtime.
+
+**`crypto.subtle.timingSafeEqual` MUST NOT be destructured.** Pulling it off the object loses the
+`this` binding and throws `Illegal invocation` — **at runtime only**, so it passes both typecheck and
+lint. Call it as `crypto.subtle.timingSafeEqual(a, b)`. This is the same trap Cloudflare's own skill
+records for `ctx`, and it applies to `crypto.subtle` methods too. **Hit while writing this
+section.**
+
+**Use it for the HMAC comparison.** A `===` on a MAC is a timing oracle, and the platform hands you
+the fix — which is ADR-14's second test, "is the platform already doing it".
+
 ### UUIDv7 is ruled out, by this project's own reasoning
 
 **ADR-16 already rejected v7 for `requests.public_id`** because it "republishes its own creation
 time" and spends 48 bits on a plaintext timestamp, leaving 74 random against v4's 122. **A session
 id is a bearer credential, so that argument binds harder here than it did there.**
 
-**256 raw random bits is preferred over UUIDv4.** v4's 122 bits are adequate; the extra bits cost
-nothing, and a session id never appears in an API contract, so there is no consistency benefit to
-being a UUID. **This one is a preference rather than a rule.**
+### 256 bits, DECIDED 2026-08-15, and the overkill is measurably free
+
+**Terry's call, in his words: *"I want a crypto expert to review the code and cackle at the ludicrous
+overkill. It's best practices maxed out."*** That is a legitimate reason on a hobby project, and the
+cost turns out to be a rounding error.
+
+**122 bits would have been overwhelmingly sufficient**, and the arithmetic is recorded so nobody
+re-derives it: a trillion guesses against ten live sessions gives roughly **2 × 10⁻²⁴** odds of a
+hit. OWASP asks for 128-bit identifiers with at least 64 bits of entropy; UUIDv4's 122 nearly
+doubles the entropy requirement. **256 prevents no attack that 122 allows.**
+
+**And the signed cookie means guessing is not even the attack.** Without `SESSION_KEYS` a forger
+fails the HMAC gate before the database is touched, so the id's entropy is the second line rather
+than the first.
+
+**It costs 100 NANOSECONDS.** Both 16 and 32 bytes fit inside a single SHA-256 compression block —
+the block is 64 bytes — so the wider id buys the same number of compression calls.
+
+| Operation | Measured |
+|---|---|
+| `getRandomValues(32)` | **0.45 µs** |
+| `randomUUID()` | 0.20 µs |
+| `SHA-256` of **16** bytes | 1.65 µs |
+| `SHA-256` of **32** bytes | **1.75 µs** |
+| `SHA-512` of 32 bytes | 1.90 µs |
+| `HMAC-SHA256` sign, 32 bytes | **2.25 µs** |
+
+**Per authenticated request the crypto totals about 4 µs** — one HMAC verify plus one SHA-256 — against
+a D1 read measured in milliseconds. **The crypto is well under a tenth of one percent of the
+request.** Terry estimated "small double-digit ms at most"; the real figure is three orders of
+magnitude smaller.
+
+**Caveat on the measurement.** 20,000 iterations each, inside `@cloudflare/vitest-pool-workers` on
+the development laptop, **not** on production Cloudflare. Relative costs should hold; absolute
+figures may not. The clock **did** advance normally here — 5 ms across a five-million-iteration busy
+loop — so the Spectre timer freeze that makes naive benchmarks report zero did not apply in the test
+pool. **Do not assume that holds in production.**
+
+**If more overkill is ever wanted, SHA-512 costs 0.15 µs more and adds no security** — the input is
+one block either way and there is no length-extension exposure to close. Recorded so the option is
+priced rather than re-argued.
 
 ### What is gained and what is lost
 
