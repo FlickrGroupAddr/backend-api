@@ -321,26 +321,133 @@ Photos MAY stay on the NAS; the `.lrcat` may not.
 **A newer Lightroom offers to upgrade an older catalog.** That writes a new file and leaves the
 original intact.
 
-## Design questions, unresolved, IF this proceeds
+## The UI toolkit, read from the SDK reference on 2026-08-15
 
-### Authentication is a new credential class
+**25 widget constructors. No table, no tree, no multi-column list, nothing virtualized, no built-in
+filter. Every dialog is modal except `presentFloatingDialog`.**
 
-**ADR-10's session is a `__Host-` cookie minted for a browser, and a Lua plug-in is not a browser.**
-Candidates, none chosen:
-
-| Option | Cost |
+| Category | Widgets |
 |---|---|
-| A long-lived token generated in the web UI and pasted into plug-in settings | One endpoint, one table, a revocation story |
-| A device-code flow — plug-in shows a code, user enters it at the site, plug-in polls | Better UX, more endpoints |
-| Browser plus a localhost callback over `LrSocket` | A listening socket and a second redirect target |
+| Layout | `row`, `column`, `group_box`, `scrolled_view`, `tab_view`, `tab_view_item`, `separator`, `spacer`, `view` |
+| Input | `edit_field`, `password_field`, `checkbox`, `radio_button`, `popup_menu`, `combo_box`, `simple_list`, `slider`, `color_well`, `push_button` |
+| Display | `static_text`, `picture`, `catalog_photo` |
 
-**Whichever wins becomes an ADR.**
+**`simple_list` is the one that decides the picker**, and it is better than it first looks:
+
+> `value` : an array of the values corresponding to **each selected list item**
+> `items` : table of items, each with a localizable `title` and a `value`
+> `allows_multiple_selection` : True if the list supports selection of multiple items at one time
+> `height` : default 150, will not be allowed smaller than 80
+
+So a scrolling, flat, **multi-select** list of title/value pairs with bindable `items`. No columns,
+no per-row widgets, no icons.
+
+**`combo_box` is NOT a searchable object picker.** The reference calls it "an editable text field
+and a pop-up menu of predefined **text** values". Typing filters nothing. **The web UI's
+type-ahead-and-chips picker does not port.**
+
+**`catalog_photo` renders a real thumbnail from the catalog**, so a dialog can show the photos it is
+about to queue.
+
+**Supporting machinery, all confirmed present:** `LrDialogs.presentModalDialog` takes a full
+`LrView` hierarchy, `LrProgressScope` gives a cancelable progress bar, `LrBinding` and
+`LrObservableTable` give reactive property tables, `LrPrefs.prefsForPlugin` persists settings, and
+`LrPasswords.store` / `retrieve` is encrypted storage keyed to the plug-in ID.
+
+## Design settled 2026-08-15
+
+### The plug-in talks ONLY to FGA. It makes no Flickr calls, ever.
+
+**It has no Flickr credentials and MUST NOT acquire any.** FGA already holds the user's Flickr token,
+AES-GCM encrypted in D1 under ADR-09, and that is the credential that does the work.
+
+**The decisive reason is ADR-06's sweep**, not tidiness. The cron runs at 00:15 UTC with Lightroom
+closed, so a token living in a Lightroom catalog is invisible to the thing that needs it. Adobe's
+plug-in talks to Flickr directly because it has no server; ours has one.
+
+**The photo id costs nothing.** `getRemoteId()` is a local catalog read — no network, no
+credentials, already measured.
+
+### Authentication: the frob pattern, aimed at FGA instead of Flickr
+
+**Adobe's own Flickr plug-in already ships this shape**, and reading its source settled the
+question. `FlickrAPI.openAuthUrl()` requests a frob, opens a browser at Flickr's auth URL carrying
+it, and exchanges the frob for a durable `auth_token` afterwards.
+
+**That IS a device-code flow.** So the design is Adobe's, with FGA one hop over:
+
+| Adobe → Flickr | FGA plug-in → FGA |
+|---|---|
+| `flickr.auth.getFrob` | `POST /api/v001/device/start` → code |
+| `LrHttp.openUrlInBrowser( auth?frob=… )` | `LrHttp.openUrlInBrowser( /link?code=… )` |
+| user approves at flickr.com | user approves at flickrgroupaddr.com, signing in with Flickr if needed |
+| exchange frob → `auth_token` | poll → FGA plug-in token |
+
+**The existing Flickr OAuth does the identity leg unchanged** — ADR-08's Durable Object, ADR-07's
+"the Flickr account is the identity". The plug-in never sees a Flickr credential.
+
+**Storage is a preference, not a requirement.** `LrPasswords` is encrypted and costs two lines;
+`LrPrefs` is what Adobe uses and would be defensible, since the stored value is an FGA token scoped
+to one product and revocable server-side. **An earlier draft of this file claimed `LrPasswords` was
+necessary on security grounds. It is not, and that claim was made before reading Adobe's source.**
+
+**This still becomes an ADR** — it is a new credential class with its own revocation story, and
+ADR-10's cookie assumptions do not cover it.
+
+### Feedback is preflight. Commitment is one batch submit.
+
+**Clicking a group fires a debounced `POST /api/v001/photos/:photoId/preflight`** and marks the chip
+`seen by a moderator` / `already in` / `already queued`. **It commits nothing**, costs one Flickr
+call regardless of group count, and is ADR-20 doing exactly the job it was built for.
+
+**An explicit button then submits the whole selection in one call.**
+
+**That button is a COMMITMENT BOUNDARY under ADR-01, not latency overhead.** It is the moment the
+person says *yes, I mean it*, and it is the only checkpoint between a stray click and a volunteer's
+review queue.
+
+### The batch submit endpoint FGA does not yet have
+
+**`POST /api/v001/requests` takes one `photoId` and one `groupId`.** Forty groups is forty POSTs —
+`web/src/lib/submission.ts` measures that at roughly twelve seconds. A one-round-trip client needs a
+batch endpoint, and it needs one guard rail.
+
+**It MUST NOT inherit ADR-03's immediate-attempt behavior at batch scale.** That path attempts
+straight away when a request is alone in its queue, which is right for one photo into one group.
+Applied to forty, a single Worker invocation makes forty sequential `groups.pools.add` calls on one
+user's token — `submission.ts` calls that "the same discourtesy wearing a performance costume".
+**Enqueue, return, and let the nightly sweep do the work.** The one exception worth keeping: a batch
+of exactly one group whose queue is empty may take the existing immediate path.
+
+**Atomic in D1, NOT atomic in outcome.** `db.batch()` should put the inserts in one transaction. The
+result is still per-group: queue the clean ones, refuse and report anything needing acknowledgement,
+same four statuses ADR-20's preflight already returns. **Rejecting all forty because three carry a
+warning would hold thirty-seven good ones hostage**, and the partial result is the safe direction
+anyway — nothing reaches a moderator unanswered.
+
+**`resolveRequest`'s existing pairing MUST survive any batch path** — the request update and the
+`moderated_pairs` insert go in one `db.batch()` so a request cannot be marked resolved without the
+record that a person saw it.
+
+### The carve-out that breaks "everything is deferred"
+
+**ADR-03 lets the API attempt immediately when a request is the sole unresolved one in its queue.**
+Three lines in `src/routes/api.ts`.
+
+**That single permission is why no client may treat submission as deferred**, and it is not obvious
+from the outside — the product looks like a queue that drains at midnight. **Any design reasoning
+"nothing happens until the sweep, so this is reversible" is wrong because of those three lines.**
 
 ### Group selection MUST NOT be a checkbox list
 
-**Terry belongs to 372 groups** — see `docs/FLICKR.md`. A dialog with 372 checkboxes recreates the
-2021 UI failure ADR-18 already names. Saved group sets, chosen once and reused, are the obvious
-shape.
+**Terry belongs to 372 groups** — see `docs/FLICKR.md`, and the count moved from 330 to 372 in one
+day, so it **MUST NOT** be cached. A dialog with 372 checkboxes recreates the 2021 UI failure ADR-18
+already names.
+
+**Still open, and it is a product call rather than a technical one.** Saved group sets managed on
+the web, with the plug-in showing a `popup_menu` of set names, against a filtered multi-select
+`simple_list` holding all 372 in the plug-in. The first keeps the hard picker where the good toolkit
+is; the second avoids maintaining two pickers. **Not decided.**
 
 ### ADR-01 gets MORE load-bearing, not less
 
@@ -359,6 +466,9 @@ rather than a clean warning.
 | **Lightroom API - Firefly Services** | Same wrong target. `Create project` is disabled for Terry's account |
 | An export filter to catch the publish | Filters run on the rendered file **before** upload, so no remote ID exists yet |
 | Calling Flickr from the plug-in to find the photo | Needs its own Flickr auth, and the catalog already knows the answer |
+| **Per-click submission with a Cloudflare Queue, and rescind by clicking again** | **Refused 2026-08-15, and this one is worth reading before re-proposing it.** Under ADR-01 an add that reaches a moderator resolves at that instant and can NEVER be pulled back — Flickr offers no call to remove a photo from a moderation queue, which is why `withdrawRequest` conditions on `state = 'pending'`. A rescind can lose that race, and the user would be told "cancelled" while a volunteer is looking at their photo. It also strands ADR-04, ADR-05, ADR-20 and `idx_requests_one_pending_per_pair`, all of which need a read BEFORE the user is told anything |
+| A Cloudflare Queue in front of the D1 insert, for latency | **The `requests` table already IS the queue** — `state='pending'`, ordered by `id`, drained by ADR-06's cron. A second queue only makes the INSERT async, and that insert carries every safety constraint. `env.QUEUE.send()` is a network call too, so it trades a write for a write. **ADR-06's promotion bar applies: measure a real limit first.** None of its three conditions holds |
+| A pasted long-lived token, or `LrSocket` on a localhost callback | Both workable, both beaten by the frob pattern above. A paste means generating and copying a secret by hand; a socket means a listener, a firewall prompt and a second redirect target |
 
 **Neither cloud API can see a Classic catalog on local disk**, which is where every record this
 design needs actually lives. The plug-in path is not merely easier; it is the only one that reaches
