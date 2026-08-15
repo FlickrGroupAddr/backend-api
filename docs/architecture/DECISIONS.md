@@ -627,10 +627,12 @@ it automatically. Both costs, no benefit.
   the editor and nobody notices the Lua client for months. Per ADR-18 the web app was simply built
   first, which is an accident of order and not a ranking — the stated project goal is queueing
   without leaving Lightroom. Detail in `docs/LRC-CLIENT-NOTES.md`.
-- **The architecture diagram MUST NOT show the Lightroom client until the plug-in ships.** Same
-  reasoning that deleted the D1 read-replica tile on 2026-08-13: depicting something the system does
-  not have is worse than silence, because a reader years later designs around it. The revision is
-  pre-specified in `docs/LRC-CLIENT-NOTES.md` so it is a small job when the time comes.
+- **The architecture diagram SHOWS the Lightroom client as of 2026-08-15, before the plug-in
+  exists — a deliberate call, not an oversight.** The argument against was the one that deleted the
+  D1 read-replica tile: depicting something the system does not have is worse than silence. Terry
+  overruled it on the grounds that the diagram's job is to remind him what this project IS, and he
+  is not at risk of forgetting whether the plug-in exists. **If the plug-in is abandoned, the tile
+  comes out**, same rule as the replica. Reasoning in `docs/LRC-CLIENT-NOTES.md`.
 - **Key management is DECIDED and unbuilt, in `docs/architecture/KEY-ROTATION-NOTES.md`.** Three
   pieces: a timestamped keyring replacing the single `TOKEN_KEY` and `SESSION_KEY`, opaque signed
   session handles amending ADR-10, and a deferred re-encryption cron. **It is not an ADR yet on

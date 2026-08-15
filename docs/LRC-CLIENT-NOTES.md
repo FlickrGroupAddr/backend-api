@@ -389,23 +389,39 @@ by which time the plug-in is broken, undiagnosed, and looks abandoned rather tha
 the two**, because the stated goal is queueing adds without leaving Lightroom. The web UI was built
 first; that is an accident of order, not a ranking.
 
-### The architecture diagram: NOT YET, deliberately
+### The architecture diagram SHOWS the client, as of 2026-08-15
 
-**The diagram MUST NOT show the Lightroom client until the plug-in actually ships.**
+**Terry overruled a deferral, deliberately, and the record matters more than the outcome.**
 
-**This is the read-replica lesson applied forward.** D1 was once drawn as primary plus replica so a
-consistency failure had somewhere to live; when read replication left the architecture, the tile
-went with it, and the recorded conclusion was that **depicting something the system does not have is
-worse than silence** — a reader in five years designs around it.
+**The argument against drawing it was the read-replica lesson.** D1 was once drawn as primary plus
+replica so a consistency failure had somewhere to live; when read replication left the architecture,
+the tile went with it, and the recorded conclusion was that **depicting something the system does
+not have is worse than silence** — a reader in five years designs around it. By that argument a
+first-class LrC client on the canvas tells Terry-of-2031 it shipped, and if it never does, the
+diagram lies.
 
-**A first-class LrC client on the canvas today would tell Terry-of-2031 it shipped.** If it never
-does, the diagram lies in exactly the mode this project is most careful about.
+**Terry's counter, and it is a fair one: the diagram is his artifact and its job is to remind him
+what this project IS.** He is not at risk of forgetting whether the plug-in exists; he is at risk of
+forgetting that it was ever the point. **So the tile is a deliberate choice rather than an
+oversight, and that is written here so nobody "corrects" it later.**
 
-**When it ships, the revision is pre-specified**, so it is a small job rather than a redesign:
+**If the plug-in is ever abandoned, the tile comes out** — same rule that removed the replica.
 
-- Split the single `users` actor into two client tiles, browser and Lightroom Classic.
-- Both connect to the API Worker. **Only the browser connects to the app shell and to DNS**, since
-  the plug-in fetches no HTML.
+**What was drawn:**
+
+- The `users` actor became **`Browser client`**, keeping its geometry exactly — `e12` and `e13`
+  attach to it and are asserted dead level, so moving it would have broken two assertions for a
+  relabel.
+- **Lightroom Classic is an OUTER card containing an inner `FGA plug-in` tile**, mirroring how the
+  Flickr card contains the Flickr API tile. Terry's reasoning: *"want to show all we're changing is
+  a plug-in within LrC."* The card is `lrcapp`, the plug-in is `lrc`.
+- **A `Catalog` tile sits inside the same card**, holding "Published photo IDs". **The SDK is
+  deliberately NOT drawn** — Terry raised it and called it possibly "below the radar horizon of this
+  diagram", which is right. **The catalog is a store, the SDK is a library**, and this diagram's own
+  rule is to say what a thing holds rather than what it does. Same reason the canvas shows D1 and
+  not a D1 client.
+- Both clients connect to the API Worker. **Only the browser connects to the app shell and to
+  DNS**, since the plug-in fetches no HTML.
 - **Auth is drawn as THREE HOPS, decided 2026-08-15.** Terry challenged an earlier line reading "the
   plug-in gets no edge to Flickr", correctly — that left the canvas silent on how a plug-in ever
   gets a credential. **The resolution is that Flickr appears in the plug-in's journey, but the

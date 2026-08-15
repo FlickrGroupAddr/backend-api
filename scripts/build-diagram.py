@@ -35,7 +35,7 @@ import pathlib
 # filename and the title block MUST carry the same date, so both come from this
 # one constant. Bump it when the diagram's content changes, and git mv the
 # existing file to match before running.
-DATE = "2026-08-14"
+DATE = "2026-08-15"
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SVG = ROOT / "docs" / "architecture" / "logos"
@@ -75,8 +75,20 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
           <mxGeometry x="260" y="400" width="950" height="780" as="geometry" />
         </mxCell>
 
-        <mxCell id="users" value="Users" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={USERS};fontSize=13;fontStyle=1;labelPosition=left;align=right;verticalLabelPosition=middle;verticalAlign=middle;spacingRight=10;" vertex="1" parent="1">
+        <mxCell id="users" value="Browser client" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={USERS};fontSize=13;fontStyle=1;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
           <mxGeometry x="70" y="750" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="lrcapp" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#546E7A;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="35" y="900" width="165" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="lrctitle" value="Lightroom Classic" style="text;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
+          <mxGeometry x="55" y="918" width="125" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="lrc" value="&lt;b&gt;FGA plug-in&lt;/b&gt;&lt;br&gt;&lt;i&gt;Lua&lt;br&gt;All we add&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#546E7A;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="55" y="955" width="125" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="lrcat" value="&lt;b&gt;Catalog&lt;/b&gt;&lt;br&gt;&lt;i&gt;Local SQLite&lt;br&gt;Published photo IDs&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#607D8B;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1075" width="125" height="105" as="geometry" />
         </mxCell>
 
         <mxCell id="dns" value="&lt;b&gt;flickrgroupaddr.com DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Authoritative DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
@@ -165,9 +177,15 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         <mxCell id="n11" value="11" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1417" y="813" width="46" height="46" as="geometry" />
         </mxCell>
+        <mxCell id="n12" value="12" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="122" y="840" width="46" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="n13" value="13" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="558" y="904" width="46" height="46" as="geometry" />
+        </mxCell>
 
-        <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Static assets served by the same Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;User authorizes FGA&#39;s write access @ Flickr &#8212; HTTP response has HTTP redirect to API OAuth callback&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Browser follows HTTP redirect instructed by Flickr to OAuth callback, carrying a verifier&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the token secret back out and trades the verifier for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;REST API endpoints: flickrgroupaddr.com/api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="1228" y="180" width="275" height="547" as="geometry" />
+        <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Static assets served by the same Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;User authorizes FGA&#39;s write access @ Flickr &#8212; HTTP response has HTTP redirect to API OAuth callback&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Browser follows HTTP redirect instructed by Flickr to OAuth callback, carrying a verifier&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the token secret back out and trades the verifier for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;REST API endpoints: flickrgroupaddr.com/api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;12&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Lightroom plug-in opens the browser to link itself. It never calls Flickr&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;13&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Lightroom plug-in polls for its token, then queues a batch in one call&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1228" y="110" width="275" height="660" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
@@ -181,6 +199,15 @@ TEMPLATE = """<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.
         </mxCell>
         <mxCell id="e13" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="api">
           <mxGeometry x="0.55" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.05;exitDx=0;exitDy=0;entryX=0.15;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="lrcat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;dashPattern=1 4;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="users">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
@@ -253,8 +280,10 @@ import xml.etree.ElementTree as ET
 NOT_OBSTACLES = {
     "cfframe", "netb", "cflogo", "title", "date",
     "flickrlogo", "flickr", "flickrtitle",
-    # Step badges sit ON their arrows by design, so they are not obstacles.
-    "n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9", "n10", "n11",
+    # The Lightroom Classic card is a CONTAINER, exactly like the Flickr card
+    # above it: edges legitimately terminate on the tiles stacked inside it, and
+    # the outer frame is not a thing an arrow can collide with.
+    "lrcapp", "lrctitle",
     # Cascade cards behind the OAuth tile: decoration showing there are many,
     # and the edge legitimately terminates on the tile stacked in front of them.
     "oauthdo_b1", "oauthdo_b2",
@@ -262,6 +291,17 @@ NOT_OBSTACLES = {
 
 root = ET.parse(OUT).getroot()
 cells = root.findall(".//mxCell")
+
+# Step badges sit ON their arrows by design, so they are never obstacles.
+#
+# DERIVED, not listed. This was a hardcoded "n1".."n11" set, which silently
+# stopped covering the badges the moment n12 and n13 were added -- every new
+# badge then read as a box its own arrow collided with. Two other places in this
+# file made the same mistake with the same fix, which is the argument for
+# deriving anything that counts badges.
+NOT_OBSTACLES |= {
+    c.get("id") for c in cells if re.fullmatch(r"n\d+", c.get("id") or "")
+}
 
 boxes, edges = {}, []
 for c in cells:
@@ -535,6 +575,11 @@ BADGE_ON_EDGE = {
     "n8": "e13",   # browser -> API Worker, the OAuth callback
     "n9": "e17",   # API Worker <-> Flickr, trading the verifier for the access token
     "n10": "e13",  # users -> API Worker, authenticated calls
+    # The Lightroom Classic client. Two edges, and the pair is the whole point:
+    # the plug-in LAUNCHES a browser and it CALLS the API, and those are
+    # different kinds of thing. Only the second is a network request.
+    "n12": "e19",  # Lightroom plug-in -> browser, to link itself
+    "n13": "e18",  # Lightroom plug-in -> API Worker, its only network edge
     # Steps 5 and 9 get parallel arrows for the same reason steps 3 and 8 do:
     # they are separate conversations that happen at different points, and one
     # shared line made the second invisible. e9 is the login leg, e17 everything
@@ -635,7 +680,7 @@ def rgb(hexcolour):
 
 badge_rgb = rgb(BADGE_FILL)
 print("  badge colour distinct from tile fills:")
-for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1"]:
+for tile in ["dns", "pages", "secrets", "cron", "api", "retry", "oauthdo", "d1", "lrc", "lrcat"]:
     style = next(c.get("style") for c in cells if c.get("id") == tile)
     fill = re.search(r"fillColor=(#[0-9A-Fa-f]{6})", style).group(1)
     dist = math.dist(badge_rgb, rgb(fill))
@@ -903,9 +948,17 @@ if abs(tx - lx) > 0.5 or abs(tw - lw) > 0.5:
 # sit beside their arrow, which means NOTHING was checking them against tiles. A
 # badge overlapping a tile went unnoticed for several commits after a column
 # shift moved the tile under it.
-BADGES = [f"n{i}" for i in range(1, 12)]
+# DERIVED, not hardcoded. This read `range(1, 12)` while `badge_count` above
+# built its list with a regex over the same cells -- so adding a badge extended
+# one and silently not the other, and the overlap checks below would have
+# skipped the new one while the journey check counted it. Exactly the drift the
+# journey-row check's own comment warns about, sitting ten lines away.
+BADGES = sorted(
+    (c.get("id") for c in cells if re.fullmatch(r"n\d+", c.get("id") or "")),
+    key=lambda n: int(n[1:]),
+)
 TILES = ["dns", "pages", "secrets", "cron", "oauthdo", "api", "retry",
-         "d1", "users", "flickrapi", "journey", "key", "justification"]
+         "d1", "users", "lrcapp", "flickrapi", "journey", "key", "justification"]
 
 
 def overlaps(a, b):
