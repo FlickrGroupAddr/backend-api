@@ -46,8 +46,8 @@ It is ADR-01. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.m
 npm run check
 ```
 
-Typecheck, lint, 201 tests, the traceability gate, and the web build. **It MUST be clean before a
-commit.**
+Typecheck, lint, the US English check, 201 tests, the traceability gate, and the web build. **It
+MUST be clean before a commit.**
 
 ## What it is built on
 

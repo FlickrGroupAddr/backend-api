@@ -58,8 +58,29 @@ because a box that is too large passes.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, 201 tests, the traceability gate, and the web build. **It MUST be
-clean before a commit.**
+Typecheck (both tsconfigs), lint, the US English check, 201 tests, the traceability gate, and the
+web build. **It MUST be clean before a commit.**
+
+### `scripts/us-english.py` enforces the US English standing order
+
+**Terry is American and the rule covers prose, comments, docs, commit messages and identifiers.**
+It kept slipping anyway — `scripts/build-diagram.py` printed `badge colour distinct from tile fills`   US-ENGLISH-EXEMPT: quoting the defect
+on every run for days. **A rule nobody enforces is a rule written down, not a rule kept.**
+
+**The word list is EXPLICIT and MUST NOT become a pattern.** A regex for `-ise` matches `precise`,
+`advertise`, `surprise`, `expertise` and `otherwise`. `analysis` is correct US English while
+`analyse` is not, which is why the file lists words rather than stems. **A checker that cries wolf   US-ENGLISH-EXEMPT: naming a banned form
+gets ignored.**
+
+**Exempt a legitimate use with `US-ENGLISH-EXEMPT: <reason>` on the line** — quoting somebody else's
+text, naming a third-party package, or a fixture that must be misspelled.
+
+**It self-tests on every run**, including against the false positives an `-ise` pattern would
+produce. Same guard `scripts/build-diagram.py` puts on its collision detector.
+
+**It reads FILES ONLY.** It cannot see conversation, and it cannot see a commit message already
+written. **Those are the surfaces this rule actually slips on most**, so its silence MUST NOT be
+read as full coverage.
 
 **This count has now been wrong twice, which is why the rule below is absolute rather than a
 reminder.** It was documented as 178, the suite rebuild took it to 156, and neither this file nor

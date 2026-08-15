@@ -144,7 +144,7 @@ body {
 	font-size: var(--t-base);
 	line-height: 1.55;
 
-	/* Inter ships these opt-in. `cv11` is the single-storey g, `ss01` disambiguates
+	/* Inter ships these opt-in. `cv11` is the single-story g, `ss01` disambiguates
 	   I from l — worth having on a page full of Flickr ids. */
 	font-feature-settings: "cv11", "ss01";
 	-webkit-font-smoothing: antialiased;
