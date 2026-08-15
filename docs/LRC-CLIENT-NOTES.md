@@ -79,6 +79,23 @@ rendition:recordPublishedPhotoId( flickrPhotoId )
 `LrToolkitIdentifier`. **A plug-in SHOULD verify this at runtime rather than hardcode it** — the
 sample and the shipped built-in service are closely related and have not been proven identical.
 
+**That caution earned its place on 2026-08-15, and the reason is worth reading before anyone
+matches on an identifier.** Terry's real catalog was read directly as SQLite, and the publish
+service's `AgLibraryPublishedCollection.creationId` is **`com.adobe.ag.export.service.connection`**
+— a generic "this row is an export service connection" marker, **not a plug-in identity at all.**
+
+`com.adobe.lightroom.export.flickr` IS in the catalog, in three other places:
+
+| Where | What it looks like |
+|---|---|
+| `AgPhotoPropertySpec.sourcePlugin` | the identifier, plainly |
+| `AgLibraryPublishedCollectionContent.content` | settings keys namespaced `["com.adobe.lightroom.export.flickr_addToPhotoset"]` |
+| `Adobe_variablesTable.name` | `AgSdkUpgradeFunctionSucceeded_com.adobe.lightroom.export.flickr` |
+
+**So the identifier is right and the obvious column is wrong.** The catalog stores plug-in identity
+indirectly, which means the SDK performs a mapping this file cannot see. **`service:getPluginId()`
+MUST therefore be read at runtime and MUST NOT be predicted from the schema.**
+
 **The sample declares `LrSdkVersion = 3.0`, from roughly 2010, and Adobe has not modernized it. Read
 it for the mechanism, never as a style template.**
 
@@ -88,6 +105,18 @@ it for the mechanism, never as a style template.**
 
 So a catalog whose Flickr publish service is expired, disconnected or never re-authorized still
 carries every ID. **Any test of this needs no Flickr credentials, no network and no upload.**
+
+**Measured against real data on 2026-08-15, which upgrades this from inference to fact.** Adobe's
+sample code said the remote ID is the Flickr photo ID; Terry's catalog proves it, because the ID
+appears literally inside the URL stored beside it:
+
+```
+remoteId = '42717931314'
+url      = 'https://www.flickr.com/photos/146878425@N05/42717931314/in/set-72157693295162860'
+```
+
+**834 published photos, and 834 of 834 carry a Flickr URL and a numeric id of 8+ digits.** No
+exceptions, no nulls. The NSID is `146878425@N05`, the same value `vitest.config.ts` already stubs.
 
 ### The client side
 
@@ -132,13 +161,31 @@ A neighboring restriction is real: **only the plug-in that defines a custom meta
 change it.** Reading is a different claim than writing and this design only reads — but that is
 reasoning, not evidence.
 
-**The spike is about 20 lines of Lua.** One menu item that enumerates every publish service, prints
-each `getPluginId()` and `getName()`, then dumps `getRemoteId()`, `getRemoteUrl()` and a filename
-for the first few `getPublishedPhotos()` into an `LrDialogs` window. It reads only, writes nothing
-and touches no network.
+### The precondition is now MET. The premise itself is not.
 
-**It needs a catalog containing Adobe's Flickr publish service with at least one published photo.**
-Neither catalog present on this laptop is likely to qualify.
+**Keep these two apart, because collapsing them is the whole trap.** Reading the catalog's SQLite
+proves the DATA exists. It proves nothing about whether the SDK hands that data to a plug-in that
+did not create it. **Those are different claims, and only the second one gates the design.**
+
+| Question | Status 2026-08-15 |
+|---|---|
+| Does a real catalog with Adobe's Flickr publish service exist here? | **YES.** 182,576 images, one service, 96 child collections |
+| Does it carry published photos with Flickr remote IDs? | **YES.** 834 of 834 |
+| Does `catalog:getPublishServices(nil)` return it to a THIRD-PARTY plug-in? | **UNMEASURED** |
+| Does `getPublishedPhotos()` then return that service's photos? | **UNMEASURED** |
+
+### The spike exists and has NOT been run
+
+`C:\Photography\FgaSpike.lrdevplugin\` — `Info.lua` and `DumpPublishServices.lua`. Read-only, no
+network, every accessor wrapped so a renamed method reports itself instead of killing the run. It
+prints a blunt `VERDICT: CONFIRMED` or `VERDICT: REFUTED` and writes `fga-spike-output.txt` to the
+Desktop, so the result survives the dialog.
+
+Load it: **Plug-in Manager → Add**, then **Library → Plug-in Extras → FGA: dump publish services.**
+
+**On local disk rather than `X:`, deliberately** — that share already breaks git ownership, Node
+file watching and Lightroom catalogs, and a plug-in loaded over SMB adds a variable to the one
+measurement this whole design is waiting on.
 
 **If the spike ships, it SHOULD ship permanently as a diagnostic menu item** rather than be thrown
 away. Terry always runs the latest GA Lightroom Classic, so the plug-in gets every Adobe regression
@@ -163,17 +210,40 @@ is `LrC_15.3_202604090947-8f3672ed.release_SDK.zip`, 8.35 MB.
 ## The rig
 
 Lightroom Classic is installed at `C:\Program Files\Adobe\Adobe Lightroom Classic`. **Terry does not
-edit on this laptop.**
+edit on this laptop**, but he put his real catalog here on 2026-08-15 specifically to unblock this
+work, and Lightroom Classic 15.5 upgraded it to the current catalog format.
 
-| Catalog | State 2026-08-14 |
+| Catalog | State 2026-08-15 |
 |---|---|
+| **`C:\Photography\LR Catalog\TDO Lightroom Catalog.lrcat`** | **PRESENT, 1,801.8 MB. The real one, and LrC opens it by default** |
 | `C:\Travel\LR Catalog\Full Catalog\TDO Lightroom Catalog.lrcat` | Missing |
 | `C:\Travel\Lightroom Catalog\Current\TDO Lightroom Catalog.lrcat` | Missing |
-| `C:\Temp\LRCat-Test\LRCat-Test.lrcat` | Present, 2 MB |
-| `C:\Users\TDO-XPS15-2024\Pictures\Lightroom\Lightroom Catalog.lrcat` | Present, 1.7 MB |
+| `C:\Temp\LRCat-Test\LRCat-Test.lrcat` | Present, 2 MB. Not useful — no publish service |
+| `C:\Users\TDO-XPS15-2024\Pictures\Lightroom\Lightroom Catalog.lrcat` | Present, 1.7 MB. Same |
 
 The recent-catalog list lives in
 `%APPDATA%\Adobe\Lightroom\Preferences\Lightroom Classic CC 7 Preferences.agprefs`.
+
+### A `.lrcat` reads as ordinary SQLite, and it can be read SAFELY without a copy
+
+**Confirmed 2026-08-15 on the 1.8 GB catalog.** Open it with `mode=ro` **and** `immutable=1`:
+
+```python
+uri = "file:" + urllib.parse.quote(path.as_posix()) + "?mode=ro&immutable=1"
+sqlite3.connect(uri, uri=True)
+```
+
+**`immutable=1` is the load-bearing half.** It tells SQLite the file cannot change, so it takes no
+locks and creates no `-wal`, `-shm` or journal sidecar. Nothing is written and the original cannot
+be touched — which is what makes reading a 182,576-image catalog acceptable without first copying
+1.8 GB.
+
+**Lightroom MUST be closed first, and that MUST be checked rather than assumed**, because
+`immutable=1` is a promise the caller makes. `Get-Process -Name Lightroom*` answers it.
+
+The tables worth knowing: `AgLibraryPublishedCollection` (services and collections),
+`AgLibraryPublishedCollectionImage`, `AgRemotePhoto` (`remoteId`, `url`, `photo`),
+`AgPhotoPropertySpec.sourcePlugin`, and `Adobe_images` for scale.
 
 **A catalog MUST be on a local writable volume.** Adobe's error names the condition: *"Lightroom
 cannot launch with this catalog. It is either on a network volume or on a volume on which Lightroom
