@@ -29,7 +29,22 @@ export default defineConfig({
 	build: {
 		outDir: "dist",
 		emptyOutDir: true,
-		// A build that silently succeeds with a broken import is worse than a slow one.
+
+		/*
+		 * ADR-21, and it is SETTLED. Litigated with measurements on 2026-08-15 and closed
+		 * by Terry; the reasoning, the numbers and the reopening bar all live in
+		 * docs/architecture/DECISIONS.md rather than being restated here.
+		 *
+		 * **Do not flip this because the build would be faster.** It costs 6.2 s of a
+		 * 64.87 s gate, that figure was known when the decision was made, and ADR-21
+		 * names cost-alone as explicitly insufficient to reopen it. Read the ADR before
+		 * touching this line.
+		 *
+		 * Two operational facts that belong beside the code rather than in the ADR: the
+		 * emitted `.map` is 934 kB and reaches no visitor unless devtools is open, and it
+		 * carries `sourcesContent` for all 76 inputs -- so **the minifier stripping
+		 * comments out of the bundle does NOT keep them off the wire.**
+		 */
 		sourcemap: true,
 	},
 

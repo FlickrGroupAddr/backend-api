@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**20 decisions · 45 test blocks · 25 mutations**
+**21 decisions · 45 test blocks · 25 mutations**
 
 ## Forward: decision to verification
 
@@ -39,6 +39,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-14 and ADR-07, the diagnostic page<br>`worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
 | **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication | yes |
 | **ADR-20** | The warning arrives before the commitment | Test | `preflight.test.ts` ADR-20, the batch preflight | yes |
+| **ADR-21** | The web sourcemap ships, and reopening this needs an extreme bar | Inspection | *by inspection* | — |
 
 ## Backward: every test block defends something
 

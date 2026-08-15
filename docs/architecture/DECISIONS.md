@@ -485,6 +485,64 @@ submit time, which is worse than not checking at all.
 **Results are scoped to the caller's NSID**, so preflight cannot be used to probe whether another
 account's photo reached a moderator.
 
+## ADR-21 — The web sourcemap ships, and reopening this needs an extreme bar
+
+**Verification: Inspection.** Read `build.sourcemap` in `vite.config.ts`. **No runtime behavior to
+test**, and deliberately no mutation: `scripts/mutation-check.py` runs the Vitest suite, which
+never reads the Vite config, so a mutation here would report a survivor and describe a hole that
+does not exist. **An honest gap beats a forced link**, the same rule `TRACE-EXEMPT` follows.
+
+**`vite build` MUST emit a sourcemap for the app shell.** Terry settled this on 2026-08-15 after a
+full measurement, and **the bar to reopen it is deliberately extreme.**
+
+### What it costs, measured 2026-08-15 rather than estimated
+
+| | |
+|---|---|
+| Clean build | **11.0 s with, 4.8 s without** — a 6.2 s difference |
+| Share of `npm run check` | **9.6%** of 64.87 s |
+| Deploy weight | 934 kB, 172.8 kB brotli |
+| Cost to a visitor | **Zero.** A browser fetches a `.map` only when devtools is open |
+
+### Why it stays
+
+**ADR-18 leaves this layer with no typechecker at all.** `svelte-check` peers on TypeScript
+`^5 || ^6` while ADR-13 pins 7.0.2, so nothing reads the inside of a `.svelte` file — not `tsc`,
+not Biome. Every other layer is watched: `tsc` covers `src/` and `web/src/lib/`, Biome lints, the
+suite runs, `scripts/mutation-check.py` proves the suite bites, and `scripts/traceability.py`
+proves every decision is defended. **The components are the only blind spot in this repository, and
+a runtime error there is the first signal that anything is wrong.**
+
+**Reading the live site is how this project finds that class of defect.** On 2026-08-14, looking at
+the running page found a truncated promise, four broken CSS rails and three copy bugs that a green
+build had hidden all session. `Queue.svelte`, `AddToGroups.svelte` and `Admin.svelte` each call
+`console.error` with a real error object, and those reports come from production.
+
+### The consequence that MUST NOT be forgotten
+
+**The sourcemap publishes the full original source, comments included.** `sourcesContent` carries
+all 76 inputs, so the minifier stripping comments out of the bundle does **not** keep them off the
+wire. That costs nothing today because the repository is public. **Comment-stripping MUST NOT be
+described as a privacy property anywhere while this is on**, and if the repository ever goes
+private, this consequence gets re-examined before anything else here does.
+
+### Reopening needs all three, and cost alone is explicitly not enough
+
+**A future session MUST NOT flip this on build-time grounds.** *The build would be faster* is the
+argument that was raised, measured and rejected here. Re-raising it re-litigates a closed question
+using the very evidence that closed it.
+
+1. **`svelte-check`, or an equivalent, actually runs inside `npm run check`** — the hole proven
+   closed by a command that fails on a bad component, not merely closeable in principle.
+2. **The cost re-measured on the machine of the day**, and materially worse than 9.6% of the gate.
+   The figures above are a baseline, never a permanent fact.
+3. **A named production defect this failed to help with**, or evidence that debugging against the
+   live site has stopped being how this project works.
+
+**`sourcemap: "hidden"` is not a middle ground, and it was considered.** It still generates the map
+and still deploys it, so it saves neither the 6.2 s nor the 934 kB — it only stops devtools loading
+it automatically. Both costs, no benefit.
+
 ---
 
 ## Considered and rejected
@@ -505,6 +563,10 @@ account's photo reached a moderator.
 | Separate UI and API hostnames | **Reversed by ADR-18.** It was the plan until the domain landed; one origin makes the CORS contract inert instead of load-bearing |
 | Skipping a queue the sweep predicts is throttled | `getInfo` costs the call it would save, `remaining` is unconfirmed as per-user, and a wrong skip is invisible. See ADR-19 |
 | A counters-and-charts admin dashboard | A page that always shows twelve numbers trains its reader to skim. ADR-19 emits findings and stays silent when there is nothing to do |
+| Dropping the web sourcemap to speed the build | 6.2 s of a 64.87 s gate, spent on the only layer with no typechecker. Measured and closed 2026-08-15. **Cost alone MUST NOT reopen it** — see ADR-21 |
+| `minify: "terser"` for the app shell | Measured 2026-08-15 and it LOST: 40.21 kB brotli against the default's 39.43 kB, and 17.5 s against 11.0 s. Vite 8's `oxc` minifier already wins |
+| `cssMinify: "lightningcss"` | Byte-identical output — same content hash. Nothing to gain |
+| Minifying the built HTML | Worth 302 raw bytes, 155 after brotli, and it needs a plugin. The bundle's JS and CSS are already minified by default |
 
 ## Still open
 
