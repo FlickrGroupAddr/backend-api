@@ -52,6 +52,49 @@ did not represent at all were found by looking at a render. **When a box looks w
 screen is right.** Changing `CHAR_W` invalidates every hand-set box height, and nothing fails,
 because a box that is too large passes.
 
+### RENDER IT AND LOOK, before saying anything about how it turned out
+
+**A green run is not evidence the diagram is good.** On 2026-08-15 it passed every assertion and
+Terry's verdict was *"its horrific my bro"*. He was right: 7.9pt body text, four arrows bursting   US-ENGLISH-EXEMPT: quoting Terry
+out of one tile, a third of the page empty. **The checks are a RATCHET, not a designer** — each one
+exists because a specific defect got past the others, so they prevent the return of known problems
+and are blind to new ones.
+
+The loop, and it costs about a minute:
+
+```
+python scripts/build-diagram.py && git commit && git push && git rev-parse HEAD
+```
+
+Then load `https://viewer.diagrams.net/?lightbox=1&nav=1#U<raw GitHub URL>` and screenshot it.
+**Pin the raw URL to the commit SHA, not to `main`** — GitHub's CDN serves a stale copy of `main`
+for minutes, and a cached render looks exactly like a change that did not work.
+
+**Claude MUST NOT report a diagram change as done without looking at the render.**
+
+### Two traps that make the type look wrong for reasons the file does not show
+
+- **Inline HTML `font-size:` beats the shape's `fontSize`.** Raising every `fontSize=` in the styles
+  left 39 spans at 10pt inside tiles that then declared 12.2pt. One tile read as an eyechart beside
+  its neighbors and nothing in the style attributes explained why.
+- **`CHAR_W` MUST carry every size the file uses.** It stopped at 20 while the diagram used 26, 28
+  and 40, so `text_height` raised `KeyError` for some tiles and measured others against the wrong
+  width. **Only three tiles are height-checked at all** — `justification`, `key` and `journey`. The
+  rest are hand-sized, so a font change silently overflows them.
+
+### The defect class nothing checks: the picture contradicting the text
+
+**Three defects in one session were the drawing making a claim the document denies.** These are not
+geometry, and no assertion compares the two.
+
+| The picture said | The text said |
+|---|---|
+| An arrow from the Catalog to the browser | Journey step 12: the **plug-in** opens the browser |
+| Step 12 drawn dotted | The legend defines dotted as **"Scheduled trigger"** |
+| `/*` bold at the start of a line | A route prefix — Terry read it as a C comment |
+
+**Read the diagram as a sentence and check it against `DECISIONS.md` and the User Journey.**
+
 ## `npm run check` is the gate
 
 ```
