@@ -30,7 +30,7 @@ const UUID = `lower(
 )`;
 
 async function cookieFor(nsid = NSID): Promise<string> {
-	return `${SESSION_COOKIE}=${await mintSession(nsid, env.SESSION_KEY)}`;
+	return `${SESSION_COOKIE}=${await mintSession(env.DB, nsid, env.SESSION_KEY)}`;
 }
 
 async function authed(
@@ -135,7 +135,11 @@ describe("ADR-10, authentication", () => {
 	});
 
 	it("refuses a cookie signed with the wrong key", async () => {
-		const forged = await mintSession(NSID, "a-completely-different-key-32b!!");
+		const forged = await mintSession(
+			env.DB,
+			NSID,
+			"a-completely-different-key-32b!!",
+		);
 		const response = await SELF.fetch(`${API}/api/v001/me`, {
 			headers: { Cookie: `${SESSION_COOKIE}=${forged}` },
 		});

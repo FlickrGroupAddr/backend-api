@@ -46,9 +46,25 @@ written before 2026-08-14.**
 **This table is permanent.** It is the only thing keeping 65 commit messages readable, and deleting
 it silently breaks every one of them.
 
-**Renumbering again would be a mistake.** It was done once, deliberately, while the project was two
-days old and the cost was measurable. Every repeat doubles the number of mapping tables a reader has
-to chain through.
+### 2026-08-15: ADR-10 was REPLACED IN PLACE, and no second table was needed
+
+**The opaque session decision took ADR-10's slot rather than becoming ADR-22.** It supersedes what
+ADR-10 said, and it is about the same subject at the same importance — so the number stays where a
+reader scanning by importance already expects to find it.
+
+**That is why the table above is still the only one.** Every existing citation of ADR-10, in code,
+tests, docs and 60-odd commit messages, still lands on the session decision. **The text changed; the
+subject and the rank did not.** A reader who chains through one table is where they should be.
+
+**Terry authorized a full renumber and it turned out not to be necessary.** His reasoning was sound —
+*"it's not 1.0 until we have a working site; changes are effectively free now"* — and the cheapest
+correct change was smaller than the authorization. **The old decision's text survives inside ADR-10
+as *What this replaced***, because the reasoning for the reversal is worth more than a clean-looking
+record.
+
+**A future decision that genuinely displaces others in importance SHOULD renumber and add a second
+table.** The bar is real movement in rank, not the arrival of a new decision — a new one appended at
+its correct rank costs nothing.
 
 ## ADR-01 — Fail-polite. This one outranks the rest.
 
@@ -181,27 +197,90 @@ has existed since `0001` and nothing has ever read it. **Decided, not yet built*
 
 Lives in `src/crypto/tokens.ts`.
 
-## ADR-10 — The session is a stateless signed cookie
+## ADR-10 — The session is an opaque, revocable handle
 
-**After the Flickr callback, the Worker mints a token carrying the NSID and sets it as a cookie.**
-The Flickr token **MUST NOT** reach the browser.
+**The cookie is `<id>.<hmac>`. Neither half says anything about the user.** `id` is 256 random bits
+from `crypto.getRandomValues`, base64url. `hmac` is HMAC-SHA256 of `id` under `SESSION_KEY`. **Only
+`SHA-256(id)` is stored**, alongside `nsid`, `created_at` and `expires_at`.
 
-It is stateless, so it costs no D1 read per request and there is no session table. **What that gives
-up is instant revocation**, which matters little here: the Flickr token never leaves the server, and
-a user who wants FGA cut off revokes it at Flickr, which is more thorough anyway.
+**The Flickr token MUST NOT reach the browser.** That part is unchanged from the first version of
+this decision and is the oldest rule here.
 
-**This is the softest decision in this document and the cheapest to reverse.** An opaque session row
-in D1 replaces it without touching anything else.
+### The adversary is whatever steals the cookie jar, never the user
 
-**That reversal was decided on 2026-08-15 and is not yet built.** The JWS is signed but **fully
-transparent** — anyone holding the cookie can base64url-decode the payload with no key and read the
-NSID. It becomes an opaque `<id>.<hmac>` handle, with only the SHA-256 of the id stored. **Keeping
-the signature is what reduces the blast radius**: leaking the session key alone then mints nothing,
-because a forger still fails the database lookup. See
-`docs/architecture/KEY-ROTATION-NOTES.md`.
+**This framing is load-bearing, and an earlier draft got it backwards.** Terry's correction:
+
+> Making cookies completely opaque is not preventing a USER from seeing data like their own Flickr
+> NSID. It's a move to prevent **MALWARE** from pulling sensitive data like the user's NSID out of
+> the cookie store.
+
+**The user already knows their own NSID; hiding it from them would be theater.** The question is who
+else ends up holding the artifact — an infostealer reading the browser's cookie database off disk, a
+malicious extension, a synced profile, a backup.
+
+**`HttpOnly` does not help here, and assuming it does is the trap.** It stops JavaScript. It does
+nothing about a native process opening the cookie store directly, which is what commodity
+infostealers do first.
+
+**The asymmetry that settles it: a session is revocable and an NSID is not.** A thief now holds a
+bearer token that dies at logout, at expiry, or on demand. Before, they also got a permanent
+identifier tying the loot to a real Flickr account, and nobody can rotate their NSID.
+
+### Verify in this order: HMAC first, then the database
+
+**An attacker spraying random cookies is rejected on CPU alone and never costs a D1 read.**
+
+**Keeping the signature is what shrinks the blast radius, and it looks redundant until you check.**
+With both, leaking `SESSION_KEY` alone mints nothing — a forger passes the cheap filter and then
+fails the lookup. They would need the key **and** a live session id.
+
+**`crypto.subtle.timingSafeEqual` rather than `===`.** String comparison leaks a MAC one byte at a
+time. The runtime provides it — probed, not recalled.
+
+**Storing the hash rather than the id is not optional.** Raw ids would make a D1 leak hand over
+directly usable bearer tokens for every live session. Same reasoning as never storing a password.
+
+### Rotating `SESSION_KEY` invalidates every live session, and that is the temporal control
+
+**No schema supports this and none is needed.** A cookie signed under a retired key fails the HMAC
+gate before D1 is touched. So the useful life of a stolen cookie nobody has noticed is bounded by
+rotation cadence, independently of its 30-day expiry.
+
+**A keyring accepting the previous key would make rotation graceful rather than abrupt** — a UX
+softener, not a security control. It is **not built**; see `docs/architecture/KEY-ROTATION-NOTES.md`.
+
+**`sessions` carries NO column naming the signing key.** One only earns its place alongside a keyring
+that accepts more than one, and `users.token_key_version` is this project's standing warning about
+adding it early: present since migration `0001`, and nothing has ever read it.
+
+### What it costs, and what it bought
+
+| | |
+|---|---|
+| Added per authenticated request | **One D1 read**, against ~4 µs of crypto |
+| Revocation | **Instant, and server-side.** The stateless version could not do this at all |
+| Logout | Deletes the row **before** clearing the cookie |
+| Expiry | Checked on the row already fetched, so an unswept table stays correct |
+
+**`revokeSession` deliberately does not verify the signature.** It only ever deletes, the id is
+unguessable, and demanding a valid MAC would leave a user whose key just rotated unable to log out.
+
+**`sessions.nsid` cascades on user deletion**, so a handle cannot outlive the account it names.
 
 `src/session.ts` is the only place that knows the cookie's name or attributes. Set, read and clear
 all go through it.
+
+### What this replaced, and why the reversal was cheap
+
+**Until 2026-08-15 this decision read *"the session is a stateless signed cookie"*** — a JWS carrying
+the NSID, no session table, no D1 read per request. **It named its own weakness accurately:** *"the
+softest decision in this document and the cheapest to reverse."* It was. The change touched
+`src/session.ts`, three call sites and one migration.
+
+**What it gave up was stated as instant revocation, and that framing turned out to be the wrong
+worry.** The JWS was signed but **fully transparent** — anyone holding the cookie could
+base64url-decode the payload with no key and read the NSID. **Opacity was the motive; revocation
+arrived as the second benefit.**
 
 ## ADR-11 — The session cookie is host-only, and `Origin` is never reflected
 
@@ -604,8 +683,6 @@ using the very evidence that closed it.
 and still deploys it, so it saves neither the 6.2 s nor the 934 kB — it only stops devtools loading
 it automatically. Both costs, no benefit.
 
----
-
 ## Considered and rejected
 
 | Option | Why not |
@@ -671,12 +748,16 @@ it automatically. Both costs, no benefit.
   overruled it on the grounds that the diagram's job is to remind him what this project IS, and he
   is not at risk of forgetting whether the plug-in exists. **If the plug-in is abandoned, the tile
   comes out**, same rule as the replica. Reasoning in `docs/LRC-CLIENT-NOTES.md`.
-- **Key management is DECIDED and unbuilt, in `docs/architecture/KEY-ROTATION-NOTES.md`.** Three
-  pieces: a timestamped keyring replacing the single `TOKEN_KEY` and `SESSION_KEY`, opaque signed
-  session handles amending ADR-10, and a deferred re-encryption cron. **It is not an ADR yet on
-  purpose** — an ADR must be verified by a test or declare Inspection, and declaring Inspection for
-  runtime behavior nobody has written is the forced link `scripts/traceability.py` exists to
-  prevent. **It becomes ADR-22 when the code lands.**
+- **Key management is PARTLY BUILT.** `docs/architecture/KEY-ROTATION-NOTES.md` decided three
+  pieces on 2026-08-15. **Opaque signed session handles SHIPPED the same day and are now ADR-10**,
+  which replaced the stateless JWS in place. **Two remain unbuilt**: a timestamped keyring replacing
+  the single `TOKEN_KEY` and `SESSION_KEY`, and a deferred re-encryption cron. Neither is an ADR yet,
+  deliberately — an ADR must be verified by a test or declare Inspection, and claiming Inspection for
+  runtime behavior nobody has written is the forced link `scripts/traceability.py` exists to prevent.
+- **Rotating `SESSION_KEY` already invalidates every live session**, so the temporal blast radius of
+  a stolen cookie is bounded today without the keyring. **The keyring buys GRACEFUL rotation** —
+  accepting the previous key for a window instead of signing everyone out at once. That is a UX
+  softener, and calling it a security control would overstate it.
 - **Keys are identified by a UTC timestamp, never an integer version.** Terry's standing preference,
   and here it earns its place beyond taste: the active key is the largest stamp in the ring, so
   "which key is current" needs no second fact that can fall out of step.

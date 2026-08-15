@@ -1,7 +1,8 @@
 import { createMiddleware } from "hono/factory";
 import { readSessionCookie, verifySession } from "../session.js";
 
-/** ADR-10 sessions are stateless, so verifying the signature IS the lookup. No D1 read. */
+/** Sessions are opaque handles, so verification is a signature check AND a D1 read.
+ *  The HMAC runs first: a forger spraying random cookies never reaches the database. */
 export type SessionVariables = { nsid: string };
 
 export const requireSession = createMiddleware<{
@@ -14,9 +15,10 @@ export const requireSession = createMiddleware<{
 		return c.json({ error: "not_authenticated" }, 401);
 	}
 
-	const nsid = await verifySession(cookie, c.env.SESSION_KEY);
+	const nsid = await verifySession(c.env.DB, cookie, c.env.SESSION_KEY);
 	if (nsid === null) {
-		// Tampered, expired, wrong key, malformed -- one answer for all four.
+		// Tampered, expired, revoked, wrong key, malformed, unknown -- one answer for
+		// all six. Telling them apart tells an attacker which lever to pull.
 		return c.json({ error: "not_authenticated" }, 401);
 	}
 

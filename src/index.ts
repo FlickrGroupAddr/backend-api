@@ -105,7 +105,7 @@ app.get("/api/debug", async (c) => {
 	const nsid =
 		cookie === undefined
 			? null
-			: await verifySession(cookie, c.env.SESSION_KEY);
+			: await verifySession(c.env.DB, cookie, c.env.SESSION_KEY);
 
 	// Stays a PLAIN string: every `html` interpolation below is escaped, so pre-escaping
 	// here would double-encode it.

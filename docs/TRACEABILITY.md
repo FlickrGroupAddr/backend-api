@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**21 decisions · 47 test blocks · 27 mutations**
+**21 decisions · 48 test blocks · 30 mutations**
 
 ## Forward: decision to verification
 
@@ -28,8 +28,8 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
 | **ADR-08** | OAuth state lives in a Durable Object | Test | `oauth.test.ts` protocolParams<br>`oauth.test.ts` authorizationHeader<br>`oauth.test.ts` buildAuthorizeUrl<br>`oauth.test.ts` parseFormResponse<br>`oauth.test.ts` the login attempt, ADR-08<br>`oauth.test.ts` sends a login to Flickr carrying a request token | yes |
 | **ADR-09** | Tokens are AES-GCM encrypted in D1, under a separate key | Test | `crypto.test.ts` round trip<br>`crypto.test.ts` nonce handling<br>`crypto.test.ts` rejection<br>`schema.test.ts` ADR-07 and ADR-09, users | yes |
-| **ADR-10** | The session is a stateless signed cookie | Test | `api.test.ts` ADR-10, authentication<br>`session.test.ts` mint and verify<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op | yes |
-| **ADR-11** | The session cookie is host-only, and `Origin` is never reflected | Test | `session.test.ts` mint and verify<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op<br>`worker.test.ts` ADR-11, CORS | yes |
+| **ADR-10** | The session is an opaque, revocable handle | Test | `api.test.ts` ADR-10, authentication<br>`session.test.ts` mint and verify<br>`session.test.ts` revocation, which ADR-10 could not do<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op | — |
+| **ADR-11** | The session cookie is host-only, and `Origin` is never reflected | Test | `session.test.ts` mint and verify<br>`session.test.ts` revocation, which ADR-10 could not do<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op<br>`worker.test.ts` ADR-11, CORS | yes |
 | **ADR-12** | No cache in front of D1 | Test | `admin.test.ts` ADR-19, the admin gate<br>`api.test.ts` ADR-12, nothing behind a session reaches a shared cache | — |
 | **ADR-13** | TypeScript, on the current stable toolchain | Inspection | *by inspection* | — |
 | **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
@@ -76,6 +76,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `schema.test.ts` | moderated_pairs | ADR-04 |
 | `schema.test.ts` | ADR-07 and ADR-09, users | ADR-07, ADR-09 |
 | `session.test.ts` | mint and verify | ADR-10, ADR-11 |
+| `session.test.ts` | revocation, which ADR-10 could not do | ADR-10, ADR-11 |
 | `session.test.ts` | cookie attributes on a real login | ADR-10, ADR-11 |
 | `session.test.ts` | clears with attributes that match, or the deletion is a no-op | ADR-10, ADR-11 |
 | `signature.test.ts` | percentEncode | ADR-14 |
@@ -104,7 +105,10 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR-11: drop HttpOnly from the session cookie | ADR-11 |
 | ADR-11: set SameSite=None on the session cookie | ADR-11 |
 | ADR-11: drop the __Host- cookie prefix | ADR-11 |
-| ADR-10: stop pinning the JWS algorithm | ADR-10 |
+| sessions: store the raw id instead of its hash | — |
+| sessions: skip the HMAC gate and go straight to the database | — |
+| sessions: honor an expired handle | — |
+| sessions: make logout clear the cookie without revoking the row | — |
 | ADR-11: reflect the request Origin in CORS | ADR-11 |
 | ADR-09: unbind the NSID from the ciphertext | ADR-09 |
 | ADR-09: reuse one IV forever | ADR-09 |

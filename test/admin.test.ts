@@ -12,10 +12,20 @@ const ADMIN = "12345678@N00";
 /** Signed in, and not on it. */
 const OUTSIDER = "87654321@N00";
 
+/** A session row references `users`, so being signed in means the row exists. That is
+ *  reality rather than test scaffolding: a handle MUST NOT outlive its account. */
 async function asUser(nsid: string, path: string): Promise<Response> {
+	await env.DB.prepare(
+		`INSERT OR IGNORE INTO users
+       (nsid, access_token_encrypted, access_token_secret_encrypted, created_at, updated_at)
+     VALUES (?, ?, ?, 0, 0)`,
+	)
+		.bind(nsid, new Uint8Array([1]), new Uint8Array([2]))
+		.run();
+
 	return await SELF.fetch(`${ORIGIN}${path}`, {
 		headers: {
-			Cookie: `${SESSION_COOKIE}=${await mintSession(nsid, env.SESSION_KEY)}`,
+			Cookie: `${SESSION_COOKIE}=${await mintSession(env.DB, nsid, env.SESSION_KEY)}`,
 		},
 	});
 }

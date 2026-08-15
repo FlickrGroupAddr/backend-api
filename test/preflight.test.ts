@@ -24,7 +24,7 @@ async function check(
 	return await SELF.fetch(`${API}/api/v001/photos/${photoId}/preflight`, {
 		method: "POST",
 		headers: {
-			Cookie: `${SESSION_COOKIE}=${await mintSession(nsid, env.SESSION_KEY)}`,
+			Cookie: `${SESSION_COOKIE}=${await mintSession(env.DB, nsid, env.SESSION_KEY)}`,
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify({ groupIds }),
@@ -191,7 +191,7 @@ describe("ADR-20, the batch preflight", () => {
 		const submitted = await SELF.fetch(`${API}/api/v001/requests`, {
 			method: "POST",
 			headers: {
-				Cookie: `${SESSION_COOKIE}=${await mintSession(NSID, env.SESSION_KEY)}`,
+				Cookie: `${SESSION_COOKIE}=${await mintSession(env.DB, NSID, env.SESSION_KEY)}`,
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({ photoId: "p1", groupId: "g1" }),

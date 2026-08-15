@@ -8,6 +8,8 @@ import {
 import {
 	clearSessionCookie,
 	mintSession,
+	readSessionCookie,
+	revokeSession,
 	setSessionCookie,
 } from "../session.js";
 
@@ -81,15 +83,31 @@ oauthRoutes.get("/oauth/callback", async (c) => {
 		c.env.TOKEN_KEY,
 	);
 
-	setSessionCookie(c, await mintSession(access.nsid, c.env.SESSION_KEY));
+	setSessionCookie(
+		c,
+		await mintSession(c.env.DB, access.nsid, c.env.SESSION_KEY),
+	);
 
 	return c.redirect(uiUrl(c.env, "ok"), 302);
 });
 
-/** Ends the browser session and nothing else. ADR-10 accepts no server-side revocation,
- *  and the Flickr token deliberately survives -- cutting FGA off entirely happens at
- *  Flickr, which is both more thorough and outside our control. */
-oauthRoutes.post("/oauth/logout", (c) => {
+/**
+ * Ends the session, **on the server as well as in the browser.**
+ *
+ * **This is what opaque sessions bought.** The stateless cookie could only be dropped
+ * from the browser; whoever else held a copy kept a working credential until it
+ * expired. Deleting the row kills it for everyone at once.
+ *
+ * **The row is deleted BEFORE the cookie is cleared.** Reversed, a failure between the
+ * two leaves a user who believes they signed out and a session that still works.
+ *
+ * The Flickr token deliberately survives -- cutting FGA off entirely happens at
+ * Flickr, which is both more thorough and outside our control.
+ */
+oauthRoutes.post("/oauth/logout", async (c) => {
+	const cookie = readSessionCookie(c);
+	if (cookie !== undefined) await revokeSession(c.env.DB, cookie);
+
 	clearSessionCookie(c);
 	return c.json({ status: "ok" });
 });

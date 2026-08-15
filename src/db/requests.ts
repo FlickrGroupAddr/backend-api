@@ -199,6 +199,48 @@ export async function enqueue(
 	return { id: row.id, publicId };
 }
 
+/**
+ * One photo into many groups, in a single transaction.
+ *
+ * **`db.batch()` wraps the inserts in one transaction**, so a partial write cannot leave
+ * some rows queued and others lost after the caller was told they all landed.
+ *
+ * **ATOMIC IN D1, NOT ATOMIC IN OUTCOME, and the distinction is deliberate.** The caller
+ * decides which groups are eligible and passes only those. Rejecting all forty because
+ * three carry a warning would hold thirty-seven good ones hostage, and the partial result
+ * is the safe direction anyway — nothing reaches a moderator unanswered.
+ *
+ * **It returns the ids in the order given**, so the caller can pair each `publicId` back
+ * to its group without a second query.
+ */
+export async function enqueueMany(
+	db: D1Database,
+	nsid: string,
+	photoId: string,
+	groupIds: readonly string[],
+): Promise<{ groupId: string; publicId: string }[]> {
+	if (groupIds.length === 0) return [];
+
+	const now = Date.now();
+	const minted = groupIds.map((groupId) => ({
+		groupId,
+		publicId: crypto.randomUUID(),
+	}));
+
+	await db.batch(
+		minted.map(({ groupId, publicId }) =>
+			db
+				.prepare(
+					`INSERT INTO requests (public_id, nsid, photo_id, group_id, created_at)
+           VALUES (?, ?, ?, ?, ?)`,
+				)
+				.bind(publicId, nsid, photoId, groupId, now),
+		),
+	);
+
+	return minted;
+}
+
 /** ADR-03 lets the API attempt immediately only when a request is the SOLE unresolved one
  *  in its queue. A queue of length one is the only case where an immediate attempt cannot
  *  take an allowance slot from something that waited longer. */

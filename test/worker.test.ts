@@ -94,7 +94,7 @@ describe("ADR-14 and ADR-07, the diagnostic page", () => {
 		)
 			.bind(NSID, username, new Uint8Array([1]), new Uint8Array([2]))
 			.run();
-		return `${SESSION_COOKIE}=${await mintSession(NSID, env.SESSION_KEY)}`;
+		return `${SESSION_COOKIE}=${await mintSession(env.DB, NSID, env.SESSION_KEY)}`;
 	}
 
 	it("says so plainly when there is no session", async () => {
@@ -127,7 +127,15 @@ describe("ADR-14 and ADR-07, the diagnostic page", () => {
 	});
 
 	it("does NOT claim a session for a cookie signed with the wrong key", async () => {
-		const forged = await mintSession(NSID, "a-completely-different-key-32b!!");
+		// **The user and a live session row both exist here**, so this proves the HMAC
+		// gate rejects on the signature alone rather than incidentally failing a lookup.
+		// It is also what rotating SESSION_KEY does to every cookie in the wild.
+		await signedIn("TerryDOtt");
+		const forged = await mintSession(
+			env.DB,
+			NSID,
+			"a-completely-different-key-32b!!",
+		);
 		const body = await load("", `${SESSION_COOKIE}=${forged}`);
 		expect(body).toMatch(/Not signed in/);
 	});

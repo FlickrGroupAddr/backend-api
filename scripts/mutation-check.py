@@ -77,9 +77,33 @@ MUTATIONS = [
         "",
     ),
     (
-        "ADR-10: stop pinning the JWS algorithm",
+        # The opaque design's whole point. Storing the id itself makes a D1 leak hand
+        # over directly usable bearer tokens for every live session.
+        "sessions: store the raw id instead of its hash",
         "src/session.ts",
-        '\t\t\talgorithms: ["HS256"],',
+        "\t\t.bind(await idHash(id), nsid, now, now + SESSION_LIFETIME_SECONDS * 1000)",
+        "\t\t.bind(id, nsid, now, now + SESSION_LIFETIME_SECONDS * 1000)",
+    ),
+    (
+        # Without the MAC gate a forger reaches D1 on every sprayed cookie, and leaking
+        # SESSION_KEY stops being survivable.
+        "sessions: skip the HMAC gate and go straight to the database",
+        "src/session.ts",
+        "\tif (presented.length !== expected.length) return null;",
+        "\tif (false as boolean) return null;",
+    ),
+    (
+        # Expiry is the only bound on a stolen handle that nobody has noticed is stolen.
+        "sessions: honor an expired handle",
+        "src/session.ts",
+        "\tif (row.expires_at <= Date.now()) return null;",
+        "\tif (false as boolean) return null;",
+    ),
+    (
+        # Revocation is what ADR-10 could not do, and logout is where it is spent.
+        "sessions: make logout clear the cookie without revoking the row",
+        "src/routes/oauth.ts",
+        "\tif (cookie !== undefined) await revokeSession(c.env.DB, cookie);",
         "",
     ),
     (
