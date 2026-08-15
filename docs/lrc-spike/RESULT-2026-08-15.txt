@@ -1,0 +1,26 @@
+FGA spike 0.2 -- publish services visible to com.flickrgroupaddr.spike
+Lightroom version: 15.5
+catalog: C:\Photography\LR Catalog\TDO Lightroom Catalog.lrcat
+
+VERDICT: CONFIRMED -- 1 service(s) returned to a plug-in that
+created none of them.
+
+[1] getPluginId() = com.adobe.lightroom.export.flickr
+     getName()     = Terry Flickr
+     child collections = 96
+     collection 2017-08-11: Canada - Alberta - Lake Louise -> 15 published photo(s)
+       [1] getRemoteId()  = 42717931314
+           getRemoteUrl() = https://www.flickr.com/photos/146878425@N05/42717931314/in/set-72157693295162860
+       [2] getRemoteId()  = 41626108340
+           getRemoteUrl() = https://www.flickr.com/photos/146878425@N05/41626108340/in/set-72157693295162860
+       [3] getRemoteId()  = 42717946474
+           getRemoteUrl() = https://www.flickr.com/photos/146878425@N05/42717946474/in/set-72157693295162860
+     collection 2017-08-11: Canada - Alberta - Moraine Lake -> 12 published photo(s)
+       [1] getRemoteId()  = 29586082838
+           getRemoteUrl() = https://www.flickr.com/photos/146878425@N05/29586082838/in/set-72157671262012368
+       [2] getRemoteId()  = 28570213007
+           getRemoteUrl() = https://www.flickr.com/photos/146878425@N05/28570213007/in/set-72157671262012368
+       [3] getRemoteId()  = 28570216857
+           getRemoteUrl() = https://www.flickr.com/photos/146878425@N05/28570216857/in/set-72157671262012368
+
+-- end of report --

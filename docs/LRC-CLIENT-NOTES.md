@@ -210,12 +210,19 @@ merely cautious.
 - Anything that WRITES. The known restriction stands: **only the plug-in that defines a custom
   metadata field may change it.** This design only reads, so it has not been tested against.
 
-### The spike
+### The spike, and where the evidence is archived
 
-`C:\Photography\FgaSpike.lrdevplugin\`, version 0.3. **On local disk rather than `X:`,
-deliberately** — that share already breaks git ownership, Node file watching and Lightroom catalogs,
-and a plug-in loaded over SMB would have added a variable to the one measurement everything waited
-on.
+**Working copy:** `C:\Photography\FgaSpike.lrdevplugin\`, version 0.3. **On local disk rather than
+`X:`, deliberately** — that share already breaks git ownership, Node file watching and Lightroom
+catalogs, and a plug-in loaded over SMB would have added a variable to the one measurement
+everything waited on.
+
+**Archived copy, in this repository: `docs/lrc-spike/`.** Both Lua files, the raw unedited output as
+`RESULT-2026-08-15.txt`, and `probe-catalog.py` for reading a `.lrcat` directly. **It lived only in
+one folder on `C:` and in a session scratchpad until it was committed** — a measurement that took
+three versions and a Lightroom crash to obtain, one disk failure from gone.
+
+**Read `RESULT-2026-08-15.txt` rather than any summary if the two ever disagree.**
 
 **It SHOULD ship permanently as a diagnostic** rather than be thrown away, because Terry runs the
 latest GA Lightroom Classic and takes every Adobe regression on day one. Re-proving this chain after
