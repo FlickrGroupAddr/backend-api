@@ -104,6 +104,36 @@ prevent reading.
 
 **Opaque means the token carries no information — a pure lookup handle.**
 
+### THE ADVERSARY IS NOT THE USER. It is whatever steals the cookie jar.
+
+**This framing is load-bearing and an earlier draft of this file got it wrong**, so it is stated
+before anything else. Terry's correction, 2026-08-15:
+
+> Making cookies completely opaque is not preventing a USER from seeing data like their own Flickr
+> NSID. It's a move to prevent **MALWARE** from pulling sensitive data like the user's NSID out of
+> the cookie store. If malware cracks someone's NSID, I don't want it to be because FGA left that
+> exposure open.
+
+**The user already knows their own NSID. Hiding it from them would be theater.** The question is
+never *should the owner be prevented from seeing this*. It is **who else ends up holding this
+artifact** — an infostealer reading the browser's cookie database off disk, a malicious extension, a
+disk image, a synced profile, a backup.
+
+**`HttpOnly` does not help here, and assuming it does is the trap.** It stops JavaScript from
+reading the cookie. It does nothing about a native process opening the cookie store directly, which
+is exactly what commodity infostealers do first.
+
+**The asymmetry that settles it: a session is revocable and an NSID is not.** Under the opaque
+design a thief gets a bearer token that dies at logout or in 30 days, and that the server can kill
+on demand. Under the current design they get that **plus a permanent identifier tying the loot to a
+real Flickr account.** Nobody can rotate their NSID.
+
+**So opaque sessions and revocation are one control, not two** — and this threat model is what makes
+revocation worth the D1 read rather than a nice-to-have.
+
+**It is also ADR-07's instinct applied to a different surface.** That decision minimizes what FGA
+*stores*; this minimizes what FGA *hands to a browser to keep on disk*.
+
 ### The shape
 
 **Cookie value: `<id>.<hmac>`**
