@@ -50,7 +50,18 @@ MUTATIONS_FILE = ROOT / "scripts" / "mutation-check.py"
 ADR_HEADING = re.compile(r"^##\s+(ADR-\d+)\s+—\s+(.+?)\s*$", re.MULTILINE)
 ADR_REF = re.compile(r"ADR-\d+")
 DESCRIBE = re.compile(r'^(describe|it)\(\s*"([^"]+)"', re.MULTILINE)
-EXEMPT = re.compile(r"TRACE-EXEMPT:\s*(.+?)\s*(?:\*/|$)")
+# **Accepts `//` and block comments alike, and takes the reason to end of LINE.**
+#
+# The previous pattern was `TRACE-EXEMPT:\s*(.+?)\s*(?:\*/|$)` with no `re.MULTILINE`,
+# so `$` meant end of STRING. In practice the reason had to sit on one line ending in
+# a block-comment close, or be the last thing in the file. **Every other spelling
+# parsed as no exemption at all, silently.**
+#
+# Measured 2026-08-15: `worker.test.ts`'s `/health` exemption had been inert since it
+# was written -- a `//` comment the pattern could never match. It passed the gate only
+# because two ADRs leaked into it from the next block's lead-in comment, so fixing
+# `trim_lead_in` is what exposed it. **Two bugs had been cancelling out.**
+EXEMPT = re.compile(r"TRACE-EXEMPT:\s*(.+?)\s*(?:\*/)?\s*$", re.MULTILINE)
 
 
 def read(path: Path) -> str:
@@ -84,6 +95,51 @@ def adrs_declared() -> dict[str, dict]:
     return declared
 
 
+def comment_only(line: str) -> bool:
+    """True for the line shapes this suite's comments actually use."""
+    stripped = line.strip()
+    return stripped.startswith(("//", "/*", "*"))
+
+
+def trim_lead_in(body: str) -> str:
+    r"""Drop a trailing comment block, because it belongs to the NEXT block.
+
+    **A block's slice runs from its own `describe(` to the next one, so the doc
+    comment introducing the next block lands inside the previous block's body.**
+    Every `ADR-nn` in that comment was then credited to the wrong test.
+
+    **Measured 2026-08-15**: `worker.test.ts`'s `/health` test was recorded as
+    verifying ADR-07 and ADR-14. It verifies neither. Those come from the comment
+    two lines above the `describe` that follows it -- *"ADR-14 chose `hono/html`...
+    and ADR-07 makes the Flickr username the only identity"* -- which is a correct
+    comment about the diagnostic page, attributed to a health check.
+
+    **The matrix said a decision was verified by a test that never touched it**,
+    which is the one failure a traceability matrix cannot survive.
+
+    **A LINE WALK, NOT A REGEX, AND THE FIRST ATTEMPT PROVES WHY.** That version used
+    `(?:^[ \t]*(?:/\*[\s\S]*?\*/|//[^\n]*)[ \t]*\n)+[ \t\r\n]*\Z`. `[\s\S]*?` is lazy
+    but backtracks across newlines to the LAST `*/` in the slice whenever that makes
+    the overall match succeed -- so one comment swallowed the entire block body and
+    `/health` was trimmed down to its own `it(` line. **It removed the exemption it was
+    supposed to preserve.** This version cannot reach past a non-comment line.
+    """
+    lines = body.split("\n")
+    end = len(lines)
+
+    def drop_blanks() -> None:
+        nonlocal end
+        while end > 0 and lines[end - 1].strip() == "":
+            end -= 1
+
+    drop_blanks()
+    while end > 0 and comment_only(lines[end - 1]):
+        end -= 1
+    drop_blanks()
+
+    return "\n".join(lines[:end])
+
+
 def blocks() -> list[dict]:
     """Top-level `describe` and `it` blocks across the suite, with the ADRs they cite."""
     found = []
@@ -97,7 +153,7 @@ def blocks() -> list[dict]:
         marks = list(DESCRIBE.finditer(text))
         for i, mark in enumerate(marks):
             end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
-            body = text[mark.start() : end]
+            body = trim_lead_in(text[mark.start() : end])
             exempt = EXEMPT.search(body) or EXEMPT.search(header)
             found.append(
                 {

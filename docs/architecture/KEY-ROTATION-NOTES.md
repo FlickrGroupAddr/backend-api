@@ -272,11 +272,32 @@ a D1 read measured in milliseconds. **The crypto is well under a tenth of one pe
 request.** Terry estimated "small double-digit ms at most"; the real figure is three orders of
 magnitude smaller.
 
+**These figures are REPRODUCIBLE, and the command is the record.** `test/crypto-bench.test.ts`
+re-derives every row:
+
+```
+npx vitest run test/crypto-bench.test.ts --disableConsoleIntercept
+```
+
+**The gate runs that file on every `npm run check` without the flag.** Its assertions therefore
+cannot rot silently, while the table stays out of every green build. **Quote the command's output,
+never this table**, if the two ever disagree.
+
 **Caveat on the measurement.** 20,000 iterations each, inside `@cloudflare/vitest-pool-workers` on
 the development laptop, **not** on production Cloudflare. Relative costs should hold; absolute
 figures may not. The clock **did** advance normally here — 5 ms across a five-million-iteration busy
 loop — so the Spectre timer freeze that makes naive benchmarks report zero did not apply in the test
 pool. **Do not assume that holds in production.**
+
+**THE ITERATION COUNT IS THE RESOLUTION.** `performance.now()` reports whole milliseconds in this
+pool, so the smallest measurable step is `1 ms / iterations`. **A first attempt at 4,000 produced
+figures that all landed on multiples of 0.25 µs** — 0.25, 0.50, 1.75, 2.25 — which reads as
+precision and is quantization. 20,000 gives 0.05 µs steps. **Lowering it to speed the gate silently
+widens every number downstream.**
+
+**Re-measured 2026-08-15 by the committed benchmark**, and the agreement is close enough to trust
+the table: `randomUUID` 0.20 identical, `SHA-256` of 16 bytes 1.70 against 1.65, `HMAC-SHA256` 2.30
+against 2.25. **Every row within 0.1 µs.**
 
 **If more overkill is ever wanted, SHA-512 costs 0.15 µs more and adds no security** — the input is
 one block either way and there is no length-extension exposure to close. Recorded so the option is

@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**21 decisions · 46 test blocks · 27 mutations**
+**21 decisions · 47 test blocks · 27 mutations**
 
 ## Forward: decision to verification
 
@@ -25,18 +25,18 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
 | **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`preflight.test.ts` ADR-20, the batch preflight | — |
 | **ADR-06** | The work engine is a nightly cron over D1 | Test | `sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | — |
-| **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` answers /health without a session<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
+| **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
 | **ADR-08** | OAuth state lives in a Durable Object | Test | `oauth.test.ts` protocolParams<br>`oauth.test.ts` authorizationHeader<br>`oauth.test.ts` buildAuthorizeUrl<br>`oauth.test.ts` parseFormResponse<br>`oauth.test.ts` the login attempt, ADR-08<br>`oauth.test.ts` sends a login to Flickr carrying a request token | yes |
 | **ADR-09** | Tokens are AES-GCM encrypted in D1, under a separate key | Test | `crypto.test.ts` round trip<br>`crypto.test.ts` nonce handling<br>`crypto.test.ts` rejection<br>`schema.test.ts` ADR-07 and ADR-09, users | yes |
 | **ADR-10** | The session is a stateless signed cookie | Test | `api.test.ts` ADR-10, authentication<br>`session.test.ts` mint and verify<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op | yes |
 | **ADR-11** | The session cookie is host-only, and `Origin` is never reflected | Test | `session.test.ts` mint and verify<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op<br>`worker.test.ts` ADR-11, CORS | yes |
 | **ADR-12** | No cache in front of D1 | Test | `admin.test.ts` ADR-19, the admin gate<br>`api.test.ts` ADR-12, nothing behind a session reaches a shared cache | — |
 | **ADR-13** | TypeScript, on the current stable toolchain | Inspection | *by inspection* | — |
-| **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` answers /health without a session<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
+| **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
 | **ADR-15** | Which store holds what | Inspection | *by inspection* | — |
 | **ADR-16** | A request has two identifiers | Test | `schema.test.ts` ADR-03 and ADR-16, requests: ordering | — |
 | **ADR-17** | No list is unbounded, whoever owns its size | Test | `api.test.ts` ADR-17, pagination<br>`api.test.ts` ADR-17, a list FGA cannot bound: the Flickr group list | yes |
-| **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-14 and ADR-07, the diagnostic page<br>`worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
+| **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
 | **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication | yes |
 | **ADR-20** | The warning arrives before the commitment | Test | `preflight.test.ts` ADR-20, the batch preflight | yes |
 | **ADR-21** | The web sourcemap ships, and reopening this needs an extreme bar | Inspection | *by inspection* | — |
@@ -59,6 +59,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `classify.test.ts` | classifyAdd | ADR-01, ADR-02 |
 | `classify.test.ts` | classifyResult | ADR-01, ADR-02 |
 | `classify.test.ts` | outcomeColumn | ADR-01, ADR-02 |
+| `crypto-bench.test.ts` | crypto costs, for KEY-ROTATION-NOTES.md | *exempt — a benchmark measures cost, it does not verify a decision.* |
 | `crypto.test.ts` | round trip | ADR-09 |
 | `crypto.test.ts` | nonce handling | ADR-09 |
 | `crypto.test.ts` | rejection | ADR-09 |
@@ -88,8 +89,8 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `sweep.test.ts` | ADR-04, the permanent record | ADR-03, ADR-04, ADR-06 |
 | `sweep.test.ts` | does nothing on an empty night, and says so | ADR-03, ADR-06 |
 | `worker.test.ts` | ADR-11, CORS | ADR-11 |
-| `worker.test.ts` | answers /health without a session | ADR-07, ADR-14 |
-| `worker.test.ts` | ADR-14 and ADR-07, the diagnostic page | ADR-07, ADR-14, ADR-18 |
+| `worker.test.ts` | answers /health without a session | *exempt — hygiene, not a decision. A health endpoint answers 200 because* |
+| `worker.test.ts` | ADR-14 and ADR-07, the diagnostic page | ADR-07, ADR-14 |
 | `worker.test.ts` | ADR-18, one origin split by an /api prefix | ADR-18 |
 
 ## Mutations, and the decision each one attacks

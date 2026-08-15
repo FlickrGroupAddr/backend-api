@@ -66,9 +66,10 @@ describe("ADR-11, CORS", () => {
 	});
 });
 
-// TRACE-EXEMPT: hygiene, not a decision. A health endpoint answers 200 because that is
-// what a health endpoint is for, and no ADR asked for it.
 it("answers /health without a session", async () => {
+	/* TRACE-EXEMPT: hygiene, not a decision. A health endpoint answers 200 because
+	   that is what a health endpoint is for, and no ADR asked for it. */
+
 	const response = await SELF.fetch(`${ORIGIN}/health`);
 	expect(response.status).toBe(200);
 	expect(await response.json()).toEqual({ status: "ok" });
