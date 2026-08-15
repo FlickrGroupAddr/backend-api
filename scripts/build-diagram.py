@@ -111,13 +111,13 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         </mxCell>
 
         <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="215" y="110" width="965" height="910" as="geometry" />
+          <mxGeometry x="215" y="110" width="965" height="810" as="geometry" />
         </mxCell>
         <mxCell id="cflogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={CF}" vertex="1" parent="1">
           <mxGeometry x="245" y="140" width="300" height="99" as="geometry" />
         </mxCell>
         <mxCell id="netb" value="Lowest-latency Cloudflare edge PoP (anycast routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="245" y="250" width="585" height="740" as="geometry" />
+          <mxGeometry x="245" y="250" width="585" height="640" as="geometry" />
         </mxCell>
 
         <mxCell id="lrcapp" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#546E7A;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
@@ -205,7 +205,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="788" y="395" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="362" y="999" width="46" height="46" as="geometry" />
+          <mxGeometry x="362" y="949" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="386" y="496" width="46" height="46" as="geometry" />
@@ -281,8 +281,8 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickrapi">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="115" y="1050" />
-              <mxPoint x="1312" y="1050" />
+              <mxPoint x="115" y="1000" />
+              <mxPoint x="1312" y="1000" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -659,7 +659,7 @@ for badge, eid in BADGE_ON_EDGE.items():
 # run between its two waypoints; the straight-edge machinery above cannot model it.
 n7x, n7y, n7w, n7h = boxes["n7"]
 n7c = (n7x + n7w / 2, n7y + n7h / 2)
-run_y, run_x0, run_x1 = 1050.0, 115.0, 1312.0
+run_y, run_x0, run_x1 = 1000.0, 115.0, 1312.0
 n7_off = abs(n7c[1] - run_y)
 on_run = NEAR_MIN <= n7_off <= NEAR_MAX and run_x0 <= n7c[0] <= run_x1
 print(f"    n7 beside e11  offset {n7_off:>5.1f}px  {'ok' if on_run else 'BADLY PLACED'}")

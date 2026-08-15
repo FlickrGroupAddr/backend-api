@@ -636,14 +636,118 @@ Canada Landscapes — moderated, already seen
 **Which means `items` rebinds when preflight returns, not only when the filter changes** — a second
 reason the selection model must survive a rebind.
 
-### The one thing still unmeasured
+### MEASURED 2026-08-15. Both questions answered, both favorably
 
-**Does rebinding `simple_list.items` clear or corrupt the current selection?** Everything above is
-implementable either way because of the merge model, but the *feel* differs — a widget that visibly
-drops highlighting on every keystroke is unpleasant even when the model underneath is correct.
+**Terry ran `PickerProbe.lua` against a synthetic 372-group list in Lightroom Classic 15.5.** The
+probe generates its own groups, makes no network call and touches no catalog, so this measures the
+widget rather than the workflow.
 
-**Also unmeasured: how a 372-item `simple_list` performs and looks**, and whether `height` accepts a
-large value. The reference states a minimum of 80 and names no maximum.
+| Question | Answer |
+|---|---|
+| Does rebinding `simple_list.items` clear the selection? | **The WIDGET's, yes. The plug-in's, no** |
+| How does a 372-item list look and perform? | Renders cleanly, scrollbar behaves, filtering felt instant |
+| Does `height` accept a large value? | **Yes, 420 works.** The reference only ever promised a minimum of 80 |
+| `allows_multiple_selection` | Works, and gives OS-NATIVE semantics — **shift-click spans and ctrl-click discontiguous both work** |
+
+**The merge model is confirmed end to end, and it earned its place exactly as designed.** With four
+groups selected, typing `canada` narrowed the list to 16 and every highlight vanished — because none
+of the four matched. **The counter still read `selected 4`.** Clearing the filter brought all four
+back highlighted.
+
+**So the widget DOES drop `value` on rebind, and it does not matter**, because
+`selected = (selected MINUS visible) UNION value` never trusted it. **The design was written to be
+correct either way, and that is why the answer changed nothing.**
+
+**Shift-click is a bigger finding than it looks.** Forty groups selected one click at a time is the
+2021 UI's problem restated. A span select turns that into two clicks, and it came free from the
+platform widget rather than needing anything built.
+
+### The UX gap the probe exposed, which is a DESIGN question rather than a defect
+
+**While `canada` was typed, four groups were selected and INVISIBLE.** The counter said so; the list
+offered no way to review or deselect them without clearing the filter first.
+
+**On a 372-group wall, with a habit of typing to narrow, that is how somebody submits a group they
+forgot they picked** — and under ADR-01 a submission that reaches a moderator cannot be pulled back.
+
+**A "show selected only" toggle answers it**, and costs almost nothing: it is a different `items`
+filter over the same list, and the merge model already keeps the truth outside the widget.
+**Undecided; recorded so the next session does not rediscover it.**
+
+### Both open questions: MEASURED 2026-08-15, by Terry driving the spike
+
+**Rebinding `simple_list.items` DOES clear the widget's `value`, and the merge model absorbs it.**
+Terry filtered to `canada`, watched the highlighting disappear, cleared the filter, and the four
+selections came back — *"If I clear the filter box, they come back."* **So the model was right and
+the screen was wrong**, which is precisely why the two-list redesign above replaced it. A correct
+model the user cannot see is not a working picker.
+
+**A 372-item `simple_list` renders and scrolls fine at `height=420`.** No lag, no truncation. The
+reference states a minimum of 80 and names no maximum, and 420 is comfortably inside whatever the
+real ceiling is.
+
+**Shift-click span select and ctrl-click multi-select both work natively**, confirmed by screenshot
+at 14 rows and at a scattered selection. **They are being dropped anyway** — see the two-list
+section below, where Terry chose single-row moves deliberately after seeing both work.
+
+### The picker is TWO LISTS, decided by Terry 2026-08-15 after driving the spike
+
+**Terry replaced the single filtered list with a side-by-side transfer picker**, in his words:
+*"Left side is alphabetical (case insensitive) sorting of groups with the filtering applied titled
+'Unselected groups'. Right side is 'selected groups'. As we click rows on either side, the group
+moves to the other side."*
+
+| | Left | Right |
+|---|---|---|
+| Title | `Unselected groups` | `Selected groups` |
+| Holds | Every group the photo is NOT in and has not been picked for | Every group the photo WILL be in |
+| Sort | Case-insensitive ascending | Case-insensitive ascending |
+| The filter box | **Applies** | **MUST NOT apply** |
+| A click | Moves the row right | Moves the row left |
+
+**The filter MUST NOT touch the right list, and that is the whole point of the redesign.** Terry
+drove the single-list spike, typed `canada`, and watched four selections vanish from view — the
+model held them correctly and the screen said otherwise. **A list that shows what you have chosen
+cannot be allowed to hide what you have chosen.**
+
+**Single-row moves only. Range select and multi-select are GONE, and Terry chose that**, having
+tested both working: *"I'm glad to lose range select and multi-select. Single row hopping at a time
+is more intuitive."* **A later session MUST NOT reintroduce shift-click as an improvement.** It also
+removes an unmeasured risk — whether `simple_list` fires its observer once per commit or once per
+intermediate change during a shift-drag, which would have decided whether span-move worked at all.
+
+**Three counts, and each names what it counts:**
+
+| List | Shows |
+|---|---|
+| Left | `Groups displayed: N` and `Groups hidden by filter: N` |
+| Right | `Number of groups currently selected: N` |
+
+#### The right list is MEMBERSHIP, not a shopping basket
+
+**Terry, same session:** *"I may use the plugin to add/remove groups from pics that already have
+been added to some groups. In that case the groups the pic is ALREADY in should be pre-populated on
+the list to the right."*
+
+**So the right list opens pre-populated from Flickr**, via `flickr.photos.getAllContexts` — a call
+FGA already makes, so this needs no new endpoint. Two kinds of row live there and **they MUST be
+told apart**:
+
+| Row | Means | Clicking it |
+|---|---|---|
+| Already at Flickr | The photo is in this group now | **Removes it at Flickr** — a real `flickr.groups.pools.remove` |
+| Added this session | Queued, nothing sent yet | Un-picks it, costs nothing |
+
+**`simple_list` gives no per-row styling** — it takes plain strings, so color and badges are not
+available. **The marker MUST therefore live inside the string** (`●` for already-in, `+` for newly
+added, or equivalent). Hand-building rows from `LrView` primitives would allow real color and costs
+the built-in scrolling; that trade has not been made.
+
+**Removing an already-in group is the dangerous click on this dialog, and it is ADR-01 adjacent.**
+If the photo sits in a moderated group because a volunteer approved it out of a queue, a removal
+throws that approval away — and re-adding puts the photo back in front of a human. **A stray click
+MUST NOT be able to do that.** Removals of already-in rows SHOULD be staged and applied on commit,
+or gated behind a confirm. **This is not settled and needs Terry.**
 
 ### ADR-01 gets MORE load-bearing, not less
 
