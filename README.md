@@ -31,6 +31,7 @@ It is ADR-01. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.m
 
 | You want to | Read |
 |---|---|
+| **Catch up fast after time away** | **[docs/ORIENTATION.md](docs/ORIENTATION.md) — start here. It says what to skip** |
 | Run it, or rebuild it | [docs/SETUP.md](docs/SETUP.md) |
 | Change the code | [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.md) |
 | Check every decision is tested | [docs/TRACEABILITY.md](docs/TRACEABILITY.md) — generated |
