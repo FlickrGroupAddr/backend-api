@@ -132,12 +132,12 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="lrcat" value="&lt;b&gt;Catalog&lt;/b&gt;&lt;br&gt;&lt;i&gt;Local SQLite&lt;br&gt;Published photo IDs&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#607D8B;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="40" y="176" width="130" height="105" as="geometry" />
         </mxCell>
-        <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={WORKSTATION};fontSize=19;fontStyle=1;labelPosition=left;align=right;verticalLabelPosition=middle;verticalAlign=middle;spacingRight=10;" vertex="1" parent="1">
+        <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={WORKSTATION};fontSize=19;fontStyle=1;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
           <mxGeometry x="35" y="510" width="140" height="112" as="geometry" />
         </mxCell>
 
-        <mxCell id="dns" value="&lt;b style=&quot;font-size:16px&quot;&gt;flickrgroupaddr.com DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Authoritative DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="250" y="690" width="175" height="120" as="geometry" />
+        <mxCell id="dns" value="&lt;b&gt;FGA DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="700" width="170" height="90" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;App Secrets Store&lt;/b&gt;&lt;br&gt;&lt;i&gt;Worker Secrets&lt;br&gt;FGA Flickr API credentials&lt;br&gt;Token key (encryption)&lt;br&gt;Session key (signing)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="430" y="640" width="300" height="150" as="geometry" />
@@ -187,7 +187,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         </mxCell>
 
         <mxCell id="n1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=26;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="214" y="632" width="46" height="46" as="geometry" />
+          <mxGeometry x="214" y="631" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=26;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="185" y="571" width="46" height="46" as="geometry" />
@@ -269,10 +269,10 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="e10" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=17;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.921053;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=17;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickrapi">
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=17;labelBackgroundColor=#FFFFFF;exitX=0.16;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickrapi">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="105" y="1080" />
+              <mxPoint x="57" y="1080" />
               <mxPoint x="1160" y="1080" />
             </Array>
           </mxGeometry>
@@ -648,7 +648,7 @@ for badge, eid in BADGE_ON_EDGE.items():
 # and along a channel says "this client reaches that Worker", which is the fact.
 ROUTED_RUNS = {
     # badge: (edge, run y, run x from, run x to)
-    "n7": ("e11", 1080.0, 105.0, 1160.0),   # browser -> Flickr, the authorize detour
+    "n7": ("e11", 1080.0, 57.0, 1160.0),   # browser -> Flickr, the authorize detour
 }
 for badge, (eid, run_y, run_x0, run_x1) in ROUTED_RUNS.items():
     bx, by, bw, bh = boxes[badge]
