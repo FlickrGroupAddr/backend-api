@@ -683,6 +683,78 @@ using the very evidence that closed it.
 and still deploys it, so it saves neither the 6.2 s nor the 934 kB — it only stops devtools loading
 it automatically. Both costs, no benefit.
 
+---
+
+## ADR-22 — The schema enforces the rules, and every table is `STRICT`
+
+**Verification: Test.** `schema.test.ts` inserts values the constraints must refuse.
+
+**Every `CREATE TABLE` in `migrations/` MUST end in `STRICT`.** All four do, and all four always
+have.
+
+**SQLite does not enforce declared types by default, and that surprises everyone arriving from
+other databases.** A column declared `INTEGER` will accept the string `'banana'` and keep it. The
+behavior is called *type affinity* and it is deliberate: a type is a hint about preferred storage,
+not a rule. `STRICT` turns the hint into a rule, per table, since SQLite 3.37.0.
+
+### Why it matters here rather than in the abstract
+
+**`expires_at` is epoch milliseconds compared with `<=`.** A bug writing the *string*
+`"1755300000000"` would compare as text rather than as a number — a different ordering entirely.
+Sessions would expire at the wrong time, or never, and **nothing would complain.**
+
+**That is the shape of every affinity bug: silent, and wrong much later.** The write succeeds, the
+read succeeds, and the comparison quietly means something else.
+
+### The wider rule: constraints live in the schema, not in application code
+
+**`STRICT` is one instance of it.** So are these, all already in use:
+
+| Mechanism | Where it earns its place |
+|---|---|
+| `CHECK` on `requests` | A resolved row MUST carry an outcome; a pending row MUST NOT |
+| `idx_requests_one_pending_per_pair` | ADR-05's idempotence, enforced rather than checked |
+| `REFERENCES … ON DELETE CASCADE` | A session MUST NOT outlive the account it names |
+| `NOT NULL` and `UNIQUE` on `public_id` | ADR-16's opaque handle cannot be null or shared |
+
+**Application code can be bypassed by the next code path; a constraint cannot.** The sessions
+foreign key proved this the day it landed: it broke six tests by refusing to mint a handle for a
+nonexistent user, which was the constraint working rather than failing.
+
+**Foreign keys still need `PRAGMA foreign_keys = ON` to be enforced at all.** D1 enables it —
+measured, not assumed, by that same six-test failure.
+
+### Adopt it from the first migration, because retrofitting is expensive
+
+**There is no `ALTER TABLE … SET STRICT`.** Converting an existing table means the full rebuild:
+create a replacement, copy every row, drop the original, rename it, and recreate every index.
+`migrations/0002` and `0003` both perform that dance for other reasons, so the cost is visible in
+this repository rather than theoretical.
+
+### What `STRICT` refuses, and why none of it costs anything here
+
+**Only `INT`, `INTEGER`, `REAL`, `TEXT`, `BLOB` and `ANY` are legal type names.** `VARCHAR(255)`,
+`DATETIME` and `BOOLEAN` are rejected. **That would bite a project whose migrations are generated
+by an ORM**; these are hand-written, so it does not.
+
+**`ANY` is the escape hatch for a genuinely mixed-type column.** Needing it is usually a sign the
+column is doing two jobs.
+
+### Why this is ADR-22 and not slotted by importance
+
+**It belongs around ADR-16 by rank, and moving it there would have renumbered six decisions and
+149 citations.** Terry authorized the renumber; the judgment was that it is not worth it.
+
+**The deciding argument is a silent failure mode, not the effort.** A citation that should shift
+from `ADR-16` to `ADR-17` and does not still points at a real decision — just the wrong one.
+`scripts/traceability.py` catches a reference to an ADR that does not exist; **it cannot catch one
+that landed on the wrong neighbor.** A mechanical rewrite of 149 references has no cheap proof of
+correctness.
+
+**So the rank cost is one engineering-policy decision sitting a few slots low, and the alternative
+was a permanent second mapping table plus an unverifiable rewrite.** Recorded so the placement reads
+as a decision rather than as laziness.
+
 ## Considered and rejected
 
 | Option | Why not |

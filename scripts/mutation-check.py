@@ -107,6 +107,28 @@ MUTATIONS = [
         "",
     ),
     (
+        # The load-bearing property of the batch endpoint. Forty sequential
+        # groups.pools.add calls on one token is the discourtesy ADR-01 refuses.
+        "ADR-03: let the batch attempt immediately even when many groups were asked for",
+        "src/routes/api.ts",
+        "\t\tgroupIds.length === 1 && minted.length === 1 ? minted[0] : undefined;",
+        "\t\tminted.length >= 1 ? minted[0] : undefined;",
+    ),
+    (
+        # A warned pair MUST NOT be queued without an explicit per-group acknowledgement.
+        "ADR-04: queue a batch group that already reached a moderator",
+        "src/routes/api.ts",
+        "\t\t} else if (seen !== undefined && !acknowledged.has(groupId)) {",
+        "\t\t} else if (false as boolean) {",
+    ),
+    (
+        # ADR-05. A pair already in the pool must never be resubmitted.
+        "ADR-05: queue a batch group whose photo is already in the pool",
+        "src/routes/api.ts",
+        "\t\tif (inPool.has(groupId) || succeeded.has(groupId)) {",
+        "\t\tif (false as boolean) {",
+    ),
+    (
         "ADR-11: reflect the request Origin in CORS",
         "src/index.ts",
         "\t\torigin: (origin) => (origin === c.env.UI_ORIGIN ? c.env.UI_ORIGIN : null),",

@@ -6,6 +6,7 @@ import { checkAdmin } from "../admin/allowlist.js";
 import { overview } from "../db/metrics.js";
 import {
 	enqueue,
+	enqueueMany,
 	moderatedPairsFor,
 	pairReachedAModerator,
 	pendingCount,
@@ -92,6 +93,16 @@ const submission = z.object({
 	photoId: z.string().min(1).max(64),
 	groupId: z.string().min(1).max(64),
 	acknowledgedModeration: z.boolean().optional(),
+});
+
+/** One photo into many groups. **Capped like ADR-20's preflight, and for the same
+ *  reason: the cap bounds the reply, not the work.** `acknowledgedModeration` is a LIST
+ *  rather than a flag -- a blanket boolean would let one click acknowledge warnings the
+ *  user never saw, which is precisely what ADR-20 exists to prevent. */
+const batchSubmission = z.object({
+	photoId: z.string().min(1).max(64),
+	groupIds: z.array(z.string().min(1).max(64)).min(1).max(200),
+	acknowledgedModeration: z.array(z.string().min(1).max(64)).optional(),
 });
 
 /** ADR-17. **`limit` is capped, not merely defaulted** -- an uncapped `?limit=` is the
@@ -285,6 +296,162 @@ apiRoutes.post("/api/v001/requests", async (c) => {
 	}
 
 	return c.json({ status: "queued", publicId }, 202);
+});
+
+/**
+ * One photo into many groups, in one round trip. Built for the Lightroom Classic
+ * plug-in, where forty groups meant forty POSTs and roughly twelve seconds.
+ *
+ * **IT MUST NOT INHERIT ADR-03's IMMEDIATE-ATTEMPT BEHAVIOR AT BATCH SCALE.** The single
+ * POST above attempts straight away when a request is alone in its queue, which is right
+ * for one photo into one group. Applied to forty, a single Worker invocation would make
+ * forty sequential `groups.pools.add` calls on one user's token -- **the same discourtesy
+ * wearing a performance costume.** This route enqueues and returns; ADR-06's nightly
+ * sweep does the work.
+ *
+ * **The one exception is deliberate**: a batch naming exactly one eligible group, whose
+ * queue is empty, is indistinguishable from the single POST and takes the same immediate
+ * path. Refusing that would make the plug-in slower than the web app at the one thing
+ * they do identically.
+ *
+ * **ATOMIC IN D1, NOT ATOMIC IN OUTCOME.** `enqueueMany` puts the inserts in one
+ * transaction, and the reply is still per-group. **Rejecting all forty because three
+ * carry a warning would hold thirty-seven good ones hostage**, and the partial result is
+ * the safe direction anyway -- nothing reaches a moderator unanswered.
+ *
+ * **One Flickr call regardless of group count**, because `getAllContexts` is per-photo.
+ * The status vocabulary matches ADR-20's preflight exactly, so a client renders one set
+ * of outcomes for both.
+ */
+apiRoutes.post("/api/v001/requests/batch", async (c) => {
+	const parsed = batchSubmission.safeParse(
+		await c.req.json().catch(() => null),
+	);
+	if (!parsed.success) {
+		return c.json({ error: "invalid_request" }, 400);
+	}
+
+	const { photoId } = parsed.data;
+	const nsid = c.get("nsid");
+
+	// Duplicates would multiply the reply without adding a request, and would collide on
+	// `idx_requests_one_pending_per_pair` inside the batch.
+	const groupIds = [...new Set(parsed.data.groupIds)];
+	const acknowledged = new Set(parsed.data.acknowledgedModeration ?? []);
+
+	const tokens = await getFlickrTokens(c.env.DB, nsid, c.env.TOKEN_KEY);
+	if (tokens === null) return c.json({ error: "no_flickr_credentials" }, 409);
+
+	const [moderated, pending, succeeded, pools] = await Promise.all([
+		moderatedPairsFor(c.env.DB, nsid, photoId, groupIds),
+		pendingPairsFor(c.env.DB, nsid, photoId, groupIds),
+		succeededPairsFor(c.env.DB, nsid, photoId, groupIds),
+		getPhotoPools(photoId, {
+			consumerKey: c.env.FLICKR_CONSUMER_KEY,
+			consumerSecret: c.env.FLICKR_CONSUMER_SECRET,
+			token: tokens.token,
+			tokenSecret: tokens.tokenSecret,
+		}),
+	]);
+
+	/** A failed `getAllContexts` is NOT "the photo is in no pools". ADR-04: presence
+	 *  proves approval, absence proves nothing. Reporting an unknown as a clean `ready`
+	 *  would suppress warnings this route then raises anyway. */
+	const poolsKnown = pools !== null;
+	const inPool = new Set(pools ?? []);
+
+	type Decision = { groupId: string; status: string; publicId?: string };
+	const decided: Decision[] = [];
+	const eligible: string[] = [];
+
+	for (const groupId of groupIds) {
+		const seen = moderated.get(groupId);
+
+		// Order mirrors POST /requests and the preflight exactly. Pool membership beats a
+		// moderation record, because a photo in the pool was approved -- the one direction
+		// an invisible decision becomes visible.
+		if (inPool.has(groupId) || succeeded.has(groupId)) {
+			decided.push({ groupId, status: "already_in_pool" });
+		} else if (pending.has(groupId)) {
+			decided.push({ groupId, status: "already_queued" });
+		} else if (seen !== undefined && !acknowledged.has(groupId)) {
+			decided.push({ groupId, status: "needs_acknowledgement" });
+		} else {
+			eligible.push(groupId);
+		}
+	}
+
+	const minted = await enqueueMany(c.env.DB, nsid, photoId, eligible);
+
+	/**
+	 * ADR-03's narrow permission, and ONLY at a scale where it still holds. One eligible
+	 * group whose queue is empty is exactly the single-POST case.
+	 */
+	let attempted: Decision | null = null;
+
+	/**
+	 * **The caller must have ASKED for one group, not merely ended up with one eligible.**
+	 *
+	 * Keying off `minted.length === 1` was the first attempt and it is subtly wrong. A
+	 * forty-group batch where thirty-nine are already queued would leave one eligible and
+	 * take the immediate path — so identical requests would behave differently depending
+	 * on state the caller cannot see. **Predictable beats marginally faster.**
+	 *
+	 * ADR-01's discourtesy argument is unaffected either way: one eligible group is one
+	 * Flickr call. This is about a surprising API, not about volume.
+	 */
+	const only =
+		groupIds.length === 1 && minted.length === 1 ? minted[0] : undefined;
+
+	if (only !== undefined) {
+		if ((await pendingCount(c.env.DB, nsid, only.groupId)) === 1) {
+			const row = await c.env.DB.prepare(
+				"SELECT id FROM requests WHERE public_id = ?",
+			)
+				.bind(only.publicId)
+				.first<{ id: number }>();
+
+			if (row !== null) {
+				const head = { id: row.id, nsid, photoId, groupId: only.groupId };
+
+				// BEFORE the attempt, matching the sweep and the single POST. A dead socket
+				// may have left a photo in front of a moderator, and ADR-01 turns on not
+				// losing that.
+				await recordAttempt(c.env.DB, row.id);
+				const disposition = await createAttempt(c.env)(head);
+
+				if (outcomeColumn(disposition) !== null) {
+					await resolveRequest(c.env.DB, head, disposition);
+					attempted = {
+						groupId: only.groupId,
+						status: "resolved",
+						publicId: only.publicId,
+					};
+				}
+			}
+		}
+	}
+
+	const queued: Decision[] = minted.map(({ groupId, publicId }) =>
+		attempted !== null && attempted.groupId === groupId
+			? attempted
+			: { groupId, status: "queued", publicId },
+	);
+
+	// Answered in the order asked, so a client can zip the reply against its own list.
+	const byGroup = new Map(
+		[...decided, ...queued].map((entry) => [entry.groupId, entry]),
+	);
+
+	return c.json(
+		{
+			photoId,
+			poolsKnown,
+			queuedCount: eligible.length,
+			groups: groupIds.map((groupId) => byGroup.get(groupId)),
+		},
+		202,
+	);
 });
 
 /**

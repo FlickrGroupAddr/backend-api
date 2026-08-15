@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**21 decisions · 48 test blocks · 30 mutations**
+**22 decisions · 52 test blocks · 33 mutations**
 
 ## Forward: decision to verification
 
@@ -19,13 +19,13 @@ by reading code or config, because there is no runtime behavior to exercise.
 
 | ADR | Decision | Method | Verified by | Mutation |
 |---|---|---|---|---|
-| **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`sweep.test.ts` queues are independent | yes |
+| **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`sweep.test.ts` queues are independent | yes |
 | **ADR-02** | Classify by Flickr's error code. Unknown means terminal. | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-02, requests: the resolution invariant | yes |
-| **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
-| **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
-| **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`preflight.test.ts` ADR-20, the batch preflight | — |
+| **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
+| **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
+| **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
 | **ADR-06** | The work engine is a nightly cron over D1 | Test | `sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | — |
-| **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
+| **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
 | **ADR-08** | OAuth state lives in a Durable Object | Test | `oauth.test.ts` protocolParams<br>`oauth.test.ts` authorizationHeader<br>`oauth.test.ts` buildAuthorizeUrl<br>`oauth.test.ts` parseFormResponse<br>`oauth.test.ts` the login attempt, ADR-08<br>`oauth.test.ts` sends a login to Flickr carrying a request token | yes |
 | **ADR-09** | Tokens are AES-GCM encrypted in D1, under a separate key | Test | `crypto.test.ts` round trip<br>`crypto.test.ts` nonce handling<br>`crypto.test.ts` rejection<br>`schema.test.ts` ADR-07 and ADR-09, users | yes |
 | **ADR-10** | The session is an opaque, revocable handle | Test | `api.test.ts` ADR-10, authentication<br>`session.test.ts` mint and verify<br>`session.test.ts` revocation, which ADR-10 could not do<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op | — |
@@ -38,8 +38,9 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-17** | No list is unbounded, whoever owns its size | Test | `api.test.ts` ADR-17, pagination<br>`api.test.ts` ADR-17, a list FGA cannot bound: the Flickr group list | yes |
 | **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
 | **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication | yes |
-| **ADR-20** | The warning arrives before the commitment | Test | `preflight.test.ts` ADR-20, the batch preflight | yes |
+| **ADR-20** | The warning arrives before the commitment | Test | `batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`batch.test.ts` the batch endpoint's shape<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
 | **ADR-21** | The web sourcemap ships, and reopening this needs an extreme bar | Inspection | *by inspection* | — |
+| **ADR-22** | The schema enforces the rules, and every table is `STRICT` | Test | `schema.test.ts` ADR-22, STRICT tables refuse a wrong type | — |
 
 ## Backward: every test block defends something
 
@@ -56,6 +57,9 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `api.test.ts` | ADR-01, the queue view is where fail-polite becomes visible | ADR-01 |
 | `api.test.ts` | ADR-17, pagination | ADR-17 |
 | `api.test.ts` | ADR-17, a list FGA cannot bound: the Flickr group list | ADR-17 |
+| `batch.test.ts` | ADR-03, the batch endpoint does NOT attempt at batch scale | ADR-03, ADR-20 |
+| `batch.test.ts` | ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch | ADR-04, ADR-20 |
+| `batch.test.ts` | the batch endpoint's shape | ADR-20 |
 | `classify.test.ts` | classifyAdd | ADR-01, ADR-02 |
 | `classify.test.ts` | classifyResult | ADR-01, ADR-02 |
 | `classify.test.ts` | outcomeColumn | ADR-01, ADR-02 |
@@ -70,6 +74,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `oauth.test.ts` | the login attempt, ADR-08 | ADR-08 |
 | `oauth.test.ts` | sends a login to Flickr carrying a request token | ADR-08 |
 | `preflight.test.ts` | ADR-20, the batch preflight | ADR-04, ADR-05, ADR-20 |
+| `schema.test.ts` | ADR-22, STRICT tables refuse a wrong type | ADR-01, ADR-04, ADR-07, ADR-22 |
 | `schema.test.ts` | ADR-03 and ADR-16, requests: ordering | ADR-03, ADR-16 |
 | `schema.test.ts` | ADR-02, requests: the resolution invariant | ADR-02 |
 | `schema.test.ts` | ADR-04, requests: one outstanding request per pair | ADR-04 |
@@ -109,6 +114,9 @@ by reading code or config, because there is no runtime behavior to exercise.
 | sessions: skip the HMAC gate and go straight to the database | — |
 | sessions: honor an expired handle | — |
 | sessions: make logout clear the cookie without revoking the row | — |
+| ADR-03: let the batch attempt immediately even when many groups were asked for | ADR-03 |
+| ADR-04: queue a batch group that already reached a moderator | ADR-04 |
+| ADR-05: queue a batch group whose photo is already in the pool | ADR-05 |
 | ADR-11: reflect the request Origin in CORS | ADR-11 |
 | ADR-09: unbind the NSID from the ciphertext | ADR-09 |
 | ADR-09: reuse one IV forever | ADR-09 |

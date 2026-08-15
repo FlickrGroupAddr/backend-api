@@ -495,7 +495,25 @@ call regardless of group count, and is ADR-20 doing exactly the job it was built
 person says *yes, I mean it*, and it is the only checkpoint between a stray click and a volunteer's
 review queue.
 
-### The batch submit endpoint FGA does not yet have
+### The batch submit endpoint — BUILT 2026-08-15
+
+**`POST /api/v001/requests/batch` exists.** Body is `{ photoId, groupIds[],
+acknowledgedModeration?[] }`, capped at 200 groups like ADR-20's preflight. It answers `202` with a
+per-group array in the order asked, using the same four statuses preflight returns.
+
+**`acknowledgedModeration` is a LIST, not a flag.** A blanket boolean would let one click
+acknowledge warnings the user never saw, which is exactly what ADR-20 exists to prevent.
+
+**It does NOT attempt at batch scale**, and the immediate path is narrower than first built: the
+caller must have **asked for exactly one group**, not merely ended up with one eligible after
+filtering. Keying off the eligible count meant a forty-group batch with thirty-nine already queued
+would attempt — so identical requests behaved differently depending on state the caller cannot see.
+**Predictable beats marginally faster**, and one eligible group is one Flickr call either way.
+
+**The section below is the design it was built from, kept because the reasoning still governs
+changes to it.**
+
+### The design, as argued before it was built
 
 **`POST /api/v001/requests` takes one `photoId` and one `groupId`.** Forty groups is forty POSTs —
 `web/src/lib/submission.ts` measures that at roughly twelve seconds. A one-round-trip client needs a
