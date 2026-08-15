@@ -35,6 +35,7 @@ It is ADR-01. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.m
 | Change the code | [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.md) |
 | Check every decision is tested | [docs/TRACEABILITY.md](docs/TRACEABILITY.md) — generated |
 | Call the Flickr API | [docs/FLICKR.md](docs/FLICKR.md) |
+| See where the Lightroom client idea got to | [docs/LRC-CLIENT-NOTES.md](docs/LRC-CLIENT-NOTES.md) — notes, **not a decision** |
 | See the shape of it | [the architecture diagram](docs/architecture/) |
 
 ## The gate
