@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><path d="M64 0C28.7 0 0 28.7 0 64v288c0 35.3 28.7 64 64 64h192l-13.3 40H144c-13.3 0-24 10.7-24 24s10.7 24 24 24h352c13.3 0 24-10.7 24-24s-10.7-24-24-24H397.3L384 416h192c35.3 0 64-28.7 64-64V64c0-35.3-28.7-64-64-64H64zm0 48h512c8.8 0 16 7.2 16 16v224H48V64c0-8.8 7.2-16 16-16zm-16 288h544v16c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16v-16zm246.7 80h50.6l13.3 40h-77.2l13.3-40z"/></svg>
+<!--
+A desktop workstation: monitor, stand, keyboard rail.
+
+**Replaces the FontAwesome "users" group glyph**, which said WHO rather than
+WHAT. Terry, 2026-08-15: the tile is the browser, and a picture of two people
+reads as "users of the system" when the diagram means "the browser client, one
+of exactly two first-class clients". The Lightroom card beside it is a piece of
+software; its neighbor should be too.
+
+Drawn here rather than borrowed, so no license notice is needed and the shape
+matches this canvas's flat single-path style.
+-->

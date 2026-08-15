@@ -6,145 +6,142 @@
         <mxCell id="1" parent="0" />
 
         <mxCell id="title" value="FlickrGroupAddr Architecture" style="text;html=1;align=left;verticalAlign=middle;fontSize=32;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="50" y="24" width="700" height="42" as="geometry" />
+          <mxGeometry x="30" y="20" width="700" height="42" as="geometry" />
         </mxCell>
         <mxCell id="date" value="2026-08-15" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="50" y="70" width="493" height="32" as="geometry" />
+          <mxGeometry x="30" y="64" width="493" height="32" as="geometry" />
         </mxCell>
 
         <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="220" y="150" width="1300" height="1080" as="geometry" />
+          <mxGeometry x="215" y="110" width="965" height="910" as="geometry" />
         </mxCell>
         <mxCell id="cflogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDEuNCAzMy41Ij4NCiAgPGRlZnM+DQogICAgPHN0eWxlPg0KICAgICAgLmEgew0KICAgICAgICBmaWxsOiAjZmZmOw0KICAgICAgfQ0KDQogICAgICAuYiB7DQogICAgICAgIGZpbGw6ICNmNDgxMjA7DQogICAgICB9DQoNCiAgICAgIC5jIHsNCiAgICAgICAgZmlsbDogI2ZhYWQzZjsNCiAgICAgIH0NCg0KICAgICAgLmQgew0KICAgICAgICBmaWxsOiAjNDA0MDQxOw0KICAgICAgfQ0KICAgIDwvc3R5bGU+DQogIDwvZGVmcz4NCiAgPHRpdGxlPkNsb3VkZmxhcmUgbG9nbzwvdGl0bGU+DQogIDxwYXRoIGNsYXNzPSJhIiBkPSJNOTQuNywxMC42LDg5LjEsOS4zbC0xLS40LTI1LjcuMlYyMS41bDMyLjMuMVoiLz4NCiAgPHBhdGggY2xhc3M9ImIiIGQ9Ik04NC4yLDIwLjRhMi44NTU0NiwyLjg1NTQ2LDAsMCwwLS4zLTIuNiwzLjA5NDI4LDMuMDk0MjgsMCwwLDAtMi4xLTEuMWwtMTcuNC0uMmMtLjEsMC0uMi0uMS0uMy0uMWEuMTg3NS4xODc1LDAsMCwxLDAtLjNjLjEtLjIuMi0uMy40LS4zTDgyLDE1LjZhNi4yOTIyMyw2LjI5MjIzLDAsMCwwLDUuMS0zLjhsMS0yLjZjMC0uMS4xLS4yLDAtLjNBMTEuMzk2NDYsMTEuMzk2NDYsMCwwLDAsNjYuMiw3LjdhNS40NTk0MSw1LjQ1OTQxLDAsMCwwLTMuNi0xQTUuMjA5MzYsNS4yMDkzNiwwLDAsMCw1OCwxMS4zYTUuNDYyNjIsNS40NjI2MiwwLDAsMCwuMSwxLjhBNy4zMDE3Nyw3LjMwMTc3LDAsMCwwLDUxLDIwLjRhNC4xMDIsNC4xMDIsMCwwLDAsLjEsMS4xLjMxOTMuMzE5MywwLDAsMCwuMy4zSDgzLjVjLjIsMCwuNC0uMS40LS4zWiIvPg0KICA8cGF0aCBjbGFzcz0iYyIgZD0iTTg5LjcsOS4yaC0uNWMtLjEsMC0uMi4xLS4zLjJsLS43LDIuNGEyLjg1NTQ2LDIuODU1NDYsMCwwLDAsLjMsMi42LDMuMDk0MjgsMy4wOTQyOCwwLDAsMCwyLjEsMS4xbDMuNy4yYy4xLDAsLjIuMS4zLjFhLjE4NzUuMTg3NSwwLDAsMSwwLC4zYy0uMS4yLS4yLjMtLjQuM2wtMy44LjJhNi4yOTIyMyw2LjI5MjIzLDAsMCwwLTUuMSwzLjhsLS4yLjljLS4xLjEsMCwuMy4yLjNIOTguNWEuMjY1MTcuMjY1MTcsMCwwLDAsLjMtLjMsMTAuODcxODQsMTAuODcxODQsMCwwLDAsLjQtMi42LDkuNTYwNDUsOS41NjA0NSwwLDAsMC05LjUtOS41Ii8+DQogIDxwYXRoIGNsYXNzPSJkIiBkPSJNMTAwLjUsMjcuMmEuOS45LDAsMSwxLC45LS45Ljg5NjI2Ljg5NjI2LDAsMCwxLS45LjltMC0xLjZhLjcuNywwLDEsMCwuNy43LjY4MzU0LjY4MzU0LDAsMCwwLS43LS43bS40LDEuMmgtLjJsLS4yLS4zaC0uMnYuM2gtLjJ2LS45aC41YS4yNjUxNy4yNjUxNywwLDAsMSwuMy4zYzAsLjEtLjEuMi0uMi4zbC4yLjNabS0uMy0uNWMuMSwwLC4xLDAsLjEtLjFhLjA5Nzk0LjA5Nzk0LDAsMCwwLS4xLS4xaC0uM3YuM2guM1ptLTg5LjctLjloMi4ydjZoMy44djEuOWgtNlptOC4zLDMuOWE0LjEwNDkxLDQuMTA0OTEsMCwwLDEsNC4zLTQuMSw0LjAyLDQuMDIsMCwwLDEsNC4yLDQuMSw0LjEwNDkxLDQuMTA0OTEsMCwwLDEtNC4zLDQuMSw0LjA3ODg4LDQuMDc4ODgsMCwwLDEtNC4yLTQuMW02LjMsMGEyLjA1NTY1LDIuMDU1NjUsMCwwLDAtMi0yLjIsMi4xMDI1LDIuMTAyNSwwLDAsMCwwLDQuMmMxLjIuMiwyLS44LDItMm00LjkuNVYyNS40aDIuMnY0LjRjMCwxLjEuNiwxLjcsMS41LDEuN2ExLjM5OTI2LDEuMzk5MjYsMCwwLDAsMS41LTEuNlYyNS40aDIuMnY0LjRjMCwyLjYtMS41LDMuNy0zLjcsMy43LTIuMy0uMS0zLjctMS4yLTMuNy0zLjdtMTAuNy00LjRoMy4xYzIuOCwwLDQuNSwxLjYsNC41LDMuOXMtMS43LDQtNC41LDRoLTNWMjUuNFptMy4xLDUuOWEyLjAwOTA5LDIuMDA5MDksMCwxLDAsMC00aC0uOXY0Wm03LjYtNS45aDYuM3YxLjlINTR2MS4zaDMuN3YxLjhINTR2Mi45SDUxLjhabTkuNCwwaDIuMnY2aDMuOHYxLjloLTZabTExLjctLjFoMi4ybDMuNCw4SDc2LjFsLS42LTEuNEg3Mi40bC0uNiwxLjRINjkuNVptMiw0LjlMNzQsMjhsLS45LDIuMlptNi40LTQuOEg4NWEzLjQxODE4LDMuNDE4MTgsMCwwLDEsMi42LjksMi42MjM3MywyLjYyMzczLDAsMCwxLS45LDQuMmwxLjksMi44SDg2LjFsLTEuNi0yLjRoLTF2Mi40SDgxLjNabTMuNiwzLjhjLjcsMCwxLjItLjQsMS4yLS45LDAtLjYtLjUtLjktMS4yLS45SDgzLjV2MS45aDEuNFptNi41LTMuOGg2LjR2MS44SDkzLjZ2MS4yaDMuOHYxLjhIOTMuNnYxLjJoNC4zdjEuOUg5MS40Wk02LjEsMzAuM2ExLjk3NTQ4LDEuOTc1NDgsMCwwLDEtMS44LDEuMiwyLjEwMjUsMi4xMDI1LDAsMCwxLDAtNC4yLDIuMDk3NywyLjA5NzcsMCwwLDEsMS45LDEuM0g4LjVhNC4xMzQ1OSw0LjEzNDU5LDAsMCwwLTQuMi0zLjNBNC4xNjUxLDQuMTY1MSwwLDAsMCwwLDI5LjRhNC4wNzg4OCw0LjA3ODg4LDAsMCwwLDQuMiw0LjEsNC4zMTgxMiw0LjMxODEyLDAsMCwwLDQuMi0zLjJaIi8+DQo8L3N2Zz4NCg==" vertex="1" parent="1">
-          <mxGeometry x="260" y="190" width="300" height="99" as="geometry" />
+          <mxGeometry x="245" y="140" width="300" height="99" as="geometry" />
         </mxCell>
         <mxCell id="netb" value="Lowest-latency Cloudflare edge PoP (anycast routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="260" y="400" width="950" height="780" as="geometry" />
+          <mxGeometry x="245" y="250" width="585" height="740" as="geometry" />
         </mxCell>
 
-        <mxCell id="users" value="Browser client" style="shape=image;html=1;imageAspect=1;aspect=fixed;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NDAgNTEyIj48cGF0aCBkPSJNOTYgMjI0YzM1LjMgMCA2NC0yOC43IDY0LTY0cy0yOC43LTY0LTY0LTY0LTY0IDI4LjctNjQgNjQgMjguNyA2NCA2NCA2NHptNDQ4IDBjMzUuMyAwIDY0LTI4LjcgNjQtNjRzLTI4LjctNjQtNjQtNjQtNjQgMjguNy02NCA2NCAyOC43IDY0IDY0IDY0em0zMiAzMmgtNjRjLTE3LjYgMC0zMy41IDcuMS00NS4xIDE4LjYgNDAuMyAyMi4xIDY4LjkgNjIgNzUuMSAxMDkuNGg2NmMxNy43IDAgMzItMTQuMyAzMi0zMnYtMzJjMC0zNS4zLTI4LjctNjQtNjQtNjR6bS0yNTYgMGM2MS45IDAgMTEyLTUwLjEgMTEyLTExMlMzODEuOSAzMiAzMjAgMzIgMjA4IDgyLjEgMjA4IDE0NHM1MC4xIDExMiAxMTIgMTEyem03Ni44IDMyaC04LjNjLTIwLjggMTAtNDMuOSAxNi02OC41IDE2cy00Ny42LTYtNjguNS0xNmgtOC4zQzE3OS42IDI4OCAxMjggMzM5LjYgMTI4IDQwMy4yVjQzMmMwIDI2LjUgMjEuNSA0OCA0OCA0OGgyODhjMjYuNSAwIDQ4LTIxLjUgNDgtNDh2LTI4LjhjMC02My42LTUxLjYtMTE1LjItMTE1LjItMTE1LjJ6bS0yMjMuNy0xMy40QzE2MS41IDI2My4xIDE0NS42IDI1NiAxMjggMjU2SDY0Yy0zNS4zIDAtNjQgMjguNy02NCA2NHYzMmMwIDE3LjcgMTQuMyAzMiAzMiAzMmg2NS45YzYuMy00Ny40IDM0LjktODcuMyA3NS4yLTEwOS40eiIvPjwvc3ZnPgo8IS0tCkZvbnQgQXdlc29tZSBGcmVlIDUuMi4wIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tCkxpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlIChJY29uczogQ0MgQlkgNC4wLCBGb250czogU0lMIE9GTCAxLjEsIENvZGU6IE1JVCBMaWNlbnNlKQotLT4=;fontSize=13;fontStyle=1;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
-          <mxGeometry x="70" y="750" width="100" height="80" as="geometry" />
-        </mxCell>
         <mxCell id="lrcapp" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#546E7A;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="35" y="900" width="165" height="300" as="geometry" />
+          <mxGeometry x="30" y="130" width="170" height="290" as="geometry" />
         </mxCell>
         <mxCell id="lrctitle" value="Lightroom Classic" style="text;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
-          <mxGeometry x="55" y="918" width="125" height="24" as="geometry" />
+          <mxGeometry x="48" y="146" width="134" height="24" as="geometry" />
         </mxCell>
         <mxCell id="lrc" value="&lt;b&gt;FGA plug-in&lt;/b&gt;&lt;br&gt;&lt;i&gt;Lua&lt;br&gt;All we add&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#546E7A;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="55" y="955" width="125" height="105" as="geometry" />
+          <mxGeometry x="48" y="182" width="134" height="105" as="geometry" />
         </mxCell>
         <mxCell id="lrcat" value="&lt;b&gt;Catalog&lt;/b&gt;&lt;br&gt;&lt;i&gt;Local SQLite&lt;br&gt;Published photo IDs&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#607D8B;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="55" y="1075" width="125" height="105" as="geometry" />
+          <mxGeometry x="48" y="300" width="134" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NDAgNTEyIj48cGF0aCBkPSJNNjQgMEMyOC43IDAgMCAyOC43IDAgNjR2Mjg4YzAgMzUuMyAyOC43IDY0IDY0IDY0aDE5MmwtMTMuMyA0MEgxNDRjLTEzLjMgMC0yNCAxMC43LTI0IDI0czEwLjcgMjQgMjQgMjRoMzUyYzEzLjMgMCAyNC0xMC43IDI0LTI0cy0xMC43LTI0LTI0LTI0SDM5Ny4zTDM4NCA0MTZoMTkyYzM1LjMgMCA2NC0yOC43IDY0LTY0VjY0YzAtMzUuMy0yOC43LTY0LTY0LTY0SDY0em0wIDQ4aDUxMmM4LjggMCAxNiA3LjIgMTYgMTZ2MjI0SDQ4VjY0YzAtOC44IDcuMi0xNiAxNi0xNnptLTE2IDI4OGg1NDR2MTZjMCA4LjgtNy4yIDE2LTE2IDE2SDY0Yy04LjggMC0xNi03LjItMTYtMTZ2LTE2em0yNDYuNyA4MGg1MC42bDEzLjMgNDBoLTc3LjJsMTMuMy00MHoiLz48L3N2Zz4KPCEtLQpBIGRlc2t0b3Agd29ya3N0YXRpb246IG1vbml0b3IsIHN0YW5kLCBrZXlib2FyZCByYWlsLgoKKipSZXBsYWNlcyB0aGUgRm9udEF3ZXNvbWUgInVzZXJzIiBncm91cCBnbHlwaCoqLCB3aGljaCBzYWlkIFdITyByYXRoZXIgdGhhbgpXSEFULiBUZXJyeSwgMjAyNi0wOC0xNTogdGhlIHRpbGUgaXMgdGhlIGJyb3dzZXIsIGFuZCBhIHBpY3R1cmUgb2YgdHdvIHBlb3BsZQpyZWFkcyBhcyAidXNlcnMgb2YgdGhlIHN5c3RlbSIgd2hlbiB0aGUgZGlhZ3JhbSBtZWFucyAidGhlIGJyb3dzZXIgY2xpZW50LCBvbmUKb2YgZXhhY3RseSB0d28gZmlyc3QtY2xhc3MgY2xpZW50cyIuIFRoZSBMaWdodHJvb20gY2FyZCBiZXNpZGUgaXQgaXMgYSBwaWVjZSBvZgpzb2Z0d2FyZTsgaXRzIG5laWdoYm9yIHNob3VsZCBiZSB0b28uCgpEcmF3biBoZXJlIHJhdGhlciB0aGFuIGJvcnJvd2VkLCBzbyBubyBsaWNlbnNlIG5vdGljZSBpcyBuZWVkZWQgYW5kIHRoZSBzaGFwZQptYXRjaGVzIHRoaXMgY2FudmFzJ3MgZmxhdCBzaW5nbGUtcGF0aCBzdHlsZS4KLS0+Cg==;fontSize=13;fontStyle=1;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="65" y="490" width="100" height="80" as="geometry" />
         </mxCell>
 
         <mxCell id="dns" value="&lt;b&gt;flickrgroupaddr.com DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Authoritative DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="480" width="210" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="pages" value="&lt;b&gt;flickrgroupaddr.com/&lt;br&gt;App Shell (Svelte)&lt;/b&gt;&lt;br&gt;&lt;i&gt;Workers Static Assets&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="640" width="210" height="90" as="geometry" />
+          <mxGeometry x="560" y="300" width="230" height="90" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;App Secrets Store&lt;/b&gt;&lt;br&gt;&lt;i&gt;Worker Secrets&lt;br&gt;FGA Flickr API credentials&lt;br&gt;Token key (encryption)&lt;br&gt;Session key (signing)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="640" y="908" width="220" height="115" as="geometry" />
+          <mxGeometry x="280" y="620" width="210" height="115" as="geometry" />
         </mxCell>
         <mxCell id="cron" value="&lt;b&gt;Nightly Event Trigger&lt;/b&gt;&lt;br&gt;&lt;i&gt;Workers Cron Trigger&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="1040" width="210" height="100" as="geometry" />
+          <mxGeometry x="280" y="760" width="210" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="oauthdo_b2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="956" y="244" width="230" height="100" as="geometry" />
+          <mxGeometry x="886" y="284" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="oauthdo_b1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="948" y="252" width="230" height="100" as="geometry" />
+          <mxGeometry x="878" y="292" width="230" height="100" as="geometry" />
         </mxCell>
         <mxCell id="oauthdo" value="&lt;b&gt;OAuth Request Token&lt;/b&gt;&lt;br&gt;&lt;i&gt;One Durable Object&lt;br&gt;per login attempt&lt;br&gt;Self-deletes after ~15 min&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="940" y="260" width="230" height="100" as="geometry" />
+          <mxGeometry x="870" y="300" width="230" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="api" value="&lt;b&gt;flickrgroupaddr.com/api/*&lt;br&gt;REST API Endpoint&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Worker&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="940" y="740" width="230" height="100" as="geometry" />
+        <mxCell id="api" value="&lt;b&gt;flickrgroupaddr.com&lt;/b&gt;&lt;div style=&quot;font-size:11px;margin-top:5px&quot;&gt;&lt;b&gt;/&amp;#8203;*&lt;/b&gt; &amp;#8212; App shell (Svelte), Workers Static Assets&lt;/div&gt;&lt;div style=&quot;font-size:11px&quot;&gt;&lt;b&gt;/api/v001/*&lt;/b&gt; &amp;#8212; REST API&lt;/div&gt;&lt;div style=&quot;font-size:12px;margin-top:6px&quot;&gt;&lt;i&gt;ONE Cloudflare Worker, one origin&lt;/i&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="560" y="460" width="230" height="160" as="geometry" />
         </mxCell>
         <mxCell id="retry" value="&lt;b&gt;Nightly Retry Logic&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Worker&lt;br&gt;Attempt to flush every queue with&lt;br&gt;pending requests. Stop a queue at&lt;br&gt;its first throttle status&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="940" y="1040" width="230" height="100" as="geometry" />
+          <mxGeometry x="560" y="760" width="230" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="d1" value="&lt;b&gt;SQL Database&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare D1&lt;br&gt;Users &#183; requests &#183; tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=12;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="1300" y="908" width="200" height="115" as="geometry" />
+          <mxGeometry x="880" y="645" width="200" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="581" width="205" height="599" as="geometry" />
+          <mxGeometry x="1210" y="380" width="204" height="590" as="geometry" />
         </mxCell>
         <mxCell id="flickrtitle" value="Flickr" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
-          <mxGeometry x="1625" y="686" width="155" height="28" as="geometry" />
+          <mxGeometry x="1232" y="486" width="160" height="28" as="geometry" />
         </mxCell>
         <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;div style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:60px&quot;&gt;&lt;b&gt;OAuth Endpoints&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px;margin-top:7px&quot;&gt;oauth/request_token&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/authorize&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;oauth/access_token&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:30px&quot;&gt;&lt;b&gt;API Functions&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px;margin-top:7px&quot;&gt;groups.pools.getGroups&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;photos.getAllContexts&lt;/div&gt;&lt;div style=&quot;font-size:10px;line-height:13px&quot;&gt;groups.pools.add&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
-          <mxGeometry x="1625" y="740" width="155" height="400" as="geometry" />
+          <mxGeometry x="1232" y="530" width="160" height="320" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image=data:image/svg+xml,PCEtLSBDcm9wcGVkIGZyb20gRmlsZTpGbGlja3IgbG9nbyAtIFN1cGVyVGlueUljb25zLnN2ZyAoV2lraW1lZGlhIENvbW1vbnMpLgogICAgIFRoZSBvcmlnaW5hbCBpcyBhIDUxMng1MTIgc3F1YXJlOiBhIHdoaXRlIHJvdW5kZWQgcmVjdCBwbHVzIHR3byBkb3RzIGF0CiAgICAgY3k9MjU2LCByPTc5LiBUaGUgZG90cyBvY2N1cHkgb25seSB5IDE3Ny0zMzUsIHNvIHJvdWdobHkgNjAlIG9mIHRoZSBoZWlnaHQKICAgICBpcyBpbnZpc2libGUgcGFkZGluZyBvbiBhIHdoaXRlIGNhbnZhcywgYW5kIGFueSB0aWxlIHBsYWNpbmcgaXQgYWdhaW5zdCBhCiAgICAgdGl0bGUgaW5oZXJpdHMgdGhhdCBhcyBhIGdhcCBub3RoaW5nIGNhbiBjbG9zZS4KICAgICBUaGlzIHZpZXdCb3ggY3JvcHMgdG8gdGhlIGRvdHMnIGJvdW5kaW5nIGJveCBwbHVzIDEwIHVuaXRzLCBhbmQgZHJvcHMgdGhlCiAgICAgd2hpdGUgYmFja2luZyByZWN0LCB3aGljaCB3YXMgaW52aXNpYmxlIGFueXdheS4gLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBhcmlhLWxhYmVsPSJGbGlja3IiIHJvbGU9ImltZyIgdmlld0JveD0iNjggMTY3IDM3NiAxNzgiPjxjaXJjbGUgY3g9IjE1NyIgY3k9IjI1NiIgZmlsbD0iIzAwNjNkYyIgcj0iNzkiLz48Y2lyY2xlIGN4PSIzNTUiIGN5PSIyNTYiIGZpbGw9IiNmZjAwODQiIHI9Ijc5Ii8+PC9zdmc+Cg==" vertex="1" parent="1">
-          <mxGeometry x="1625" y="606" width="155" height="73" as="geometry" />
+          <mxGeometry x="1232" y="402" width="160" height="76" as="geometry" />
         </mxCell>
                 <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="150" width="205" height="130" as="geometry" />
+          <mxGeometry x="1210" y="110" width="204" height="130" as="geometry" />
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#183; &#183; &#183; &#183; Scheduled trigger&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=12;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="368" width="205" height="125" as="geometry" />
+          <mxGeometry x="1210" y="260" width="204" height="100" as="geometry" />
         </mxCell>
 
         <mxCell id="n1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="304" y="553" width="46" height="46" as="geometry" />
+          <mxGeometry x="313" y="390" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="299" y="654" width="46" height="46" as="geometry" />
+          <mxGeometry x="340" y="443" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n3" value="3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="727" y="721" width="46" height="46" as="geometry" />
+          <mxGeometry x="340" y="519" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="877" y="886" width="46" height="46" as="geometry" />
+          <mxGeometry x="495" y="560" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1537" y="728" width="46" height="46" as="geometry" />
+          <mxGeometry x="988" y="529" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n6" value="6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1058" y="547" width="46" height="46" as="geometry" />
+          <mxGeometry x="788" y="395" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="727" y="1281" width="46" height="46" as="geometry" />
+          <mxGeometry x="362" y="999" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="502" y="813" width="46" height="46" as="geometry" />
+          <mxGeometry x="386" y="496" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="422" y="813" width="46" height="46" as="geometry" />
+          <mxGeometry x="293" y="496" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1337" y="813" width="46" height="46" as="geometry" />
+          <mxGeometry x="942" y="556" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n11" value="11" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1417" y="813" width="46" height="46" as="geometry" />
+          <mxGeometry x="1034" y="556" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n12" value="12" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="122" y="840" width="46" height="46" as="geometry" />
+          <mxGeometry x="120" y="424" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n13" value="13" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="558" y="904" width="46" height="46" as="geometry" />
+          <mxGeometry x="386" y="361" width="46" height="46" as="geometry" />
         </mxCell>
 
         <mxCell id="journey" value="&lt;div style=&quot;font-size:15px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Static assets served by the same Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;User authorizes FGA&#39;s write access @ Flickr &#8212; HTTP response has HTTP redirect to API OAuth callback&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Browser follows HTTP redirect instructed by Flickr to OAuth callback, carrying a verifier&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker reads the token secret back out and trades the verifier for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;REST API endpoints: flickrgroupaddr.com/api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;12&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Lightroom plug-in opens the browser to link itself. It never calls Flickr&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:14px&quot;&gt;&lt;b&gt;13&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:14px&quot;&gt;Lightroom plug-in polls for its token, then queues a batch in one call&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=13;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="1228" y="110" width="275" height="660" as="geometry" />
+          <mxGeometry x="1440" y="110" width="230" height="780" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e2" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.05;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="pages">
+        <mxCell id="e2" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.05;exitDx=0;exitDy=0;entryX=0;entryY=0.2125;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e12" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="api">
+        <mxCell id="e12" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.3375;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="api">
           <mxGeometry x="0.45" relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e13" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="api">
+        <mxCell id="e13" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5625;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="api">
           <mxGeometry x="0.55" relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e18" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.05;exitDx=0;exitDy=0;entryX=0.15;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="api">
@@ -153,19 +150,19 @@
         <mxCell id="e20" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="lrcat">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e19" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;dashPattern=1 4;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="users">
+        <mxCell id="e19" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;dashPattern=1 4;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrcat" target="users">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
+        <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.1;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;" edge="1" parent="1" source="secrets" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e5" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="secrets" target="retry">
+        <mxCell id="e5" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="secrets" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e6" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;dashPattern=1 4;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
+        <mxCell id="e6" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2;dashed=1;dashPattern=1 4;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.48;exitDx=0;exitDy=0;entryX=0;entryY=0.48;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="cron" target="retry">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e14" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="d1">
@@ -174,20 +171,20 @@
         <mxCell id="e15" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="d1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e9" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.37;exitDx=0;exitDy=0;entryX=0;entryY=0.0925;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
+        <mxCell id="e9" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.15625;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e17" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.175;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="flickrapi">
+        <mxCell id="e17" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.9375;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e10" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.63;exitDx=0;exitDy=0;entryX=0;entryY=0.9075;entryDx=0;entryDy=0;" edge="1" parent="1" source="retry" target="flickrapi">
+        <mxCell id="e10" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.875;entryDx=0;entryDy=0;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="retry" target="flickrapi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickrapi">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="120" y="1330" />
-              <mxPoint x="1702.5" y="1330" />
+              <mxPoint x="115" y="1050" />
+              <mxPoint x="1312" y="1050" />
             </Array>
           </mxGeometry>
         </mxCell>
