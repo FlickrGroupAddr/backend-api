@@ -5,7 +5,7 @@ coming back every day for weeks.
 
 **FGA queues each request and keeps trying until it lands.**
 
-## Status, verified 2026-08-14
+## Status, verified 2026-08-15
 
 | | |
 |---|---|

@@ -125,6 +125,12 @@ rewritten. **Run it before and after any change to `test/`, and a survivor is a 
 **Adding a decision to `docs/architecture/DECISIONS.md` SHOULD add a mutation here.** A rule nothing
 can break is a rule nothing is enforcing.
 
+**A decision about build or deploy CONFIGURATION is the honest exception, and it MUST NOT be
+"fixed".** `mutation-check.py` runs the Vitest suite, and the suite never reads `vite.config.ts`,
+`wrangler.jsonc` or `package.json`. A mutation there reports a survivor and describes a hole that
+does not exist, which understates the safety net by inventing a gap. ADR-13, ADR-15 and ADR-21 all
+carry `—` in that column deliberately, and each says so in its own text.
+
 ## Know the tools before writing code that replaces one
 
 **This is ADR-14 pointed at the toolbox**, and it fails the same way: the cheapest tool is the one

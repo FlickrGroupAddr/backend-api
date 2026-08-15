@@ -258,9 +258,15 @@ until 7.1.** Biome parses TypeScript itself and is unaffected.
 spin-up costs three to six times that.** Optimizing the typecheck would be optimizing the wrong
 thing.
 
-**The inputs are small and one of them dominates.** 3,070 lines across `src/` and `test/`, 651 in
-`web/src/` — against the generated `worker-configuration.d.ts` at **15,188 lines**, five times all
-the hand-written code combined.
+**The inputs are small and one of them dominates.** Re-measured 2026-08-15: **4,134 lines across
+`src/` and `test/`** and **744 in `web/src/*.ts`**, against the generated
+`worker-configuration.d.ts` at **15,189 lines** — **3.1× all the hand-written TypeScript
+combined.**
+
+**It read 3,070 / 651 / 15,188 and "five times" on 2026-08-14, and every one of those had gone
+stale by the next day.** The multiplier shrinks as the project grows and the conclusion does not:
+the generated file is still the single largest input to either typecheck, and it is still the one
+nobody writes. **Re-measure before quoting these**, the same rule the test count carries.
 
 **ESLint was never in this project.** Biome went in at the scaffold commit. This was a choice, not a
 migration.
