@@ -155,6 +155,22 @@ MUTATIONS = [
         "\tlimit: z.coerce.number().int().min(1).default(50),",
     ),
     (
+        # The ORIGINAL defect, restored exactly: stop after page one and call it the
+        # whole list. It shipped this way and nothing could see it.
+        "ADR-17: return only the first page of the Flickr group list",
+        "src/flickr/api.ts",
+        "\t\tif (page >= pages) return { kind: \"ok\", groups: collected };",
+        "\t\treturn { kind: \"ok\", groups: collected };",
+    ),
+    (
+        # The tempting softening. A truncated list with a flag reads as helpful and is
+        # the exact thing ADR-17 now forbids -- nobody can see which entries are missing.
+        "ADR-17: soften the ceiling into a truncated list instead of a refusal",
+        "src/routes/api.ts",
+        "\tif (listed.kind === \"too-many\") {",
+        "\tif (false as boolean) {",
+    ),
+    (
         # The defect only shows in production, where the assets binding exists and this
         # route wins the race for `/`. Locally it looks like a working diagnostic page.
         "ADR-18: claim / in the Worker, shadowing the app shell",

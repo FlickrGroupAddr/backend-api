@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**21 decisions · 45 test blocks · 25 mutations**
+**21 decisions · 46 test blocks · 27 mutations**
 
 ## Forward: decision to verification
 
@@ -35,7 +35,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` answers /health without a session<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
 | **ADR-15** | Which store holds what | Inspection | *by inspection* | — |
 | **ADR-16** | A request has two identifiers | Test | `schema.test.ts` ADR-03 and ADR-16, requests: ordering | — |
-| **ADR-17** | Every list endpoint is paginated, with a cursor | Test | `api.test.ts` ADR-17, pagination | yes |
+| **ADR-17** | No list is unbounded, whoever owns its size | Test | `api.test.ts` ADR-17, pagination<br>`api.test.ts` ADR-17, a list FGA cannot bound: the Flickr group list | yes |
 | **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-14 and ADR-07, the diagnostic page<br>`worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
 | **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication | yes |
 | **ADR-20** | The warning arrives before the commitment | Test | `preflight.test.ts` ADR-20, the batch preflight | yes |
@@ -55,6 +55,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `api.test.ts` | withdrawing a request | ADR-01 |
 | `api.test.ts` | ADR-01, the queue view is where fail-polite becomes visible | ADR-01 |
 | `api.test.ts` | ADR-17, pagination | ADR-17 |
+| `api.test.ts` | ADR-17, a list FGA cannot bound: the Flickr group list | ADR-17 |
 | `classify.test.ts` | classifyAdd | ADR-01, ADR-02 |
 | `classify.test.ts` | classifyResult | ADR-01, ADR-02 |
 | `classify.test.ts` | outcomeColumn | ADR-01, ADR-02 |
@@ -115,6 +116,8 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR-04: stop writing the permanent moderated-pair record | ADR-04 |
 | ADR-08: return the login secret more than once | ADR-08 |
 | ADR-17: cap the pagination limit at nothing | ADR-17 |
+| ADR-17: return only the first page of the Flickr group list | ADR-17 |
+| ADR-17: soften the ceiling into a truncated list instead of a refusal | ADR-17 |
 | ADR-18: claim / in the Worker, shadowing the app shell | ADR-18 |
 | ADR-19: make a missing allowlist fail OPEN | ADR-19 |
 | ADR-19: answer 403 instead of 404, confirming the surface exists | ADR-19 |

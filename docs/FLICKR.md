@@ -110,6 +110,25 @@ early on 2026-08-13 and **372** later the same day.
 endpoint that made one call per group returned 979 KB and took **53 seconds**. The fix was not
 concurrency. **The fix was not making the calls.**
 
+### `flickr.groups.pools.getGroups` IS PAGED, and FGA ignored that until 2026-08-15
+
+**FGA sent no `page` and no `per_page`, and read only `groups.group` — never `pages` or `total`.**
+So it took Flickr's default page size and returned page one as the complete list. **No code path
+could produce a symptom**, and the owner sat at 372 with the default unmeasured.
+
+**The default page size for this method is STILL UNMEASURED, and that is the point.** Nothing here
+should depend on it. `getUserGroups` now sends `per_page=500`, reads `pages`, and walks to the end.
+
+**Flickr clamps an over-large `per_page` silently rather than erroring.** So a single call with a big
+page size and no loop inherits the clamp as fresh silent truncation. **The walk is what makes the
+page size safe to guess.**
+
+**Read `total` and `pages` as data, not decoration.** Both arrive inconsistently typed — sometimes a
+JSON number, sometimes a string — which is why `asNumber` absorbs them and the test stub deliberately
+returns strings.
+
+See ADR-17, which was widened the same day to cover any list whose size a third party sets.
+
 ## Two fields that look alike and are not
 
 **`ispoolmoderated`** on `groups.getInfo` is `0` or `1` and says whether adds go to a human queue.

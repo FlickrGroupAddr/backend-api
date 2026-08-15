@@ -332,18 +332,56 @@ millisecond — which is exactly what bulk-queueing fifty photos looks like.
 
 **v4 rather than v7 for the public handle**, because v7 republishes its own creation time.
 
-## ADR-17 — Every list endpoint is paginated, with a cursor
+## ADR-17 — No list is unbounded, whoever owns its size
 
-**A list endpoint MUST NOT return an unbounded result set.** Pagination **MUST** be keyset, never
-offset.
+**A list endpoint MUST NOT return an unbounded result set, and FGA MUST NOT read a paged upstream as
+though its first page were the whole answer.**
 
-**Offset paging silently skips rows here.** The nightly sweep resolves requests continuously, so the
-set shifts under the reader between pages.
+**This decision covers TWO kinds of list, and the second was added 2026-08-15 after the first
+wording missed it.** Terry's framing: lists *"that FGA itself cannot bound, e.g. how many groups a
+user is in, how many photo IDs they have uploaded."*
+
+| Kind | Example | Who sets the size | The rule |
+|---|---|---|---|
+| **FGA owns the rows** | `/api/v001/queue` over D1 | FGA | Keyset pagination, opaque cursor, capped `limit` |
+| **A third party owns the rows** | `flickr.groups.pools.getGroups` | **Flickr, and it can grow without notice** | Walk every page, then refuse past a stated ceiling |
+
+### Where FGA owns the rows
+
+**Pagination MUST be keyset, never offset.** Offset paging silently skips rows here: the nightly
+sweep resolves requests continuously, so the set shifts under the reader between pages.
 
 **The cursor MUST be opaque, and the end of a list is a fact the server states.** A short page is not
 the end — that is wrong exactly when the last page is full.
 
 **A `limit` MUST be capped, not merely defaulted.** FGA's is 1–200, default 50.
+
+### Where a third party owns the rows
+
+**Every upstream call that returns a list MUST send an explicit page size, MUST read the upstream's
+own page count, and MUST walk to the end.** A reply's `total` and `pages` are data, not decoration.
+
+**A partial list MUST NOT be returned as though it were complete.** Past a stated ceiling the
+endpoint **MUST refuse** — `502 too_many_groups` — and **MUST NOT** return the rows it did collect.
+`getUserGroups` in `src/flickr/api.ts` holds `GROUPS_PER_PAGE` and `MAX_USER_GROUPS`.
+
+**This is ADR-01's reasoning applied to a list rather than to an add.** An outcome that could mean
+*there are groups you cannot see* MUST NOT render as a clean, complete answer. A picker showing most
+of a wall is worse than one showing an error, because nobody can tell which entries are missing.
+
+**Asking for a large page size is safe only BECAUSE the walk exists.** Flickr clamps an over-large
+`per_page` silently rather than erroring, so a single call with a big page size and no loop inherits
+that clamp as fresh silent truncation.
+
+### The defect that produced this, recorded because it was invisible
+
+**`getUserGroups` sent no `page` and no `per_page`, and the route read only `groups.group` — never
+`pages` or `total`.** So FGA took Flickr's undocumented default page size and returned page one as
+the complete list. **No code path could produce a symptom.** The owner was at 372 groups, `docs/
+FLICKR.md` never recorded the default, and the account had grown 330 → 372 in a single day.
+
+**Found 2026-08-15 by Terry asking whether an unpaginated group list was a risk.** The answer was
+that the risk was real and was the other one.
 
 ## ADR-18 — One origin, an `/api` prefix, and a Svelte app shell
 

@@ -46,6 +46,59 @@ async function outboundService(request: Request): Promise<Response> {
 		// `in-pool` and group `g-already-in`.
 		const body = await request.clone().text();
 
+		/**
+		 * ADR-17. **The group list is paged, so the stub pages too.**
+		 *
+		 * A single-page stub would let the walking loop rot without a test noticing,
+		 * which is exactly the defect being fixed: FGA read page one and called it the
+		 * whole list. Three pages of two groups each means `pages` MUST be obeyed --
+		 * a reader that stops on the first short page collects 2 of 6.
+		 *
+		 * **The account size is chosen by the OAuth TOKEN**, which travels in the
+		 * `Authorization` header rather than the body. That lets one test store a
+		 * different token and get a different account shape, with no global switch.
+		 */
+		if (body.includes("method=flickr.groups.pools.getGroups")) {
+			const auth = request.headers.get("Authorization") ?? "";
+			const page = Number(new URLSearchParams(body).get("page") ?? "1");
+
+			// `authorizationHeader` renders `name="percentEncoded(value)"` with LITERAL
+			// double quotes. `huge-account` is entirely RFC 3986 unreserved, so it passes
+			// through percent encoding unchanged.
+			if (auth.includes('oauth_token="huge-account"')) {
+				return Response.json({
+					stat: "ok",
+					groups: {
+						page: 1,
+						pages: 200,
+						perpage: 500,
+						total: "99999",
+						group: [],
+					},
+				});
+			}
+
+			const PAGES = 3;
+			return Response.json({
+				stat: "ok",
+				groups: {
+					// Deliberately STRINGS. Flickr returns these inconsistently typed, and
+					// `asNumber` is what absorbs that -- a number-only stub would not prove it.
+					page: String(page),
+					pages: String(PAGES),
+					perpage: "500",
+					total: "6",
+					group:
+						page > PAGES
+							? []
+							: [
+									{ nsid: `g${page}a`, name: `Group ${page}A`, photos: "10" },
+									{ nsid: `g${page}b`, name: `Group ${page}B`, photos: "20" },
+								],
+				},
+			});
+		}
+
 		if (body.includes("photo_id=in-pool")) {
 			return Response.json({ stat: "ok", pool: [{ id: "g-already-in" }] });
 		}

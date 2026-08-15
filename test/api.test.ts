@@ -8,6 +8,14 @@ import { mintSession, SESSION_COOKIE } from "../src/session.js";
 
 const NSID = "12345678@N00";
 const OTHER = "87654321@N00";
+/**
+ * Its stored token is what makes the Flickr stub report an oversized account.
+ *
+ * **No decision tag above this line, deliberately.** `scripts/traceability.py` treats
+ * everything before the first `describe` as a file header and unions its tags into EVERY
+ * block in the file, so a tag written here would credit eight unrelated blocks.
+ */
+const HUGE = "99999999@N00";
 /** One origin. The `/api` prefix, not a hostname, separates the API from the app
  *  shell. */
 const API = "https://flickrgroupaddr.com";
@@ -49,6 +57,31 @@ async function addUser(nsid: string): Promise<void> {
 		.bind(
 			nsid,
 			await encryptToken("access-token", nsid, env.TOKEN_KEY),
+			await encryptToken("access-secret", nsid, env.TOKEN_KEY),
+			0,
+			0,
+		)
+		.run();
+}
+
+/**
+ * Same insert as `addUser`, but the ACCESS TOKEN is chosen by the caller.
+ *
+ * The Flickr stub keys the account shape off `oauth_token` in the `Authorization`
+ * header, so storing a different token is how one test gets a different upstream without
+ * a global switch that would leak into every other test in this file.
+ *
+ * **Untagged on purpose** -- see the note on `HUGE` above.
+ */
+async function addUserWithToken(nsid: string, token: string): Promise<void> {
+	await env.DB.prepare(
+		`INSERT INTO users
+       (nsid, access_token_encrypted, access_token_secret_encrypted, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)`,
+	)
+		.bind(
+			nsid,
+			await encryptToken(token, nsid, env.TOKEN_KEY),
 			await encryptToken("access-secret", nsid, env.TOKEN_KEY),
 			0,
 			0,
@@ -402,5 +435,52 @@ describe("ADR-17, pagination", () => {
 	it("refuses a cursor belonging to somebody else", async () => {
 		const theirs = await seed(OTHER, "p1", "g1");
 		expect((await authed(`/api/v001/queue?after=${theirs}`)).status).toBe(400);
+	});
+});
+
+/**
+ * ADR-17, the half that is NOT about D1. `/api/v001/queue` pages a table FGA owns;
+ * this list's size is set by Flickr and FGA cannot bound it.
+ *
+ * **The defect these defend against shipped and was invisible.** `getUserGroups` sent no
+ * `page` and no `per_page`, and the route read only `groups.group` -- never `pages` or
+ * `total`. So FGA took Flickr's default page size and returned page one as the complete
+ * answer, with no code path that could produce a symptom.
+ */
+describe("ADR-17, a list FGA cannot bound: the Flickr group list", () => {
+	type Groups = { groups: { id: string; name: string | null }[] };
+	type Refusal = { error: string; total: number; ceiling: number };
+
+	/** The stub in vitest.config.ts serves 3 pages of 2 for an ordinary token. */
+	const ALL_SIX = ["g1a", "g1b", "g2a", "g2b", "g3a", "g3b"];
+
+	const listGroups = async (nsid = NSID): Promise<Response> =>
+		await authed("/api/v001/groups", {}, nsid);
+
+	it("walks EVERY page, not just the first", async () => {
+		const body = (await (await listGroups()).json()) as Groups;
+		expect(body.groups.map((group) => group.id).sort()).toEqual(ALL_SIX);
+	});
+
+	it("does not treat a page shorter than `per_page` as the end", async () => {
+		// Each page holds 2 while `per_page` asks for 500. A reader that stops on the
+		// first short page collects 2 of 6 -- and reports success while doing it.
+		const body = (await (await listGroups()).json()) as Groups;
+		expect(body.groups).toHaveLength(6);
+	});
+
+	it("REFUSES an account whose list exceeds the ceiling", async () => {
+		await addUserWithToken(HUGE, "huge-account");
+		const response = await listGroups(HUGE);
+		expect(response.status).toBe(502);
+		expect(((await response.json()) as Refusal).error).toBe("too_many_groups");
+	});
+
+	it("returns NO partial list beside the refusal", async () => {
+		// Softening this into "here are the first N" is the failure being prevented: a
+		// picker renders most of a wall, and nobody can see which entries are missing.
+		await addUserWithToken(HUGE, "huge-account");
+		const body = (await (await listGroups(HUGE)).json()) as Partial<Groups>;
+		expect(body.groups).toBeUndefined();
 	});
 });

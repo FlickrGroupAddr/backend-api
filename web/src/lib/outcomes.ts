@@ -153,6 +153,11 @@ export function describeError(error: unknown, doing: string): string {
 			return "Your Flickr sign-in is not linked any more. Sign in again to continue.";
 		case "flickr_unavailable":
 			return "Flickr did not answer. Nothing was changed, and trying again shortly usually works.";
+		case "too_many_groups":
+			// ADR-17. Says WHY the list is absent instead of quietly showing part of it.
+			// A picker holding most of a wall is the failure the refusal exists to
+			// prevent, and a user cannot tell which entries are missing.
+			return "You are in more groups than FGA can list at once. It will not show a partial list, and nothing was submitted or changed.";
 		case "invalid_request":
 			return "That request did not look right, so nothing was sent.";
 		case "unknown_cursor":

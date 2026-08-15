@@ -58,7 +58,7 @@ because a box that is too large passes.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, the US English check, 201 tests, the traceability gate, and the
+Typecheck (both tsconfigs), lint, the US English check, 205 tests, the traceability gate, and the
 web build. **It MUST be clean before a commit.**
 
 ### `scripts/us-english.py` enforces the US English standing order

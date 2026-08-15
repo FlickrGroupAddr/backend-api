@@ -328,7 +328,9 @@ apiRoutes.post("/api/v001/requests/:publicId/withdraw", async (c) => {
 	}
 });
 
-/** One Flickr call whatever the group count. `poolModerated` and `inviteOnly` come free
+/** One Flickr call per PAGE of groups, and `getUserGroups` walks to the end -- ADR-17,
+ *  because Flickr sets this list's size and FGA cannot bound it. At `GROUPS_PER_PAGE` of
+ *  500 an ordinary account is still one call. `poolModerated` and `inviteOnly` come free
  *  in this reply. **The throttle does not** -- it needs `groups.getInfo` per group, which
  *  is the sibling route below and is why this one does not fetch it. */
 apiRoutes.get("/api/v001/groups", async (c) => {
@@ -347,6 +349,24 @@ apiRoutes.get("/api/v001/groups", async (c) => {
 	};
 
 	const listed = await getUserGroups(credentials);
+
+	/**
+	 * ADR-17. **A refusal, and it MUST NOT be softened into a truncated list.** Returning
+	 * the first 5000 with a flag invites a client to render them, and a picker showing
+	 * most of a wall is the failure this whole change exists to prevent -- the user cannot
+	 * see which entries are missing.
+	 */
+	if (listed.kind === "too-many") {
+		return c.json(
+			{
+				error: "too_many_groups",
+				total: listed.total,
+				ceiling: listed.ceiling,
+			},
+			502,
+		);
+	}
+
 	if (listed.kind !== "ok") {
 		return c.json(
 			{
@@ -357,20 +377,10 @@ apiRoutes.get("/api/v001/groups", async (c) => {
 		);
 	}
 
-	// This JSON shape is documented loosely, so read it defensively rather than trusting
-	// a path.
-	const container = listed.body.groups;
-	const rawGroups =
-		typeof container === "object" &&
-		container !== null &&
-		Array.isArray((container as { group?: unknown }).group)
-			? ((container as { group: unknown[] }).group as Record<string, unknown>[])
-			: [];
-
 	// Only what a picker needs. The raw reply carries every group's full description and
 	// rules -- 979 KB on a real account -- and none of it is useful here.
 	return c.json({
-		groups: rawGroups
+		groups: listed.groups
 			.map((group) => ({
 				id:
 					typeof group.nsid === "string" ? group.nsid : String(group.id ?? ""),

@@ -135,10 +135,104 @@ export async function getPhotoPools(
 		.filter((id): id is string => id !== null);
 }
 
+/**
+ * ADR-17. **The group list is bounded by Flickr, not by FGA**, so this pages to the end
+ * and refuses to return a partial list as though it were complete.
+ *
+ * **The defect this replaces shipped silently.** The old body was
+ * `callFlickr("flickr.groups.pools.getGroups", {}, credentials)` -- no `page`, no
+ * `per_page` -- and the caller read only `groups.group`, never `pages` or `total`. So FGA
+ * took Flickr's default page size and returned page one as the whole answer. **Nothing in
+ * the code could produce a symptom**, and the owner was at 372 groups with the default
+ * undocumented.
+ *
+ * **Asking for a large `per_page` is safe precisely BECAUSE this loops.** Flickr clamps an
+ * over-large page size silently rather than erroring, and a clamp only changes how many
+ * iterations run. **A single call with a big `per_page` and no loop would inherit that
+ * clamp as fresh silent truncation**, which is the trap this function exists to close.
+ *
+ * **`too-many` is a REFUSAL, not a failure.** Under ADR-01 an answer that could mean
+ * "there are groups you cannot see" MUST NOT render as a clean complete list -- a picker
+ * would show a filtered wall with entries missing and no way to tell.
+ */
+export const GROUPS_PER_PAGE = 500;
+
+/** Terry was at 372 on 2026-08-15. This is headroom, not a prediction. */
+export const MAX_USER_GROUPS = 5000;
+
+export type UserGroupsResult =
+	| { readonly kind: "ok"; readonly groups: readonly Record<string, unknown>[] }
+	| {
+			readonly kind: "too-many";
+			readonly total: number;
+			readonly ceiling: number;
+	  }
+	| { readonly kind: "error"; readonly code: number; readonly message: string }
+	| { readonly kind: "unreachable"; readonly detail: string };
+
 export async function getUserGroups(
 	credentials: UserCredentials,
-): Promise<FlickrResult> {
-	return await callFlickr("flickr.groups.pools.getGroups", {}, credentials);
+): Promise<UserGroupsResult> {
+	const collected: Record<string, unknown>[] = [];
+
+	// `pages` is read from the FIRST reply and re-read on every one, because a list that
+	// grows mid-walk changes it. The loop bound is recomputed rather than captured.
+	for (let page = 1; ; page++) {
+		const result = await callFlickr(
+			"flickr.groups.pools.getGroups",
+			{ page: String(page), per_page: String(GROUPS_PER_PAGE) },
+			credentials,
+		);
+
+		if (result.kind === "error") {
+			return { kind: "error", code: result.code, message: result.message };
+		}
+		if (result.kind === "unreachable") {
+			return { kind: "unreachable", detail: result.detail };
+		}
+
+		const container = result.body.groups;
+		if (typeof container !== "object" || container === null) {
+			// Not the shape we expect. Treat it as unreachable rather than as an empty
+			// list -- "no groups" and "no idea" MUST NOT collapse into the same answer.
+			return { kind: "unreachable", detail: "reply had no groups container" };
+		}
+
+		const fields = container as Record<string, unknown>;
+
+		// Refuse BEFORE collecting, so a pathological account costs one call, not many.
+		const total = asNumber(fields.total);
+		if (total !== null && total > MAX_USER_GROUPS) {
+			return { kind: "too-many", total, ceiling: MAX_USER_GROUPS };
+		}
+
+		const batch = fields.group;
+		if (Array.isArray(batch)) {
+			collected.push(...(batch as Record<string, unknown>[]));
+		}
+
+		if (collected.length > MAX_USER_GROUPS) {
+			return {
+				kind: "too-many",
+				total: collected.length,
+				ceiling: MAX_USER_GROUPS,
+			};
+		}
+
+		// **A short page MUST NOT be read as the end** -- ADR-17 says the end is a fact the
+		// server states, and that is wrong exactly when the last page is exactly full.
+		const pages = asNumber(fields.pages);
+		if (pages === null) {
+			// Flickr did not say how many pages exist. Stopping here would be a guess, and
+			// continuing forever is worse, so stop only when this page added nothing.
+			if (!Array.isArray(batch) || batch.length === 0) {
+				return { kind: "ok", groups: collected };
+			}
+			continue;
+		}
+
+		if (page >= pages) return { kind: "ok", groups: collected };
+	}
 }
 
 /**
