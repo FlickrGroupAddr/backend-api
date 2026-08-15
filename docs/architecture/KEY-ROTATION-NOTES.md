@@ -327,6 +327,7 @@ the cron when the user count makes a manual rotation annoying.** The column cost
 
 ## Open questions
 
+
 - **Exact `session_key_at` retention.** Dropping a `SESSION_KEYS` entry older than 30 days is
   correct only if the session lifetime never grows. Tie the two together in code rather than by
   comment.

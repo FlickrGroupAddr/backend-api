@@ -438,16 +438,105 @@ Three lines in `src/routes/api.ts`.
 from the outside — the product looks like a queue that drains at midnight. **Any design reasoning
 "nothing happens until the sweep, so this is reversible" is wrong because of those three lines.**
 
-### Group selection MUST NOT be a checkbox list
+### Group selection: DECIDED 2026-08-15. The full list, with a filter box. No group sets.
 
 **Terry belongs to 372 groups** — see `docs/FLICKR.md`, and the count moved from 330 to 372 in one
-day, so it **MUST NOT** be cached. A dialog with 372 checkboxes recreates the 2021 UI failure ADR-18
-already names.
+day, so it **MUST NOT** be cached.
 
-**Still open, and it is a product call rather than a technical one.** Saved group sets managed on
-the web, with the plug-in showing a `popup_menu` of set names, against a filtered multi-select
-`simple_list` holding all 372 in the plug-in. The first keeps the hard picker where the good toolkit
-is; the second avoids maintaining two pickers. **Not decided.**
+**Saved group sets were proposed and REJECTED**, in his words:
+
+> The pass to assign all groups to sets would annoy me far more than a UX of picking which of the
+> 372 groups to add a pic to. And each time I joined a new group, I'd resent having to tag it.
+
+**The rejection is about the ONGOING tax, not the one-time setup**, and that is the part a future
+session will miss. A taxonomy is not paid for once — every new group joined is a fresh decision
+about where it belongs, forever, for a person who joined 42 groups in a single day.
+
+**And the wall is a familiar model, not a novel one.** *"The massive wall of groups to pick from is
+exactly how the Flickr web UI works, except it's slow as fuck."* **So the bar is the same UX and
+faster, which is reachable — rather than a better UX, which is speculative.**
+
+### What the picker must do
+
+| Requirement | |
+|---|---|
+| Scroll the full list | `simple_list` scrolls natively |
+| Filter box | `edit_field` bound to a filter string |
+| Match rule | **Case-insensitive plain substring against the group NAME.** Typing `canada` shows only groups with `canada` anywhere in the title |
+| Multi-select | `simple_list` with `allows_multiple_selection`, `value` returns an array |
+
+**`string.find` MUST be called with `plain = true`.** Lua's default is PATTERN matching, so a group
+name or a search term containing `-`, `(`, `)`, `%` or `.` would either match wrongly or throw.
+Group names contain all of those. `name:lower():find(needle:lower(), 1, true)`.
+
+**Lowercase the names ONCE, not per keystroke.** 372 `:lower()` calls on every character typed is
+waste that a precomputed shadow list removes.
+
+### Filtering is REALTIME, and `immediate = true` is what makes it so
+
+**Terry's requirement, 2026-08-15: *"filtering should be realtime, so each keypress causes a new
+substring search to fire and limit/expand the list."*** No debounce, no Enter to apply.
+
+**The `edit_field` property that delivers it is `immediate`**, documented as *"True to validate the
+value as the user is typing."* **Without it the binding updates only on commit** — Enter or moving
+focus away — so a user would type `canada`, watch nothing happen, and conclude the box is broken.
+**It fails as a no-op rather than an error, which is why it is written down here.**
+
+`placeholder_string` is also available for the hint text, though on Windows the placeholder clears
+when the field takes focus rather than when text is entered.
+
+**The search cost is nothing; the rebind is the thing to watch.** 372 precomputed-lowercase plain
+`find` calls per keystroke is microseconds of Lua. Rebuilding the `items` table and pushing it
+through the binding on every character is the part that could feel sluggish, and it is the part to
+measure.
+
+**Do NOT confuse this with the preflight debounce. They are different controls on different
+events.**
+
+| | Fires on | Cost | Debounce |
+|---|---|---|---|
+| Filter | Every keystroke in the search box | Local, microseconds | **None. Realtime** |
+| Preflight | A change to the SELECTED set | A network round trip | **Yes** |
+
+**Typing in the filter box MUST NOT trigger preflight** — filtering changes what is visible, never
+what is chosen.
+
+### The selection model, and why the widget MUST NOT own it
+
+**Filtering rebinds `items`, and the plug-in MUST keep its own selected set rather than trusting
+`value` to survive that.** When the filter narrows, groups selected but no longer visible must stay
+selected; when it widens, they must come back.
+
+**So `value` is an input, never the source of truth**, and the update is a merge rather than a
+replace:
+
+```
+selected = (selected MINUS currentlyVisible) UNION value
+```
+
+**Whether rebinding `items` actually clears `value` is UNMEASURED** — see below. The merge model is
+correct either way, which is why it is the design regardless of the answer.
+
+### `simple_list` has no per-row widgets, so state goes in the TITLE
+
+**Items are `{ title, value }` and nothing else.** No badges, no icons, no columns. So "this pool is
+moderated" and ADR-20's "already seen by a moderator" have to be rendered into the title text:
+
+```
+Canada Landscapes — moderated, already seen
+```
+
+**Which means `items` rebinds when preflight returns, not only when the filter changes** — a second
+reason the selection model must survive a rebind.
+
+### The one thing still unmeasured
+
+**Does rebinding `simple_list.items` clear or corrupt the current selection?** Everything above is
+implementable either way because of the merge model, but the *feel* differs — a widget that visibly
+drops highlighting on every keystroke is unpleasant even when the model underneath is correct.
+
+**Also unmeasured: how a 372-item `simple_list` performs and looks**, and whether `height` accepts a
+large value. The reference states a minimum of 80 and names no maximum.
 
 ### ADR-01 gets MORE load-bearing, not less
 
