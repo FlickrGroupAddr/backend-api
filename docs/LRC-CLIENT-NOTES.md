@@ -406,8 +406,22 @@ does, the diagram lies in exactly the mode this project is most careful about.
 - Split the single `users` actor into two client tiles, browser and Lightroom Classic.
 - Both connect to the API Worker. **Only the browser connects to the app shell and to DNS**, since
   the plug-in fetches no HTML.
-- **The plug-in gets NO edge to Flickr.** It makes no Flickr calls — see below — and drawing one
-  would assert a capability it deliberately does not have.
+- **Auth is drawn as THREE HOPS, decided 2026-08-15.** Terry challenged an earlier line reading "the
+  plug-in gets no edge to Flickr", correctly — that left the canvas silent on how a plug-in ever
+  gets a credential. **The resolution is that Flickr appears in the plug-in's journey, but the
+  arrow starts at the browser, not at the plug-in:**
+
+  | Edge | Meaning |
+  |---|---|
+  | Plug-in → API Worker | Its only NETWORK edge |
+  | **Plug-in → Browser client** | `LrHttp.openUrlInBrowser`. **A launch, not a request** — label it so |
+  | Browser client → Flickr | Already on the canvas as `e11` |
+
+  **The one-hop shortcut — a dashed plug-in-to-Flickr edge — was considered and refused.** It reads
+  cleaner and asserts the exact thing the design is built to avoid: that Lua holds Flickr
+  credentials. **A future session reading that diagram might implement it.** Adobe's plug-in really
+  does call `flickr.auth.getFrob` over HTTP, because Adobe has no server; FGA has one, so the frob
+  equivalent is `POST /api/v001/device/start` and the plug-in never speaks to Flickr at all.
 - The User Journey key gains the device-link steps, and **`scripts/build-diagram.py` requires the
   journey row count to equal the badge count**, so both move together.
 
