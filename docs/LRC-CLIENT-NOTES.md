@@ -9,8 +9,13 @@ overrule. MAY is optional.**
 `docs/architecture/DECISIONS.md` does not reference it.** Terry's framing on 2026-08-14: *"I'm not
 committed to this path, but want to note where we got."*
 
-**A later session MUST NOT read this as approval to build.** The one premise the whole design rests
-on is still unmeasured — see "The open premise" below.
+**A later session MUST NOT read this as approval to build.** **The technical blocker is gone and
+the decision is not made** — those are different things, and 2026-08-15 changed only the first.
+
+**Feasibility: PROVEN 2026-08-15.** The premise the whole design rested on was measured at runtime
+and came back confirmed. See "The load-bearing premise" below. **What remains is Terry's call on
+whether to build, and the design questions at the end of this file — authentication above all,
+which is a new credential class and would become an ADR.**
 
 Started 2026-08-14.
 
@@ -152,40 +157,92 @@ exists yet.
 item that finds everything published since the plug-in last ran, which `getPublishedPhotos()` makes
 cheap, rather than one that requires a selection.
 
-## The open premise, and it gates everything
+## The load-bearing premise: CONFIRMED at runtime, 2026-08-15
 
-**Documented is not measured.** The reference says publish services are enumerable across plug-ins.
-**Nobody has watched `getPublishedPhotos()` return another plug-in's photos at runtime.**
+**A third-party plug-in CAN enumerate Adobe's Flickr publish service and read its published
+photos.** Measured, not reasoned. `com.flickrgroupaddr.spike` created no publish service and was
+handed Adobe's anyway.
 
-A neighboring restriction is real: **only the plug-in that defines a custom metadata field may
-change it.** Reading is a different claim than writing and this design only reads — but that is
-reasoning, not evidence.
+```
+VERDICT: CONFIRMED -- 1 service(s) returned to a plug-in that created none of them.
 
-### The precondition is now MET. The premise itself is not.
+[1] getPluginId() = com.adobe.lightroom.export.flickr
+     getName()     = Terry Flickr
+     child collections = 96
+     collection 2017-08-11: Canada - Alberta - Lake Louise -> 15 published photo(s)
+       [1] getRemoteId()  = 42717931314
+           getRemoteUrl() = https://www.flickr.com/photos/146878425@N05/42717931314/in/set-...
+```
 
-**Keep these two apart, because collapsing them is the whole trap.** Reading the catalog's SQLite
-proves the DATA exists. It proves nothing about whether the SDK hands that data to a plug-in that
-did not create it. **Those are different claims, and only the second one gates the design.**
+Lightroom Classic 15.5, against `C:\Photography\LR Catalog\TDO Lightroom Catalog.lrcat`.
 
-| Question | Status 2026-08-15 |
+### Every link in the chain is now measured
+
+| Call | Result |
 |---|---|
-| Does a real catalog with Adobe's Flickr publish service exist here? | **YES.** 182,576 images, one service, 96 child collections |
-| Does it carry published photos with Flickr remote IDs? | **YES.** 834 of 834 |
-| Does `catalog:getPublishServices(nil)` return it to a THIRD-PARTY plug-in? | **UNMEASURED** |
-| Does `getPublishedPhotos()` then return that service's photos? | **UNMEASURED** |
+| `catalog:getPublishServices( nil )` | **1 service**, created by another plug-in |
+| `service:getPluginId()` | **`com.adobe.lightroom.export.flickr`** |
+| `service:getName()` | `Terry Flickr` |
+| `service:getChildCollections()` | **96** |
+| `collection:getPublishedPhotos()` | 15 and 12 on the two sampled collections |
+| `publishedPhoto:getRemoteId()` | `42717931314` — the Flickr photo id |
+| `publishedPhoto:getRemoteUrl()` | the full `flickr.com/photos/...` URL |
 
-### The spike exists and has NOT been run
+**Two independent instruments agree.** `42717931314` is the same value the catalog's `AgRemotePhoto`
+table returned when read as SQLite. The SDK and the database tell the same story.
 
-`C:\Photography\FgaSpike.lrdevplugin\` — `Info.lua` and `DumpPublishServices.lua`. Read-only, no
-network, every accessor wrapped so a renamed method reports itself instead of killing the run. It
-prints a blunt `VERDICT: CONFIRMED` or `VERDICT: REFUTED` and writes `fga-spike-output.txt` to the
-Desktop, so the result survives the dialog.
+### `getPluginId()` returns the REAL identifier, and this settles the earlier worry
 
-Load it: **Plug-in Manager → Add**, then **Library → Plug-in Extras → FGA: dump publish services.**
+**The SDK answers `com.adobe.lightroom.export.flickr`** — exactly what Adobe's sample predicted, and
+**not** the `com.adobe.ag.export.service.connection` that `AgLibraryPublishedCollection.creationId`
+holds. So the schema hides plug-in identity and the SDK exposes it.
 
-**On local disk rather than `X:`, deliberately** — that share already breaks git ownership, Node
-file watching and Lightroom catalogs, and a plug-in loaded over SMB adds a variable to the one
-measurement this whole design is waiting on.
+**Matching on `com.adobe.lightroom.export.flickr` at runtime is therefore viable**, and the standing
+instruction to read it rather than predict it from the database is now proven correct rather than
+merely cautious.
+
+### What is still NOT measured
+
+**Do not read a confirmed premise as a confirmed design.** These were never exercised:
+
+- `publishedPhoto:getPhoto()`, back to the `LrPhoto`.
+- `photo:getContainedPublishedCollections()`, walking the graph backwards from a selection.
+- Anything that WRITES. The known restriction stands: **only the plug-in that defines a custom
+  metadata field may change it.** This design only reads, so it has not been tested against.
+
+### The spike
+
+`C:\Photography\FgaSpike.lrdevplugin\`, version 0.3. **On local disk rather than `X:`,
+deliberately** — that share already breaks git ownership, Node file watching and Lightroom catalogs,
+and a plug-in loaded over SMB would have added a variable to the one measurement everything waited
+on.
+
+**It SHOULD ship permanently as a diagnostic** rather than be thrown away, because Terry runs the
+latest GA Lightroom Classic and takes every Adobe regression on day one. Re-proving this chain after
+an update should cost ten seconds.
+
+## Four mechanics that cost real time, recorded so they cost none next time
+
+**Never wrap a yielding SDK call in Lua's bare `pcall`.** Lightroom runs plug-in code as coroutines
+and catalog calls yield; Lua 5.1 cannot yield across a `pcall` boundary. Version 0.1 died with
+`Yielding is not allowed within a C or metamethod call` — **and reported it as `VERDICT: REFUTED`,
+nearly killing this design on a bug in its own error handling.** The SDK names the fix:
+`LrTasks.pcall`, which `API Reference/modules/LrTasks.html` describes as *"Simulates Lua's standard
+pcall(), but in a way that allows a call to LrTasks.yield() to occur inside it."*
+
+**A measurement tool MUST distinguish "the answer is no" from "I broke".** 0.1 had two verdicts and
+so its own failure read as a finding. 0.2 has three, and an error is `INCONCLUSIVE`.
+
+**Changing `Info.lua` needs Remove then Add in the Plug-in Manager.** Disable and re-enable is NOT
+enough — the version number updated while the new menu item never appeared. Terry found this.
+
+**Register a menu item in BOTH `LrLibraryMenuItems` and `LrExportMenuItems`.** The first lands under
+Library > Plug-in Extras and exists only in the Library module; the second lands under File >
+Plug-in Extras and works everywhere.
+
+**The SDK ships a Lua 5.1 compiler** at `Lua Compiler/win/luac.exe` inside the archive. `luac -p`
+parse-checks a plug-in file without Lightroom. **Prove it can fail on deliberately broken input
+before trusting a clean pass.**
 
 **If the spike ships, it SHOULD ship permanently as a diagnostic menu item** rather than be thrown
 away. Terry always runs the latest GA Lightroom Classic, so the plug-in gets every Adobe regression
