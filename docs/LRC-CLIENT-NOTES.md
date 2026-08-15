@@ -269,7 +269,11 @@ used to derive the SDK version.
 
 Download path: **Adobe Developer Console → APIs and services → Downloads → search "Lightroom" →
 View downloads.** It requires Terry's Adobe login, so it cannot be checked unattended. The archive
-is `LrC_15.3_202604090947-8f3672ed.release_SDK.zip`, 8.35 MB.
+is `LrC_15.3_202604090947-8f3672ed.release_SDK.zip`, 8,756,604 bytes.
+
+**Backed up 2026-08-15 to `vendor/` on the NAS**, because the only copy lived in `~/Downloads` and
+nothing unattended can replace it. **The zip is gitignored and MUST stay so — it is Adobe's to
+license and this repository is public.** `vendor/README.md` carries the checksum and the reasoning.
 
 ## The rig
 
