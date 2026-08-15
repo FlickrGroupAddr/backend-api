@@ -253,3 +253,24 @@ node_modules/
 # ...but the template MUST be committed. It documents which secrets exist and
 # how to generate them, and it holds no real values.
 !.dev.vars.example
+
+# ---- vendor/ : third-party archives, and they MUST NOT be committed ----
+#
+# **THIS REPOSITORY IS PUBLIC.** `vendor/` holds Adobe's Lightroom Classic SDK
+# archive, which is Adobe's to license and not ours to redistribute. Committing
+# it would publish 8.35 MB of somebody else's copyrighted material from an
+# account with Terry's name on it.
+#
+# It is stored here at all because re-obtaining it needs his Adobe login at the
+# Developer Console, so it cannot be fetched unattended -- and the machine copy
+# lived in Downloads, one cleanup away from gone.
+#
+# The README is re-included deliberately: it records provenance and the checksum
+# and holds nothing of Adobe's, so it is the part that belongs in history. Same
+# shape as `.dev.vars.example` above -- ignore the payload, keep the document
+# that says what the payload is.
+#
+# **A negation cannot rescue a file whose parent directory is excluded**, which
+# is why this is `vendor/*` and not `vendor/`.
+vendor/*
+!vendor/README.md
