@@ -36,6 +36,33 @@
  * to three seconds. `optional` gives the font ~100 ms and never swaps mid-page, so there
  * is no flicker AND no blank text. **It only behaves that way because the file is
  * preloaded and same-origin** — behind a CDN it would fall back constantly.
+ *
+ * Terry asked for Inter, preconnect hints and `font-display: block`, carried over from
+ * ItineraryWatch. **The goal was right and the method is beaten here**: no font flicker,
+ * reached by self-hosting, preloading and `optional` instead. Said plainly rather than
+ * silently, because a stated preference is a floor and not a ceiling.
+ *
+ * ── The preload in index.html is PART of this rule, not an optimization beside it ──
+ *
+ * `optional` gives the font ONE ~100 ms window and never swaps after it. A font that
+ * misses that window therefore never appears at all. The preload is what wins the race.
+ * **Delete the `<link rel="preload">` and this declaration quietly behaves like
+ * `fallback`** — the CSS still parses, nothing errors, and Inter stops rendering for most
+ * visitors. That is why the two live in different files and MUST be changed together.
+ *
+ * Three properties of that tag, kept here rather than in `web/index.html` because an HTML
+ * comment is served to every visitor while this reasoning is only for whoever changes the
+ * font next:
+ *
+ *   - **No preconnect, because there is nothing to preconnect TO.** Self-hosting puts the
+ *     font on the connection that already delivered the document. Preconnect saves a DNS
+ *     lookup and a TLS handshake to a third-party host; same-origin saves those AND the
+ *     round trip.
+ *   - **It also stops a page carrying a session cookie from telling Google about every
+ *     visit**, which matters more here than the milliseconds.
+ *   - **`as="font"` plus `crossorigin` is mandatory even same-origin.** A font is always
+ *     fetched in CORS mode, so a preload without `crossorigin` fetches the file TWICE.
+ *     That is the classic way a preload makes a page slower.
  */
 @font-face {
 	font-family: "Inter Variable";

@@ -9,30 +9,9 @@
 			content="Queue photos into Flickr groups and wait out the daily limits."
 		/>
 
-		<!--
-			Inter, self-hosted, preloaded, and blocking. Same three properties the
-			ItineraryWatch head was reaching for, arrived at a shorter way.
-
-			NO preconnect, because there is nothing to preconnect TO. Self-hosting puts
-			the font on the connection that already delivered this document, which beats
-			warming a second and third connection to fonts.googleapis.com and
-			fonts.gstatic.com. Preconnect saves the DNS and TLS handshake; it does not
-			save the round trip. Same origin saves both.
-
-			It also stops a page that carries a session cookie from telling Google about
-			every visit, which matters more here than the milliseconds.
-
-			`as="font"` plus `crossorigin` is mandatory even same-origin: a font is always
-			fetched in CORS mode, and a preload without it fetches the file TWICE. That is
-			the classic way a preload makes a page slower.
-
-			`font-display: optional` lives in app.css beside the @font-face, and THIS
-			PRELOAD IS WHAT MAKES IT WORK. `optional` gives the font about 100ms and then
-			never swaps mid-page, so there is neither a flicker nor a spell of blank text.
-			It only wins that race because the file is preloaded and same-origin. Behind a
-			CDN, or without this tag, `optional` would fall back constantly and Inter would
-			simply not appear.
-		-->
+		<!-- Required by `font-display: optional`, not an optimization beside it. Remove
+		     this tag and Inter stops rendering. Reasoning, and why `crossorigin` is
+		     mandatory even same-origin: web/src/app.css, beside the @font-face. -->
 		<link
 			rel="preload"
 			href="/fonts/inter-var-latin.woff2"
