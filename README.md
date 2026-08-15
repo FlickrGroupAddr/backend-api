@@ -37,6 +37,7 @@ It is ADR-01. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.m
 | Call the Flickr API | [docs/FLICKR.md](docs/FLICKR.md) |
 | See where the Lightroom client idea got to | [docs/LRC-CLIENT-NOTES.md](docs/LRC-CLIENT-NOTES.md) — notes, **not a decision** |
 | See the spike that proved it possible | [docs/lrc-spike/](docs/lrc-spike/) — the plug-in, the raw result, and the catalog probe |
+| Understand the crypto blast radius | [docs/architecture/KEY-ROTATION-NOTES.md](docs/architecture/KEY-ROTATION-NOTES.md) — decided, **not yet built** |
 | See the shape of it | [the architecture diagram](docs/architecture/) |
 
 ## The gate

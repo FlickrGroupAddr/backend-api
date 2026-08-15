@@ -169,6 +169,16 @@ everyone out and costs nothing. Rotating the token key means re-encrypting every
 Per-user tokens **MUST NOT** go in Cloudflare Secrets Store — it caps at 100 secrets per account,
 which is a ceiling you discover only once the product works.
 
+**Per-user encryption keys were considered and rejected on 2026-08-15**, and the reason is worth
+knowing before anyone re-proposes them: ADR-06's sweep must decrypt any user's token at 00:15 UTC
+with the user absent, so the server must reach every key unaided — and so can anyone who
+compromises the server. **The row-level isolation they reach for already exists**, because the NSID
+is passed as AES-GCM additional authenticated data.
+
+**A keyring replaces the single key, and `token_key_version` becomes a UTC timestamp.** That column
+has existed since `0001` and nothing has ever read it. **Decided, not yet built** — see
+`docs/architecture/KEY-ROTATION-NOTES.md`.
+
 Lives in `src/crypto/tokens.ts`.
 
 ## ADR-10 — The session is a stateless signed cookie
@@ -182,6 +192,13 @@ a user who wants FGA cut off revokes it at Flickr, which is more thorough anyway
 
 **This is the softest decision in this document and the cheapest to reverse.** An opaque session row
 in D1 replaces it without touching anything else.
+
+**That reversal was decided on 2026-08-15 and is not yet built.** The JWS is signed but **fully
+transparent** — anyone holding the cookie can base64url-decode the payload with no key and read the
+NSID. It becomes an opaque `<id>.<hmac>` handle, with only the SHA-256 of the id stored. **Keeping
+the signature is what reduces the blast radius**: leaking the session key alone then mints nothing,
+because a forger still fails the database lookup. See
+`docs/architecture/KEY-ROTATION-NOTES.md`.
 
 `src/session.ts` is the only place that knows the cookie's name or attributes. Set, read and clear
 all go through it.
@@ -603,3 +620,12 @@ it automatically. Both costs, no benefit.
   The sentence itself is not, and it either delivers ADR-01's promise or quietly undercuts it.
 - **Whether `scripts/traceability.py` should scan `web/`.** It globs `test/*.test.ts`, so no UI test
   can verify a decision today. ADR-01's user-facing copy will live there.
+- **Key management is DECIDED and unbuilt, in `docs/architecture/KEY-ROTATION-NOTES.md`.** Three
+  pieces: a timestamped keyring replacing the single `TOKEN_KEY` and `SESSION_KEY`, opaque signed
+  session handles amending ADR-10, and a deferred re-encryption cron. **It is not an ADR yet on
+  purpose** — an ADR must be verified by a test or declare Inspection, and declaring Inspection for
+  runtime behavior nobody has written is the forced link `scripts/traceability.py` exists to
+  prevent. **It becomes ADR-22 when the code lands.**
+- **Keys are identified by a UTC epoch-millisecond stamp, never an integer version.** Terry's
+  standing preference, and here it earns its place beyond taste: the active key is the largest stamp
+  in the ring, so "which key is current" needs no second fact that can fall out of step.

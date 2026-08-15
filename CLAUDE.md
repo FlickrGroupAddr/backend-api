@@ -211,6 +211,7 @@ their architecture.** Precedent is the weakest argument available here.
 | | |
 |---|---|
 | `docs/architecture/DECISIONS.md` | The rules that bite. Read before changing behavior |
+| `docs/architecture/KEY-ROTATION-NOTES.md` | Crypto blast radius, the timestamped keyring, opaque sessions. **Decided 2026-08-15, not built.** Becomes ADR-22 when the code lands |
 | `docs/FLICKR.md` | What the API actually does. Several rows contradict Flickr's docs |
 | `docs/SETUP.md` | Bring-up, and four traps that cost real time |
 | `docs/architecture/*.drawio` | Generated, and gospel. Do not edit |
