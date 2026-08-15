@@ -187,7 +187,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         </mxCell>
 
         <mxCell id="n1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=26;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="214" y="631" width="46" height="46" as="geometry" />
+          <mxGeometry x="165" y="658" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=26;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="185" y="571" width="46" height="46" as="geometry" />
@@ -196,7 +196,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="248" y="571" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=26;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="529" y="587" width="46" height="46" as="geometry" />
+          <mxGeometry x="585" y="587" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=26;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="796" y="571" width="46" height="46" as="geometry" />
@@ -205,7 +205,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="715" y="363" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=26;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="522" y="1029" width="46" height="46" as="geometry" />
+          <mxGeometry x="62" y="1029" width="46" height="46" as="geometry" />
         </mxCell>
         <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=26;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="374" y="571" width="46" height="46" as="geometry" />
