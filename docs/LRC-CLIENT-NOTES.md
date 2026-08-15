@@ -510,6 +510,16 @@ filtering. Keying off the eligible count meant a forty-group batch with thirty-n
 would attempt — so identical requests behaved differently depending on state the caller cannot see.
 **Predictable beats marginally faster**, and one eligible group is one Flickr call either way.
 
+**NO CLIENT CALLS IT YET, and that is worth saying out loud.** `web/src/lib/submission.ts` still
+loops one `POST /api/v001/requests` per group — see its `for (const groupId of groupIds)`. So the
+endpoint that exists to turn forty round trips into one is, today, dead code with tests.
+
+**That is a deliberate order rather than an oversight.** The endpoint had to exist before either
+client could adopt it, and the Lightroom plug-in is the client the batch shape was designed for.
+**A future session SHOULD move the web client onto it** — the change is small and the measured win
+is roughly twelve seconds — but ADR-20's per-group acknowledgement has to come across intact, since
+the browser is the surface where a user actually reads the moderation warning.
+
 **The section below is the design it was built from, kept because the reasoning still governs
 changes to it.**
 

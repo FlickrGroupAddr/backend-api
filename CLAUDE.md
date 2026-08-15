@@ -101,7 +101,7 @@ geometry, and no assertion compares the two.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, the US English check, 205 tests, the traceability gate, and the
+Typecheck (both tsconfigs), lint, the US English check, 239 tests, the traceability gate, and the
 web build. **It MUST be clean before a commit.**
 
 ### `scripts/us-english.py` enforces the US English standing order
@@ -125,11 +125,16 @@ produce. Same guard `scripts/build-diagram.py` puts on its collision detector.
 written. **Those are the surfaces this rule actually slips on most**, so its silence MUST NOT be
 read as full coverage.
 
-**This count has now been wrong twice, which is why the rule below is absolute rather than a
+**This count has now been wrong THREE times, which is why the rule below is absolute rather than a
 reminder.** It was documented as 178, the suite rebuild took it to 156, and neither this file nor
 the README was updated. It then read 160 while the runner printed 201 — found 2026-08-14 while
-catching a cleared session up. **Quote the number the runner prints, never one read from a
-document, and that includes this line.**
+catching a cleared session up. **It then read 205 while the runner printed 239** — found 2026-08-15,
+during a documentation pass, by running the gate rather than by reading anything.
+
+**Quote the number the runner prints, never one read from a document, and that includes this line.**
+**The third miss is the informative one:** two sessions wrote the rule and then updated the count
+from a stale document anyway. A number in prose has no mechanism keeping it true, so **the honest
+options are to run `npm run check` before quoting it or to not quote it at all.**
 
 **Tests run inside real `workerd`** against real D1 and real Durable Objects. Outbound `fetch` is
 stubbed in `vitest.config.ts`, so **a test reaching the real Flickr fails loudly.**
