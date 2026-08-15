@@ -123,8 +123,8 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="lrcapp" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#546E7A;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
           <mxGeometry x="25" y="120" width="160" height="330" as="geometry" />
         </mxCell>
-        <mxCell id="lrctitle" value="Lightroom Classic" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
-          <mxGeometry x="40" y="136" width="130" height="28" as="geometry" />
+        <mxCell id="lrctitle" value="Lightroom Classic" style="text;html=1;align=center;verticalAlign=middle;fontSize=17;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
+          <mxGeometry x="32" y="136" width="146" height="28" as="geometry" />
         </mxCell>
         <mxCell id="lrc" value="&lt;b&gt;FGA plug-in&lt;/b&gt;&lt;br&gt;&lt;i&gt;Lua&lt;br&gt;All we add&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#546E7A;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="40" y="336" width="130" height="105" as="geometry" />
@@ -132,12 +132,12 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="lrcat" value="&lt;b&gt;Catalog&lt;/b&gt;&lt;br&gt;&lt;i&gt;Local SQLite&lt;br&gt;Published photo IDs&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#607D8B;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="40" y="176" width="130" height="105" as="geometry" />
         </mxCell>
-        <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={WORKSTATION};fontSize=19;fontStyle=1;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=4;" vertex="1" parent="1">
+        <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={WORKSTATION};fontSize=19;fontStyle=1;labelPosition=left;align=right;verticalLabelPosition=middle;verticalAlign=middle;spacingRight=10;" vertex="1" parent="1">
           <mxGeometry x="35" y="510" width="140" height="112" as="geometry" />
         </mxCell>
 
-        <mxCell id="dns" value="&lt;b&gt;flickrgroupaddr.com DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Authoritative DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="250" y="690" width="170" height="120" as="geometry" />
+        <mxCell id="dns" value="&lt;b style=&quot;font-size:16px&quot;&gt;flickrgroupaddr.com DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Authoritative DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="690" width="175" height="120" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;App Secrets Store&lt;/b&gt;&lt;br&gt;&lt;i&gt;Worker Secrets&lt;br&gt;FGA Flickr API credentials&lt;br&gt;Token key (encryption)&lt;br&gt;Session key (signing)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=18;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="430" y="640" width="300" height="150" as="geometry" />
