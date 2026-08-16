@@ -48,6 +48,52 @@ luac -p docs/lrc-spike/plugin/Info.lua
 
 **Prove it can fail on deliberately broken input before trusting a clean pass.**
 
+## NOT in the daily toolchain freshness check, and that is a decision
+
+**Terry raised it on 2026-08-15**, reasoning that the Adobe Developer Console download is
+cookie-authenticated so a check could reach it. **The answer is no, and the reason is his own
+loudness rule rather than the difficulty.**
+
+> Loud requires all three: the network answered, the answer is a confirmed behind, and Terry can act
+> this minute.
+
+**A new SDK fails the third condition.** Re-obtaining the archive needs his Adobe login, so no
+unattended run can fetch it. Every firing would land in the "could not confirm / cannot act" bucket,
+which that rule says MUST stay quiet — and **a check whose loud path can never legitimately fire is
+scenery.** It would spend the banner's credibility and return nothing.
+
+**Three more reasons, in descending weight:**
+
+- **The SDK is nearly impossible to fall dangerously behind.** Adobe's own bundled Flickr sample
+  declares `LrSdkVersion = 3.0`, from roughly 2010, and it still runs against 15.3. Terry's own
+  framing: *"the Adobe Flickr plugin uses API version zero.ancient, I'm not too worried about big   US-ENGLISH-EXEMPT: quoting Terry
+  drift"*.
+- **Cadence mismatch.** The SDK ships a few times a year. A daily check is roughly 90 runs per
+  change.
+- **`luac` cannot go stale.** `npm run check` now depends on `Lua Compiler/win/luac.exe` from this
+  archive, which is the one real build dependency here — and **Lua 5.1.5 has had no release since
+  2012.**
+
+**What replaces it: this file.** The version, date, SHA-256, byte count and download path above are
+the durable record. **Verify the archive rather than its freshness** — an intact known-good copy is
+worth more here than a current one.
+
+### The obvious cheap check is a FALSE POSITIVE GENERATOR, and Terry killed it
+
+**The tempting shortcut is "compare against the current Lightroom Classic release", because the
+console page needs a login and the release notes do not.** It rests on the SDK version tracking the
+application version.
+
+**It does not.** Terry, 2026-08-15: *"LrC is currently 15.5 but SDK is 15.3."*
+
+So that check would report **behind** on every Lightroom point release the SDK did not follow, and
+the SDK does not follow most of them. **It would fire, be wrong, and be wrong repeatedly** — which
+is the precise mechanism by which a banner stops being read.
+
+**Anyone reviving this MUST first find a source that states the SDK's own version.** Not
+Lightroom's. The two are related and are not the same number, and the shortcut is convincing enough
+that it needs saying out loud.
+
 ## Note on the location
 
 **This lives on `X:`, which is an SMB share on the NAS at `//192.168.1.152/Personal`.** That is

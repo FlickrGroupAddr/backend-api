@@ -274,6 +274,25 @@ every plug-in file for real. `vendor/` stays an archive and a 386 KB binary stay
 archive, and it announces which instrument ran. A block-balance pass and a real parse are very
 different assurances; identical output would hide the swap.
 
+### The SDK version and the Lightroom version are DIFFERENT NUMBERS
+
+**Measured 2026-08-15: Lightroom Classic is at 15.5 while the SDK is at 15.3.** Terry stated it
+after a proposal to track SDK freshness by watching Lightroom's public release notes — which would
+have reported "behind" on every application point release the SDK did not follow.
+
+**This matters in three places:**
+
+| | |
+|---|---|
+| `Info.lua` | `LrSdkVersion` and `LrSdkMinimumVersion` name the **SDK**, so 15.3 is correct even while Terry runs 15.5 |
+| Freshness checking | See `vendor/README.md`. The shortcut is a false-positive generator and is rejected |
+| Reading the reference | The API shapes come from the **15.3 archive**, which may lag what 15.5 actually accepts |
+
+**The third row is the live risk.** A capability added in 15.4 or 15.5 is invisible to the vendored
+reference, so this file can say "the SDK does not support X" when the running application does.
+**Nothing here has hit that yet**, and it is worth remembering before concluding something is
+impossible.
+
 ### Four SDK traps, all found by READING on 2026-08-15
 
 **Reading was the only QA available** — no Lightroom to run, no `luac` to parse-check. It found four
