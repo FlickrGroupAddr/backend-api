@@ -53,8 +53,15 @@ staging, the report, and the add-only scoping.
   credential of both kinds instantly, because the HMAC is checked before any database read.
   **What is NOT built is the flow that issues a plug-in token** — `/device/start`, `/link` and
   `/device/poll`. Nothing can mint one yet, which is why there is nothing to revoke.
-- **The diagram's `e19` arrow head.** Parked until 2026-08-16. See
-  `docs/architecture/DIAGRAM-NOTES.md`.
+- **The diagram's `e19` arrow head. CLOSED 2026-08-16.** Terry chose option 1: one head, plug-in to
+  Browser. The picture now matches steps 12 and 13 and matches the device flow, and the token
+  arrives on `e18` where it actually does. See `docs/architecture/DIAGRAM-NOTES.md`.
+- **Where randomness comes from. CLOSED 2026-08-16, and it is now ADR-23.** Terry pushed three
+  times for a client-generated nonce and each attempt is recorded there with its refutation.
+  **`LrUUID` is real** — undocumented, present, 1024 draws with no collisions — **and the decision
+  did not move**, because shape is not provenance and no use case here needs client-side
+  unpredictability. **ADR-23 names "`LrUUID` exists and looks correct" as the argument that MUST NOT
+  reopen it**, since that is exactly what was measured and exactly what lost.
 - **The legend line says the same thing twice** — "Pic already in 8 groups" and "Groups this pic is
   already in are not listed". One of them goes.
 
@@ -191,6 +198,44 @@ LrHttp.openUrlInBrowser( url )
 HTTPS, custom request headers and a readable status code. `LrSocket` exists if a localhost callback
 is ever wanted. Pass `{ field = 'Content-Type', value = 'skip' }` to suppress Lightroom's automatic
 `Content-Type: text/plain`.
+
+### The crypto surface, MEASURED at runtime 2026-08-16 — see ADR-23 for what it means
+
+**`docs/lrc-spike/plugin/EntropyProbe.lua` swept twelve namespaces and enumerated `_G` against
+Lightroom Classic 15.5.** The reference undersells the runtime in two places, which is the second
+time in one day that has happened here.
+
+| Namespace | What is really there |
+|---|---|
+| `LrDigest` | `SHA256`, `SHA384`, `SHA512`, `HMAC`, and deprecated `MD4`, `MD5`, `SHA1`. **`SHA384` is undocumented** — the reference names only SHA256 and SHA512 |
+| `LrStringUtils` | 12 functions including **`encodeBase64` and `decodeBase64`** |
+| `LrPasswords` | `store` and `retrieve`, OS-backed and **scoped by plug-in ID** |
+| `LrUUID` | **PRESENT and undocumented.** One key, `generateUUID`. 1024 draws, 0 duplicates, all version-4 shape, 4.0 ms |
+| `LrMath` | `bitAnd`, `bitOr`, `bitXor`. **That is the entire namespace** |
+| `LrRandom`, `LrCrypto`, `LrSecurity`, `LrSecureRandom` | Absent |
+| Globals beginning `Lr` | **None.** Namespaces arrive only through `import()`, so the sweep covered the whole reachable surface |
+
+**`LrUUID` MUST NOT be used for anything security-critical. That is ADR-23 and it is litigated.** It
+is available for correlation identifiers and temporary filenames, where a future disappearance is a
+cosmetic bug rather than a silent downgrade.
+
+**`LrSystemInfo` exposes `ipAddress`, `machineName`, `numCPUs` and `getRamUsage`.** Named here so
+nobody mistakes them for seed material. They are stable identifiers and observable state — the exact
+sources Netscape's 1995 SSL PRNG used before Goldberg and Wagner broke it.
+
+#### The probe reported a number it had not measured, and that is worth more than the finding
+
+**One line of its first run read `Largest of 4096 draws from math.random(0, 2^31-1): 0`.** That looks
+like a devastating result about Lightroom's generator. It was a bug in the probe.
+
+**Lua 5.1 reads both bounds with `luaL_checkint`, so the span `up - low + 1` is 2³¹ — which overflows
+a signed 32-bit int to negative.** Every draw came back negative, and the running `v > biggest`
+comparison never fired against an initial `0`.
+
+**A probe that reports a number it did not measure is worse than one that crashes, because the number
+gets believed.** This is the same rule the three-verdict wrapper exists to enforce, violated one level
+down inside a helper where the wrapper could not see it. The fix counts collisions instead, which
+measures the state space directly, cannot overflow, and is the same instrument the UUID stress uses.
 
 Menu registration, in `Info.lua`:
 
@@ -719,16 +764,34 @@ ADR-10's cookie assumptions do not cover it.
 
 | | |
 |---|---|
-| `POST /api/v001/device/start` | No auth. Returns `{ code, userCode, expiresAt, pollAfter }` |
-| `GET /link?code=…` | The browser page. **Session cookie required**, so ADR-10 does the identity work |
-| `POST /api/v001/device/poll` | Body `{ code }`. Returns `pending`, `denied`, `expired`, or `{ token }` |
+| `POST /api/v001/device/start` | No auth. Returns `{ deviceCode, userCode, expiresAt, pollAfter }` |
+| `GET /link?userCode=…` | The browser page. **Session cookie required**, so ADR-10 does the identity work |
+| `POST /api/v001/device/poll` | Body `{ deviceCode }`. Returns `pending`, `denied`, `expired`, or `{ token }` |
 
 **Two codes, not one, and the split is the whole security design.**
 
-- **`code` is the polling handle** — 32 bytes from `crypto.getRandomValues`, base64url. The plug-in
-  holds it and never shows it.
+- **`deviceCode` is the polling handle** — 32 bytes from `crypto.getRandomValues`, base64url,
+  minted by the Worker under ADR-23. **It appears in a response body and a request body, and NEVER
+  in a URL.**
 - **`userCode` is what a human reads** — short, unambiguous, and **displayed in Lightroom**. It is
-  the thing the person compares against the browser page.
+  the thing the person compares against the browser page, and it is the only code the `/link` URL
+  may carry.
+
+##### CORRECTED 2026-08-16: the earlier draft put the polling credential in the URL
+
+**This section contradicted itself in nine lines.** It called `code` the polling handle that the
+plug-in *"holds and never shows"*, and the flow above it had the plug-in call
+`LrHttp.openUrlInBrowser( /link?code=… )`. **The URL wins that argument.** The credential that
+collects the token was therefore visible in browser history, in history synced to the user's other
+devices, to any extension holding `tabs` permission, in a TLS-inspecting proxy's logs, and on screen.
+
+**RFC 8628 does not do this, and the split already existed here.** The standard puts the low-entropy
+`user_code` in front of the human and keeps the high-entropy `device_code` out of every URL. This
+design already minted both values. It routed the wrong one into the query string.
+
+**`code` was renamed to `deviceCode` deliberately.** A parameter named `code` reads as an identifier
+and invites exactly the mistake that was made. The name now states what it is, and a reviewer seeing
+`deviceCode` in a query string has an obvious reason to stop.
 
 **State lives in a Durable Object, one per flow**, exactly like ADR-08's OAuth Request Token. Same
 argument: a short-lived single-writer object with an alarm that deletes itself beats a D1 row that

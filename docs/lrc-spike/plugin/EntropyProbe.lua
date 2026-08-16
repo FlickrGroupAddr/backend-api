@@ -224,16 +224,40 @@ local function math_random_report()
 		tostring(identical),
 		identical and "  -- so the only secret is the SEED" or "  -- unexpected, investigate")
 
-	--[[ Largest value observed hints at the underlying RAND_MAX. On an MSVC
-	     build that is 32767, which would be 15 bits per call. Observed rather
-	     than claimed, because Lightroom's build is not documented here. ]]
-	local biggest = 0
-	for _ = 1, 4096 do
-		local v = math.random(0, 2147483647)
-		if v > biggest then biggest = v end
+	--[[ **THE FIRST VERSION OF THIS MEASURED NOTHING, and the way it failed is the
+	     reason it is written up rather than quietly replaced.**
+
+	     It drew `math.random(0, 2147483647)` and reported the largest of 4096.
+	     The answer was 0, which looked like a devastating finding about
+	     Lightroom's generator and was a bug in this file. Lua 5.1 reads both
+	     bounds with `luaL_checkint`, so the span `up - low + 1` is 2^31 -- which
+	     overflows a signed 32-bit int to negative. Every draw came back negative,
+	     and `v > biggest` never fired against an initial 0.
+
+	     **A probe that reports a number it did not measure is worse than one that
+	     crashes**, because the number gets believed. Same rule the three-verdict
+	     wrapper at the bottom of this file exists to enforce, violated one level
+	     down inside a helper.
+
+	     Counting COLLISIONS measures the state space directly and cannot overflow,
+	     and it is the same instrument the UUID stress uses -- so the two results
+	     are comparable rather than merely adjacent. ]]
+	local DRAWS_RANDOM = 4096
+	local seen, duplicates = {}, 0
+	math.randomseed(os.time())
+	for _ = 1, DRAWS_RANDOM do
+		local v = math.random()
+		if seen[v] then duplicates = duplicates + 1 end
+		seen[v] = true
 	end
+	--[[ Expected collisions among k draws from N values is about k^2/2N. At
+	     k=4096 that is 8.4e6, so a 15-bit rand() (N=32768) would produce roughly
+	     256 of them and a 32-bit one roughly 2. Zero says the space is wide;
+	     it says NOTHING about whether it is predictable. ]]
 	lines[#lines + 1] = string.format(
-		"        Largest of 4096 draws from math.random(0, 2^31-1): %d", biggest)
+		"        Collisions in %d raw math.random() draws: %d", DRAWS_RANDOM, duplicates)
+	lines[#lines + 1] =
+		"        (~256 would indicate a 15-bit rand(); ~2 a 32-bit one)"
 	lines[#lines + 1] = string.format(
 		"        Clock seed material available: os.time()=%d", os.time())
 
