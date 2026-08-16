@@ -101,8 +101,17 @@ geometry, and no assertion compares the two.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, the US English check, the Lua block-balance check, 251 tests, the
-traceability gate, and the web build. **It MUST be clean before a commit.**
+Typecheck (both tsconfigs), lint, the US English check, the Lua parse check, **the ADR-23 Rule 3
+import gate**, 251 tests, the traceability gate, and the web build. **It MUST be clean before a
+commit.**
+
+**`scripts/lua-imports.py` refuses any `import` of a namespace the pinned LrC SDK does not
+document.** It reads `scripts/lrc-sdk-modules.json` — committed, because `vendor/`'s archive is
+gitignored and a fresh clone has no SDK — and **cross-checks it against the archive when one is
+present**, so a stale list after an SDK bump fails rather than silently approving a dropped
+namespace. **A dynamic `import(name)` is reported `UNVERIFIABLE` and needs an explicit
+`SDK-UNDOCUMENTED-EXEMPT: <reason>`**; that hole was real, and the gate's first run reported
+`0 undocumented` against the one file that imports `LrUUID`.
 
 **`scripts/lua-balance.py` runs the REAL Lua 5.1 compiler.** It extracts `Lua Compiler/win/luac.exe` on demand from the SDK archive this repo vendors, and parse-checks every plug-in file. **An earlier version of this line said no `luac` existed here** -- a search for names matching `*Lightroom*SDK*` and `luac*.exe`, against an archive named `LrC_...` holding the binary INSIDE the zip. Neither pattern could have matched. **A search that finds nothing is not evidence that nothing is there.** Its block-balance pass survives as a FALLBACK for a machine without the archive, and the script announces which instrument ran -- a balance pass and a real parse are very different assurances. It is a
 block-balance check and **NOT a parser** — it catches a block left open or closed twice, which is

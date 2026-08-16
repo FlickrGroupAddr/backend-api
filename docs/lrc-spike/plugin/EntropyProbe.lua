@@ -278,7 +278,12 @@ local function run()
 	local winners = {}
 
 	for _, name in ipairs(CANDIDATE_NAMESPACES) do
-		local ok, ns = LrTasks.pcall(function() return import(name) end)
+		--[[ ADR-23 Rule 3 forbids importing an undocumented namespace. This probe
+		     MEASURES them instead of depending on them: the call is wrapped in
+		     LrTasks.pcall, so an absent namespace is a REPORTED OUTCOME rather than a
+		     crash, and no plug-in behavior rests on the result. ADR-23 names this file
+		     as the one place that MUST keep doing it. ]]
+		local ok, ns = LrTasks.pcall(function() return import(name) end)   -- SDK-UNDOCUMENTED-EXEMPT: measures namespaces rather than depending on them, guarded by LrTasks.pcall
 		if ok and ns ~= nil then
 			report[#report + 1] = string.format("    %s: PRESENT", name)
 			local described, reachable = describe_namespace(ns)
