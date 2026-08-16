@@ -291,6 +291,39 @@ badge fill and any tile fill; `#003087` against the mark's ground `#001E36` is *
 near each other, but `MIN_COLOR_DISTANCE` will fire the moment the checks come back. **Shift the
 badge navy, darken the mark, or exempt the pair — but decide it rather than discovering it.**
 
+### A BOX-TO-BOX GAP IS NOT VISIBLE WHITESPACE, and `LOGO_GAP_MIN/MAX` is now stale
+
+**`LOGO_GAP_MIN, LOGO_GAP_MAX = 6.0, 8.0` in the generator describes a gap that is now 2.95**, and
+Terry approved the 2.95. **The constant is wrong, not the layout.** Retune it when the checks come
+back; do not "fix" the layout to satisfy it.
+
+**Three terms sit between the Flickr dots and the cap of the word "Flickr", and the check measures
+only one of them:**
+
+| Term | Size today | Where it comes from |
+|---|---|---|
+| Padding inside the mark's own box | ~4.9 | `viewBox="68 167 376 178"` is the dots' bounding box **plus 10 units** |
+| Box-to-box gap | 2.95 | `flickrtitle.y` minus `flickrlogo` bottom — **the only term asserted** |
+| Leading above the cap | ~8 | A 32-tall cell, `fontSize=20`, `verticalAlign=middle` |
+
+**So the assertion is measuring the middle row of three.** That is survivable while nothing resizes,
+and it broke the moment something did.
+
+**The mark shrank from `h=107` to `h=88.05` on 2026-08-16**, and its `viewBox` padding shrank with it
+— same nominal gap, less actual white. **The band would have PASSED the version Terry rejected and
+FAILED the one he liked.** A check that inverts under a resize is worse than no check, because it
+argues confidently for the wrong answer.
+
+**The correction was 4 units. That is 0.04 inch, about a millimeter on the printed sheet.**
+Proximity grouping is a threshold rather than a gradient: the eye asks whether the word belongs to
+the mark above or the tile below, and the answer flips from *maybe* to *obviously* inside a 2-unit
+window. **No arithmetic in this file models that**, which is the same lesson as the appearance row
+in the defect table below — and the reason Terry looks at every render.
+
+**If this check is rebuilt, measure the artwork's ink**, not its box: derive the mark's real bottom
+from the `viewBox` and the artwork's own extents, then add the label's leading. Otherwise leave it
+reported rather than asserted.
+
 ### AN XML COMMENT MUST NOT CONTAIN TWO CONSECUTIVE HYPHENS
 
 **This repository's prose uses `--` as an em dash everywhere, and an SVG is XML.** The first version
