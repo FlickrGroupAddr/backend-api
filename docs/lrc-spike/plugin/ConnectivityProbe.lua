@@ -29,6 +29,7 @@ local LrDialogs = import("LrDialogs")
 local LrHttp = import("LrHttp")
 local LrTasks = import("LrTasks")
 local LrPathUtils = import("LrPathUtils")
+local LrDate = import("LrDate")
 
 local BASE = "https://flickrgroupaddr.com"
 
@@ -50,9 +51,15 @@ local HEADERS = {
      reason in `headersTable.error`, so both have to be handled or the probe
      reports "no status" for two very different situations. ]]
 local function describe(label, path)
-	local started = os.clock()
+	--[[ **`LrDate.currentTime()`, NOT `os.clock()`.** Lua's `os.clock` returns CPU
+	     time used by the process. An HTTP request is almost entirely WAITING, so
+	     it would have reported a few milliseconds for a fifteen-second timeout --
+	     a number that looks like a measurement and is not one. `os.time()` is wall
+	     clock but whole seconds, which cannot see the difference between a fast
+	     reply and a slow one. LrDate gives fractional seconds. ]]
+	local started = LrDate.currentTime()
 	local body, headers = LrHttp.get(BASE .. path, HEADERS, TIMEOUT)
-	local elapsed = (os.clock() - started) * 1000
+	local elapsed = (LrDate.currentTime() - started) * 1000
 
 	local lines = { string.format("%s  ->  GET %s", label, path) }
 
