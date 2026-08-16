@@ -572,20 +572,54 @@ its line where it covers under about half the run, and BESIDE it above that. Fou
 others, so they prevent the return of known problems and are blind to new ones. On 2026-08-15 the
 build passed all fifteen assertion blocks over a diagram Terry called horrific.
 
-## THE ASSERTIONS ARE CURRENTLY OFF
+## The assertions are BACK ON, and they were rewritten rather than switched on
 
-**`CHECKS_ENABLED = False` near the top of the check block in `scripts/build-diagram.py` short
-circuits every geometry and quality assertion**, and the build prints a banner saying so on every
-run. **Terry turned them off on 2026-08-16** for a canvas overhaul he reviews by eye through the
-live preview: nearly every assertion is pinned to a coordinate the overhaul moves, so they fired on
-every intermediate state, and a check that fires on every run is a check nobody reads.
+**Re-armed 2026-08-16, at the end of the overhaul.** They were off for one working
+day. **Switching the old set back on would have been useless** — nearly every assertion named a
+coordinate the overhaul moved, so they would have failed en masse and told nobody anything.
 
-**Restoring is one word.** Set the flag to `True`, run, and fix what it reports. **Expect several
-failures** — the badge checks have empty tables, `check_page_fit()` has never seen the current
-layout, and the boxed-text slack band was tuned against tiles that have all since moved.
+**So the suite asserts RELATIONSHIPS, and a number appears only where the number itself is the
+rule.** "This edge is level", never "this edge is at y=388" — that absolute line moved four times in
+one day and the requirement never did. The map they are written from is the pinned-relationship
+table below.
 
-**A future session MUST NOT turn them back on unasked.** That is Terry's call, the same way the
-layout is.
+**Two things it fixed on its first run, both bugs in the checks rather than the layout:**
+
+- The old `attach_point` used the raw `exitX`/`exitY` fraction, so **it was measuring points draw.io
+  does not draw.** The suite now reimplements `mxRectanglePerimeter` and honors `exitPerimeter=0`,
+  with a self-test.
+- `check_page_fit` could not see a routed waypoint, and now includes them and **fails the build**
+  rather than reporting. It reported before because the content genuinely exceeded the page; it fits
+  exactly now, so a failure is real.
+
+**And one real defect, which is the point:** a notional badge overlapped the DNS tile by 6 units. The
+gutter between DNS and the Worker is 28.2 and a badge is 34, so **no position on those two lines
+clears both** — the badges moved to the 55-unit band between the Browser and the Cloudflare frame.
+
+### Two traps this suite is written to avoid
+
+**An unsatisfiable assertion is worse than none.** The first draft demanded the DNS tile fit
+*between* the two route groups; it is 60 tall and the separation is 46. It would have failed forever
+and taught everyone to skip the output. It now asserts what is actually claimed — that DNS reads as
+sitting between them — by testing its center.
+
+**Containers are not obstacles and not tiles.** `api`, `lrcapp`, `cfframe`, `netb` and the Flickr
+card all hold things that edges legitimately terminate on and badges legitimately sit inside.
+Listing one reports a collision for every child doing its job correctly.
+
+### Why turning them OFF was right, and worth remembering next time
+
+**They were disabled for one working day**, and the reasoning generalizes to any design pass over a
+checked artifact. Nearly every assertion was pinned to a coordinate the overhaul was about to move,
+so they fired on every intermediate state. **A check that fires on every run is a check nobody
+reads**, and its noise would have buried the one firing for a real reason.
+
+**The right shape was one flag, not a thousand commented lines** — a partly uncommented block looks
+restored while leaving holes — plus a banner on every build so the state could not go unnoticed.
+
+**And they came back REWRITTEN.** That is the part to copy. A suite switched back on after a
+redesign is asserting the old design; the work is not flipping the flag, it is deciding what is now
+true and saying only that.
 
 ## Open, as of 2026-08-16
 
