@@ -19,7 +19,8 @@
 		"test:watch": "vitest",
 		"trace": "python scripts/traceability.py --check",
 		"us-english": "python scripts/us-english.py",
-		"check": "npm run typecheck && npm run lint && npm run us-english && npm run test && npm run trace && npm run build:web"
+		"lua": "python scripts/lua-balance.py docs/lrc-spike/plugin",
+		"check": "npm run typecheck && npm run lint && npm run us-english && npm run lua && npm run test && npm run trace && npm run build:web"
 	},
 	"dependencies": {
 		"hono": "4.13.2",

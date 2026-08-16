@@ -78,9 +78,34 @@ def check(path):
     return problems
 
 
+def expand(args):
+    """Accept files OR directories.
+
+    Naming each file in `package.json` meant a NEW plug-in file would simply go
+    unchecked, and nothing would say so -- the same silent-coverage hole that let
+    the diagram's text estimator measure three tiles out of thirteen.
+    """
+    import os
+
+    paths = []
+    for arg in args:
+        if os.path.isdir(arg):
+            for name in sorted(os.listdir(arg)):
+                if name.endswith(".lua"):
+                    paths.append(os.path.join(arg, name))
+        else:
+            paths.append(arg)
+    return paths
+
+
 if __name__ == "__main__":
+    targets = expand(sys.argv[1:])
+    if not targets:
+        print("No .lua files found -- refusing to report success on nothing.")
+        sys.exit(1)
+    print(f"Checking {len(targets)} Lua file(s) for block balance:")
     bad = False
-    for path in sys.argv[1:]:
+    for path in targets:
         problems = check(path)
         name = path.rsplit("\\", 1)[-1].rsplit("/", 1)[-1]
         if problems:

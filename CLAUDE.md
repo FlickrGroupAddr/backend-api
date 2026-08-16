@@ -101,8 +101,19 @@ geometry, and no assertion compares the two.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, the US English check, 239 tests, the traceability gate, and the
-web build. **It MUST be clean before a commit.**
+Typecheck (both tsconfigs), lint, the US English check, the Lua block-balance check, 239 tests, the
+traceability gate, and the web build. **It MUST be clean before a commit.**
+
+**`scripts/lua-balance.py` stands in for `luac`, which is NOT installed on this machine.** It is a
+block-balance check and **NOT a parser** — it catches a block left open or closed twice, which is
+the error that has actually bitten (a `for` loop closed with `}`, JavaScript muscle memory). It
+takes a DIRECTORY and refuses to report success on an empty match, so a new plug-in file cannot go
+silently unchecked.
+
+**Its first version cried wolf on three files Lightroom loads fine**, because it kept comment text
+after stripping the dashes and it read a bare `}` as a mistaken `end` — which is how every Lua table
+closes. **A checker validated in only one direction is half-validated**: prove it stays silent on
+known-good input as well as firing on known-bad.
 
 ### `scripts/us-english.py` enforces the US English standing order
 
