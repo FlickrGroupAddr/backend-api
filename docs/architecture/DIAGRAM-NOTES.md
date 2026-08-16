@@ -16,17 +16,43 @@ artifact. Where they overlap, `CLAUDE.md` wins for procedure and this one for fa
 ### The canvas is 100 units per inch, and that is why the page is 1700x1100
 
 drawio's coordinate space is **100 units to the inch**. Letter is `850x1100`, A4 is `827x1169`, and
-17x11 landscape is exactly **`1700x1100`**. A font size converts straight to points: `fontSize=17`
-is 0.17 in, which is **12.2 pt**.
+17x11 landscape is exactly **`1700x1100`**. A font size converts straight to points: `fontSize=14`
+is 0.14 in, which is **10.1 pt**.
 
-| Body text | Was | Is |
-|---|---|---|
-| Tile text | `fontSize=11` — **7.9 pt** | `fontSize=17` — **12.2 pt** |
-| Journey panel | `font-size:14px` — 10.1 pt | `font-size:16px` — 11.5 pt |
-| Step badges | `fontSize=22` — 15.8 pt | `fontSize=26` — 18.7 pt |
+### Body text took TWO corrections, and the second one is the record worth keeping
 
-**7.9 pt is footnote size**, and it is what made the first 8.5x11 print unreadable. Terry called it
-an eyechart, and the fix was type, not page size.
+| Body text | 2026-08-14 | 2026-08-15 | **2026-08-16** |
+|---|---|---|---|
+| Tile text | `fontSize=11` — 7.9 pt | `fontSize=17` — 12.2 pt | **`fontSize=14` — 10.1 pt** |
+| Tile headings | — | `fontSize=19` — 13.7 pt | **`fontSize=15` — 10.8 pt** |
+| Journey panel | `font-size:14px` — 10.1 pt | `font-size:16px` — 11.5 pt | **`font-size:13px` — 9.4 pt** |
+| Step badges | `fontSize=22` — 15.8 pt | `fontSize=26` — 18.7 pt | **`fontSize=20` — 14.4 pt** |
+| Page title | — | `fontSize=40` — 28.8 pt | **`fontSize=28` — 20.2 pt** |
+
+**7.9 pt is footnote size**, and it made the first 8.5x11 print unreadable. Terry called it an
+eyechart, and the fix was type rather than page size.
+
+**Then 12.2 pt overshot.** Terry, 2026-08-16: *"the current text across the diagram is kind of   <!-- US-ENGLISH-EXEMPT: quoting Terry -->
+comically huge. I appreciate you dialing it up but we overshot some. This will be on an 11x17 in
+piece of paper in front of me and I have 20/20."*
+
+**So the target is ABOUT 10 pt for tile body on 11x17, and that number is now measured from two
+misses in opposite directions rather than guessed.** A future session moving type SHOULD treat
+10.1 pt as the calibrated center and justify a departure from it.
+
+### TWO TRAPS a type change walks straight into
+
+**Inline HTML `font-size:` beats the shape's `fontSize`.** The 2026-08-15 pass changed only one of
+them and left 39 spans at the old size inside tiles declaring the new one — one tile read as an
+eyechart beside its neighbors and nothing in the style attributes explained why. **Change both, in
+one pass.** `scripts/build-diagram.py` is rewritten by a regex over both forms for exactly this
+reason.
+
+**Shrinking type leaves every hand-sized box too roomy, and a box that is too large passes every
+other geometric assertion in the file.** The slack check is the one that catches it: the 2026-08-16
+pass left `justification` at 64px of slack, `key` at 47 and `journey` at 207 against a 45px ceiling,
+and all three had to be re-tightened. **`CHAR_W` MUST carry every size the file uses** or
+`text_height` raises `KeyError`.
 
 ### The coordinates MUST NOT be scaled to chase a pixel count
 
@@ -129,29 +155,75 @@ build passed all fifteen assertion blocks over a diagram Terry called horrific.
   something `DECISIONS.md` or the User Journey denies. Comparing an edge's endpoints against the
   step text that cites it is mechanical and nobody has written it.
 
-- **`e19` may now be a FOURTH contradiction, and it is one I introduced.** Terry asked for step 12
-  to become a thick double-headed arrow: *"Plugin really does drive the browser and really does read   US-ENGLISH-EXEMPT: quoting Terry
-  token back out"*. I made the change without checking it against the journey text, which is exactly
-  the failure this section is about.
+- **The dotted "Scheduled trigger" legend row has NOTHING VISIBLE to point at.** Found 2026-08-16 by
+  looking at a render, and it is the sharpest example on this page of an assertion passing over a
+  defect.
 
-  | Says | |
-  |---|---|
-  | Step 12 | "Lightroom plug-in opens the browser to link itself. **It never calls Flickr**" |
-  | Step 13 | "Lightroom plug-in **polls for its token**, then queues a batch in one call" |
+  `e6` carries `dashed=1;dashPattern=1 4` and the `LINE_STYLE` check reports `dotted ok`. **The
+  render shows a bare arrowhead.** `cron` ends at x=420 and `retry` begins at x=430 — a **10-unit
+  gap**, one tenth of an inch, which the arrowhead consumes entirely. No reader can tell it from
+  solid, so the legend defines a line style the drawing never visibly uses.
 
-  **So the token comes back on the plug-in-to-Worker edge, not through the browser.**
-  `LrHttp.openUrlInBrowser` is fire-and-forget and there is no return channel — the device flow in
-  `docs/LRC-CLIENT-NOTES.md` has the plug-in polling `POST /api/v001/device/poll`. `e18` is already
-  double-headed and is where the token actually arrives.
+  **The geometry is boxed in, and that is why this is not a one-line fix.** The left and right
+  columns are separated by a single 10-unit corridor at x≈425. `netb` spans 245..760, `cron` cannot
+  move left past 250, and the right column's left edge is pinned by the *flush* and *one column*
+  checks. **A straight horizontal `e6` can never be longer than 10 units.**
 
-  **Three ways this resolves, and Terry picks:**
+  So `MUST_BE_HORIZONTAL` and a visible dotted line are in direct conflict, and one must give.
+  **The legend row is the more important of the two** — horizontality is meaningless on a line you
+  cannot see. The fix is an orthogonal route (a U below both tiles, roughly 300 units of visible
+  run), which means removing `e6` from `MUST_BE_HORIZONTAL` and **replacing it with a check that
+  catches the real defect**: any edge whose declared style is broken MUST have a minimum visible run.
+  That replacement is the part that matters; deleting the old check without it is how a ratchet
+  loses a tooth.
 
-  1. **`e19` goes back to one head.** Matches steps 12 and 13 as written, and matches the device
-     flow. The "reads token back out" is true of the plug-in, but of a different arrow.
-  2. **`e19` stays double-headed and step 12's text changes** to describe what returns.
-  3. **The design changes** to an `LrSocket` localhost callback, where the browser really would
-     answer the plug-in directly. That is a real option the SDK supports and it is not what is
-     designed today.
+## Closed on 2026-08-16
 
-  **Option 1 unless Terry says otherwise.** Nothing is changed yet — the diagram is parked until
-  2026-08-16.
+- **`e19` is ONE HEAD. Terry chose it**, from the three options this section used to list. The
+  picture now matches journey steps 12 and 13 and matches the device flow: `LrHttp.openUrlInBrowser`
+  is fire-and-forget, and the token arrives on `e18`, which is already double-headed.
+- **Body type overshot and came back to 10.1 pt.** See the printing section above.
+- **The date sat a blank line below the title.** Both cells are `verticalAlign=middle`, so the gap
+  was arithmetic rather than a stray line: centers 46px apart against 29px of type. The date box
+  moved from y=72 to y=56, which also bought clearance above the Cloudflare frame — that had been
+  **2px**.
+
+## The next change: a TWO-PANEL User Journey, plug-in first
+
+**Terry's direction, 2026-08-16: two panels split between login/auth and publish, with the auth
+panel drawn in full.** His reasoning, and it decides the level of detail: *"Terry of 2031 will   <!-- US-ENGLISH-EXEMPT: quoting Terry -->
+appreciate us being pedantic af today. Hold his hand."*
+
+**Why the journey is being rewritten at all:** today's runs browser-first and the plug-in appears at
+steps 12 and 13 as an afterthought. Per `docs/LRC-CLIENT-NOTES.md`, **the plug-in is arguably the
+more important of the two clients** — the stated goal is queueing adds without leaving Lightroom.
+The journey should open with the user clicking **Authorize with FGA**.
+
+**The drafted auth panel is 18 steps and 17 distinct badges** (step A11 rides A10's arrow). The full
+list, with the edge each step needs and whether the code exists, was drafted in the 2026-08-16
+session and **is NOT yet in the generator.** Its shape:
+
+| Steps | What they cover | Built? |
+|---|---|---|
+| A1–A3 | `POST /api/v001/device/start`, the Durable Object, `openUrlInBrowser` with `userCode` | **No** |
+| A4–A6 | DNS, `GET /link`, redirect to `GET /oauth/login` | Partly |
+| A7–A16 | The whole Flickr OAuth leg, unchanged from today's steps 4–9 | **Yes** |
+| A17–A18 | `userCode` confirmation, then `POST /api/v001/device/poll` | **No** |
+
+**Three constraints that bind the design, and each has already caught something:**
+
+- **Every journey step needs a badge, and every badge needs a real edge.** `build-diagram.py` fails
+  the build when the row count and the badge count disagree, so the step list and the arrows are one
+  decision rather than two.
+- **Two panels each numbering from 1 means two badges reading "3".** Letter prefixes — `A1`, `B1` —
+  solve it with no new color rule and no legend row. Two badge colors also work, at the cost of a
+  rule a reader has to learn. **Not yet decided.**
+- **"Publish to Flickr as normal" has no edge on the canvas**, because FGA does not participate. It
+  belongs as context above the publish panel rather than as a numbered step.
+
+**The publish panel drafts to 9 steps**, from the catalog read through preflight and
+`POST /api/v001/requests/batch` to the 00:15 UTC sweep calling `groups.pools.add`.
+
+**A17 IS BLOCKED BY A REAL BUG, and the diagram MUST NOT draw it as working.** See
+`docs/LRC-CLIENT-NOTES.md` — `src/routes/oauth.ts` always ends the callback at `UI_ORIGIN?login=ok`,
+so a user who signs in mid-link lands on the app root and the flow is stranded.
