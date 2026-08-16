@@ -98,6 +98,44 @@ def expand(args):
     return paths
 
 
+# Where the plug-in actually runs. The repo copy is a MIRROR, and a mirror nobody
+# compares is a record that quietly stops being true -- five hand copies in one
+# evening is five chances to miss one.
+LIVE = r"C:\Photography\FgaSpike.lrdevplugin"
+
+
+def mirror_drift(repo_dir):
+    """Compare the repo mirror against the live plug-in, when the live one exists.
+
+    **Silent on a machine that has no live copy**, because that is a different
+    developer rather than a problem. It reports what it did either way, so
+    "checked nothing" never reads as "found nothing".
+    """
+    import hashlib
+    import os
+
+    if not os.path.isdir(repo_dir) or not os.path.isdir(LIVE):
+        return [], False
+
+    def digest(path):
+        with open(path, "rb") as handle:
+            return hashlib.sha256(handle.read()).hexdigest()
+
+    problems = []
+    for name in sorted(os.listdir(repo_dir)):
+        if not name.endswith(".lua"):
+            continue
+        live = os.path.join(LIVE, name)
+        if not os.path.exists(live):
+            problems.append(f"{name}: in the repo, MISSING from {LIVE}")
+        elif digest(live) != digest(os.path.join(repo_dir, name)):
+            problems.append(f"{name}: repo copy DIFFERS from the live plug-in")
+    for name in sorted(os.listdir(LIVE)):
+        if name.endswith(".lua") and not os.path.exists(os.path.join(repo_dir, name)):
+            problems.append(f"{name}: live, MISSING from the repo mirror")
+    return problems, True
+
+
 if __name__ == "__main__":
     targets = expand(sys.argv[1:])
     if not targets:
@@ -115,4 +153,21 @@ if __name__ == "__main__":
                 print(f"  {p}")
         else:
             print(f"{name}: balanced")
+
+    import os
+
+    for arg in sys.argv[1:]:
+        if not os.path.isdir(arg):
+            continue
+        drift, compared = mirror_drift(arg)
+        if not compared:
+            print("Mirror check skipped: no live plug-in directory on this machine.")
+        elif drift:
+            bad = True
+            print(f"Mirror DRIFT against {LIVE}:")
+            for line in drift:
+                print(f"  {line}")
+        else:
+            print(f"Mirror matches {LIVE}.")
+
     sys.exit(1 if bad else 0)
