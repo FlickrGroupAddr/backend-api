@@ -47,12 +47,17 @@ It builds and validates in one step, and **refuses to write a diagram that fails
 prints every check as it goes, so **the run is the list.** Most checks exist because a defect got
 past everything already there, so a firing check is usually right.
 
-**THE CHECKS ARE CURRENTLY OFF.** `CHECKS_ENABLED = False` near the top of the check block short
-circuits every assertion, and the build prints a banner saying so on every run. **Terry turned them
-off on 2026-08-16** for a canvas overhaul he is reviewing by eye: nearly every assertion is pinned to
-a coordinate the overhaul moves, so they fired on every intermediate state and blocked iteration.
-**Set the flag back to `True` when the overhaul settles**, then run and fix whatever it reports. The
-paragraph above is true again at that moment and false until then.
+**The checks assert RELATIONSHIPS, not coordinates.** *"This edge is level"*, never *"this edge is at
+`y=388`"* — that absolute line moved four times on 2026-08-16 and the requirement never did. A number
+appears only where the number itself is the rule. They are written from the pinned-relationship table
+in `docs/architecture/DIAGRAM-NOTES.md`; **read that table before a layout change.**
+
+**Turning them off for a design pass is legitimate, and it happened once.** Terry disabled every
+assertion on 2026-08-16 for an overhaul he reviewed by eye, because each one was pinned to a
+coordinate the overhaul moved and they fired on every intermediate state. **A check that fires on
+every run is a check nobody reads.** If it happens again, use ONE flag plus a banner on every build,
+never commented-out blocks — and **rewrite the suite when it comes back, rather than switching it on.
+A suite flipped back on after a redesign asserts the design that no longer exists.**
 
 **Distrust the text estimator.** It models what a browser does to wrapped text, and five things it
 did not represent at all were found by looking at a render. **When a box looks wrong on screen, the

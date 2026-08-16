@@ -51,9 +51,10 @@ cheap.
 - **Apply a multi-tile move with a throwaway script that refuses unless every exact anchor matches
   once.** A half-applied coordinated move still renders, which is what makes it expensive.
 
-**The assertions in `scripts/build-diagram.py` are currently OFF** — `CHECKS_ENABLED = False`, at
-Terry's direction on 2026-08-16, for an overhaul he reviews by eye. The build prints a banner saying
-so on every run. **Do not turn them back on unasked.**
+**`scripts/build-diagram.py` refuses to write a diagram that fails any assertion**, and prints every
+check as it goes — so the run is the list. **The suite asserts RELATIONSHIPS rather than
+coordinates**, and `DIAGRAM-NOTES.md`'s "What is pinned to what" table is where those relationships
+are written down.
 
 ## What NOT to read, and why
 
