@@ -325,10 +325,17 @@ MUTATIONS = [
     (
         # Hand the token to anyone holding the userCode -- which is read off a screen.
         # The whole reason deviceCode exists as a second, secret value.
+        #
+        # **Anchor re-cut 2026-08-16**, an hour after it was written: inserting the
+        # poll throttle between the code check and its neighbor drifted an anchor that
+        # spanned both. It now targets the CONDITION rather than the code around it,
+        # which is what an anchor should have done in the first place -- a mutation
+        # anchored to its neighbors breaks whenever a neighbor moves.
         "ADR-24: collect a token without proving you started the flow",
         "src/device/link-attempt.ts",
-        "\t\t\treturn { kind: \"expired\" };\n\t\t}\n\n\t\tif (attempt.denied) {",
-        "\t\t\t// mutation\n\t\t}\n\n\t\tif (attempt.denied) {",
+        "\t\t\tgot.byteLength !== want.byteLength ||\n"
+        "\t\t\t!crypto.subtle.timingSafeEqual(got, want)",
+        "\t\t\tfalse",
     ),
     (
         # Single use is what stops a replayed poll re-minting a credential.
@@ -344,6 +351,24 @@ MUTATIONS = [
         "src/routes/device.ts",
         '\t\t"lrc15_plugin",\n\t);',
         '\t\t"browser",\n\t);',
+    ),
+    (
+        # `pollAfter` becomes advice nobody enforces, and a plug-in in a tight loop
+        # hammers the Durable Object for the whole ten-minute window.
+        "ADR-24: stop throttling the poll server-side",
+        "src/device/link-attempt.ts",
+        "const MIN_POLL_INTERVAL_MS = 2000;",
+        "const MIN_POLL_INTERVAL_MS = 0;",
+    ),
+    (
+        # A throttled poll that MOVES the window means a client polling in a tight
+        # loop refuses itself forever instead of recovering after one honest wait.
+        "ADR-24: let a throttled poll push the window forward",
+        "src/device/link-attempt.ts",
+        "\t\t\treturn { kind: \"slow_down\" };",
+        "\t\t\tawait this.ctx.storage.put<StoredAttempt>(\"attempt\", {\n"
+        "\t\t\t\t...attempt,\n\t\t\t\tlastPolledAt: now,\n\t\t\t});\n"
+        "\t\t\treturn { kind: \"slow_down\" };",
     ),
 ]
 

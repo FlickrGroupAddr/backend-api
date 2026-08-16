@@ -85,6 +85,9 @@ deviceRoutes.use(
 /** What a well-behaved plug-in waits between polls. Seconds, as RFC 8628 sends it. */
 const POLL_AFTER_SECONDS = 5;
 
+/** RFC 8628's remedy for a client that polled too fast: raise its interval. */
+const SLOW_DOWN_EXTRA_SECONDS = 5;
+
 const pollBody = z.object({
 	userCode: z.string().min(1).max(64),
 	deviceCode: z.string().min(1).max(512),
@@ -148,7 +151,16 @@ deviceRoutes.post("/api/v001/device/poll", async (c) => {
 	const state = await stub.poll(await codeHash(parsed.data.deviceCode));
 
 	if (state.kind !== "approved") {
-		return c.json({ status: state.kind, pollAfter: POLL_AFTER_SECONDS });
+		/**
+		 * **A throttled client is told to wait LONGER, per RFC 8628.** Returning the
+		 * same interval it just violated would leave a misbehaving plug-in in a tight
+		 * loop forever, being refused at exactly the rate it was already polling.
+		 */
+		const pollAfter =
+			state.kind === "slow_down"
+				? POLL_AFTER_SECONDS + SLOW_DOWN_EXTRA_SECONDS
+				: POLL_AFTER_SECONDS;
+		return c.json({ status: state.kind, pollAfter });
 	}
 
 	/**

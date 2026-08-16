@@ -41,10 +41,26 @@ import { DurableObject } from "cloudflare:workers";
  *  abandoned code is not sitting there to be stumbled into. */
 const ABANDONED_AFTER_MS = 10 * 60 * 1000;
 
+/**
+ * **The floor the server ENFORCES, deliberately lower than the interval it
+ * ADVERTISES.** `pollAfter` tells a well-behaved plug-in to wait 5 seconds; this
+ * refuses anything under 2.
+ *
+ * Enforcing the advertised number would punish a client that obeyed it, because
+ * network jitter and clock skew put an honest 5-second poll on either side of the
+ * line. **A rate limit that fires on correct behavior teaches clients to ignore
+ * rate limits.** The gap between 5 and 2 is the tolerance, and only genuine
+ * hammering falls through it.
+ */
+const MIN_POLL_INTERVAL_MS = 2000;
+
 export type LinkState =
 	| { readonly kind: "pending" }
 	| { readonly kind: "approved"; readonly nsid: string }
 	| { readonly kind: "denied" }
+	/** RFC 8628's name for it. The plug-in MUST back off; state is unchanged, so
+	 *  a pending approval is still waiting on the next honest poll. */
+	| { readonly kind: "slow_down" }
 	/** Unknown, expired and consumed are ONE answer on purpose. Telling them
 	 *  apart would only help somebody probing the endpoint. */
 	| { readonly kind: "expired" };
@@ -54,6 +70,8 @@ interface StoredAttempt {
 	readonly createdAt: number;
 	readonly approvedBy: string | null;
 	readonly denied: boolean;
+	/** Null until the first poll, so a plug-in is never throttled on arrival. */
+	readonly lastPolledAt?: number | null;
 }
 
 export class DeviceLinkAttempt extends DurableObject<Env> {
@@ -134,6 +152,29 @@ export class DeviceLinkAttempt extends DurableObject<Env> {
 		) {
 			return { kind: "expired" };
 		}
+
+		/**
+		 * **Throttling comes AFTER the code check, and that ordering is the whole
+		 * defense.** Reversed, anybody who learned a `userCode` could hammer this
+		 * object with a wrong `deviceCode` and hold the legitimate poller in
+		 * permanent `slow_down` -- a denial of service costing one guessed string.
+		 *
+		 * A wrong code returns above without ever reaching `lastPolledAt`, so it
+		 * cannot move the window it does not get to see.
+		 */
+		const now = Date.now();
+		const last = attempt.lastPolledAt ?? null;
+		if (last !== null && now - last < MIN_POLL_INTERVAL_MS) {
+			// **State is deliberately NOT written here.** A throttled poll must not
+			// push the window forward, or a client polling in a tight loop would
+			// hold itself out indefinitely instead of recovering after one wait.
+			return { kind: "slow_down" };
+		}
+
+		await this.ctx.storage.put<StoredAttempt>("attempt", {
+			...attempt,
+			lastPolledAt: now,
+		});
 
 		if (attempt.denied) {
 			await this.ctx.storage.deleteAll();

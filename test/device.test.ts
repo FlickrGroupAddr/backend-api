@@ -1,4 +1,4 @@
-import { env, SELF } from "cloudflare:test";
+import { env, runInDurableObject, SELF } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import { encryptToken } from "../src/crypto/tokens.js";
 import { mintSession, SESSION_COOKIE } from "../src/session.js";
@@ -283,6 +283,106 @@ describe("ADR-24: polling refuses everything it should", () => {
 	it("refuses a malformed body", async () => {
 		const response = await post("/api/v001/device/poll", { nope: true });
 		expect(response.status).toBe(400);
+	});
+});
+
+describe("ADR-24: polling is throttled server-side, not on trust", () => {
+	function poll(reply: StartReply, deviceCode = reply.deviceCode) {
+		return post("/api/v001/device/poll", {
+			userCode: reply.userCode,
+			deviceCode,
+		});
+	}
+
+	it("tells a hammering client to slow down, and to wait LONGER", async () => {
+		const reply = await start();
+
+		const first = await poll(reply);
+		expect(await first.json()).toMatchObject({ status: "pending" });
+
+		// Back to back, so comfortably inside the 2-second floor.
+		const second = await poll(reply);
+		const throttled = (await second.json()) as {
+			status: string;
+			pollAfter: number;
+		};
+		expect(throttled.status).toBe("slow_down");
+		// Returning the interval it just violated would leave a tight loop looping.
+		expect(throttled.pollAfter).toBeGreaterThan(reply.pollAfter);
+	});
+
+	it("does NOT push the window forward on a throttled poll", async () => {
+		// A client in a tight loop must recover after one honest wait, rather than
+		// holding itself out forever by resetting the clock on every refusal.
+		const reply = await start();
+		const stub = env.DEVICE_LINK.get(
+			env.DEVICE_LINK.idFromName(reply.userCode),
+		);
+
+		const windowAfterFirstPoll = async () => {
+			let seen = 0;
+			await runInDurableObject(stub, async (_instance, state) => {
+				const stored = await state.storage.get<{ lastPolledAt: number }>(
+					"attempt",
+				);
+				seen = stored?.lastPolledAt ?? 0;
+			});
+			return seen;
+		};
+
+		await poll(reply);
+		const opened = await windowAfterFirstPoll();
+		expect(opened).toBeGreaterThan(0);
+
+		// Three refusals in a row.
+		await poll(reply);
+		await poll(reply);
+		await poll(reply);
+
+		// **The exact same instant, not merely a recent one.** Asserting "recent"
+		// would hold true whether or not the refusals wrote, which is an assertion
+		// that proves nothing.
+		expect(await windowAfterFirstPoll()).toBe(opened);
+	});
+
+	it("lets an honest client through once the interval has passed", async () => {
+		const reply = await start();
+		await poll(reply);
+
+		// Rewind rather than sleep: the behavior under test is the interval, not
+		// the suite's patience.
+		const stub = env.DEVICE_LINK.get(
+			env.DEVICE_LINK.idFromName(reply.userCode),
+		);
+		await runInDurableObject(stub, async (_instance, state) => {
+			const stored =
+				await state.storage.get<Record<string, unknown>>("attempt");
+			await state.storage.put("attempt", {
+				...stored,
+				lastPolledAt: Date.now() - 60_000,
+			});
+		});
+
+		expect(await (await poll(reply)).json()).toMatchObject({
+			status: "pending",
+		});
+	});
+
+	/**
+	 * **The denial of service this ordering prevents.** Anybody who reads a
+	 * `userCode` off a screen could otherwise hammer the object with a wrong
+	 * `deviceCode` and hold the real plug-in in permanent `slow_down`.
+	 */
+	it("cannot be throttled by somebody polling with the WRONG deviceCode", async () => {
+		const reply = await start();
+
+		for (let i = 0; i < 5; i++) await poll(reply, "wrong-code");
+
+		// The legitimate poller is unaffected, because a wrong code returns before
+		// the throttle window is ever read or written.
+		expect(await (await poll(reply)).json()).toMatchObject({
+			status: "pending",
+		});
 	});
 });
 

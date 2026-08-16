@@ -1179,8 +1179,25 @@ about revocation but defer for now for sure."* **Treat it as an open question ra
 work.** One escape hatch exists today — rotating `SESSION_KEY` invalidates every credential of both
 kinds instantly, because the HMAC is checked before any database read.
 
-**Server-side poll throttling is not built.** `pollAfter` is advisory, and a plug-in that ignores it
-is not currently slowed down.
+### Poll throttling is ENFORCED, not advised
+
+**`pollAfter` advertises 5 seconds and the server enforces a 2-second floor.** A poll inside the
+floor returns RFC 8628's `slow_down` and is told to wait **longer** than the interval it just
+violated — returning the same number would leave a tight loop being refused at exactly the rate it
+was already polling.
+
+**The gap between 5 and 2 is deliberate tolerance.** Enforcing the advertised number would punish a
+client that obeyed it, because jitter and clock skew put an honest 5-second poll on either side of
+the line. **A rate limit that fires on correct behavior teaches clients to ignore rate limits.**
+
+**Two ordering properties carry the whole defense, and each has a mutation:**
+
+- **A throttled poll MUST NOT write the window forward.** Otherwise a client in a tight loop refuses
+  itself indefinitely rather than recovering after one honest wait.
+- **Throttling MUST come AFTER the `deviceCode` check.** Reversed, anybody who read a `userCode` off
+  a screen could hammer the object with a wrong `deviceCode` and hold the real plug-in in permanent
+  `slow_down` — **a denial of service costing one guessed string.** A wrong code returns before the
+  window is read or written, so it cannot move what it never sees.
 
 ## Considered and rejected
 
