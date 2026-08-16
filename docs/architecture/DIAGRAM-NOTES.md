@@ -363,7 +363,7 @@ lie within the hour; a relationship tells the next session which lever it is act
 | `e18` and `e3` share one `y` | The device-link handshake, plug-in to `/device` to the Durable Object, as ONE line across the canvas |
 | `e9` and `e10` land on `flickrapi`'s left edge | Every Worker-to-Flickr call |
 | `e22` and `e13` land on the Worker's route tiles | The browser's two channels |
-| `e10` leaves `retry` level with `flickrapi` | **The ABSOLUTE line is the constraint, not the tile's midpoint.** `exitY` was `0.5` only while 0.5 happened to land on it; moving the tile down 18.3 on 2026-08-16 took the line with it, and the fraction is now `0.343590`. `e6` genuinely is a midpoint arrival, because an orthogonal route needs no level partner |
+| `e10` and `e6` share one `y` | **The Cron trigger's horizontal leg and the Retry-to-Flickr call are ONE line through the Worker.** Both sit on `retry`'s vertical midpoint, so `exitY` and `entryY` are both `0.5` — but that is a coincidence of the current geometry, not the rule. **The ABSOLUTE line is the constraint.** When `retry` moved down 18.3 earlier the same day, `0.5` took the line with it and had to become `0.343590` before the two were re-aligned |
 
 **Shared edges and columns. Break one and the eye sees raggedness before it sees why:**
 
@@ -376,6 +376,13 @@ lie within the hour; a relationship tells the next session which lever it is act
 | `dns` and `cron` | Left edge, width and height |
 | `oauthdo` and `d1` | Left edge and width |
 | `lrcat`, `lrc` and `users` | Width, and the `x=95` centerline that keeps `e19` and `e20` vertical |
+| `cfframe` and the `flickr` card | **BOTTOM edge.** The two outer boxes share a baseline |
+| `netb` and `flickrapi` | **BOTTOM edge.** The two inner boxes share a baseline |
+
+**Those last two are a structural rhyme rather than a coincidence**, and it is what finally made the
+right column read: two nested boxes on the left, two nested boxes on the right, both pairs sharing
+both baselines. Terry's words when it landed — *"bottom aligning the cloudflare and Flickr boxes is
+what I needed"*.
 
 **The page. Content spans exactly the printable width, so there is ZERO slack:** `lrcapp`'s left
 edge and the `journey`/`key` right edge are what hold the 1:1 fit. **Anything that widens either
@@ -402,6 +409,25 @@ narrowing the Flickr column by 34 freed 34 units that walked left through a chai
 relationships — the Cloudflare frame grew, the PoP box grew, the Durable Object stack moved to stay
 outside it, and the PoP's contents re-centered. **The DNS arrows ended up with 38.75 of clearance
 from a starting point of 13.5**, and nothing was shrunk to get it.
+
+### Evenly spacing N gaps inside a fixed box: set the adjustable ones EQUAL
+
+**`flickrapi` carries three gaps that must match** — above "OAuth Endpoints", between
+`oauth/access_token` and "API Functions", and below `groups.pools.add`. Terry: *"those are three
+sets of padding and not using the same size for all three is off"*. They were 93 / 30 / 99.
+
+**They share one budget, which is the whole trick.** The tile is a fixed height, the text and
+headings consume a fixed amount of it, and whatever remains divides among the gaps. **So the third
+gap is not free — it is the remainder.**
+
+**Two of the three are `margin-top` on a heading `div` and have identical structure**, a text line
+above and a heading below. **Setting those two equal makes their rendered gaps equal by
+construction**, which reduces the problem to one variable. Then tune that single value until the
+remainder matches. `72px` on both landed all three within about one unit.
+
+**MEASURE THIS ONE OFF THE RENDER, not off `text_height`.** The estimator was about 24 units wrong
+on this tile, which is roughly a fifth of a gap. Two rounds of look-and-adjust beat any amount of
+arithmetic here — the first guess of 104 gave 164/130, and half the difference corrected it.
 
 ### `scripts/badge-positions.py` answers where a badge goes
 
