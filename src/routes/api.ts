@@ -28,6 +28,7 @@ import { requireAdmin } from "../middleware/admin.js";
 import {
 	requireBrowserSession,
 	requireSession,
+	restrictPluginScope,
 	type SessionVariables,
 } from "../middleware/session.js";
 
@@ -58,6 +59,14 @@ apiRoutes.use("/api/v001/*", async (c, next) => {
 });
 
 apiRoutes.use("/api/v001/*", requireSession);
+
+/**
+ * **Registered immediately after `requireSession`**, which is what puts
+ * `sessionClientType` on the context. It refuses a plug-in token anywhere outside its
+ * allow-list, so a route added later is closed to that credential until somebody opens it
+ * deliberately.
+ */
+apiRoutes.use("/api/v001/*", restrictPluginScope);
 
 /**
  * ADR-19. **Registered on `apiRoutes` rather than as its own app, deliberately.**

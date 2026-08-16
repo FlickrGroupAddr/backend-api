@@ -42,8 +42,17 @@ staging, the report, and the add-only scoping.
 
 ### Also open
 
-- **Three device-auth decisions.** What the plug-in token may reach, whether it expires, where a
-  user revokes it. See the device flow section below.
+- **Device auth: DECIDED 2026-08-15, partly built.** Terry approved all three.
+  **Reach is an ALLOW-LIST and it is BUILT** — `restrictPluginScope` refuses any route not named,
+  so an endpoint added later is closed to a plug-in token until somebody opens it deliberately.
+  **Expiry is a FIXED 90 days and it is BUILT** — not sliding, because a hard ceiling is easier to
+  reason about than one a weekly user resets forever.
+  **A revocation UI is DEFERRED**, and Terry is genuinely unsure it is wanted: *"I'm not even sure   US-ENGLISH-EXEMPT: quoting Terry
+  I care about revocation but defer for now for sure"*. **Treat it as an open question rather than
+  as queued work.** One escape hatch exists today: rotating `SESSION_KEY` invalidates every
+  credential of both kinds instantly, because the HMAC is checked before any database read.
+  **What is NOT built is the flow that issues a plug-in token** — `/device/start`, `/link` and
+  `/device/poll`. Nothing can mint one yet, which is why there is nothing to revoke.
 - **The diagram's `e19` arrow head.** Parked until 2026-08-16. See
   `docs/architecture/DIAGRAM-NOTES.md`.
 - **The legend line says the same thing twice** — "Pic already in 8 groups" and "Groups this pic is

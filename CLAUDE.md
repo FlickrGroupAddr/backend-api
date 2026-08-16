@@ -101,7 +101,7 @@ geometry, and no assertion compares the two.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, the US English check, the Lua block-balance check, 245 tests, the
+Typecheck (both tsconfigs), lint, the US English check, the Lua block-balance check, 251 tests, the
 traceability gate, and the web build. **It MUST be clean before a commit.**
 
 **`scripts/lua-balance.py` runs the REAL Lua 5.1 compiler.** It extracts `Lua Compiler/win/luac.exe` on demand from the SDK archive this repo vendors, and parse-checks every plug-in file. **An earlier version of this line said no `luac` existed here** -- a search for names matching `*Lightroom*SDK*` and `luac*.exe`, against an archive named `LrC_...` holding the binary INSIDE the zip. Neither pattern could have matched. **A search that finds nothing is not evidence that nothing is there.** Its block-balance pass survives as a FALLBACK for a machine without the archive, and the script announces which instrument ran -- a balance pass and a real parse are very different assurances. It is a
@@ -189,7 +189,7 @@ endpoint should, not because a decision asked for it.
 python scripts/mutation-check.py
 ```
 
-**It breaks the source in 34 specific ways and checks the suite screams at each.**
+**It breaks the source in 35 specific ways and checks the suite screams at each.**
 **This count drifts exactly like the test count above.** It read 25 while the harness ran 34,
 found 2026-08-15. Quote what the runner prints. Every mutation is
 a decision this project made against — retry a photo a moderator saw, drop `HttpOnly`, reflect the

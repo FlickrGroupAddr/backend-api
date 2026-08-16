@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**22 decisions · 53 test blocks · 34 mutations**
+**22 decisions · 54 test blocks · 35 mutations**
 
 ## Forward: decision to verification
 
@@ -35,9 +35,9 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
 | **ADR-15** | Which store holds what | Inspection | *by inspection* | — |
 | **ADR-16** | A request has two identifiers | Test | `schema.test.ts` ADR-03 and ADR-16, requests: ordering | — |
-| **ADR-17** | No list is unbounded, whoever owns its size | Test | `api.test.ts` ADR-17, pagination<br>`api.test.ts` ADR-17, a list FGA cannot bound: the Flickr group list<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in | yes |
+| **ADR-17** | No list is unbounded, whoever owns its size | Test | `api.test.ts` ADR-17, pagination<br>`api.test.ts` ADR-17, a list FGA cannot bound: the Flickr group list<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`plugin-scope.test.ts` ADR-19, a plug-in token reaches only its allow-list | yes |
 | **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
-| **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication | yes |
+| **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication<br>`plugin-scope.test.ts` ADR-19, a plug-in token reaches only its allow-list | yes |
 | **ADR-20** | The warning arrives before the commitment | Test | `batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`batch.test.ts` the batch endpoint's shape<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
 | **ADR-21** | The web sourcemap ships, and reopening this needs an extreme bar | Inspection | *by inspection* | — |
 | **ADR-22** | The schema enforces the rules, and every table is `STRICT` | Test | `photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type | — |
@@ -74,6 +74,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `oauth.test.ts` | the login attempt, ADR-08 | ADR-08 |
 | `oauth.test.ts` | sends a login to Flickr carrying a request token | ADR-08 |
 | `photo-groups.test.ts` | ADR-17, the groups a photo is already in | ADR-01, ADR-12, ADR-17, ADR-22 |
+| `plugin-scope.test.ts` | ADR-19, a plug-in token reaches only its allow-list | ADR-17, ADR-19 |
 | `preflight.test.ts` | ADR-20, the batch preflight | ADR-04, ADR-05, ADR-20 |
 | `schema.test.ts` | ADR-22, STRICT tables refuse a wrong type | ADR-01, ADR-04, ADR-07, ADR-22 |
 | `schema.test.ts` | ADR-03 and ADR-16, requests: ordering | ADR-03, ADR-16 |
@@ -112,6 +113,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR-11: set SameSite=None on the session cookie | ADR-11 |
 | ADR-11: drop the __Host- cookie prefix | ADR-11 |
 | sessions: store the raw id instead of its hash | — |
+| ADR-19: let a plug-in token reach any route, not just its allow-list | ADR-19 |
 | sessions: skip the HMAC gate and go straight to the database | — |
 | sessions: honor an expired handle | — |
 | sessions: make logout clear the cookie without revoking the row | — |

@@ -79,10 +79,25 @@ MUTATIONS = [
     (
         # The opaque design's whole point. Storing the id itself makes a D1 leak hand
         # over directly usable bearer tokens for every live session.
+        # **The anchor went stale on 2026-08-15** when the bind call was reformatted to
+        # carry `client_type`, and the harness reported the mutation as a SURVIVOR rather
+        # than as unapplied. That is the right way round -- a mutation that cannot run is
+        # a hole until somebody looks -- but it means an anchor is a maintenance burden,
+        # and the narrowest one that stays unique is the cheapest to keep.
         "sessions: store the raw id instead of its hash",
         "src/session.ts",
-        "\t\t.bind(await idHash(id), nsid, now, now + SESSION_LIFETIME_SECONDS * 1000)",
-        "\t\t.bind(id, nsid, now, now + SESSION_LIFETIME_SECONDS * 1000)",
+        "\t\t\tawait idHash(id),",
+        "\t\t\tid,",
+    ),
+    (
+        # **Turns the allow-list back into a deny-list**, which is the mistake it was
+        # built to prevent rather than a random break. Every endpoint added later would
+        # silently become reachable by a 90-day credential living on a laptop, and
+        # nothing would look wrong until somebody audited it.
+        "ADR-19: let a plug-in token reach any route, not just its allow-list",
+        "src/middleware/session.ts",
+        "\t\tif (!allowed) {",
+        "\t\tif (false as boolean) {",
     ),
     (
         # Without the MAC gate a forger reaches D1 on every sprayed cookie, and leaking
