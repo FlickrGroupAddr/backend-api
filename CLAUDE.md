@@ -102,7 +102,7 @@ npm run check
 ```
 
 Typecheck (both tsconfigs), lint, the US English check, the Lua parse check, **the ADR-23 Rule 3
-import gate**, 270 tests, the traceability gate, and the web build. **It MUST be clean before a
+import gate**, 290 tests, the traceability gate, and the web build. **It MUST be clean before a
 commit.**
 
 **`scripts/lua-imports.py` refuses any `import` of a namespace, or any `Namespace.member` call, that
@@ -216,7 +216,7 @@ endpoint should, not because a decision asked for it.
 python scripts/mutation-check.py
 ```
 
-**It breaks the source in 38 specific ways and checks the suite screams at each.**
+**It breaks the source in 42 specific ways and checks the suite screams at each.**
 **This count drifts exactly like the test count above.** It read 25 while the harness ran 34,
 found 2026-08-15. Quote what the runner prints. Every mutation is
 a decision this project made against — retry a photo a moderator saw, drop `HttpOnly`, reflect the

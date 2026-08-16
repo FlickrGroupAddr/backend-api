@@ -314,6 +314,37 @@ MUTATIONS = [
         'return c.redirect(uiUrl(c.env, "ok", attempt.returnPath), 302);',
         'return c.redirect(uiUrl(c.env, "ok"), 302);',
     ),
+    (
+        # **The escalation.** A plug-in token that can approve a device link can mint
+        # another plug-in token, and a stolen laptop renews itself forever.
+        "ADR-24: let a plug-in token approve a device link",
+        "src/routes/device.ts",
+        '\t"/api/v001/device/approve",\n\trequireSession,\n\trequireBrowserSession,\n);',
+        '\t"/api/v001/device/approve",\n\trequireSession,\n);',
+    ),
+    (
+        # Hand the token to anyone holding the userCode -- which is read off a screen.
+        # The whole reason deviceCode exists as a second, secret value.
+        "ADR-24: collect a token without proving you started the flow",
+        "src/device/link-attempt.ts",
+        "\t\t\treturn { kind: \"expired\" };\n\t\t}\n\n\t\tif (attempt.denied) {",
+        "\t\t\t// mutation\n\t\t}\n\n\t\tif (attempt.denied) {",
+    ),
+    (
+        # Single use is what stops a replayed poll re-minting a credential.
+        "ADR-24: let an approved link be collected more than once",
+        "src/routes/device.ts",
+        'if (state.kind !== "approved") {',
+        'if (state.kind === "never-happens") {',
+    ),
+    (
+        # Mint at approval instead of at collection, so an abandoned link leaves a
+        # live 90-day credential nobody asked for.
+        "ADR-24: mint the plug-in token with a browser lifetime",
+        "src/routes/device.ts",
+        '\t\t"lrc15_plugin",\n\t);',
+        '\t\t"browser",\n\t);',
+    ),
 ]
 
 

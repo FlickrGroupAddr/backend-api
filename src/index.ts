@@ -6,6 +6,7 @@ import { html } from "hono/html";
 import { createAttempt } from "./adds/attempt.js";
 import { getUsername } from "./db/users.js";
 import { apiRoutes } from "./routes/api.js";
+import { deviceRoutes } from "./routes/device.js";
 import { oauthRoutes } from "./routes/oauth.js";
 import { readSessionCookie, verifySession } from "./session.js";
 import { sweep } from "./sweep.js";
@@ -82,6 +83,25 @@ app.use("/api/v001/*", (c, next) =>
 		maxAge: 86400,
 	})(c, next),
 );
+
+/**
+ * **MOUNTED BEFORE `apiRoutes`, and the order is load-bearing.**
+ *
+ * `apiRoutes` registers `requireSession` on the blanket pattern `/api/v001/*`.
+ * Hono merges every sub-app into one router and matches middleware by path, so a
+ * device route registered after it would inherit that middleware -- and
+ * `POST /api/v001/device/start` MUST be reachable with no credential at all,
+ * because obtaining one is the entire point of the flow.
+ *
+ * **Mounting first is what keeps the blanket rule blanket.** The alternative --
+ * narrowing `requireSession`'s pattern to spell out every authenticated route --
+ * would turn a deny-by-default rule into a list somebody has to remember to
+ * extend, which is the polarity mistake `restrictPluginScope` exists to avoid.
+ *
+ * `approve` and `deny` register their own `requireSession` inside `deviceRoutes`,
+ * so nothing here is unauthenticated by accident.
+ */
+app.route("/", deviceRoutes);
 
 app.route("/", oauthRoutes);
 app.route("/", apiRoutes);

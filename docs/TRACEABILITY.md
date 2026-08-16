@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**23 decisions · 56 test blocks · 38 mutations**
+**24 decisions · 60 test blocks · 42 mutations**
 
 ## Forward: decision to verification
 
@@ -19,7 +19,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 
 | ADR | Decision | Method | Verified by | Mutation |
 |---|---|---|---|---|
-| **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`sweep.test.ts` queues are independent | yes |
+| **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`device.test.ts` ADR-24: polling refuses everything it should<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`sweep.test.ts` queues are independent | yes |
 | **ADR-02** | Classify by Flickr's error code. Unknown means terminal. | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-02, requests: the resolution invariant | yes |
 | **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
 | **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
@@ -42,6 +42,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-21** | The web sourcemap ships, and reopening this needs an extreme bar | Inspection | *by inspection* | — |
 | **ADR-22** | The schema enforces the rules, and every table is `STRICT` | Test | `photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type | — |
 | **ADR-23** | Randomness comes from the Worker, and the undocumented `LrUUID` MUST NOT be used | Inspection | *by inspection* | — |
+| **ADR-24** | The Lightroom plug-in gets its credential by device link, and holds no Flickr token | Test | `device.test.ts` ADR-24: starting a link needs no credential<br>`device.test.ts` ADR-24: the whole flow, and the token it mints<br>`device.test.ts` ADR-24: polling refuses everything it should<br>`device.test.ts` ADR-24: approval is browser-only, and that stops escalation | yes |
 
 ## Backward: every test block defends something
 
@@ -68,6 +69,10 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `crypto.test.ts` | round trip | ADR-09 |
 | `crypto.test.ts` | nonce handling | ADR-09 |
 | `crypto.test.ts` | rejection | ADR-09 |
+| `device.test.ts` | ADR-24: starting a link needs no credential | ADR-24 |
+| `device.test.ts` | ADR-24: the whole flow, and the token it mints | ADR-24 |
+| `device.test.ts` | ADR-24: polling refuses everything it should | ADR-01, ADR-24 |
+| `device.test.ts` | ADR-24: approval is browser-only, and that stops escalation | ADR-24 |
 | `oauth.test.ts` | protocolParams | ADR-08 |
 | `oauth.test.ts` | authorizationHeader | ADR-08 |
 | `oauth.test.ts` | buildAuthorizeUrl | ADR-07, ADR-08 |
@@ -146,3 +151,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR-11: let returnTo escape our origin | ADR-11 |
 | ADR-11: accept any path as a login destination | ADR-11 |
 | ADR-11: send every login back to the app root | ADR-11 |
+| ADR-24: let a plug-in token approve a device link | ADR-24 |
+| ADR-24: collect a token without proving you started the flow | ADR-24 |
+| ADR-24: let an approved link be collected more than once | ADR-24 |
+| ADR-24: mint the plug-in token with a browser lifetime | ADR-24 |

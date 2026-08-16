@@ -51,8 +51,14 @@ staging, the report, and the add-only scoping.
   I care about revocation but defer for now for sure"*. **Treat it as an open question rather than
   as queued work.** One escape hatch exists today: rotating `SESSION_KEY` invalidates every
   credential of both kinds instantly, because the HMAC is checked before any database read.
-  **What is NOT built is the flow that issues a plug-in token** — `/device/start`, `/link` and
-  `/device/poll`. Nothing can mint one yet, which is why there is nothing to revoke.
+  **THE FLOW THAT ISSUES A PLUG-IN TOKEN IS NOW BUILT, 2026-08-16, and it is ADR-24.**
+  `POST /api/v001/device/start`, `/poll`, `/approve` and `/deny` all exist, with 20 tests and four
+  mutations. **What is still missing is the `/link` PAGE**, which is a Svelte route rather than a
+  Worker one — ADR-18 gives `/` to the app shell, and `run_worker_first` does not list `/link`.
+
+  **The page's confirmation step is the only defense against device-flow phishing**, so the backend
+  deliberately cannot substitute for it: no route auto-approves, and approval is always a POST a
+  person had to cause.
 - **THE OAUTH CALLBACK STRANDED THE DEVICE FLOW. Found and FIXED 2026-08-16.**
   `GET /oauth/callback` used to end with `c.redirect(uiUrl(c.env, "ok"), 302)` — the app root. A
   user who arrived at `/link?userCode=…` without a session, signed in with Flickr, and came back
@@ -788,9 +794,18 @@ necessary on security grounds. It is not, and that claim was made before reading
 **This still becomes an ADR** — it is a new credential class with its own revocation story, and
 ADR-10's cookie assumptions do not cover it.
 
-#### The contracts, proposed 2026-08-15. NOT built, and NOT decided.
+#### The contracts. BUILT 2026-08-16, and now ADR-24 — read that first.
 
-**Three endpoints. None exists yet.**
+**The endpoints below exist.** This section keeps the reasoning that produced them; ADR-24 is the
+decision, and `src/routes/device.ts` is the code. **Where the two disagree, ADR-24 wins.**
+
+**Four endpoints, not three.** `approve` and `deny` are separate routes because a refusal MUST NOT
+look like a failure — the waiting plug-in is told `denied` rather than left to time out, which is
+ADR-01's habit pointed at a different surface.
+
+**`start` and `poll` are unauthenticated**, and are mounted outside `/api/v001/*`'s blanket
+`requireSession` by registering `deviceRoutes` before `apiRoutes` in `src/index.ts`. **`approve` and
+`deny` require a BROWSER session**, which stops a stolen plug-in token minting a fresh one.
 
 | | |
 |---|---|

@@ -138,7 +138,7 @@ export const restrictPluginScope = createMiddleware<{
 	Bindings: Env;
 	Variables: SessionVariables;
 }>(async (c, next) => {
-	if (c.get("sessionClientType") === "plugin") {
+	if (c.get("sessionClientType") === "lrc15_plugin") {
 		const path = new URL(c.req.url).pathname;
 		const allowed = PLUGIN_ALLOWED.some(
 			(route) => route.method === c.req.method && route.pattern.test(path),

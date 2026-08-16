@@ -36,7 +36,12 @@ async function asPlugin(
 	path: string,
 	init: RequestInit = {},
 ): Promise<Response> {
-	const token = await mintSession(env.DB, NSID, env.SESSION_KEY, "plugin");
+	const token = await mintSession(
+		env.DB,
+		NSID,
+		env.SESSION_KEY,
+		"lrc15_plugin",
+	);
 	return await SELF.fetch(`${API}${path}`, {
 		...init,
 		headers: {

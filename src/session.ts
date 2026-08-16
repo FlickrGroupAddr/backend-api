@@ -100,7 +100,18 @@ async function idHash(id: string): Promise<string> {
  * own history is the argument: the cookie's attributes were once duplicated and one copy
  * had silently lost `HttpOnly`. **Policy differs; mechanism MUST NOT.**
  */
-export type SessionClientType = "browser" | "plugin";
+/**
+ * **A client type names the CLIENT, never a category of client.** Terry, 2026-08-16:
+ * *"let's not assume there will never be another plugin that we need to treat
+ * differently."* A generic `plugin` works until a second one exists, and at that moment
+ * every live row is ambiguous -- which defeats the only reason this field exists.
+ *
+ * **The version in `lrc15_plugin` is deliberate and is NOT an instruction to add
+ * `lrc16_plugin` on the next Lightroom major.** This field keys POLICY. A future
+ * plug-in with the same lifetime and the same allow-list SHOULD keep this value; a new
+ * one MUST be introduced only when a client needs different treatment.
+ */
+export type SessionClientType = "browser" | "lrc15_plugin";
 
 /**
  * A plug-in cannot ask its user to sign in again every day, and a browser can.
@@ -111,7 +122,7 @@ export type SessionClientType = "browser" | "plugin";
  */
 const LIFETIME_SECONDS: Record<SessionClientType, number> = {
 	browser: SESSION_LIFETIME_SECONDS,
-	plugin: 90 * 24 * 60 * 60,
+	lrc15_plugin: 90 * 24 * 60 * 60,
 };
 
 export async function mintSession(
@@ -197,7 +208,11 @@ export async function verifySession(
 	 */
 	return {
 		nsid: row.nsid,
-		clientType: row.client_type === "plugin" ? "plugin" : "browser",
+		// **Anything unrecognized reads as `browser`, which is the NARROWER
+		// credential.** A row carrying a client type this build does not know -- a
+		// rollback past a migration, a value written by a newer deploy -- must not
+		// fall through to the longer-lived, header-delivered class by default.
+		clientType: row.client_type === "lrc15_plugin" ? "lrc15_plugin" : "browser",
 	};
 }
 

@@ -58,15 +58,21 @@ interface StoredAttempt {
 
 export class DeviceLinkAttempt extends DurableObject<Env> {
 	/** The alarm is armed in the same call that writes the state, so no window
-	 *  exists where an attempt lives with nothing scheduled to remove it. */
-	async start(codeHash: string): Promise<void> {
+	 *  exists where an attempt lives with nothing scheduled to remove it.
+	 *
+	 *  **Returns the expiry rather than letting the route compute it.** The alarm
+	 *  and the number the plug-in counts down against MUST be the same instant, and
+	 *  two places deriving it from `ABANDONED_AFTER_MS` is two places to drift. */
+	async start(codeHash: string): Promise<{ expiresAt: number }> {
+		const expiresAt = Date.now() + ABANDONED_AFTER_MS;
 		await this.ctx.storage.put<StoredAttempt>("attempt", {
 			codeHash,
 			createdAt: Date.now(),
 			approvedBy: null,
 			denied: false,
 		});
-		await this.ctx.storage.setAlarm(Date.now() + ABANDONED_AFTER_MS);
+		await this.ctx.storage.setAlarm(expiresAt);
+		return { expiresAt };
 	}
 
 	/**

@@ -1064,11 +1064,132 @@ not generate.
 **`SHA384` is present and undocumented**, which is the second case found on 2026-08-16 of the
 reference understating the runtime. `LrStringUtils` also carries `encodeBase64` and `decodeBase64`.
 
+## ADR-24 — The Lightroom plug-in gets its credential by device link, and holds no Flickr token
+
+**Verification: Test.** `device.test.ts` drives the whole flow and, more importantly, every
+refusal — replay, wrong `deviceCode`, unauthenticated approval, and approval attempted with the
+credential the flow mints.
+
+**The plug-in MUST NOT hold a Flickr credential, ever.** It obtains an FGA credential by device
+link and calls `/api/v001/*` with it. **Every Flickr byte crosses the Worker or the user's browser.**
+
+**The decisive reason is ADR-06's sweep, not tidiness.** The cron runs at 00:15 UTC with Lightroom
+closed, so a Flickr token living in a Lightroom catalog is invisible to the thing that needs it.
+Adobe's own plug-in talks to Flickr directly because Adobe has no server; FGA has one.
+
+### The shape is Adobe's frob dance with FGA one hop over
+
+| Adobe → Flickr | FGA plug-in → FGA |
+|---|---|
+| `flickr.auth.getFrob` | `POST /api/v001/device/start` |
+| `LrHttp.openUrlInBrowser(auth?frob=…)` | `LrHttp.openUrlInBrowser(/link)` |
+| User approves at flickr.com | User approves at flickrgroupaddr.com, signing in with Flickr if needed |
+| Exchange frob for `auth_token` | `POST /api/v001/device/poll` returns the token |
+
+**Reading Adobe's shipped sample settled this rather than inventing it.** `FlickrAPI.openAuthUrl()`
+is a device-code flow under another name, and recognizing that is what stopped it being
+reinvented.
+
+### Two codes, and neither can do the other's job
+
+| | Held by | Travels | Proves |
+|---|---|---|---|
+| `deviceCode` | The plug-in, only | **Never in a URL** | The poller started this flow |
+| `userCode` | Shown on screen | Typed, or prefilled in a link | One screen matches the other |
+
+**A secret long enough to resist guessing is too long to retype, and a string short enough to
+retype is too short to be a bearer credential.** That is the whole argument for two.
+
+**The Durable Object is addressed by `userCode`**, which is what lets a person link with nothing
+but the string on their Lightroom screen. **The typed path is the real path; the link is a
+convenience.**
+
+**Only `SHA-256(deviceCode)` is stored**, and it is compared with `crypto.subtle.timingSafeEqual`.
+Same reasoning as `src/session.ts` never storing a session id.
+
+### `start` and `poll` are unauthenticated, and that is not a hole
+
+At `start` nobody has authorized anything, so there is no session to require — obtaining one is the
+point. **`poll` is authenticated by `deviceCode`**: 32 bytes from `crypto.getRandomValues`, checked
+against a stored hash.
+
+**They are mounted OUTSIDE `/api/v001/*`'s blanket `requireSession`**, by registering `deviceRoutes`
+before `apiRoutes` in `src/index.ts`. **The alternative — narrowing `requireSession`'s pattern to
+name every authenticated route — would turn a deny-by-default rule into a list somebody has to
+remember to extend.** That is the polarity mistake `restrictPluginScope` exists to avoid.
+
+### Approval is BROWSER-ONLY, and it is a named rule rather than an emergent one
+
+`restrictPluginScope` already refuses these routes to a plug-in token, because they are not on its
+allow-list. **`requireBrowserSession` says it again, out loud.**
+
+**A plug-in token that could approve a device link could mint another plug-in token.** A 90-day
+credential on a stolen laptop would then renew itself indefinitely, and the owner's remedy would be
+the endpoint the thief just used. **A stolen credential MUST NOT be able to extend its own life.**
+
+### The token is minted at COLLECTION, never at approval
+
+An approved link the plug-in never polls leaves **no credential behind**. The window in which a
+usable token exists starts when the plug-in asks for it, not when the browser says yes.
+
+**Approval is single-use.** The attempt is erased when the token is collected, so a replay finds
+`expired`. Unknown, expired and consumed are one answer, because telling them apart only helps
+somebody probing.
+
+### The phishing weakness is REAL, and FGA's version is worse than most
+
+**Every device flow has this hole.** An attacker starts a flow on their own machine, sends the
+victim a link, and the victim — already signed in — approves it. The attacker then polls and
+collects a token for the victim's account.
+
+**PKCE does not close it.** The attacker started the flow, so the attacker holds the verifier.
+
+**The usual "the blast radius is small" consolation does not apply here.** ADR-01 makes a request
+that reached a moderator terminal, so a phished token can push a stranger's photos into volunteer
+review queues and **that cannot be taken back** — not by revoking the token, not by deleting the
+requests.
+
+**So the mitigation is the approval page, and it is the only one that matters:**
+
+1. **The page MUST display the `userCode` and require the person to confirm it matches what
+   Lightroom shows.** A victim who never started a flow has no code on screen to match, which is
+   the moment the attack becomes visible. **Prefilling from the query string is fine.
+   Auto-approving from it is NOT**, and no route here will do it — approval is always a POST a
+   person had to cause.
+2. **The page MUST say plainly what it grants** — that a Lightroom plug-in will queue group adds as
+   them — rather than "authorize this device".
+3. **Ten-minute TTL**, and `pollAfter` tells the plug-in how long to wait.
+
+### The client type names the CLIENT
+
+**`client_type` is `lrc15_plugin`, not `plugin`.** Terry, 2026-08-16: *"let's not assume there will
+never be another plugin that we need to treat differently."* A generic value is fine until a second
+client exists, and at that moment every live row is ambiguous — which defeats the only reason the
+column exists.
+
+**The version in the name is deliberate and is NOT an instruction to add `lrc16_plugin` on the next
+Lightroom major.** The column keys **policy**, not provenance. A future plug-in with the same
+lifetime and the same allow-list SHOULD keep this value. **A new value MUST be introduced only when
+a client needs different treatment.**
+
+### Still open
+
+**Revocation has no UI, and Terry is genuinely unsure he wants one:** *"I'm not even sure I care
+about revocation but defer for now for sure."* **Treat it as an open question rather than as queued
+work.** One escape hatch exists today — rotating `SESSION_KEY` invalidates every credential of both
+kinds instantly, because the HMAC is checked before any database read.
+
+**Server-side poll throttling is not built.** `pollAfter` is advisory, and a plug-in that ignores it
+is not currently slowed down.
+
 ## Considered and rejected
 
 | Option | Why not |
 |---|---|
 | AWS | Every piece has a simpler Cloudflare equivalent here |
+| A separate `device_tokens` table | A second minting path and a second verification path. `src/session.ts` has already lost `HttpOnly` from a duplicated copy once. Policy differs; mechanism MUST NOT |
+| A dashed plug-in-to-Flickr edge | Reads cleaner and asserts exactly what ADR-24 exists to prevent: that Lua holds Flickr credentials |
+| PKCE on the device flow | Does not close the phishing hole, because the attacker starts the flow and therefore holds the verifier |
 | `LrUUID.generateUUID`, for anything at all | **Real, measured, and refused.** Undocumented, so there is no API contract to depend on — that argument is complete without mentioning entropy. See ADR-23 |
 | A client-generated device-flow nonce | No CSPRNG in Lua, and a client-chosen identifier permits flow squatting. RFC 8628 generates both codes server-side |
 | Catalog UUIDs as an entropy pool | A recorded value is not entropy, and the catalog is readable by any local process |
