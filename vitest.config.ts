@@ -99,14 +99,25 @@ async function outboundService(request: Request): Promise<Response> {
 			});
 		}
 
+		// **A photo whose context lookup FAILS.** Without this the "Flickr did not
+		// answer" branch is unreachable from a test, and the rule that it MUST NOT be
+		// reported as "in no groups" would be a comment rather than a guarantee.
+		if (body.includes("photo_id=flickr-down")) {
+			return Response.json({
+				stat: "fail",
+				code: 1,
+				message: "Photo not found",
+			});
+		}
+
 		// **Ordered before `in-pool` on purpose:** `photo_id=in-pool-titled` contains
-		// `photo_id=in-pool`, so the looser test would swallow it and the titled case
-		// would never be reachable.
+		// `photo_id=in-pool`, so the looser test below would swallow it and the titled
+		// case would never be reachable.
 		//
 		// Flickr sends a pool's `title` in the same reply, which is what lets
 		// `GET /photos/:photoId/groups` name a group without a second call. The
-		// untitled case below stays, because a reply MAY omit it and the endpoint has
-		// to report null rather than invent a name.
+		// untitled entry stays, because a reply MAY omit it and the endpoint has to
+		// report null rather than invent a name.
 		if (body.includes("photo_id=in-pool-titled")) {
 			return Response.json({
 				stat: "ok",

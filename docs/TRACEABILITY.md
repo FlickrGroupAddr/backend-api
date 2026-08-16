@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**22 decisions · 53 test blocks · 33 mutations**
+**22 decisions · 53 test blocks · 34 mutations**
 
 ## Forward: decision to verification
 
@@ -19,7 +19,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 
 | ADR | Decision | Method | Verified by | Mutation |
 |---|---|---|---|---|
-| **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`sweep.test.ts` queues are independent | yes |
+| **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`sweep.test.ts` queues are independent | yes |
 | **ADR-02** | Classify by Flickr's error code. Unknown means terminal. | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-02, requests: the resolution invariant | yes |
 | **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
 | **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
@@ -73,7 +73,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `oauth.test.ts` | parseFormResponse | ADR-08 |
 | `oauth.test.ts` | the login attempt, ADR-08 | ADR-08 |
 | `oauth.test.ts` | sends a login to Flickr carrying a request token | ADR-08 |
-| `photo-groups.test.ts` | ADR-17, the groups a photo is already in | ADR-12, ADR-17, ADR-22 |
+| `photo-groups.test.ts` | ADR-17, the groups a photo is already in | ADR-01, ADR-12, ADR-17, ADR-22 |
 | `preflight.test.ts` | ADR-20, the batch preflight | ADR-04, ADR-05, ADR-20 |
 | `schema.test.ts` | ADR-22, STRICT tables refuse a wrong type | ADR-01, ADR-04, ADR-07, ADR-22 |
 | `schema.test.ts` | ADR-03 and ADR-16, requests: ordering | ADR-03, ADR-16 |
@@ -132,6 +132,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR-17: cap the pagination limit at nothing | ADR-17 |
 | ADR-17: return only the first page of the Flickr group list | ADR-17 |
 | ADR-17: soften the ceiling into a truncated list instead of a refusal | ADR-17 |
+| ADR-17: report an unknown pool lookup as an empty group list | ADR-17 |
 | ADR-18: claim / in the Worker, shadowing the app shell | ADR-18 |
 | ADR-19: make a missing allowlist fail OPEN | ADR-19 |
 | ADR-19: answer 403 instead of 404, confirming the surface exists | ADR-19 |

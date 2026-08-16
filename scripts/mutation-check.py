@@ -217,6 +217,17 @@ MUTATIONS = [
         "\tif (false as boolean) {",
     ),
     (
+        # **The most dangerous simplification available in the newest endpoint**, and it
+        # reads as tidying up. "Flickr did not answer" and "the photo is in no groups"
+        # are different facts. Collapsing them shows the Lightroom picker an empty
+        # right-hand list, so the user queues adds for groups the photo is ALREADY in --
+        # and a duplicate add can reach a moderator, which ADR-01 calls terminal.
+        "ADR-17: report an unknown pool lookup as an empty group list",
+        "src/routes/api.ts",
+        'return c.json({ error: "flickr_unavailable" }, 502);',
+        "return c.json({ groups: [] });",
+    ),
+    (
         # The defect only shows in production, where the assets binding exists and this
         # route wins the race for `/`. Locally it looks like a working diagnostic page.
         "ADR-18: claim / in the Worker, shadowing the app shell",

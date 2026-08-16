@@ -591,8 +591,23 @@ pre-population by preflight is **two round trips** — and the cap buys nothing 
 preflight makes **one** `getAllContexts` call no matter how many groups it is asked about.
 `getAllContexts` is per-photo, not per-group.
 
-**RECOMMENDED: add `GET /api/v001/photos/:photoId/groups`.** One `getAllContexts` call, returning
-the short list of pools the photo is in.
+**BUILT 2026-08-15: `GET /api/v001/photos/:photoId/groups`.** One `getAllContexts` call, returning
+the pools the photo is in as `{ id, title }`. Terry approved it and named the reason better than
+this note originally did: *"we made SURE we don't keep the user's long term flickr creds in the
+plugin, which would have let us query flickr API directly. I'm good proxying that through our API as
+a middleman."* **The proxy is a consequence of the credential design, not overhead.**
+
+**The title comes free.** Flickr sends each pool's title in the same reply, so naming a group costs
+no second call. `getPhotoPoolsDetailed` keeps it; `getPhotoPools` is now a thin wrapper returning
+ids only, because four callers depend on that shape and ADR-05's authoritative check is one of them.
+
+**`MAX_PHOTO_POOLS` is 500**, and it is a sanity ceiling rather than a model of Flickr's rule —
+Flickr's per-photo limits vary by account type and are not reliably documented. ADR-17 requires a
+stated bound, not a correct guess at somebody else's.
+
+**Null stays UNKNOWN.** A failed `getAllContexts` answers 502, never an empty list. Reporting empty
+would tell the picker the photo is in no groups, and the user would queue adds for groups it is
+already in — straight into ADR-01, because a duplicate add can reach a moderator.
 
 - It is the question the picker actually asks on open. Preflight answers a different one — *what
   would happen if I submitted these* — and that is the right call at commit time, not at open time.

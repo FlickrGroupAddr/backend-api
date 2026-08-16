@@ -81,6 +81,18 @@ describe("ADR-17, the groups a photo is already in", () => {
 	 * the unknown case; the stub always succeeds, so only inspection covers it.
 	 */
 
+	/**
+	 * **ADR-01 adjacent, and the most dangerous simplification available here.** "Flickr
+	 * did not answer" and "the photo is in no groups" are different facts. Reporting the
+	 * second would show the picker an empty right-hand list, the user would queue adds for
+	 * groups the photo is already in, and a duplicate add can reach a moderator.
+	 */
+	it("answers 502 when Flickr does not answer, NEVER an empty list", async () => {
+		const response = await ask("flickr-down");
+		expect(response.status).toBe(502);
+		expect(await response.json()).toEqual({ error: "flickr_unavailable" });
+	});
+
 	it("requires a session, like every other /api/v001 route", async () => {
 		const response = await SELF.fetch(`${API}/api/v001/photos/in-pool/groups`);
 		expect(response.status).toBe(401);
