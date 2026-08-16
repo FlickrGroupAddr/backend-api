@@ -130,9 +130,9 @@ const PLUGIN_ALLOWED: readonly { method: string; pattern: RegExp }[] = [
 ];
 
 /**
- * **403, not 401.** The caller IS authenticated and is holding the wrong kind of
- * credential. A 401 would send a plug-in into a re-login loop that could never succeed,
- * because the credential it would obtain is the one being refused.
+ * **403, not 401.** The caller IS authenticated and is holding the wrong CLIENT TYPE.
+ * A 401 would send a plug-in into a re-login loop that could never succeed, because the
+ * credential it would obtain is the one being refused.
  */
 export const restrictPluginScope = createMiddleware<{
 	Bindings: Env;

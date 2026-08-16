@@ -126,7 +126,7 @@ app.get("/api/debug", async (c) => {
 	const nsid =
 		cookie === undefined
 			? null
-			: // `verifySession` now reports the credential's KIND as well as its owner,
+			: // `verifySession` now reports the CLIENT TYPE as well as the owner,
 				// and this page only ever wanted the owner.
 				((await verifySession(c.env.DB, cookie, c.env.SESSION_KEY))?.nsid ??
 				null);

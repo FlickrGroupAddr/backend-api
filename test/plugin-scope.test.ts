@@ -106,7 +106,7 @@ describe("ADR-19, a plug-in token reaches only its allow-list", () => {
 
 	/**
 	 * **403 rather than 401, deliberately.** The caller IS authenticated and holds the
-	 * wrong kind of credential. A 401 would send the plug-in into a re-login loop that
+	 * wrong CLIENT TYPE. A 401 would send the plug-in into a re-login loop that
 	 * could never succeed, because the credential it would obtain is the one refused.
 	 */
 	it("answers 403 rather than 401, so a plug-in does not re-login forever", async () => {

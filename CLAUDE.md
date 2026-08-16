@@ -156,6 +156,19 @@ gets ignored.**
 **Exempt a legitimate use with `US-ENGLISH-EXEMPT: <reason>` on the line** — quoting somebody else's
 text, naming a third-party package, or a fixture that must be misspelled.
 
+### It also checks HOUSE PHRASES, and the list is phrases for a reason
+
+**Say CLIENT TYPE, never "kind", when you mean a browser session against an LrC plug-in token.**
+Terry, 2026-08-16: *"I want to be consistent on purging 'kind' where we mean 'lrc plugin or JS
+clients'."* The column is `client_type`, the type is `SessionClientType`, and the prose kept saying
+`kind` anyway.
+
+**A checker for the bare word would be useless and would be switched off within a day.** `kind` is
+the discriminant on `classify`'s dispositions, on `flickr/api`'s results and on `LinkState`, and it
+is ordinary English besides — *"the kind thing to do"*, *"kind of comically huge"*. **So the list
+holds phrases that can only mean the client type**, and the self-test pins both polarities: four
+that MUST fire, eight that MUST NOT.
+
 **It self-tests on every run**, including against the false positives an `-ise` pattern would
 produce. Same guard `scripts/build-diagram.py` puts on its collision detector.
 

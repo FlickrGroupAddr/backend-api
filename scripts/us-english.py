@@ -85,6 +85,32 @@ SKIP_FILES = {"package-lock.json", "worker-configuration.d.ts"}
 EXEMPT = re.compile(r"US-ENGLISH-EXEMPT", re.IGNORECASE)
 WORDS = re.compile(r"[A-Za-z]+")
 
+# House vocabulary, checked as PHRASES rather than words.
+#
+# **Terry, 2026-08-16: *"I want to be consistent on purging 'kind' where we mean
+# 'lrc plugin or JS clients'."*** Migration 0005 records why: *"'Session kinds' pulls a  US-ENGLISH-EXEMPT: quoting the objection
+# 404 in my brain, I can't decipher what that is."* The column is `client_type`, the type
+# is `SessionClientType`, and the prose kept saying `kind` anyway.
+#
+# **THE LIST IS PHRASES, AND THAT IS THE WHOLE DESIGN.** `kind` is a legitimate and
+# heavily used word in this codebase -- it is the discriminant on `classify`'s
+# dispositions, on `flickr/api`'s results, and on `LinkState`. It is also ordinary
+# English: *"the kind thing to do"*, *"that kind of thing"*, *"kind of comically huge"*.
+# **A checker that flagged the bare word would fire on roughly sixty correct uses and be
+# switched off within a day**, which is the same argument that keeps the British-spelling
+# list explicit instead of a regex for `-ise`.
+#
+# So each entry names a phrase that can only mean the client type.
+PHRASES: dict[str, str] = {
+    r"kinds? of credential": "client type",
+    r"credential'?s? kinds?": "client type",
+    r"sessions? kinds?": "client type",
+    r"clients? kinds?": "client type",
+    r"tokens? kinds?": "client type",
+}
+PHRASE_PATTERNS = [(re.compile(p, re.IGNORECASE), better)
+                   for p, better in PHRASES.items()]
+
 
 def hits_in(text: str) -> list[tuple[int, str, str]]:
     """Return (line number, offending word, replacement) for one file's text."""
@@ -97,6 +123,50 @@ def hits_in(text: str) -> list[tuple[int, str, str]]:
             if better is not None:
                 found.append((number, word, better))
     return found
+
+
+def phrase_hits_in(text: str) -> list[tuple[int, str, str]]:
+    """Return (line number, offending phrase, replacement) for one file's text."""
+    found = []
+    for number, line in enumerate(text.splitlines(), 1):
+        if EXEMPT.search(line):
+            continue
+        for pattern, better in PHRASE_PATTERNS:
+            match = pattern.search(line)
+            if match is not None:
+                found.append((number, match.group(0), better))
+    return found
+
+
+def phrase_self_test() -> None:
+    """Prove it fires on the client-type sense AND stays silent on every other one.
+
+    **The second half is the load-bearing half.** `kind` is a discriminated-union tag
+    all over this codebase and an ordinary English word besides, so a check that cannot
+    tell those apart is a check that gets disabled.
+    """
+    cases = [
+        ("the wrong kind of credential", True),  # US-ENGLISH-EXEMPT: fixture
+        ("reports the credential's kind", True),  # US-ENGLISH-EXEMPT: fixture
+        ("Session kinds pull a 404", True),  # US-ENGLISH-EXEMPT: fixture
+        ("the client kind is plugin", True),  # US-ENGLISH-EXEMPT: fixture
+        # Every one of these is correct and MUST NOT be flagged.
+        ("switch (disposition.kind) {", False),
+        ("return { kind: 'retry', code };", False),
+        ("if (result.kind !== 'ok') return null;", False),
+        ("a 400 would punish the victim, so this is the kind thing to do", False),
+        ("that kind of thing gets remembered vaguely", False),
+        ("the current text is kind of comically huge", False),
+        ("| Kind | Example | Who sets the size |", False),
+        ("a kind of credential US-ENGLISH-EXEMPT: quoted", False),
+    ]
+    for text, expected in cases:
+        got = bool(phrase_hits_in(text))
+        if got != expected:
+            raise SystemExit(
+                f"PHRASE SELF-TEST FAILED: {text!r} -> got {got}, want {expected}"
+            )
+    print(f"  Phrase self-test: {len(cases)}/{len(cases)} passed")
 
 
 def self_test() -> None:
@@ -150,9 +220,11 @@ def main() -> int:
         return 0
 
     self_test()
+    phrase_self_test()
 
     scanned = files()
     problems = []
+    house = []
     for path in scanned:
         try:
             text = path.read_text(encoding="utf-8")
@@ -161,17 +233,29 @@ def main() -> int:
         rel = path.relative_to(ROOT).as_posix()
         for number, word, better in hits_in(text):
             problems.append(f"{rel}:{number}  {word!r} should be {better!r}")
+        for number, phrase, better in phrase_hits_in(text):
+            house.append(f"{rel}:{number}  {phrase!r} should be {better!r}")
 
-    print(f"  Checked {len(scanned)} files against {len(BRITISH)} words")
+    print(f"  Checked {len(scanned)} files against {len(BRITISH)} words"
+          f" and {len(PHRASES)} house phrases")
 
     if problems:
         print(f"\n{len(problems)} British spelling(s):")
         for problem in problems:
             print(f"  {problem}")
         print("\nFix them, or add US-ENGLISH-EXEMPT with a reason to the line.")
+
+    if house:
+        print(f"\n{len(house)} house-vocabulary slip(s) -- say CLIENT TYPE:")
+        for slip in house:
+            print(f"  {slip}")
+        print("\nThe column is `client_type` and the type is `SessionClientType`.")
+        print("Quoting somebody? Add US-ENGLISH-EXEMPT with a reason to the line.")
+
+    if problems or house:
         return 1
 
-    print("  US English holds.")
+    print("  US English and house vocabulary hold.")
     return 0
 
 
