@@ -59,7 +59,7 @@ describe("mint and verify", () => {
 		const token = await mintSession(env.DB, NSID, env.SESSION_KEY);
 		expect(await verifySession(env.DB, token, env.SESSION_KEY)).toEqual({
 			nsid: NSID,
-			kind: "browser",
+			clientType: "browser",
 		});
 	});
 
@@ -166,7 +166,7 @@ describe("revocation, which ADR-10 could not do", () => {
 		const token = await mintSession(env.DB, NSID, env.SESSION_KEY);
 		expect(await verifySession(env.DB, token, env.SESSION_KEY)).toEqual({
 			nsid: NSID,
-			kind: "browser",
+			clientType: "browser",
 		});
 
 		await revokeSession(env.DB, token);
@@ -180,7 +180,7 @@ describe("revocation, which ADR-10 could not do", () => {
 		await revokeSession(env.DB, first);
 		expect(await verifySession(env.DB, second, env.SESSION_KEY)).toEqual({
 			nsid: NSID,
-			kind: "browser",
+			clientType: "browser",
 		});
 	});
 

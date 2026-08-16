@@ -1,4 +1,9 @@
--- A second kind of credential: the Lightroom plug-in's token.
+-- A second CLIENT TYPE: the Lightroom plug-in's token.
+--
+-- **Named `client_type` rather than `kind`.** Terry, 2026-08-15: *"'Session kinds' pulls a
+-- 404 in my brain, I can't decipher what that is."* He is right -- `kind` is a word that
+-- means nothing until you already know the answer, and a column name has to work for the
+-- reader who arrives without it.
 --
 -- **ONE TABLE, ONE MINTING PATH, ONE VERIFICATION PATH.** A separate `device_tokens`
 -- table was the obvious alternative and it is the wrong one, because this project has
@@ -30,10 +35,10 @@
 -- migration that changed the meaning of live sessions would sign everybody out, and
 -- worse, would do it for a reason nobody could see in the release notes.
 
-ALTER TABLE sessions ADD COLUMN kind TEXT NOT NULL DEFAULT 'browser'
-  CHECK (kind IN ('browser', 'plugin'));
+ALTER TABLE sessions ADD COLUMN client_type TEXT NOT NULL DEFAULT 'browser'
+  CHECK (client_type IN ('browser', 'plugin'));
 
 -- **The listing query for the revocation UI**, which is the whole reason a user can ever
--- kill a plug-in token without killing their browser session. Ordered by kind first
+-- kill a plug-in token without killing their browser session. Ordered by client type first
 -- because that is how the list is grouped on screen.
-CREATE INDEX idx_sessions_nsid_kind ON sessions (nsid, kind);
+CREATE INDEX idx_sessions_nsid_client_type ON sessions (nsid, client_type);

@@ -47,6 +47,19 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
+	-- **0.7 FIXES A DEAD ROW, and the version number is the point of this bump.**
+	--
+	-- 0.6 shipped, Terry loaded it, clicked a row, and the row that slid into the
+	-- vacated slot stayed highlighted AND stopped responding. The fix went out
+	-- without a version bump, which would have left him loading "0.6" twice and
+	-- having to remember which one he had. Terry: a version number is "a warm fuzzy
+	-- for the meat sac known as Terry's brain". Lightroom may not care. He does,
+	-- and he is the one who has to tell two builds apart.
+	--
+	-- 0.6 ADDED THE CONNECTIVITY PROBE: two real calls to flickrgroupaddr.com with
+	-- no credentials, because LrHttp reaching FGA had only ever been read from the
+	-- reference and never watched.
+	--
 	-- 0.5 ADDS THE TRANSFER PICKER, which is Terry's redesign after driving 0.4.
 	--
 	-- 0.4's single filtered list hid selections behind the filter. He typed
@@ -99,5 +112,5 @@ return {
 		},
 	},
 
-	VERSION = { major = 0, minor = 6, revision = 0 },
+	VERSION = { major = 0, minor = 7, revision = 0 },
 }

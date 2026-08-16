@@ -1,13 +1,16 @@
 import { createMiddleware } from "hono/factory";
 import {
 	readSessionCookie,
-	type SessionKind,
+	type SessionClientType,
 	verifySession,
 } from "../session.js";
 
 /** Sessions are opaque handles, so verification is a signature check AND a D1 read.
  *  The HMAC runs first: a forger spraying random cookies never reaches the database. */
-export type SessionVariables = { nsid: string; sessionKind: SessionKind };
+export type SessionVariables = {
+	nsid: string;
+	sessionClientType: SessionClientType;
+};
 
 /**
  * **A cookie OR an `Authorization: Bearer` header, and the two are not interchangeable
@@ -57,7 +60,7 @@ export const requireSession = createMiddleware<{
 	}
 
 	c.set("nsid", session.nsid);
-	c.set("sessionKind", session.kind);
+	c.set("sessionClientType", session.clientType);
 	await next();
 	return undefined;
 });
@@ -70,20 +73,20 @@ export const requireSession = createMiddleware<{
  * could, whoever picks up that laptop can lock the real owner out of their own Flickr
  * queue, and the owner's remedy would be the very endpoint the thief just used.
  *
- * **Register it AFTER `requireSession`**, which is what puts `sessionKind` on the
+ * **Register it AFTER `requireSession`**, which is what puts `sessionClientType` on the
  * context. Registered before, this would read `undefined` and refuse everybody — a
  * failure that is at least loud. The reverse ordering mistake is the dangerous one, and
  * `requireAdmin` carries the same warning for the same reason.
  *
  * **403 rather than 401, deliberately.** The caller IS authenticated; it is the wrong
- * kind of credential. Answering 401 would send a plug-in into a re-login loop that could
+ * client type. Answering 401 would send a plug-in into a re-login loop that could
  * never succeed, because the credential it would obtain is the one being refused.
  */
 export const requireBrowserSession = createMiddleware<{
 	Bindings: Env;
 	Variables: SessionVariables;
 }>(async (c, next) => {
-	if (c.get("sessionKind") !== "browser") {
+	if (c.get("sessionClientType") !== "browser") {
 		return c.json({ error: "browser_session_required" }, 403);
 	}
 	await next();

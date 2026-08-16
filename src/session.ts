@@ -100,7 +100,7 @@ async function idHash(id: string): Promise<string> {
  * own history is the argument: the cookie's attributes were once duplicated and one copy
  * had silently lost `HttpOnly`. **Policy differs; mechanism MUST NOT.**
  */
-export type SessionKind = "browser" | "plugin";
+export type SessionClientType = "browser" | "plugin";
 
 /**
  * A plug-in cannot ask its user to sign in again every day, and a browser can.
@@ -109,7 +109,7 @@ export type SessionKind = "browser" | "plugin";
  * `requireBrowserSession` -- a plug-in token is refused anywhere it could revoke another
  * credential or change the account, so a stolen laptop cannot lock the owner out.
  */
-const LIFETIME_SECONDS: Record<SessionKind, number> = {
+const LIFETIME_SECONDS: Record<SessionClientType, number> = {
 	browser: SESSION_LIFETIME_SECONDS,
 	plugin: 90 * 24 * 60 * 60,
 };
@@ -118,22 +118,22 @@ export async function mintSession(
 	db: D1Database,
 	nsid: string,
 	signingKey: string,
-	kind: SessionKind = "browser",
+	clientType: SessionClientType = "browser",
 ): Promise<string> {
 	const id = toBase64Url(crypto.getRandomValues(new Uint8Array(ID_BYTES)));
 	const now = Date.now();
 
 	await db
 		.prepare(
-			`INSERT INTO sessions (id_hash, nsid, created_at, expires_at, kind)
+			`INSERT INTO sessions (id_hash, nsid, created_at, expires_at, client_type)
        VALUES (?, ?, ?, ?, ?)`,
 		)
 		.bind(
 			await idHash(id),
 			nsid,
 			now,
-			now + LIFETIME_SECONDS[kind] * 1000,
-			kind,
+			now + LIFETIME_SECONDS[clientType] * 1000,
+			clientType,
 		)
 		.run();
 
@@ -150,7 +150,7 @@ export async function mintSession(
  */
 export type VerifiedSession = {
 	readonly nsid: string;
-	readonly kind: SessionKind;
+	readonly clientType: SessionClientType;
 };
 
 export async function verifySession(
@@ -179,9 +179,11 @@ export async function verifySession(
 
 	// Only now does a database read happen. A forger never gets this far.
 	const row = await db
-		.prepare("SELECT nsid, expires_at, kind FROM sessions WHERE id_hash = ?")
+		.prepare(
+			"SELECT nsid, expires_at, client_type FROM sessions WHERE id_hash = ?",
+		)
 		.bind(await idHash(id))
-		.first<{ nsid: string; expires_at: number; kind: string }>();
+		.first<{ nsid: string; expires_at: number; client_type: string }>();
 
 	if (row === null) return null;
 
@@ -189,13 +191,13 @@ export async function verifySession(
 	if (row.expires_at <= Date.now()) return null;
 
 	/**
-	 * **The kind comes from the ROW, never from the caller.** A column read is the only
+	 * **The client type comes from the ROW, never from the caller.** A column read is the only
 	 * honest source: the token itself carries nothing, deliberately, so there is no
 	 * self-reported claim here to be wrong about or to forge.
 	 */
 	return {
 		nsid: row.nsid,
-		kind: row.kind === "plugin" ? "plugin" : "browser",
+		clientType: row.client_type === "plugin" ? "plugin" : "browser",
 	};
 }
 
