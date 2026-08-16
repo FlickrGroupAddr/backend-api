@@ -71,7 +71,8 @@ function HostVersion.classify(hostMajor)
 		return {
 			supported = false,
 			badge = WARN,
-			colorName = "yellow",
+			color = { 0.65, 0.40, 0.0 },
+			bold = true,
 			summary = "Lightroom version unknown " .. WARN,
 			detail = "The plug-in could not read the Lightroom version, so it cannot "
 				.. "say whether this release was tested. Treating it as untested.",
@@ -82,7 +83,14 @@ function HostVersion.classify(hostMajor)
 		return {
 			supported = true,
 			badge = TICK,
-			colorName = "green",
+			--[[ **No color, deliberately.** Terry, 2026-08-16, looking at the render:
+			     *"Green text doesn't work."* He is right -- green on the dialog's
+			     light gray is poor contrast, and LrView offers no background fill on
+			     a `static_text` to put white on instead. **So the good news is plain,
+			     and only the warning is colored.** That is the better hierarchy
+			     anyway: a badge that shouts on success has nothing left for the case
+			     that matters. ]]
+			bold = false,
 			summary = "supported " .. TICK,
 			detail = string.format("Tested against Lightroom Classic %d.", tested),
 		}
@@ -92,7 +100,16 @@ function HostVersion.classify(hostMajor)
 	return {
 		supported = false,
 		badge = WARN,
-		colorName = "yellow",
+		--[[ **Dark amber rather than the named "yellow".** Named yellow is
+		     `LrColor(1, 1, 0)`, which on a light dialog is close to invisible -- the
+		     same defect Terry caught in green, worse. This is dark enough to read on
+		     gray and still reads as CAUTION rather than as an error, which is the
+		     honest signal: an untested major is unproven, not broken. ]]
+		color = { 0.65, 0.40, 0.0 },
+		--[[ Weight as well as color, so the warning survives a display, a colorblind
+		     reader, or a screenshot that lost its palette. **Two signals, because one
+		     of them is a color and colors do not always arrive.** ]]
+		bold = true,
 		summary = "major version unsupported " .. WARN,
 		detail = string.format(
 			"This is Lightroom Classic %d, %s the %d this plug-in was tested "
@@ -106,11 +123,24 @@ function HostVersion.classify(hostMajor)
 	}
 end
 
---[[ `LrColor` takes named colors -- confirmed in the SDK reference, which lists
-     "yellow" and "green" among them. Kept out of `classify` so that function
-     stays pure and testable. ]]
+--[[ **Returns nil when there is nothing to color**, and a nil `text_color` key is
+     simply absent in Lua -- so the caller gets the platform default without a
+     branch.
+
+     **A high-contrast fill was the first choice and LrView cannot do it.**
+     `background_color` exists only on `scrolled_view` and `catalog_photo`, never
+     on `static_text`, `row` or `column` -- read from the reference on 2026-08-16.
+     Wrapping a one-line badge in a scrolled view to get a fill would buy contrast
+     and cost a scrollbar.
+
+     Kept out of `classify` so that function stays pure and testable without
+     Lightroom. ]]
 function HostVersion.color(classification)
-	return LrColor(classification.colorName)
+	local rgb = classification.color
+	if rgb == nil then
+		return nil
+	end
+	return LrColor(rgb[1], rgb[2], rgb[3])
 end
 
 --[[ **MUST be called inside an `LrTasks` task.** `LrTasks.pcall` is used rather

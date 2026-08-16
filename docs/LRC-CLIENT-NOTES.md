@@ -265,6 +265,44 @@ and `LRC-CLIENT-NOTES` already records that the SDK trails the app by two point 
 version MUST NOT be used to derive the SDK version**, which is the same rule stated further down
 this file.
 
+#### RUN on Terry's machine 2026-08-16, and the reference is incomplete on one field
+
+```
+Lightroom Classic 15.5.0 build 202607291506-b8869fa7
+(supported ☑)
+Self-test: 5/5 passed
+```
+
+| Field | Measured |
+|---|---|
+| `major`, `minor`, `revision` | `15`, `5`, `0` — exactly as documented |
+| `build_version` | **`202607291506-b8869fa7`** |
+
+**The reference says `build_version` "represents the date of the build, in the form
+YYYYMMDDHHmm".** The real value is that date **plus a hyphen and an 8-character hash**. So the
+documented description is a prefix of the truth rather than the whole of it.
+
+**It is a string, it is not sortable as a number, and it is not purely a date.** Concatenate it and
+display it; never parse it and never compare it. `HostVersion.lua` does exactly that.
+
+**This is the same build Terry's rig notes already record**, which is two instruments agreeing
+rather than one being believed.
+
+#### Four LrView attributes, all VERIFIED by that render
+
+**Every one of these had been either withheld or wrong, and one dialog settled all four.**
+
+| Attribute | Verdict |
+|---|---|
+| `font = "<system/bold>"` on `static_text` | **Works.** The version line rendered bold |
+| `text_color = LrColor("green")` | **Works.** Named colors are real |
+| `height_in_lines = -1` with `width_in_chars` | **Works.** The detail paragraph wrapped |
+| `f:separator{ fill_horizontal = 1 }` | **Works** |
+
+**And the emoji substituted rather than failed.** `✅` (U+2705) rendered as `☑` — a monochrome
+box-check from a fallback font. **Legible, and not what was written.** Treat any glyph beyond ASCII
+as decoration whose exact shape is Lightroom's choice, and never let one carry meaning alone.
+
 **And it MUST NOT be used to derive `client_type` either — see ADR-24.**
 
 ### The crypto surface, MEASURED at runtime 2026-08-16 — see ADR-23 for what it means

@@ -1325,8 +1325,33 @@ are literal UTF-8 in the source instead.
 
 **So the badge MUST read correctly with the glyph stripped.** `(supported)` and `(major version
 unsupported)` are complete sentences on their own, and the color carries the urgency independently.
-**Rendering is unverified on Terry's machine and MUST be confirmed there** — but nothing depends on
-it.
+
+**VERIFIED on Terry's machine, 2026-08-16, on Lightroom Classic 15.5.0.** The dialog rendered
+`Lightroom Classic 15.5.0 build 202607291506-b8869fa7` in bold, `(supported ☑)` in green, the
+detail wrapped, and `Self-test: 5/5 passed`.
+
+**The glyph rendered as `☑` rather than `✅`** — LrView substituted a monochrome box-check for the
+emoji. **That is the substitution this design was built to tolerate**, and it cost nothing because
+the word carries the meaning. A badge that had said only `✅` would now say only `☑`, which is
+almost as good — but "almost" is not a property to depend on.
+
+#### The GOOD news is plain, and only the warning is colored
+
+**Terry, seeing that render: *"Green text doesn't work."*** He is right — green on the dialog's
+light gray is poor contrast, and **LrView cannot put white on a colored fill instead**:
+`background_color` exists only on `scrolled_view` and `catalog_photo`, never on `static_text`, `row`
+or `column`. Wrapping a one-line badge in a scrolled view to buy contrast would cost a scrollbar.
+
+**So `supported` takes the platform default color.** That is the better hierarchy regardless: **a
+badge that shouts on success has nothing left for the case that matters.**
+
+**The warning is dark amber, `LrColor(0.65, 0.40, 0.0)`, not the named `"yellow"`.** Named yellow is
+`LrColor(1, 1, 0)` and on a light dialog it is close to invisible — the same defect Terry caught in
+green, worse. Amber still reads as **caution rather than error**, which is the honest signal: an
+untested major is unproven, not broken.
+
+**It is bold as well as colored.** Two signals, because one of them is a color and colors do not
+always arrive — a projector, a colorblind reader, a screenshot that lost its palette.
 
 ## Considered and rejected
 

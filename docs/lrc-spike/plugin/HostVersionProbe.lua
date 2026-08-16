@@ -44,9 +44,17 @@ local function run()
 			font = "<system/bold>",
 		}),
 
+		--[[ **The good news is plain and only the warning is colored.** Terry, after
+		     seeing the first render: *"Green text doesn't work."* A high-contrast
+		     fill was the first choice and LrView cannot do it -- `background_color`
+		     exists only on `scrolled_view` and `catalog_photo`.
+
+		     `HostVersion.color` returns nil when supported, and a nil key is simply
+		     absent in Lua, so the default color arrives with no branch here. ]]
 		f:static_text({
 			title = "(" .. host.summary .. ")",
 			text_color = HostVersion.color(host),
+			font = host.bold and "<system/bold>" or nil,
 		}),
 
 		f:separator({ fill_horizontal = 1 }),
