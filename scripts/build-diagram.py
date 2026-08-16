@@ -271,6 +271,33 @@ print(f"  flickr payload     : {len(FLICKR)} chars")
 print(f"  total file         : {OUT.stat().st_size} bytes")
 
 
+# ---------------------------------------------------------------------------
+# EVERY CHECK BELOW THIS LINE IS OFF, deliberately and temporarily.
+#
+# Terry, 2026-08-16: the canvas is being overhauled and he is reviewing every
+# render by eye, so the assertions block iteration instead of protecting it.
+# Nearly all of them are pinned to coordinates the overhaul is about to move, and
+# a check that fires on every intermediate state is a check nobody reads.
+#
+# **This is ONE flag, not a thousand commented lines, on purpose.** Restoring the
+# gate is a single word, so the restoration cannot be half-done -- and a partly
+# uncommented block would look restored while leaving holes.
+#
+# **`CLAUDE.md` says this build "refuses to write a diagram that fails any
+# assertion". That is FALSE while this flag is False.** The banner below prints on
+# every single run so the state cannot go unnoticed. Flip the flag back to True
+# when the overhaul settles, then run and fix whatever it reports.
+CHECKS_ENABLED = False
+
+if not CHECKS_ENABLED:
+    print()
+    print("  ####################################################################")
+    print("  #  GEOMETRY AND QUALITY CHECKS ARE DISABLED                        #")
+    print("  #  Set CHECKS_ENABLED = True in scripts/build-diagram.py to restore #")
+    print("  ####################################################################")
+    raise SystemExit(0)
+
+
 # --------------------------------------------------------------------------
 # Self-check. Straight edges are prettier than orthogonal ones but they cut
 # corners off anything standing between the endpoints, and that is exactly the

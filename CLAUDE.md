@@ -47,6 +47,13 @@ It builds and validates in one step, and **refuses to write a diagram that fails
 prints every check as it goes, so **the run is the list.** Most checks exist because a defect got
 past everything already there, so a firing check is usually right.
 
+**THE CHECKS ARE CURRENTLY OFF.** `CHECKS_ENABLED = False` near the top of the check block short
+circuits every assertion, and the build prints a banner saying so on every run. **Terry turned them
+off on 2026-08-16** for a canvas overhaul he is reviewing by eye: nearly every assertion is pinned to
+a coordinate the overhaul moves, so they fired on every intermediate state and blocked iteration.
+**Set the flag back to `True` when the overhaul settles**, then run and fix whatever it reports. The
+paragraph above is true again at that moment and false until then.
+
 **Distrust the text estimator.** It models what a browser does to wrapped text, and five things it
 did not represent at all were found by looking at a render. **When a box looks wrong on screen, the
 screen is right.** Changing `CHAR_W` invalidates every hand-set box height, and nothing fails,
@@ -60,17 +67,44 @@ out of one tile, a third of the page empty. **The checks are a RATCHET, not a de
 exists because a specific defect got past the others, so they prevent the return of known problems
 and are blind to new ones.
 
-The loop, and it costs about a minute:
+#### The live preview, and it costs one command
+
+**Start `scripts/preview-server.py` once, then open `http://127.0.0.1:8791/` and leave it open.**
 
 ```
-python scripts/build-diagram.py && git commit && git push && git rev-parse HEAD
+python scripts/preview-server.py     # once, in the background
+python scripts/build-diagram.py      # every iteration
 ```
 
-Then load `https://viewer.diagrams.net/?lightbox=1&nav=1#U<raw GitHub URL>` and screenshot it.
-**Pin the raw URL to the commit hash, not to `main`** — GitHub's CDN serves a stale copy of `main`
-for minutes, and a cached render looks exactly like a change that did not work.
+**The tab redraws itself within 400 ms of the build writing the file.** Nothing to copy, nothing to
+commit, no CDN. The page polls `/mtime`, reloads only on a real change, and prints the file name, the
+build time and a reload counter in a bar across the top — so **a picture that did not change is
+visibly distinguishable from a build that did not run**, which no screenshot alone can tell you.
+
+**Screenshot the tab to look at the result.** `mcp__claude-in-chrome__computer` with `zoom` on the
+top 22 px reads the status bar when only the counter matters.
 
 **Claude MUST NOT report a diagram change as done without looking at the render.**
+
+#### Three traps this arrangement had to get past, all measured on 2026-08-16
+
+- **`#U` against loopback fails, and it fails DISHONESTLY.** draw.io fetched
+  `http://127.0.0.1:8791/...` successfully — the server logged `200` — and still showed `File not
+  found`. So its `#U` loader rejects the *result*, not the request, and the error names the wrong
+  cause. **`#R` carries the XML in the fragment and renders**, which is what the preview page uses.
+- **Chrome gates loopback behind a Local Network Access permission.** The first attempt showed the
+  same `File not found` and the server logged **nothing at all**, because Chrome blocked the fetch
+  before it left the browser. Terry granted it from the omnibox prompt. **A fresh browser profile
+  MUST grant it again**, and the symptom looks exactly like a server that is not running.
+- **A `#R` URL is ~10,000 characters, and it MUST stay out of the conversation.** Navigating to one
+  directly echoes the whole thing back through the tool result. **The preview page builds it inside
+  the browser**, where it costs nothing.
+
+**The old loop was build, commit, push, read the commit hash, then point the viewer at a
+`raw.githubusercontent.com` URL pinned to that hash.** It still works and is still the right form for
+a link Terry KEEPS — a `#R` URL is a snapshot that does not track the repository, and pinning to a
+commit hash rather than to `main` matters because GitHub's CDN serves a stale copy of a branch for
+minutes. **Use it to hand him a durable link. Do not use it to iterate.**
 
 ### Two traps that make the type look wrong for reasons the file does not show
 

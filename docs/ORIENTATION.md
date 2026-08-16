@@ -21,6 +21,31 @@ points somewhere authoritative.
 
 **That is the whole path.** Four steps, and step 4 is usually a single module.
 
+## If your task is the DIAGRAM, start the live preview before the first edit
+
+**We iterate on this canvas constantly, and the review loop is one command.**
+
+```
+python scripts/preview-server.py     # once, in the background
+```
+
+**Open `http://127.0.0.1:8791/` and leave it open.** Every `python scripts/build-diagram.py`
+afterwards redraws that tab within 400 ms — no commit, no push, no CDN, nothing to copy. A bar across
+the top prints the file name, the build time and a **reload counter**, because a diagram that did not
+change and a build that never ran produce the identical screenshot.
+
+**Arm it FIRST.** Starting it after two edits has already cost the iterations it existed to make
+cheap.
+
+| Then read | For |
+|---|---|
+| `CLAUDE.md`, "The diagram is generated, and it is gospel" | The loop's traps, and why `#U` cannot load loopback |
+| `docs/architecture/DIAGRAM-NOTES.md` | The canvas itself, before changing it |
+
+**The assertions in `scripts/build-diagram.py` are currently OFF** — `CHECKS_ENABLED = False`, at
+Terry's direction on 2026-08-16, for an overhaul he reviews by eye. The build prints a banner saying
+so on every run. **Do not turn them back on unasked.**
+
 ## What NOT to read, and why
 
 **Do NOT read all of `src/` preemptively.** A full catch-up on 2026-08-15 read every source file and
