@@ -47,7 +47,18 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
-	-- **0.7 FIXES A DEAD ROW, and the version number is the point of this bump.**
+	-- **0.8 FIXES THE DEAD ROW FOR REAL, from the SDK reference rather than a guess.**
+	--
+	-- 0.7 was a guess and it failed identically to 0.6. The reference settles it:
+	-- `simple_list.value` is an ARRAY, so 0.7's bare string was the wrong TYPE and
+	-- the widget ignored it. And `value_equal` is the documented hook that decides
+	-- which row is selected -- *"If no item returns true, no item is selected in
+	-- the list."* 0.8 supplies one, and a sentinel no item can match.
+	--
+	-- The reference was in vendor/ the whole time. Two of Terry's test cycles went
+	-- to guesses that reading it first would have prevented.
+	--
+	-- **0.7 TRIED to fix the dead row, and the version number is the point of the bump.**
 	--
 	-- 0.6 shipped, Terry loaded it, clicked a row, and the row that slid into the
 	-- vacated slot stayed highlighted AND stopped responding. The fix went out
@@ -112,5 +123,5 @@ return {
 		},
 	},
 
-	VERSION = { major = 0, minor = 7, revision = 0 },
+	VERSION = { major = 0, minor = 8, revision = 0 },
 }

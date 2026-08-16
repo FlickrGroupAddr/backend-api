@@ -63,8 +63,32 @@ local ALREADY_IN_COUNT = 8
 local MARK_AT_FLICKR = "\226\151\143 "
 local MARK_QUEUED = "+ "
 
---[[ What "no row is selected" is written as. See the long note in `rebuild`. ]]
-local NO_SELECTION = ""
+--[[ **`value` is an ARRAY, and the SDK reference says so plainly:** *"The current
+     control value; an array of the values corresponding to each selected list
+     item, if any."* Two earlier attempts wrote a bare string and an empty table
+     and neither cleared the highlight -- the string because it is the wrong TYPE
+     and the widget ignored it, the table because nothing told the widget how to
+     match it.
+
+     **`value_equal` is the documented hook that decides which row is selected:**
+     *"A function called to compare the control value to the value of each item in
+     turn... If no item returns true, no item is selected in the list."*
+
+     So a sentinel that matches no item, plus a comparison that refuses it, is the
+     mechanism the reference describes rather than a trick. ]]
+local NO_SELECTION = "__fga_no_selection__"
+
+--[[ Called per item. The reference does not fix which argument is the control
+     value and which is the item, so this is symmetric on purpose. ]]
+local function valueEqual(a, b)
+	if a == nil or b == nil then
+		return false
+	end
+	if a == NO_SELECTION or b == NO_SELECTION then
+		return false
+	end
+	return a == b
+end
 
 local WORDS = {
 	"Canada", "Landscapes", "Black and White", "Long Exposure", "Wildlife",
@@ -137,8 +161,8 @@ local function run()
 		props.filter = ""
 		props.leftItems = {}
 		props.rightItems = {}
-		props.leftValue = NO_SELECTION
-		props.rightValue = NO_SELECTION
+		props.leftValue = { NO_SELECTION }
+		props.rightValue = { NO_SELECTION }
 		props.leftStats = ""
 		props.rightStats = ""
 		props.pending = ""
@@ -226,8 +250,8 @@ local function run()
 			     selection untouched all over again. An empty string is
 			     unambiguously a value CHANGE, it is a scalar, and no group id can
 			     ever equal it. `onlyPick` treats it as no selection. ]]
-			props.leftValue = NO_SELECTION
-			props.rightValue = NO_SELECTION
+			props.leftValue = { NO_SELECTION }
+			props.rightValue = { NO_SELECTION }
 
 			--[[ **The filter applies to the LEFT list only**, so `hidden` counts
 			     only unselected groups. A selected group is never hidden, which
