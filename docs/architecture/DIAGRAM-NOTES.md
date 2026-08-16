@@ -161,9 +161,16 @@ actually print:
 |---|---|
 | Page | `1700 x 1100` — 17 x 11 inches |
 | Printable area, quarter-inch margins | **`1650 x 1050`** |
-| Content bounds | x 5 to 1655, y 20 to 1050 |
+| Content bounds | x 25 to 1675, y 20 to 1050 |
 | Content size | **`1650 x 1030`** |
 | Scale | **100.0%** — width binds exactly, height has 20 to spare |
+
+**The content is CENTERED horizontally and is NOT centered vertically.** x 25 to 1675 leaves 25 a
+side, which is exactly the margin. y 20 to 1050 leaves **20 above against 50 below**.
+
+**The whole canvas moved +20 in x on 2026-08-16**, because Terry looked at a render and saw the
+split: it had been 5 on the left against 45 on the right. **The vertical split is the same defect on
+the other axis and is still open** — see the open items below.
 
 **So export WITHOUT "Fit to Page".** That option is now the wrong choice: it would shrink a drawing
 that already fits.
@@ -179,8 +186,8 @@ right column narrowed from 350 to 330 — the last 20 units of width.
 **THE MARGIN NOW BINDS, and that is the cost of fitting exactly.** At 1650 of 1650 there is zero
 slack in width. A driver asked to fit a mismatched page would scale a percent or two and absorb a
 small overflow; there is nothing left to absorb. **Anything that widens the canvas breaks the 1:1
-fit immediately**, and the two outer columns — `lrcapp` at x=5 and `journey`/`key` ending at
-x=1655 — are what pin it.
+fit immediately**, and the two outer columns — `lrcapp` at x=25 and `journey`/`key` ending at
+x=1675 — are what pin it.
 
 **Vertical headroom is 20 units, or 0.2 inch, for the whole sheet.** The lowest ink is not a tile:
 it is `e11`'s routed run at **y=1050**, the Browser-to-Flickr-API arrow. Next below it is `cfframe`
@@ -236,7 +243,9 @@ draws a ray from the shape's center through it, and returns where that ray cross
 rectangle** — `mxRectanglePerimeter`. That function knows nothing about `arcSize`, and nothing about
 the artwork inside a `shape=image` tile. **The fraction you wrote is used only as a direction.**
 
-**Measured 2026-08-16**, and it cost three rounds of "that still is not touching":
+**Measured 2026-08-16**, and it cost three rounds of "that still is not touching". **These x values
+predate the +20 shift** that centered the canvas later the same day, so add 20 to compare them
+against the artifact:
 
 | | |
 |---|---|
@@ -440,7 +449,7 @@ lie within the hour; a relationship tells the next session which lever it is act
 | `flickrlogo`, `flickrtitle`, `flickrapi` | Left edge and width, and the mark's top inset equals its side inset |
 | `dns` and `cron` | Left edge, width and height |
 | `oauthdo` and `d1` | Left edge and width |
-| `lrcat`, `lrc` and `users` | Width, and the `x=95` centerline that keeps `e19` and `e20` vertical |
+| `lrcat`, `lrc` and `users` | Width, and the `x=115` centerline that keeps `e19` and `e20` vertical |
 | `cfframe` and the `flickr` card | **BOTTOM edge.** The two outer boxes share a baseline |
 | `netb` and `flickrapi` | **BOTTOM edge.** The two inner boxes share a baseline |
 
@@ -637,9 +646,18 @@ true and saying only that.
   the L legs from the exit and entry sides**, which is the same perimeter arithmetic
   `perimeter_point` already does.
 - **The Nightly Event Trigger tile is cramped** — four wrapped lines in a small box.
-- **Dead space bottom-right inside the Cloudflare frame**, now roughly **265 x 265** — right of the
-  Nightly Retry Logic Worker (ends x=730) and below D1 (ends y=740), out to the frame at x=995,
-  y=1005. It shrank with the 2026-08-16 relayout but did not close.
+- **Dead space bottom-right inside the Cloudflare frame**, **269.6 wide by 221.6 tall**, measured
+  from the artifact on 2026-08-16 after the +20 shift. It runs right of the Nightly Retry Logic
+  Worker (`retry` ends x=779.4) and below the SQL Database (`d1` ends y=783.4), out to `cfframe` at
+  x=1049, y=1005. It shrank with the 2026-08-16 relayout but did not close. **The figures here were
+  wrong before this measurement** — they read `265 x 265` from an older layout, which is why they
+  are now derived rather than remembered.
+- **The canvas is NOT centered vertically.** Content runs y 20 to 1050 on an 1100 page, so **20
+  above against 50 below**. Terry caught the horizontal version of this by eye and the whole canvas
+  moved +20 in x. **A uniform +15 in y balances it the same way** — content 1030 tall on an 1100
+  page wants 35 a side — and the same transform applies, because `e11`'s routed run is an
+  `<mxPoint>` and moves with everything else. **Not done only because Terry asked for the horizontal
+  axis.**
 - **No logo for Lightroom Classic.** Cloudflare and Flickr both carry their marks; the Lightroom
   card carries only text. Adobe ships an "Lr" mark and Wikimedia Commons hosts Adobe product icons,
   which is where the other two came from. **The trap is that Lightroom Classic and Lightroom (CC)
@@ -666,8 +684,8 @@ true and saying only that.
   than 10 units**, so `MUST_BE_HORIZONTAL` and a visible dotted line were in direct conflict.
 
   **The legend row won, because horizontality is meaningless on a line nobody can see.** `e6` left
-  `MUST_BE_HORIZONTAL` and became an orthogonal route: it exits `cron`'s bottom at (352.2, 783.4),
-  drops to `retry`'s mid-height and enters its left edge at (459.4, 878.3) — legs of **94.9 and
+  `MUST_BE_HORIZONTAL` and became an orthogonal route: it exits `cron`'s bottom at (372.2, 783.4),
+  drops to `retry`'s mid-height and enters its left edge at (479.4, 878.3) — legs of **94.9 and
   107.2**, about **202 units** of visible run.
 
   **The replacement check is the part that mattered.** `MIN_VISIBLE_BROKEN_RUN = 60.0` demands that
