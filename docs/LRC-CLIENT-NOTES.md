@@ -215,9 +215,23 @@ time in one day that has happened here.
 | `LrRandom`, `LrCrypto`, `LrSecurity`, `LrSecureRandom` | Absent |
 | Globals beginning `Lr` | **None.** Namespaces arrive only through `import()`, so the sweep covered the whole reachable surface |
 
-**`LrUUID` MUST NOT be used for anything security-critical. That is ADR-23 and it is litigated.** It
-is available for correlation identifiers and temporary filenames, where a future disappearance is a
-cosmetic bug rather than a silent downgrade.
+**`LrUUID` MUST NOT be used AT ALL. That is ADR-23 Rule 2, and it is litigated.** Not for
+credentials, not for correlation identifiers, not for temporary filenames, not for anything.
+
+**The reason is the missing API contract, not the cryptography.** Adobe does not document it, so
+there is no version guarantee, no behavior guarantee and no deprecation path — Adobe may remove it
+in a point release without breaking any promise, because no promise was made. **That argument is
+complete without mentioning entropy.** Secondarily it is a black box, so no honest claim about its
+output can be made either.
+
+**There is no cosmetic dependency on a namespace that throws on import.** `import("LrUUID")` raises
+when the namespace is gone, so a file importing it for a temp filename does not degrade — **it fails
+to load, and every menu item in it disappears.** The blast radius is set by the import, not by the
+importance of the use. An earlier draft of ADR-23 permitted trivial uses on exactly that mistaken
+reasoning, and Terry struck it.
+
+**Use `LrDigest.SHA256` over values already in hand.** Documented, contracted, and strictly better
+for uniqueness — a deterministic key survives a retry, which a random one cannot.
 
 **`LrSystemInfo` exposes `ipAddress`, `machineName`, `numCPUs` and `getRamUsage`.** Named here so
 nobody mistakes them for seed material. They are stable identifiers and observable state — the exact
