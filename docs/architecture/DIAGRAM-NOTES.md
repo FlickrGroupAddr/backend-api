@@ -128,3 +128,30 @@ build passed all fifteen assertion blocks over a diagram Terry called horrific.
 - **A contradiction check does not exist.** Three defects in one session were the drawing asserting
   something `DECISIONS.md` or the User Journey denies. Comparing an edge's endpoints against the
   step text that cites it is mechanical and nobody has written it.
+
+- **`e19` may now be a FOURTH contradiction, and it is one I introduced.** Terry asked for step 12
+  to become a thick double-headed arrow: *"Plugin really does drive the browser and really does read   US-ENGLISH-EXEMPT: quoting Terry
+  token back out"*. I made the change without checking it against the journey text, which is exactly
+  the failure this section is about.
+
+  | Says | |
+  |---|---|
+  | Step 12 | "Lightroom plug-in opens the browser to link itself. **It never calls Flickr**" |
+  | Step 13 | "Lightroom plug-in **polls for its token**, then queues a batch in one call" |
+
+  **So the token comes back on the plug-in-to-Worker edge, not through the browser.**
+  `LrHttp.openUrlInBrowser` is fire-and-forget and there is no return channel — the device flow in
+  `docs/LRC-CLIENT-NOTES.md` has the plug-in polling `POST /api/v001/device/poll`. `e18` is already
+  double-headed and is where the token actually arrives.
+
+  **Three ways this resolves, and Terry picks:**
+
+  1. **`e19` goes back to one head.** Matches steps 12 and 13 as written, and matches the device
+     flow. The "reads token back out" is true of the plug-in, but of a different arrow.
+  2. **`e19` stays double-headed and step 12's text changes** to describe what returns.
+  3. **The design changes** to an `LrSocket` localhost callback, where the browser really would
+     answer the plug-in directly. That is a real option the SDK supports and it is not what is
+     designed today.
+
+  **Option 1 unless Terry says otherwise.** Nothing is changed yet — the diagram is parked until
+  2026-08-16.
