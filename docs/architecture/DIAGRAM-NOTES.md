@@ -341,6 +341,88 @@ ET.fromstring(base64.b64decode(payload))   # names the line and column immediate
 
 Three logos parsed and one did not, which took the diagnosis from minutes to seconds.
 
+### WHAT IS PINNED TO WHAT, which is the map that makes a layout change tractable
+
+**Stated as RELATIONSHIPS rather than coordinates, deliberately.** Every number on this canvas moved
+at least twice on 2026-08-16. The relationships did not. **A coordinate written down here would be a
+lie within the hour; a relationship tells the next session which lever it is actually pulling.**
+
+**Semantic. These are claims about the system, and breaking one makes the picture false:**
+
+| Pinned | Because |
+|---|---|
+| The OAuth Durable Object stack sits OUTSIDE `netb` | A Worker runs at the nearest PoP; a Durable Object lives in exactly one location |
+| `d1` sits outside `netb` | D1 has one primary, and every query crosses to it |
+| `dns`, `api`, `secrets`, `cron`, `retry` sit INSIDE `netb` | All anycast or edge-resident |
+| The plug-in has no arrow to Flickr | It never calls Flickr. It reads Adobe's records out of the catalog |
+
+**Load-bearing horizontals. A two-unit drift reads as a mistake rather than a change:**
+
+| Run | Carries |
+|---|---|
+| `e18` and `e3` share one `y` | The device-link handshake, plug-in to `/device` to the Durable Object, as ONE line across the canvas |
+| `e9` and `e10` land on `flickrapi`'s left edge | Every Worker-to-Flickr call |
+| `e22` and `e13` land on the Worker's route tiles | The browser's two channels |
+| `retry`'s vertical CENTER | `e10` leaves at `exitY=0.5` and `e6` arrives at `entryY=0.5`. **Resize `retry` from the top, never the bottom** |
+
+**Shared edges and columns. Break one and the eye sees raggedness before it sees why:**
+
+| These share | |
+|---|---|
+| `cfframe` and `lrcapp` | Top edge |
+| `cflogo` and `netb` | Left edge |
+| `flickr` and `justification` | Left edge and width |
+| `flickrlogo`, `flickrtitle`, `flickrapi` | Left edge and width, and the mark's top inset equals its side inset |
+| `dns` and `cron` | Left edge, width and height |
+| `oauthdo` and `d1` | Left edge and width |
+| `lrcat`, `lrc` and `users` | Width, and the `x=95` centerline that keeps `e19` and `e20` vertical |
+
+**The page. Content spans exactly the printable width, so there is ZERO slack:** `lrcapp`'s left
+edge and the `journey`/`key` right edge are what hold the 1:1 fit. **Anything that widens either
+breaks it.**
+
+### Coordinated moves: use a CHECKED SCRIPT, not a run of hand edits
+
+**Three moves on 2026-08-16 touched 8, 12 and 26 geometries at once.** Each was applied by a
+throwaway script that holds a list of `(label, exact anchor, replacement)` and **raises unless every
+anchor matches exactly once.**
+
+```python
+n = text.count(old)
+if n != 1:
+    raise SystemExit(f"ANCHOR {label}: found {n} times, want 1")
+```
+
+**A half-applied coordinated move is the expensive failure here**, because the diagram still renders
+and the damage is a few tiles out of alignment somewhere off-screen. **An all-or-nothing script
+converts that into a loud stop.**
+
+**Slack is FUNGIBLE across the canvas, which is the move worth remembering.** Terry's insight:
+narrowing the Flickr column by 34 freed 34 units that walked left through a chain of pinned
+relationships — the Cloudflare frame grew, the PoP box grew, the Durable Object stack moved to stay
+outside it, and the PoP's contents re-centered. **The DNS arrows ended up with 38.75 of clearance
+from a starting point of 13.5**, and nothing was shrunk to get it.
+
+### `scripts/badge-positions.py` answers where a badge goes
+
+```
+python scripts/badge-positions.py            # every straight edge
+python scripts/badge-positions.py e20 e4     # just these
+```
+
+**It reads the ARTIFACT and prints paste-ready `mxGeometry`** — on the line, and beside it on either
+side — plus each run's length and what fraction of it a badge would cover. It reimplements
+`mxRectanglePerimeter`, so its endpoints are what draw.io actually draws rather than what the
+fractions suggest.
+
+**It exists because recall placed a badge wrongly twice**, 30 units out and then 3.2, both times with
+correct arithmetic on a stale coordinate. **A check would have caught neither**, because a check
+would read the coordinate from the same place the mistake did.
+
+**Its first survey settled a question that was going to be an arbitrary style call.** A badge sits ON
+its line where it covers under about half the run, and BESIDE it above that. Four runs fail the test
+— which is a fact about the geometry, not a preference.
+
 ### Three classes of defect, and only one of them has checks
 
 | Class | Example | Caught by |

@@ -40,7 +40,16 @@ cheap.
 | Then read | For |
 |---|---|
 | `CLAUDE.md`, "The diagram is generated, and it is gospel" | The loop's traps, and why `#U` cannot load loopback |
-| `docs/architecture/DIAGRAM-NOTES.md` | The canvas itself, before changing it |
+| `docs/architecture/DIAGRAM-NOTES.md` | The canvas itself, before changing it. **Its "What is pinned to what" table is the map that makes a layout change tractable** |
+
+**Two rules that cost real time to learn, both on 2026-08-16:**
+
+- **NEVER compute a position from a coordinate you remember.** It went wrong four times in one
+  session with flawless arithmetic every time, and **no assertion can catch it** — a check reads the
+  coordinate from the same place the mistake did. `python scripts/badge-positions.py` derives badge
+  geometry from the artifact; for anything else, read the value back first.
+- **Apply a multi-tile move with a throwaway script that refuses unless every exact anchor matches
+  once.** A half-applied coordinated move still renders, which is what makes it expensive.
 
 **The assertions in `scripts/build-diagram.py` are currently OFF** — `CHECKS_ENABLED = False`, at
 Terry's direction on 2026-08-16, for an overhaul he reviews by eye. The build prints a banner saying
