@@ -126,6 +126,44 @@ second source of truth for the same coordinates, and two copies that must be re-
 drift. This project's rule is that the diagram is generated and gospel; a half-refactor breaks that
 rule in a way the whole toolchain exists to prevent. **Do it properly or leave it alone.**
 
+### `exitPerimeter=0` is REQUIRED for any attachment point off a bounding-box edge
+
+**RFC 2119 sense.** An `exitX`/`exitY` or `entryX`/`entryY` pair that names a point on a rounded
+corner, or anywhere inside the bounding box, **MUST** carry `exitPerimeter=0` / `entryPerimeter=0`
+on the same edge. Without it draw.io silently relocates the endpoint.
+
+**The default is `1`, and it does not mean what the name suggests.** draw.io takes the fixed point,
+draws a ray from the shape's center through it, and returns where that ray crosses the **bounding
+rectangle** — `mxRectanglePerimeter`. That function knows nothing about `arcSize`, and nothing about
+the artwork inside a `shape=image` tile. **The fraction you wrote is used only as a direction.**
+
+**Measured 2026-08-16**, and it cost three rounds of "that still is not touching":
+
+| | |
+|---|---|
+| Asked for | `(156.31, 437.31)` — 45° on `lrc`'s bottom-right arc, `r=12.6` |
+| draw.io drew | `(160, 440.25)` — the box's right edge, just above the corner |
+| Visible result | An arrowhead floating in white space **outside** the rounded outline |
+
+**The failure is quiet in the worst way: the endpoint is CLOSE.** It lands a few units off, which
+reads as a rendering imprecision rather than as a style attribute doing something. Two earlier
+attempts moved the fraction instead of fixing the cause, and both looked like partial progress.
+
+**An image tile makes it worse, because the artwork's own corners are invisible to the geometry.**
+`users` is a 130x104 box holding a `viewBox="0 0 640 512"` glyph whose monitor has a 64-unit corner
+radius. Scaled, that is `r=13.0`, so the box's top-right corner sits **13 units of empty space** away
+from anything drawn. **Compute the artwork's radius from its own `viewBox`**, never from the tile.
+
+```
+# 45 degrees on a corner of radius r, bottom-right:
+#   cx, cy = x + w - r, y + h - r
+#   px, py = cx + r/sqrt(2), cy + r/sqrt(2)
+# then express px, py as fractions of the box, and set exitPerimeter=0
+```
+
+**`arcSize` is a PERCENTAGE, not a radius.** draw.io computes `r = min(w, h) * arcSize / 100`, so the
+same `arcSize=12` gives a different radius on every tile.
+
 ### Three classes of defect, and only one of them has checks
 
 | Class | Example | Caught by |
