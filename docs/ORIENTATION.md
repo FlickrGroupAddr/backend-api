@@ -67,7 +67,7 @@ shape, probe the real runtime for runtime capability, and scan the CLI binary fo
 | What was rejected, and why? | That file's **"Considered and rejected"** table |
 | What does Flickr really do? | `docs/FLICKR.md` — several rows contradict Flickr's own docs |
 | How do I run it? | `docs/SETUP.md` |
-| Where did the Lightroom client get to? | `docs/LRC-CLIENT-NOTES.md` |
+| Where did the Lightroom client get to? | `docs/LRC-CLIENT-NOTES.md` — **its "PICK UP HERE" section is the first thing to read** |
 | What is planned for the crypto? | `docs/architecture/KEY-ROTATION-NOTES.md` |
 | Where is the Lightroom SDK, and how do I parse-check Lua? | **`vendor/README.md`** |
 | Is a tool installed, and where? | **The docs above, BEFORE searching disks.** A filesystem search answers "does a file match my pattern", and a wrong pattern returns clean |

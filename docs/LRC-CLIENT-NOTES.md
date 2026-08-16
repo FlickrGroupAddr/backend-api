@@ -3,6 +3,52 @@
 **RFC 2119 keywords. MUST and MUST NOT are absolute. SHOULD is a strong default a good argument may
 overrule. MAY is optional.**
 
+## PICK UP HERE — 2026-08-15, end of session
+
+**The picker is BLOCKED on one SDK fact and the fix is designed but not built.**
+
+### What works, measured on Terry's machine
+
+| | |
+|---|---|
+| Batch add | Check three non-adjacent rows, click `Add -->`, all three move. Counts and staging correct |
+| Unchecking | Works |
+| Pruning | 364 candidates from 372, the 8 already-in groups removed |
+| Build cost | **744 views in 9–12 ms.** The risk that killed this design was never real |
+| Connectivity | `LrHttp` reaches the live Worker. 200 in 160 ms, 401 with JSON in 14 ms |
+
+### What is broken, and why it cannot be patched
+
+**`visible = false` hides a view but KEEPS ITS SPACE.** `API Reference/modules/LrView view
+properties.html` says so outright: *"TIP: An item still affects layout, even when it is hidden."*
+
+So the left pane shows gaps where filtered rows were, and the right pane is three checkboxes spread
+down 372 rows of white. **Hiding is the only tool available**, because LrView builds its view tree
+once and bindings change values rather than structure — so a filtered list is always as tall as the
+unfiltered one.
+
+### The next step, designed and NOT built
+
+**A fixed window of rows plus paging.** Build about 25 rows once, bind each row's `title` to a
+property rather than fixing it at build time, fill those slots from the filtered list, and move
+through the list with Prev/Next buttons instead of a scrollbar.
+
+**FIRST, VERIFY ONE THING: does `checkbox.title` accept `LrView.bind`?** If it does not, slot-based
+rendering is impossible and the design has to change again. **Do not build before checking** — four
+guesses were wrong on 2026-08-15 and each one cost Terry a reload.
+
+**Everything except rendering survives the rewrite**: the selection model, batch add, pruning,
+staging, the report, and the add-only scoping.
+
+### Also open
+
+- **Three device-auth decisions.** What the plug-in token may reach, whether it expires, where a
+  user revokes it. See the device flow section below.
+- **The diagram's `e19` arrow head.** Parked until 2026-08-16. See
+  `docs/architecture/DIAGRAM-NOTES.md`.
+- **The legend line says the same thing twice** — "Pic already in 8 groups" and "Groups this pic is
+  already in are not listed". One of them goes.
+
 ## Status: NOT a decision. Nothing is committed.
 
 **This file records where an investigation got to. It is not an ADR, it creates no obligation, and
@@ -366,6 +412,27 @@ a sentinel that matches no item. `TransferPicker.lua` does both.
 
 **This cost two of Terry's load-and-test cycles**, and the reference that answers it was already in
 `vendor/`. See [[verify-package-apis-from-node-modules]].
+
+### `visible = false` KEEPS THE SPACE, and the reference warns about it
+
+**The single most expensive SDK fact of 2026-08-15**, because a whole picker design was built on the
+opposite assumption.
+
+> `visible` — True to show the view, if the parent view is also visible, or false to hide the view
+> and its children. **TIP: An item still affects layout, even when it is hidden.**
+
+That TIP sits one sentence after the description I did read. **Three separate defects that day came
+from stopping too early in a reference that was already open** — this, `simple_list.value` being an
+array, and `value_equal` existing at all.
+
+**Why it matters more than a cosmetic glitch.** `LrView` builds its view tree ONCE; bindings change
+values, never structure. So hiding is the only way to change what a list shows — and if hiding
+leaves a hole, **a filtered list of 364 rows is always 364 rows tall**. The pane fills with white
+gaps and the design is unusable rather than merely ugly.
+
+**The pattern that works inside the constraint** is a fixed window of rows whose `title` is bound
+rather than fixed, filled from the filtered list, with paging instead of scrolling. See "PICK UP
+HERE" at the top of this file.
 
 ### Four SDK traps, all found by READING on 2026-08-15
 
