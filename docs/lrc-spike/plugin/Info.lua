@@ -47,7 +47,23 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
-	-- **0.12 RETIRES `simple_list` FOR THE PICKER. Checkboxes, two panes, arrows.**
+	-- **0.13 IS ADD ONLY. Groups the pic is already in are PRUNED, not shown.**
+	--
+	-- Terry: *"I am going to stop complicating my life -- can only add groups,
+	-- not remove. If a pic is in a group when the dialog comes up, we just prune
+	-- it from the initial candidate list."*
+	--
+	-- FGA has no removal capability -- the only Flickr write in the codebase is
+	-- flickr.groups.pools.add -- and 0.12 staged removals nothing could execute.
+	-- Scoping the picker to match deletes three problems a desired-state endpoint
+	-- would have created: an etag against a stale read destroying a membership,
+	-- the question of what to do with a queued-but-unsent add, and the risk of a
+	-- remove-then-add cycle laundering away ADR-04's memory.
+	--
+	-- The right pane is now the ADD LIST rather than membership. Removing from it
+	-- un-stages a pick and never touches Flickr.
+	--
+	-- **0.12 RETIRED `simple_list` FOR THE PICKER. Checkboxes, two panes, arrows.**
 	--
 	-- Terry's design: *"check things on left side and click add arrow to move
 	-- right"*, two panes rather than one combined list, and the filter touching
@@ -176,5 +192,5 @@ return {
 		},
 	},
 
-	VERSION = { major = 0, minor = 12, revision = 0 },
+	VERSION = { major = 0, minor = 13, revision = 0 },
 }

@@ -90,9 +90,11 @@ scenery.** It would spend the banner's credibility and return nothing.
   60 runs per change. **This figure was guessed at "a few times a year" before Terry supplied the
   console's release list**, which is a reminder that a cadence claim is a measurement like any
   other.
-- **`luac` cannot go stale.** `npm run check` now depends on `Lua Compiler/win/luac.exe` from this
-  archive, which is the one real build dependency here — and **Lua 5.1.5 has had no release since
-  2012.**
+- **`luac` cannot go stale, and that is now a FACT rather than an observation.** `npm run check`
+  depends on `Lua Compiler/win/luac.exe` from this archive, which is the one real build dependency
+  here. lua.org's own versions page states it outright: *"The last release was Lua 5.1.5, released
+  on 17 Feb 2012. **There will be no further releases of Lua 5.1.**"* Terry found that on
+  2026-08-15. **A compiler for a language with a terminal release cannot be behind.**
 
 **What replaces it: this file.** The version, date, SHA-256, byte count and download path above are
 the durable record. **Verify the archive rather than its freshness** — an intact known-good copy is

@@ -36,6 +36,28 @@
   That is 744 views for 372 groups. **Build time is the risk and it is
   unmeasured**, so this dialog times its own construction and says so.
 
+  ## ADD ONLY. The photo's existing groups are PRUNED, not shown.
+
+  Terry, 2026-08-15: *"I am going to stop complicating my life -- can only add
+  groups, not remove. If a pic is in a group when the dialog comes up, we just
+  prune it from the initial candidate list."*
+
+  **FGA has no removal capability and this scopes the picker to match.** The only
+  Flickr write in the whole codebase is `flickr.groups.pools.add`. An earlier
+  version of this file staged removals nothing could execute.
+
+  It also deletes three problems that a desired-state endpoint would have
+  created: an etag to guard against a stale read destroying a membership added
+  while the dialog sat open, the question of what to do with a queued-but-unsent
+  add, and the risk of a remove-then-add cycle laundering away ADR-04's memory
+  that a pair already reached a moderator.
+
+  **`GET /api/v001/photos/:photoId/groups` is still needed** -- pruning is the
+  reason it exists now.
+
+  **The right pane is the ADD LIST**, not membership. Removing from it un-stages
+  a pick; it never touches Flickr.
+
   THE DIALOG IS A STAGING AREA. Nothing reaches Flickr until Save.
 
   NO NETWORK, NO CATALOG WRITES.
@@ -97,16 +119,26 @@ local function run()
 		local groups = makeGroups()
 
 		--[[ Simulates `GET /api/v001/photos/:photoId/groups`, which FGA proxies
-		     because the plug-in deliberately holds no Flickr credentials. ]]
-		local atFlickr = {}
+		     because the plug-in deliberately holds no Flickr credentials. These are
+		     PRUNED from the candidate list rather than shown. ]]
+		local alreadyIn = {}
 		for i = 1, ALREADY_IN_COUNT do
-			atFlickr[groups[((i * 43) % GROUP_COUNT) + 1].id] = true
+			alreadyIn[groups[((i * 43) % GROUP_COUNT) + 1].id] = true
 		end
 
-		local selected = {}
-		for id in pairs(atFlickr) do
-			selected[id] = true
+		--[[ The candidate list: every group the photo is NOT already in. Terry's
+		     framing -- the list gets shorter and everything left is actionable. ]]
+		local candidates = {}
+		for _, g in ipairs(groups) do
+			if not alreadyIn[g.id] then
+				candidates[#candidates + 1] = g
+			end
 		end
+
+		local prunedCount = #groups - #candidates
+
+		-- Starts EMPTY. The right pane is this session's add list, not membership.
+		local selected = {}
 
 		local factory = LrView.osFactory()
 		local props = LrBinding.makePropertyTable(context)
@@ -132,7 +164,7 @@ local function run()
 			return "rc_" .. id
 		end
 
-		for _, g in ipairs(groups) do
+		for _, g in ipairs(candidates) do
 			props[keyLeftVisible(g.id)] = not selected[g.id]
 			props[keyRightVisible(g.id)] = selected[g.id] == true
 			props[keyLeftChecked(g.id)] = false
@@ -140,19 +172,11 @@ local function run()
 		end
 
 		local function counts()
-			local total, adds, removes = 0, 0, 0
-			for id in pairs(selected) do
+			local total = 0
+			for _ in pairs(selected) do
 				total = total + 1
-				if not atFlickr[id] then
-					adds = adds + 1
-				end
 			end
-			for id in pairs(atFlickr) do
-				if not selected[id] then
-					removes = removes + 1
-				end
-			end
-			return total, adds, removes
+			return total
 		end
 
 		--[[ **Visibility is recomputed; the view tree never changes.** The filter
@@ -163,7 +187,7 @@ local function run()
 			local needle = (props.filter or ""):lower()
 			local shown, hidden = 0, 0
 
-			for _, g in ipairs(groups) do
+			for _, g in ipairs(candidates) do
 				local isSelected = selected[g.id] == true
 				local showLeft = (not isSelected) and matches(g, needle)
 
@@ -179,22 +203,22 @@ local function run()
 				end
 			end
 
-			local total, adds, removes = counts()
+			local total = counts()
 			props.leftStats = string.format(
-				"Groups displayed: %d   \226\128\162   Groups hidden by filter: %d",
+				"Groups displayed: %d   \226\128\162   Hidden by filter: %d   \226\128\162   Pic already in %d groups",
 				shown,
-				hidden
+				hidden,
+				prunedCount
 			)
 			props.rightStats =
 				string.format("Number of groups currently selected: %d", total)
 
-			if adds == 0 and removes == 0 then
-				props.pending = "No changes staged."
+			if total == 0 then
+				props.pending = "No groups selected yet."
 			else
 				props.pending = string.format(
-					"Staged: %d to add, %d to REMOVE from Flickr. Nothing is sent until you click Save.",
-					adds,
-					removes
+					"Will queue %d group add(s). Nothing is sent until you click Save.",
+					total
 				)
 			end
 		end
@@ -205,7 +229,7 @@ local function run()
 		     Each moved row's checkbox is cleared, so the panes never open holding
 		     a check the user already spent. ]]
 		local function addChecked()
-			for _, g in ipairs(groups) do
+			for _, g in ipairs(candidates) do
 				if props[keyLeftChecked(g.id)] then
 					selected[g.id] = true
 					props[keyLeftChecked(g.id)] = false
@@ -215,7 +239,7 @@ local function run()
 		end
 
 		local function removeChecked()
-			for _, g in ipairs(groups) do
+			for _, g in ipairs(candidates) do
 				if props[keyRightChecked(g.id)] then
 					selected[g.id] = nil
 					props[keyRightChecked(g.id)] = false
@@ -245,10 +269,10 @@ local function run()
 				visible = LrView.bind(keyLeftVisible(g.id)),
 				width = paneWidth - 30,
 			})
-			--[[ The marker carries what color cannot: a row already at Flickr means
-			     a REMOVAL if it is unchecked and moved left. ]]
+			--[[ Every right-pane row is a pending ADD, so one marker serves. The
+			     photo's existing groups are pruned and never appear here. ]]
 			rightRows[i] = factory:checkbox({
-				title = (atFlickr[g.id] and MARK_AT_FLICKR or MARK_QUEUED) .. g.name,
+				title = MARK_QUEUED .. g.name,
 				value = LrView.bind(keyRightChecked(g.id)),
 				visible = LrView.bind(keyRightVisible(g.id)),
 				width = paneWidth - 30,
@@ -260,7 +284,7 @@ local function run()
 			spacing = factory:control_spacing(),
 
 			factory:static_text({
-				title = "Check groups, then use the arrows. The filter searches the left list only.",
+				title = "Check groups to add, then use the arrows. The filter searches the left list only.",
 			}),
 
 			factory:edit_field({
@@ -318,10 +342,8 @@ local function run()
 			}),
 
 			factory:static_text({
-				title = MARK_AT_FLICKR
-					.. "Already in this group at Flickr   \226\128\162   "
-					.. MARK_QUEUED
-					.. "Will be added",
+				title = MARK_QUEUED
+					.. "Will be added. Groups this pic is already in are not listed " .. "\226\128\148 FGA adds only.",
 			}),
 
 			factory:static_text({
@@ -353,12 +375,10 @@ local function run()
 			return
 		end
 
-		local adds, removes = {}, {}
-		for _, g in ipairs(groups) do
-			if selected[g.id] and not atFlickr[g.id] then
+		local adds = {}
+		for _, g in ipairs(candidates) do
+			if selected[g.id] then
 				adds[#adds + 1] = g.name
-			elseif atFlickr[g.id] and not selected[g.id] then
-				removes[#removes + 1] = g.name
 			end
 		end
 
@@ -378,9 +398,11 @@ local function run()
 
 		LrDialogs.message(
 			"What the real client would send",
-			block("Add", adds, " -- one batch call")
-				.. "\n\n"
-				.. block("Remove", removes, " -- each throws away a moderator approval"),
+			block("Add", adds, " -- one POST /api/v001/requests/batch")
+				.. string.format(
+					"\n\nPic already in %d groups, pruned before the dialog opened.",
+					prunedCount
+				),
 			"info"
 		)
 	end)
