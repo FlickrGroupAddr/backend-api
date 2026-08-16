@@ -115,6 +115,35 @@ export async function getPhotoPools(
 	photoId: string,
 	credentials: UserCredentials,
 ): Promise<readonly string[] | null> {
+	const pools = await getPhotoPoolsDetailed(photoId, credentials);
+	return pools === null ? null : pools.map((pool) => pool.id);
+}
+
+/** One pool a photo already sits in. */
+export type PhotoPool = {
+	readonly id: string;
+	/** Flickr sends the pool's title in the same reply, so the name is free. */
+	readonly title: string | null;
+};
+
+/**
+ * The same call as `getPhotoPools`, keeping the title Flickr already sent.
+ *
+ * **The Lightroom picker needs this and cannot get it from Flickr itself.** The plug-in
+ * deliberately holds no Flickr credentials -- ADR-09 keeps the user's token encrypted in
+ * D1 and the plug-in never sees it -- so FGA proxies the question. Terry, 2026-08-15:
+ * *"we made SURE we don't keep the user's long term flickr creds in the plugin, which
+ * would have let us query flickr API directly. I'm good proxying that through our API as
+ * a middleman."* **The proxy is a consequence of the credential design, not overhead.**
+ *
+ * **Parsing lives here once.** `getPhotoPools` is ADR-05's authoritative check and four
+ * callers depend on its id-only shape; changing them under time pressure to gain a title
+ * they do not use would be the riskier edit.
+ */
+export async function getPhotoPoolsDetailed(
+	photoId: string,
+	credentials: UserCredentials,
+): Promise<readonly PhotoPool[] | null> {
 	const result = await callFlickr(
 		"flickr.photos.getAllContexts",
 		{ photo_id: photoId },
@@ -127,12 +156,16 @@ export async function getPhotoPools(
 	if (!Array.isArray(pools)) return [];
 
 	return pools
-		.map((pool) =>
-			typeof pool === "object" && pool !== null && "id" in pool
-				? String((pool as { id: unknown }).id)
-				: null,
-		)
-		.filter((id): id is string => id !== null);
+		.map((pool): PhotoPool | null => {
+			if (typeof pool !== "object" || pool === null || !("id" in pool))
+				return null;
+			const record = pool as { id: unknown; title?: unknown };
+			return {
+				id: String(record.id),
+				title: typeof record.title === "string" ? record.title : null,
+			};
+		})
+		.filter((pool): pool is PhotoPool => pool !== null);
 }
 
 /**
@@ -159,6 +192,16 @@ export const GROUPS_PER_PAGE = 500;
 
 /** Terry was at 372 on 2026-08-15. This is headroom, not a prediction. */
 export const MAX_USER_GROUPS = 5000;
+
+/**
+ * ADR-17. How many pools one photo may sit in before FGA refuses to list them.
+ *
+ * **Generous on purpose.** Flickr's own per-photo group limits vary by account type and
+ * are not reliably documented, so this is a sanity ceiling rather than a model of
+ * Flickr's rule -- it exists so the endpoint has a stated bound, which ADR-17 requires,
+ * not because 500 is a number Flickr enforces.
+ */
+export const MAX_PHOTO_POOLS = 500;
 
 export type UserGroupsResult =
 	| { readonly kind: "ok"; readonly groups: readonly Record<string, unknown>[] }

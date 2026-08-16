@@ -17,7 +17,13 @@ import {
 	withdrawRequest,
 } from "../db/requests.js";
 import { getFlickrTokens } from "../db/users.js";
-import { getGroupInfo, getPhotoPools, getUserGroups } from "../flickr/api.js";
+import {
+	getGroupInfo,
+	getPhotoPools,
+	getPhotoPoolsDetailed,
+	getUserGroups,
+	MAX_PHOTO_POOLS,
+} from "../flickr/api.js";
 import { requireAdmin } from "../middleware/admin.js";
 import {
 	requireSession,
@@ -586,6 +592,67 @@ apiRoutes.get("/api/v001/groups/:groupId", async (c) => {
 	return info === null
 		? c.json({ error: "flickr_unavailable" }, 502)
 		: c.json(info);
+});
+
+/**
+ * ADR-17. Which groups a photo is ALREADY in.
+ *
+ * **The Lightroom picker opens with this and cannot ask Flickr itself.** The plug-in holds
+ * no Flickr credentials on purpose -- ADR-09 keeps the user's token encrypted in D1 and
+ * the plug-in never sees it -- so FGA proxies the question. The proxy is a consequence of
+ * the credential design rather than overhead.
+ *
+ * **Preflight does NOT answer this**, and the difference is not pedantic. Preflight asks
+ * *what would happen if I submitted these groups*, which is the right question at commit
+ * time. This asks *where is this photo now*, which is the right question when a picker
+ * opens. Preflight also caps `groupIds` at 200 while Terry belongs to 372 groups, so
+ * using it here would cost two round trips to learn something one call already knows --
+ * `getAllContexts` is per-photo, not per-group.
+ *
+ * **ADR-17's second kind of list: FGA cannot bound this one.** Flickr decides how many
+ * pools a photo sits in, so the ceiling is stated and a result past it is REFUSED rather
+ * than truncated. Same reasoning as the group list -- a picker showing most of a photo's
+ * memberships is worse than one that says it cannot show them, because the user cannot
+ * see which are missing and would read the gap as "not in that group".
+ */
+apiRoutes.get("/api/v001/photos/:photoId/groups", async (c) => {
+	const nsid = c.get("nsid");
+	const photoId = z.string().min(1).max(64).safeParse(c.req.param("photoId"));
+	if (!photoId.success) {
+		return c.json({ error: "invalid_request" }, 400);
+	}
+
+	const tokens = await getFlickrTokens(c.env.DB, nsid, c.env.TOKEN_KEY);
+	if (tokens === null) {
+		return c.json({ error: "no_flickr_credentials" }, 409);
+	}
+
+	const pools = await getPhotoPoolsDetailed(photoId.data, {
+		consumerKey: c.env.FLICKR_CONSUMER_KEY,
+		consumerSecret: c.env.FLICKR_CONSUMER_SECRET,
+		token: tokens.token,
+		tokenSecret: tokens.tokenSecret,
+	});
+
+	// **Null is UNKNOWN, not empty.** Returning `[]` here would tell the picker the photo
+	// is in no groups, and the user would then queue adds for groups it is already in --
+	// straight into ADR-01's territory, since a duplicate add can reach a moderator.
+	if (pools === null) {
+		return c.json({ error: "flickr_unavailable" }, 502);
+	}
+
+	if (pools.length > MAX_PHOTO_POOLS) {
+		return c.json(
+			{
+				error: "too_many_pools",
+				total: pools.length,
+				ceiling: MAX_PHOTO_POOLS,
+			},
+			502,
+		);
+	}
+
+	return c.json({ groups: pools });
 });
 
 /**

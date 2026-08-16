@@ -101,7 +101,7 @@ geometry, and no assertion compares the two.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, the US English check, the Lua block-balance check, 239 tests, the
+Typecheck (both tsconfigs), lint, the US English check, the Lua block-balance check, 244 tests, the
 traceability gate, and the web build. **It MUST be clean before a commit.**
 
 **`scripts/lua-balance.py` stands in for `luac`, which is NOT installed on this machine.** It is a
