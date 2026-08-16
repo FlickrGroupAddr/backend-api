@@ -148,9 +148,23 @@ const queueQuery = z.object({
  * Telling a user their own admin status leaks nothing: it is a fact about them, and they
  * can already discover it by requesting the route.
  */
+/**
+ * **`clientType` is reported so a client can tell what it is holding.**
+ *
+ * The Lightroom plug-in ships a permanent diagnostic — Terry runs the latest GA
+ * Lightroom Classic and takes every Adobe regression on day one, so re-proving the chain
+ * after an update has to cost seconds. **"Am I authenticated" and "did I end up with the
+ * credential I think I did" are different questions**, and before this the plug-in could
+ * only answer the first. A device link that silently minted a browser session would have
+ * looked identical to one that worked.
+ *
+ * **It reads from the verified session, never from the request.** `sessionClientType` is
+ * set by `requireSession` out of the database row, so this cannot be a self-report.
+ */
 apiRoutes.get("/api/v001/me", (c) =>
 	c.json({
 		nsid: c.get("nsid"),
+		clientType: c.get("sessionClientType"),
 		admin: checkAdmin(c.get("nsid"), c.env.ADMIN_NSIDS).admin,
 	}),
 );

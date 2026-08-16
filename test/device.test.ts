@@ -152,7 +152,17 @@ describe("ADR-24: the whole flow, and the token it mints", () => {
 			headers: { Authorization: `Bearer ${collected.token}` },
 		});
 		expect(me.status).toBe(200);
-		expect(await me.json()).toMatchObject({ nsid: NSID });
+
+		// **Read ONCE.** A Response body is a stream and a second `.json()` throws,
+		// so the two assertions share one parse.
+		//
+		// The second is the interesting one: "am I authenticated" and "did I get the
+		// credential I think I did" are different questions, and a device link that
+		// silently minted a browser session would look identical to one that worked.
+		expect(await me.json()).toMatchObject({
+			nsid: NSID,
+			clientType: "lrc15_plugin",
+		});
 
 		// And it is scoped: an unlisted route is refused, so the device flow cannot
 		// be used to obtain a wider credential than the allow-list permits.

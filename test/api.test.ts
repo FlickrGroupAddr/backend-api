@@ -151,7 +151,21 @@ describe("ADR-10, authentication", () => {
 		expect(response.status).toBe(200);
 		// ADR-19 added `admin`. Kept as toEqual rather than toMatchObject so a future
 		// field cannot be added to this response without somebody deciding to.
-		expect(await response.json()).toEqual({ nsid: NSID, admin: true });
+		//
+		// **It worked, on 2026-08-16.** ADR-24 added `clientType` and this test failed
+		// rather than shrugging, which is the entire reason it is written this way.
+		// The field is deliberate: the Lightroom plug-in ships a permanent diagnostic,
+		// and "am I authenticated" and "did I get the credential I think I did" are
+		// different questions.
+		//
+		// **`clientType` is safe to expose to its own holder.** It says what the
+		// caller already knows about itself, and it is read from the verified row
+		// rather than from the request, so it cannot be a self-report.
+		expect(await response.json()).toEqual({
+			nsid: NSID,
+			clientType: "browser",
+			admin: true,
+		});
 	});
 });
 
