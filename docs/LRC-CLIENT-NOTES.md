@@ -251,6 +251,31 @@ Plug-in Extras and works everywhere.
 parse-checks a plug-in file without Lightroom. **Prove it can fail on deliberately broken input
 before trusting a clean pass.**
 
+**It is NOT on this machine, measured 2026-08-15.** A recursive search of `C:\` six levels deep, the
+user profile and `PATH` found no `luac`, no `lua`, and no extracted SDK. So the sentence above says
+where to get one, not where one is. **`scripts/lua-balance.py` stands in** — a block-balance check
+rather than a parser, wired into `npm run check`, and validated in both directions: silent on the
+files Lightroom already loads, and firing on deliberately broken fixtures including the exact
+`}`-instead-of-`end` error that killed 0.1.
+
+### Loading spike 0.6
+
+The plug-in lives at `C:\Photography\FgaSpike.lrdevplugin`, mirrored into
+`docs/lrc-spike/plugin/` so it is under version control.
+
+**`Info.lua` changed, so this needs Remove then Add** — see the rule above. Four menu items appear
+under both File > Plug-in Extras and Library > Plug-in Extras:
+
+| Item | What it does |
+|---|---|
+| Dump publish services | The original premise probe. Unchanged |
+| Group picker probe — one list | **0.4, kept as the control.** The design Terry rejected |
+| Group picker — TWO LISTS | **0.5.** The redesign. Synthetic data, no network |
+| Connectivity probe | **0.6.** Two real calls to flickrgroupaddr.com, no credentials |
+
+**Only the connectivity probe touches the network**, and it sends nothing but a `User-Agent`. The
+two pickers generate their groups locally.
+
 **If the spike ships, it SHOULD ship permanently as a diagnostic menu item** rather than be thrown
 away. Terry always runs the latest GA Lightroom Classic, so the plug-in gets every Adobe regression
 on day one, and re-proving the chain after an update should cost seconds.
