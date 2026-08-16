@@ -73,7 +73,7 @@ LRC_MARK = embed("lightroom-classic-mark.svg")
 # eyechart", which the arithmetic agreed with.** The content was 1770 x 1303 units
 # then, so fitting it to Letter scaled to 65%. Fitting the same content to tabloid
 # scaled to 84%, on a sheet 1.55x larger in each direction -- roughly DOUBLE the
-# physical text size. **Those numbers are HISTORY. The content is 1650 x 1030
+# physical text size. **Those numbers are HISTORY. The content is 1640 x 1030
 # today** and the current figures are below.
 #
 # **DPI DOES NOT APPLY TO A PDF, and the distinction is worth one paragraph.** A
@@ -90,14 +90,20 @@ PAGE_HEIGHT = 1100  # 11 inches
 
 # **THE CONTENT FITS THIS PAGE 1:1, as of 2026-08-16, and it never did before.**
 #
-#   Printable area  1650 x 1050   (1700 x 1100, less 25 per side)
-#   Content         1650 x 1030   x 25 to 1675, y 20 to 1050
-#   Scale           100.0%        width binds exactly, height has 20 to spare
+#   Printable area  1640 x 1040   (1700 x 1100, less 30 per side)
+#   Content         1640 x 1030   x 30 to 1670, y 20 to 1050
+#   Scale           100.0%        width binds exactly, height has 10 to spare
 #
-# **The content is CENTERED horizontally and is not centered vertically.** x 25
-# to 1675 leaves 25 on each side, which is exactly MARGIN. y 20 to 1050 leaves 20
-# above and 50 below. The whole canvas moved +20 in x on 2026-08-16 to close a
-# 5-against-45 split Terry saw in a render; the vertical split is still open.
+# **The content is CENTERED horizontally and is not centered vertically.** x 30
+# to 1670 leaves 30 on each side, which is exactly MARGIN. y 20 to 1050 leaves 20
+# above and 50 below.
+#
+# **The horizontal landed in two moves on 2026-08-16**, both from Terry looking at
+# a render. First +20 in x, which closed a 5-against-45 split at the old 0.25in
+# margin. Then, for the 0.30in target, the right column gave up 10 of width and
+# the whole canvas moved +5 -- 16.5in of content became 16.4in, and 25/25 became
+# 30/30. **The vertical is mid-change**: he is stretching the canvas down the
+# page rather than centering it.
 #
 # **So export WITHOUT "Fit to Page".** That option is now the wrong choice -- it
 # would shrink a drawing that already fits. This reverses the instruction that
@@ -107,7 +113,8 @@ PAGE_HEIGHT = 1100  # 11 inches
 # **Three separate changes closed that gap**, and none of them was a rescale:
 # the step badges came off (badge `n7` used to hang to y=1327, 227 units below the
 # page), the Cloudflare frame lost 140 units of height, and the right column
-# narrowed from 350 to 330 on 2026-08-16 -- the last 20 units of width.
+# narrowed from 350 to 330 on 2026-08-16 -- the last 20 units of width. It gave up
+# another 10 the same evening, to 320, to buy the 0.30in margin.
 #
 # **Scaling every coordinate to chase a page was always the wrong fix**, and it
 # still is. It changes no physical text size -- it moves the shrink out of the
@@ -115,10 +122,10 @@ PAGE_HEIGHT = 1100  # 11 inches
 # threshold here: the badge band, `CHAR_W`, every hand-set box height. None of
 # them would fail. They would stop meaning anything.
 #
-# **THE MARGIN NOW BINDS, which is the cost of fitting exactly.** At 1650 of 1650
+# **THE MARGIN NOW BINDS, which is the cost of fitting exactly.** At 1640 of 1640
 # there is zero slack in width, so a driver cannot absorb an overflow by scaling a
 # percent or two. Anything that widens the canvas breaks the 1:1 fit immediately.
-# `check_page_fit()` prints the figures on every build.
+# The page-fit block prints the figures on every build.
 
 TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
   <diagram id="fga-architecture" name="FlickrGroupAddr Architecture">
@@ -128,105 +135,105 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="1" parent="0" />
 
         <mxCell id="title" value="FlickrGroupAddr Architecture" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="25" y="20" width="700" height="48" as="geometry" />
+          <mxGeometry x="30" y="20" width="700" height="48" as="geometry" />
         </mxCell>
         <mxCell id="date" value="{DATE}" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="25" y="56" width="493" height="36" as="geometry" />
+          <mxGeometry x="30" y="56" width="493" height="36" as="geometry" />
         </mxCell>
 
         <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="235" y="110" width="814" height="895" as="geometry" />
+          <mxGeometry x="240" y="110" width="814" height="895" as="geometry" />
         </mxCell>
         <mxCell id="cflogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={CF}" vertex="1" parent="1">
-          <mxGeometry x="265" y="140" width="242.149" height="80" as="geometry" />
+          <mxGeometry x="270" y="140" width="242.149" height="80" as="geometry" />
         </mxCell>
         <mxCell id="netb" value="Lowest-Latency Cloudflare Edge PoP (Anycast Routing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F6821F;dashed=1;strokeWidth=2;verticalAlign=top;fontColor=#F6821F;fontStyle=1;fontSize=15;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="265" y="250" width="542.6" height="715" as="geometry" />
+          <mxGeometry x="270" y="250" width="542.6" height="715" as="geometry" />
         </mxCell>
 
         <mxCell id="lrcapp" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#546E7A;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="25" y="110" width="180" height="399" as="geometry" />
+          <mxGeometry x="30" y="110" width="180" height="399" as="geometry" />
         </mxCell>
         <mxCell id="lrcmark" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={LRC_MARK}" vertex="1" parent="1">
-          <mxGeometry x="83" y="126" width="64" height="62.4" as="geometry" />
+          <mxGeometry x="88" y="126" width="64" height="62.4" as="geometry" />
         </mxCell>
         <mxCell id="lrc" value="&lt;b&gt;FGA&lt;br&gt;LrC Plugin&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#546E7A;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="50" y="370" width="130" height="120" as="geometry" />
+          <mxGeometry x="55" y="370" width="130" height="120" as="geometry" />
         </mxCell>
         <mxCell id="lrcat" value="&lt;b&gt;Catalog&lt;/b&gt;&lt;br&gt;&lt;i&gt;Flickr photo IDs&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#607D8B;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="50" y="218.4" width="130" height="60" as="geometry" />
+          <mxGeometry x="55" y="218.4" width="130" height="60" as="geometry" />
         </mxCell>
         <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={WORKSTATION};fontSize=15;fontStyle=1;labelPosition=center;align=right;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=-6;spacingRight=0;" vertex="1" parent="1">
-          <mxGeometry x="50" y="532" width="130" height="104" as="geometry" />
+          <mxGeometry x="55" y="532" width="130" height="104" as="geometry" />
         </mxCell>
 
         <mxCell id="dns" value="&lt;b&gt;FGA DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="293.2" y="483" width="158" height="60" as="geometry" />
+          <mxGeometry x="298.2" y="483" width="158" height="60" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;App Secrets Store&lt;/b&gt;&lt;br&gt;&lt;i&gt;Worker Secrets&lt;br&gt;FGA Flickr API credentials&lt;br&gt;Token key (encryption)&lt;br&gt;Session key (signing)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="479.4" y="672.4" width="300" height="111" as="geometry" />
+          <mxGeometry x="484.4" y="672.4" width="300" height="111" as="geometry" />
         </mxCell>
         <mxCell id="cron" value="&lt;b&gt;Nightly Event&lt;/b&gt;&lt;br&gt;&lt;i&gt;Workers Cron Trigger&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBAD41;strokeColor=none;fontColor=#3A2200;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="293.2" y="672.4" width="158" height="111" as="geometry" />
+          <mxGeometry x="298.2" y="672.4" width="158" height="111" as="geometry" />
         </mxCell>
 
         <mxCell id="oauthdo_b2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="851.8" y="290" width="169" height="155" as="geometry" />
+          <mxGeometry x="856.8" y="290" width="169" height="155" as="geometry" />
         </mxCell>
         <mxCell id="oauthdo_b1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="843.8" y="298" width="169" height="155" as="geometry" />
+          <mxGeometry x="848.8" y="298" width="169" height="155" as="geometry" />
         </mxCell>
         <mxCell id="oauthdo" value="&lt;b&gt;OAuth Request Token&lt;/b&gt;&lt;br&gt;&lt;i&gt;One Durable Object&lt;br&gt;per login attempt&lt;br&gt;Self-deletes after ~15 min&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="835.8" y="306" width="169" height="155" as="geometry" />
+          <mxGeometry x="840.8" y="306" width="169" height="155" as="geometry" />
         </mxCell>
         <mxCell id="api" value="&lt;b&gt;flickrgroupaddr.com&lt;/b&gt;&lt;div style=&quot;font-size:14px;margin-top:6px&quot;&gt;&lt;i&gt;Single Cloudflare Worker&lt;/i&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=15;arcSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="479.4" y="306" width="300" height="330" as="geometry" />
+          <mxGeometry x="484.4" y="306" width="300" height="330" as="geometry" />
         </mxCell>
         <mxCell id="apidevice" value="&lt;b&gt;/auth/device-link/start&lt;/b&gt; API endpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B85C0A;strokeColor=#FFFFFF;strokeWidth=1;fontColor=#FFFFFF;fontSize=13;arcSize=14;" vertex="1" parent="1">
-          <mxGeometry x="499.4" y="370" width="260" height="36" as="geometry" />
+          <mxGeometry x="504.4" y="370" width="260" height="36" as="geometry" />
         </mxCell>
         <mxCell id="apiplugin" value="&lt;b&gt;/auth/device-link/poll&lt;/b&gt; API endpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B85C0A;strokeColor=#FFFFFF;strokeWidth=1;fontColor=#FFFFFF;fontSize=13;arcSize=14;" vertex="1" parent="1">
-          <mxGeometry x="499.4" y="412" width="260" height="36" as="geometry" />
+          <mxGeometry x="504.4" y="412" width="260" height="36" as="geometry" />
         </mxCell>
         <mxCell id="apinew" value="&lt;b&gt;/auth/device-link/approve&lt;/b&gt; API endpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B85C0A;strokeColor=#FFFFFF;strokeWidth=1;fontColor=#FFFFFF;fontSize=13;arcSize=14;" vertex="1" parent="1">
-          <mxGeometry x="499.4" y="536" width="260" height="36" as="geometry" />
+          <mxGeometry x="504.4" y="536" width="260" height="36" as="geometry" />
         </mxCell>
         <mxCell id="apioauth" value="&lt;b&gt;/auth/flickr/*&lt;/b&gt; API endpoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B85C0A;strokeColor=#FFFFFF;strokeWidth=1;fontColor=#FFFFFF;fontSize=13;arcSize=14;" vertex="1" parent="1">
-          <mxGeometry x="499.4" y="578" width="260" height="36" as="geometry" />
+          <mxGeometry x="504.4" y="578" width="260" height="36" as="geometry" />
         </mxCell>
         <mxCell id="apirest" value="&lt;b&gt;/api/v001/*&lt;/b&gt; API endpoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B85C0A;strokeColor=#FFFFFF;strokeWidth=1;fontColor=#FFFFFF;fontSize=13;arcSize=14;" vertex="1" parent="1">
-          <mxGeometry x="499.4" y="454" width="260" height="36" as="geometry" />
+          <mxGeometry x="504.4" y="454" width="260" height="36" as="geometry" />
         </mxCell>
         <mxCell id="retry" value="&lt;b&gt;Nightly Retry Logic&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Worker&lt;br&gt;Attempt to flush every queue with&lt;br&gt;pending requests. Stop a queue at&lt;br&gt;its first throttle status&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=15;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="479.4" y="819.8" width="300" height="117" as="geometry" />
+          <mxGeometry x="484.4" y="819.8" width="300" height="117" as="geometry" />
         </mxCell>
 
         <mxCell id="d1" value="&lt;b&gt;SQL Database&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare D1&lt;br&gt;Users &#183; requests &#183; tokens&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00A3E0;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="835.8" y="672.4" width="169" height="111" as="geometry" />
+          <mxGeometry x="840.8" y="672.4" width="169" height="111" as="geometry" />
         </mxCell>
 
         <mxCell id="flickr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF0084;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="1079" y="306" width="236" height="699" as="geometry" />
+          <mxGeometry x="1084" y="306" width="236" height="699" as="geometry" />
         </mxCell>
         <mxCell id="flickrtitle" value="Flickr" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
-          <mxGeometry x="1104" y="422" width="186" height="32" as="geometry" />
+          <mxGeometry x="1109" y="422" width="186" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;div style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:72px&quot;&gt;&lt;b&gt;OAuth Endpoints&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px;margin-top:7px&quot;&gt;oauth/request_token&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;oauth/authorize&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;oauth/access_token&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:72px&quot;&gt;&lt;b&gt;API Functions&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px;margin-top:7px&quot;&gt;groups.pools.getGroups&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;photos.getAllContexts&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;groups.pools.add&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
-          <mxGeometry x="1104" y="491" width="186" height="474" as="geometry" />
+          <mxGeometry x="1109" y="491" width="186" height="474" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
-          <mxGeometry x="1104" y="331" width="186" height="88.05" as="geometry" />
+          <mxGeometry x="1109" y="331" width="186" height="88.05" as="geometry" />
         </mxCell>
                 <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
-          <mxGeometry x="1079" y="110" width="236" height="130" as="geometry" />
+          <mxGeometry x="1084" y="110" width="236" height="130" as="geometry" />
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#183; &#183; &#183; &#183; Scheduled trigger&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1345" y="800" width="330" height="126" as="geometry" />
+          <mxGeometry x="1350" y="800" width="320" height="126" as="geometry" />
         </mxCell>
 
         <mxCell id="journey" value="&lt;div style=&quot;font-size:14px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Static assets served by the same Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;User authorizes FGA&#39;s write access @ Flickr &#8212; HTTP response has HTTP redirect to API OAuth callback&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser follows HTTP redirect instructed by Flickr to OAuth callback, carrying a verifier&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker reads the token secret back out and trades the verifier for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;REST API endpoints: flickrgroupaddr.com/api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;12&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Lightroom plug-in opens the browser to link itself. It never calls Flickr&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;13&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Lightroom plug-in polls for its token, then queues a batch in one call&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=15;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="1345" y="110" width="330" height="488" as="geometry" />
+          <mxGeometry x="1350" y="110" width="320" height="488" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.970692;exitY=0.036635;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="users" target="dns">
@@ -283,20 +290,20 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=0.984615;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickrapi">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="115" y="1050" />
-              <mxPoint x="1197" y="1050" />
+              <mxPoint x="120" y="1050" />
+              <mxPoint x="1202" y="1050" />
             </Array>
           </mxGeometry>
         </mxCell>
 
         <mxCell id="n3" value="3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="190.5" y="537" width="34" height="34" as="geometry" />
+          <mxGeometry x="195.5" y="537" width="34" height="34" as="geometry" />
         </mxCell>
         <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="190.5" y="579" width="34" height="34" as="geometry" />
+          <mxGeometry x="195.5" y="579" width="34" height="34" as="geometry" />
         </mxCell>
         <mxCell id="n14" value="14" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="118" y="307.2" width="34" height="34" as="geometry" />
+          <mxGeometry x="123" y="307.2" width="34" height="34" as="geometry" />
         </mxCell>
 
       </root>
@@ -920,6 +927,17 @@ def text_height(cid, pad_left=10.0, pad_right=8.0):
         m = re.search(r"font-size:(\d+)px", chunk)
         if m:
             size = int(m.group(1))
+        # **A FIXED-WIDTH TABLE CELL IS ITS OWN COLUMN, so its text MUST NOT join
+        # the text beside it.** `text_lines` splits on `<tr>` and leaves `</td>`
+        # alone, so a two-column row arrives as one chunk and the tags strip to
+        # "1DNS query..." -- the row number glued to the first word. The 22px cell
+        # was then ALSO subtracted as an indent, counting the number twice.
+        #
+        # **Measured 2026-08-16 against the render**: narrowing `journey` from 330
+        # to 320 changed where 26 lines broke and did not change how many there
+        # were, while this estimator reported two extra. It nearly bought the panel
+        # 25 units of height it did not need.
+        chunk = re.sub(r"<td[^>]*width:\s*\d+px[^>]*>.*?</td>", "", chunk)
         text = re.sub(r"<[^>]*>", "", chunk).replace("&nbsp;", " ").strip()
         if not text:
             total += LINE_H[size]
@@ -1153,18 +1171,28 @@ check("every label line starts with a capital", not _bad_case,
 #
 # **This now FAILS the build**, where the old version only reported. The content
 # was known to exceed the page then, so a failing check would have been scenery
-# within a day. It fits exactly now -- 1650 of 1650 -- so there is ZERO slack and
+# within a day. It fits exactly now -- 1640 of 1640 -- so there is ZERO slack and
 # anything that widens the canvas breaks the 1:1 fit immediately.
 #
 # **Waypoints are included, and their absence was a real bug.** The old regex
 # matched `<mxGeometry>` while a routed run is a pair of `<mxPoint>`, so it
 # measured to the lowest TILE and under-reported the height by 45.
+#
+# **SIZE IS NOT POSITION, and only size was ever checked.** A drawing can be
+# narrower than the printable area and still hang off the edge of it. The x axis
+# is now asserted on both, because Terry set the target margin by hand.
+#
+# **MARGIN went 25 -> 30 on 2026-08-16**, for tomorrow's print at a FedEx Office
+# 11x17 color laser. 0.25in clears the 4-5mm unprintable border those engines
+# carry, but it does NOT clear 6mm plus the ~1mm of image-placement drift a
+# sheet-fed engine is allowed. 0.30in absorbs both and costs 0.1in of a 17in
+# sheet.
 # ---------------------------------------------------------------------------
 
-MARGIN = 25.0
+MARGIN = 30.0
 
 print()
-note("Page fit, 11x17 with quarter-inch margins:")
+note("Page fit, 11x17 with 0.30in margins:")
 _xs = [v for cid in boxes for v in (left(cid), right(cid))] + [p[0] for p in waypoints]
 _ys = [v for cid in boxes for v in (top(cid), bottom(cid))] + [p[1] for p in waypoints]
 _cw, _ch = max(_xs) - min(_xs), max(_ys) - min(_ys)
@@ -1173,6 +1201,19 @@ note(f"    content   {_cw:.0f} x {_ch:.0f}   bounds x {min(_xs):.0f}-{max(_xs):.
 note(f"    printable {_pw:.0f} x {_ph:.0f}")
 check("fits 1:1", _cw <= _pw and _ch <= _ph,
       f"{min(_pw / _cw, _ph / _ch) * 100:.1f}%")
+
+_ml, _mr = min(_xs) - 0, PAGE_WIDTH - max(_xs)
+check("left and right margins equal", abs(_ml - _mr) <= EPS, f"{_ml:.0f} / {_mr:.0f}")
+check("x sits inside the printable area", _ml >= MARGIN - EPS and _mr >= MARGIN - EPS,
+      f"want >= {MARGIN:.0f} a side")
+
+# **REPORTED, NOT ASSERTED, and the asymmetry is deliberate.** The vertical is
+# mid-change: Terry is stretching the canvas down the page rather than centering
+# it, so an assertion here would fail on every build until that lands and would
+# be switched off exactly like the last suite was. **Turn it into a check in the
+# same commit that settles the vertical.**
+_mt, _mb = min(_ys) - 0, PAGE_HEIGHT - max(_ys)
+note(f"    y margins {_mt:.0f} top / {_mb:.0f} bottom   -- NOT yet asserted, vertical is mid-change")
 note("    export WITHOUT 'Fit to Page' -- it would shrink a drawing that already fits")
 
 

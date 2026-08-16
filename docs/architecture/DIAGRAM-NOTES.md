@@ -160,17 +160,36 @@ actually print:
 | | |
 |---|---|
 | Page | `1700 x 1100` — 17 x 11 inches |
-| Printable area, quarter-inch margins | **`1650 x 1050`** |
-| Content bounds | x 25 to 1675, y 20 to 1050 |
-| Content size | **`1650 x 1030`** |
-| Scale | **100.0%** — width binds exactly, height has 20 to spare |
+| Printable area, **0.30 in** margins | **`1640 x 1040`** |
+| Content bounds | x 30 to 1670, y 20 to 1050 |
+| Content size | **`1640 x 1030`** |
+| Scale | **100.0%** — width binds exactly, height has 10 to spare |
 
-**The content is CENTERED horizontally and is NOT centered vertically.** x 25 to 1675 leaves 25 a
+**The content is CENTERED horizontally and is NOT centered vertically.** x 30 to 1670 leaves 30 a
 side, which is exactly the margin. y 20 to 1050 leaves **20 above against 50 below**.
 
-**The whole canvas moved +20 in x on 2026-08-16**, because Terry looked at a render and saw the
-split: it had been 5 on the left against 45 on the right. **The vertical split is the same defect on
-the other axis and is still open** — see the open items below.
+### The margin is 0.30 in, not 0.25 in, and the reason is a specific printer
+
+**Terry prints this on an 11x17 color laser at a FedEx Office counter.** He asked whether 0.25 in was
+safe and it very nearly is — sheet-fed laser engines carry an unprintable border of **4 mm to 5 mm
+(0.157 in to 0.197 in)**, and some specify **6 mm (0.236 in)** on the trailing edge. `0.25 in` is
+`6.35 mm`, so it clears the stated border and **does not clear the stated border plus the ~1 mm of
+image-placement drift** a sheet-fed engine is allowed. **0.30 in absorbs both**, and it costs
+`0.1 in` out of a 17 in sheet.
+
+**Export WITHOUT "Fit to Page", and say so at the counter.** The content fits `1640 x 1040` exactly
+at 100%, so any fit-to-page pass shrinks it and puts the white space back on all four sides. That is
+the likeliest way this print goes wrong, and it has nothing to do with the margin.
+
+**The horizontal landed in two moves on 2026-08-16, both from Terry looking at a render.** First
+`+20` in x, which closed a 5-against-45 split at the old 0.25 in margin. Then, for the 0.30 in
+target, the right column gave up 10 of width and the whole canvas moved `+5` — **16.5 in of content
+became 16.4 in, and 25/25 became 30/30.**
+
+**The vertical is mid-change.** Terry is stretching the canvas down the page rather than centering
+it, so the y margins are reported on every build and **deliberately not asserted yet** — an
+assertion that fails on every run is one nobody reads. **Turn it into a check in the same commit
+that settles the vertical.**
 
 **So export WITHOUT "Fit to Page".** That option is now the wrong choice: it would shrink a drawing
 that already fits.
@@ -181,13 +200,14 @@ single sheet. **A future session finding an old note that says otherwise is read
 
 **Three changes closed that gap, and none of them was a rescale:** the step badges came off (`n7`
 hung to y=1327, 227 units below the page), the Cloudflare frame lost 140 units of height, and the
-right column narrowed from 350 to 330 — the last 20 units of width.
+right column narrowed from 350 to 330 — the last 20 units of width. It gave up another 10 the same
+evening, to **320**, to buy the 0.30 in margin.
 
-**THE MARGIN NOW BINDS, and that is the cost of fitting exactly.** At 1650 of 1650 there is zero
+**THE MARGIN NOW BINDS, and that is the cost of fitting exactly.** At 1640 of 1640 there is zero
 slack in width. A driver asked to fit a mismatched page would scale a percent or two and absorb a
 small overflow; there is nothing left to absorb. **Anything that widens the canvas breaks the 1:1
-fit immediately**, and the two outer columns — `lrcapp` at x=25 and `journey`/`key` ending at
-x=1675 — are what pin it.
+fit immediately**, and the two outer columns — `lrcapp` at x=30 and `journey`/`key` ending at
+x=1670 — are what pin it.
 
 **Vertical headroom is 20 units, or 0.2 inch, for the whole sheet.** The lowest ink is not a tile:
 it is `e11`'s routed run at **y=1050**, the Browser-to-Flickr-API arrow. Next below it is `cfframe`
@@ -502,6 +522,34 @@ remainder matches. `72px` on both landed all three within about one unit.
 **MEASURE THIS ONE OFF THE RENDER, not off `text_height`.** The estimator was about 24 units wrong
 on this tile, which is roughly a fifth of a gap. Two rounds of look-and-adjust beat any amount of
 arithmetic here — the first guess of 104 gave 164/130, and half the difference corrected it.
+
+### `text_height` counted a table's ROW NUMBER TWICE, and it nearly bought 25 units of height
+
+**Found 2026-08-16, and only by looking at a render.** Narrowing `journey` from 330 to 320 made the
+estimator report the text 32 units taller, which reads as exactly what you would expect from a
+narrower column. **It was wrong. The render still broke into 26 lines, the same 26 as before** — the
+narrowing moved where lines broke and did not change how many there were.
+
+**The bug is a two-column table measured as one string.** `text_lines` splits on `<tr>` and strips
+`</div>`, `</tr>` and `</table>` — but not `</td>`. So a row arrives as one chunk, the tags strip to
+`1DNS query, resolved at the nearest PoP`, and **the row number is glued to the first word.** The
+`width:22px` on that same cell was then also subtracted as an indent, so **the number paid twice**:
+once as a column, once as characters.
+
+**The fix drops a fixed-width cell's own text before measuring**, since that text lives in its own
+column:
+
+```python
+chunk = re.sub(r"<td[^>]*width:\s*\d+px[^>]*>.*?</td>", "", chunk)
+```
+
+**The proof it is right: the corrected estimator reports `453` at width 320, which is the identical
+figure it reported at width 330.** That matches the render exactly.
+
+**The lesson generalizes past this tile.** The estimator's docstring says undercounting is the
+dangerous direction, and that is true — but **overcounting is not free**, because it silently buys
+a box more height than it needs and the check reports `ok` the whole time. A too-large box passes.
+**Only the render can tell you which way the error went.**
 
 ### When two clients reach one node, SPLIT THE NODE rather than routing around it
 
