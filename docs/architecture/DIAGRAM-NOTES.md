@@ -11,6 +11,32 @@ change is actually made.
 **`CLAUDE.md` carries the render loop and the traps a Claude session hits.** This file is about the
 artifact. Where they overlap, `CLAUDE.md` wins for procedure and this one for facts about output.
 
+## THE ROUTE LABELS ARE A PROPOSAL. THE CODE DOES NOT HAVE THESE PATHS
+
+**As of 2026-08-16 the diagram is AHEAD of the implementation**, and a reader who takes the Worker's
+route tiles as fact will be wrong about every one of them.
+
+| The diagram says | `src/` actually serves |
+|---|---|
+| `/auth/device-link/start` | `POST /api/v001/device/start` |
+| `/auth/device-link/approve` | `POST /api/v001/device/approve` |
+| `/auth/flickr/*` | `/oauth/login`, `/oauth/callback`, `/oauth/logout` |
+| `/api/v001/*` | correct, and the only accurate one |
+
+**Terry proposed the rename; nothing has been renamed.** He wanted the two credential flows to look
+related, and `/device` read as a *"WTF generator"* — his words — because it names a standard
+(RFC 8628 device authorization) rather than the thing it does here.
+
+**So this is a picture-contradicts-the-code defect DELIBERATELY INTRODUCED**, which is a different
+animal from the accidental kind the checks were built for. It is fine while it is a proposal being
+looked at. **It becomes a trap the moment anyone forgets.** Either the code moves to match, or the
+diagram moves back — and whichever happens, delete this section in the same commit.
+
+**Also still missing, and NOT caused by the rename: an arrow from the plug-in to `/api/v001/*`.**
+`PLUGIN_ALLOWED` in `src/middleware/session.ts` grants the plug-in seven routes there, one of them
+`POST /api/v001/requests/batch` — **the reason the plug-in exists.** The canvas currently shows the
+plug-in obtaining a credential and never spending it.
+
 ## Printing
 
 ### The canvas is 100 units per inch, and that is why the page is 1700x1100
@@ -428,6 +454,28 @@ remainder matches. `72px` on both landed all three within about one unit.
 **MEASURE THIS ONE OFF THE RENDER, not off `text_height`.** The estimator was about 24 units wrong
 on this tile, which is roughly a fifth of a gap. Two rounds of look-and-adjust beat any amount of
 arithmetic here — the first guess of 104 gave 164/130, and half the difference corrected it.
+
+### When two clients reach one node, SPLIT THE NODE rather than routing around it
+
+**2026-08-16, and it is the sharpest design lesson of the session.** The browser and the Lightroom
+plug-in both talk to the device-link surface. Drawn as one tile, the browser's arrow had to cross
+the DNS tile and both of its arrows, so every option on the table was bad: an orthogonal detour, a
+re-layout that spent a horizontal run, or leaving the loop visibly open.
+
+**Terry's fix was to stop drawing one node.** The routes were never shared — `start` and `poll` are
+the plug-in's and are unauthenticated, `approve` and `deny` are browser-only and carry
+`requireBrowserSession`. **So the surface splits cleanly by ROUTE, and each half sits where its
+caller already points.** `start` keeps the plug-in's straight sweep at `y=388`; `approve` joins the
+browser's stack. Two straight arrows, zero crossings, zero routed edges.
+
+**The generalizable form: a node that two callers reach by DISJOINT sub-surfaces is two nodes.**
+Ask whether the callers actually share endpoints before spending layout to make one box reachable
+from two directions. Here the code had already answered — the allow-lists are disjoint — and the
+answer was quoted back in conversation an hour before anyone acted on it.
+
+**A tile may stand for an exact path or for a namespace, and the label must say which.** The four
+route tiles now do: a bare path means one route, a trailing `*` means a prefix. Plurality follows —
+`API endpoint` against `API endpoints`.
 
 ### `scripts/badge-positions.py` answers where a badge goes
 
