@@ -205,10 +205,9 @@ local function run()
 
 			local total = counts()
 			props.leftStats = string.format(
-				"Groups displayed: %d   \226\128\162   Hidden by filter: %d   \226\128\162   Pic already in %d groups",
+				"Groups displayed: %d   \226\128\162   Hidden by filter: %d",
 				shown,
-				hidden,
-				prunedCount
+				hidden
 			)
 			props.rightStats =
 				string.format("Number of groups currently selected: %d", total)
@@ -257,7 +256,7 @@ local function run()
 
 		refresh()
 
-		local paneWidth = 320
+		local paneWidth = 400
 		local paneHeight = 420
 
 		local leftRows = {}
@@ -267,7 +266,7 @@ local function run()
 				title = g.name,
 				value = LrView.bind(keyLeftChecked(g.id)),
 				visible = LrView.bind(keyLeftVisible(g.id)),
-				width = paneWidth - 30,
+				width = paneWidth - 44,
 			})
 			--[[ Every right-pane row is a pending ADD, so one marker serves. The
 			     photo's existing groups are pruned and never appear here. ]]
@@ -275,7 +274,7 @@ local function run()
 				title = MARK_QUEUED .. g.name,
 				value = LrView.bind(keyRightChecked(g.id)),
 				visible = LrView.bind(keyRightVisible(g.id)),
-				width = paneWidth - 30,
+				width = paneWidth - 44,
 			})
 		end
 
@@ -342,7 +341,8 @@ local function run()
 			}),
 
 			factory:static_text({
-				title = MARK_QUEUED
+				title = string.format("Pic already in %d groups. ", prunedCount)
+					.. MARK_QUEUED
 					.. "Will be added. Groups this pic is already in are not listed " .. "\226\128\148 FGA adds only.",
 			}),
 

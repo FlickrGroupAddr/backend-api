@@ -293,6 +293,23 @@ reference, so this file can say "the SDK does not support X" when the running ap
 **Nothing here has hit that yet**, and it is worth remembering before concluding something is
 impossible.
 
+### 744 checkbox views build in 12 ms, measured 2026-08-15
+
+**That was the one real risk in the checkbox design and it is not a risk.**
+
+`LrView` builds its view tree ONCE — bindings change values, never structure — so a list whose
+contents change cannot add or remove rows. Every group therefore needs a row in **both** panes up
+front, with `visible` deciding what is on screen. For 372 groups that is **744 views**, and the fear
+was that constructing them would make the dialog slow to open.
+
+**It does not.** The dialog times its own construction and reported `Built 744 rows in 12 ms` on
+Terry's machine. So `visible`-toggling is a viable pattern here, and a future list does not need to
+fear the row count.
+
+**The dialog measures itself rather than relying on impressions**, which is the same habit as the
+connectivity probe reporting elapsed milliseconds. "It felt fine" and "12 ms" are different kinds of
+evidence, and only one survives a disagreement.
+
 ### The Lightroom crash: one, on the FIRST run, none since
 
 **Terry, 2026-08-15:** *"that first ever plugin we ran and LrC crashed? happy to report there have   US-ENGLISH-EXEMPT: quoting Terry

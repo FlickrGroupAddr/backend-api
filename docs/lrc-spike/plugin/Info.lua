@@ -47,7 +47,17 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
-	-- **0.13 IS ADD ONLY. Groups the pic is already in are PRUNED, not shown.**
+	-- **0.14 fixes three layout defects 0.13 shipped, all found by looking.**
+	--
+	-- Panes were 320 wide and group names clipped, with a horizontal scrollbar
+	-- to prove it. The left stats line ran past its column and truncated mid
+	-- word at "Pic". Both are the same mistake: a width guessed rather than
+	-- measured against the longest real string.
+	--
+	-- **744 rows build in 12 ms**, measured on Terry's machine. That was the one
+	-- risk in the checkbox design and it is not a risk.
+	--
+	-- **0.13 WENT ADD ONLY. Groups the pic is already in are PRUNED, not shown.**
 	--
 	-- Terry: *"I am going to stop complicating my life -- can only add groups,
 	-- not remove. If a pic is in a group when the dialog comes up, we just prune
@@ -192,5 +202,5 @@ return {
 		},
 	},
 
-	VERSION = { major = 0, minor = 13, revision = 0 },
+	VERSION = { major = 0, minor = 14, revision = 0 },
 }
