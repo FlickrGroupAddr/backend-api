@@ -733,6 +733,39 @@ intermediate change during a shift-drag, which would have decided whether span-m
 | Left | `Groups displayed: N` and `Groups hidden by filter: N` |
 | Right | `Number of groups currently selected: N` |
 
+#### Built as spike 0.5, `TransferPicker.lua`, 2026-08-15
+
+**`PickerProbe.lua` (0.4) stays registered on purpose.** It is the control. Comparing the two side
+by side is how the redesign gets judged, and deleting the thing you measure against is how a spike
+stops being evidence.
+
+**The dialog is a STAGING AREA, and that is the answer to the removal risk below.** Nothing reaches
+Flickr until the user clicks Save. So a click is free, a mis-click costs one more click, and the
+dangerous action needs a deliberate commit. **This is better than a per-row confirm**, which would
+put a modal in front of the one interaction the whole design exists to make fast.
+
+**Three implementation facts a later session will need:**
+
+- **A move rebinds both lists, which clears `value`, which fires the observer again.** Without a
+  guard that second firing reads as a click on nothing. `TransferPicker.lua` carries a `moving` flag
+  around every rebuild, and it MUST wrap every one.
+- **`\u{25CF}` is a Lua 5.3 escape and Lightroom runs 5.1**, where it is a SYNTAX ERROR rather than
+  a bad glyph — the whole file fails to load. The marker is written as raw UTF-8 bytes,
+  `"\226\151\143 "`.
+- **This machine has no `luac`**, so `scripts/lua-balance.py` stands in. It is a block-balance check
+  and **NOT a parser**; it catches an unclosed or over-closed block, which is the error that has
+  actually bitten. It was validated in both directions — against the three files Lightroom already
+  loads, and against deliberately broken fixtures.
+
+**Five things only Terry can answer, by using it:**
+
+1. Does `simple_list` with `allows_multiple_selection = false` fire its observer on **every** click,
+   including re-clicking a row that just came back from the other side?
+2. Does the `moving` guard hold, or does one click produce a double move?
+3. Does a move feel instant at 372 groups? Each one re-sorts and rebinds both lists.
+4. Are the `\u{25CF}` and `+` markers readable, or does the distinction need another treatment?
+5. Do two 330-wide lists plus the stat lines fit his screen?
+
 #### The right list is MEMBERSHIP, not a shopping basket
 
 **Terry, same session:** *"I may use the plugin to add/remove groups from pics that already have

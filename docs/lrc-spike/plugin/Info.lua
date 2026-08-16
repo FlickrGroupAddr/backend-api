@@ -47,14 +47,32 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
+	-- 0.5 ADDS THE TRANSFER PICKER, which is Terry's redesign after driving 0.4.
+	--
+	-- 0.4's single filtered list hid selections behind the filter. He typed
+	-- "canada" and four choices vanished from view -- the merge model held them
+	-- correctly and the screen said otherwise, which is the worst combination
+	-- because a user cannot see a correct model.
+	--
+	-- 0.5 is two lists with a row hopping between them, and the right list is
+	-- the photo's MEMBERSHIP rather than a shopping basket: it opens holding
+	-- what Flickr already reports for the photo.
+	--
+	-- **0.4 STAYS REGISTERED on purpose.** It is the control. Comparing the two
+	-- side by side is how the redesign gets judged, and deleting the thing you
+	-- are measuring against is how a spike stops being evidence.
 	LrLibraryMenuItems = {
 		{
 			title = "FGA: dump publish services (Library)",
 			file = "DumpPublishServices.lua",
 		},
 		{
-			title = "FGA: group picker probe (Library)",
+			title = "FGA: group picker probe -- one list (Library)",
 			file = "PickerProbe.lua",
+		},
+		{
+			title = "FGA: group picker -- TWO LISTS (Library)",
+			file = "TransferPicker.lua",
 		},
 	},
 
@@ -64,10 +82,14 @@ return {
 			file = "DumpPublishServices.lua",
 		},
 		{
-			title = "FGA: group picker probe (File)",
+			title = "FGA: group picker probe -- one list (File)",
 			file = "PickerProbe.lua",
+		},
+		{
+			title = "FGA: group picker -- TWO LISTS (File)",
+			file = "TransferPicker.lua",
 		},
 	},
 
-	VERSION = { major = 0, minor = 4, revision = 0 },
+	VERSION = { major = 0, minor = 5, revision = 0 },
 }
