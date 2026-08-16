@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 234" role="img" aria-label="Adobe Lightroom Classic">
   <rect x="0" y="0" width="240" height="234" rx="42" ry="42" fill="#001E36"/>
   <g fill="#31A8FF">
-    <path d="M46 74 h19 v62 h37 v19 H46 Z"/>
-    <path d="M114 100 h18 v12 c5,-9 14,-13 25,-13 v20 c-16,0 -25,7 -25,21 v15 h-18 Z"/>
+    <path d="M27 77 h19 v61 h29 v19 H27 Z"/>
+    <path d="M85 102 h18 v12 c5,-8 12,-12 20,-12 v19 c-12,0 -20,6 -20,17 v19 h-18 Z"/>
   </g>
-  <path d="M212.6 97.1 A35 35 0 1 0 212.6 132.9"
-        fill="none" stroke="#31A8FF" stroke-width="18"/>
+  <path d="M200.28 101.25 A31.5 31.5 0 1 0 200.28 132.75"
+        fill="none" stroke="#31A8FF" stroke-width="17"/>
 </svg>
 <!--
 Adobe Lightroom Classic's "LrC" mark, HAND-DRAWN from the application icon rather

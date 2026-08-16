@@ -243,6 +243,71 @@ it.** This is not a corner problem and it has bitten repeatedly:
 as a change. `e18` and `e3` share `y=388` and carry the device-link handshake straight across the
 canvas as one line; `e9` and `e10` land on `flickrapi` at `y=536` and `y=860`.
 
+### Step badges: ON the line now, and the ring is what makes them work
+
+**Terry moved them onto the line on 2026-08-16.** They used to sit BESIDE their arrow, and that
+changes which constraint binds. Beside the line, the limit was the shortest visible run — `e4`,
+Worker Secrets to the API Worker, at 30 units. **On the line, run length stops mattering entirely**
+and the limit becomes the spacing between two parallel arrows.
+
+**The tightest pair is the browser's two channels**: `e22` to `/oauth` at `y=512` and `e13` to `/api`
+at `y=554`, **42 units apart**. Two badges centered on those lines touch at diameter 42.
+
+| | |
+|---|---|
+| Diameter | **34** |
+| `fontSize` | **17** — 12.2 pt |
+| Fill | `#003087` |
+| Text | `#FFFFFF`, bold |
+| Stroke | `#FFFFFF`, **3 units**, matching the arrows' own `strokeWidth=3` |
+| Badge-to-badge gap on the tightest pair | 8 |
+
+**Sized against a TWO-DIGIT number, because that is the hard case.** `10` measures about 19 units
+inside a 34 circle, leaving ~7 clear on each side. The journey is heading for 18 steps, still two
+digits.
+
+#### THE WHITE RING IS LOAD-BEARING, and the fill is not
+
+**Measured, WCAG relative luminance:**
+
+| Pair | Ratio |
+|---|---|
+| White text on `#003087` | 11.85 : 1 |
+| `#003087` vs the white page | 11.85 : 1 |
+| White ring vs the `#1A1A1A` arrow | **17.4 : 1** |
+| `#003087` vs the `#1A1A1A` arrow | **1.47 : 1** |
+
+**That last row is the finding.** Navy against a black line is 1.47, below even the 3:1 floor for
+large text. **Remove the ring and the badge merges into the arrow it sits on.** The fill's only job
+is to hold the digit; the ring is what separates the badge from the line.
+
+**Two alternatives were computed and rejected.** White fill with navy text and ring fails twice: the
+fill against the white page is 1:1, so the badge dissolves into the background, and a navy ring
+against a black arrow is that same weak 1.47. Cloudflare orange `#F6821F` reaches only **2.58:1**
+against the page, and it already belongs to three tiles.
+
+**`#003087` now collides with the Lightroom mark.** The rule is 90 RGB units minimum between the
+badge fill and any tile fill; `#003087` against the mark's ground `#001E36` is **83**. They never sit
+near each other, but `MIN_COLOR_DISTANCE` will fire the moment the checks come back. **Shift the
+badge navy, darken the mark, or exempt the pair — but decide it rather than discovering it.**
+
+### AN XML COMMENT MUST NOT CONTAIN TWO CONSECUTIVE HYPHENS
+
+**This repository's prose uses `--` as an em dash everywhere, and an SVG is XML.** The first version
+of `logos/lightroom-classic-mark.svg` carried four of them inside its trailing comment.
+
+**The failure was silent in every direction.** The file was malformed, `embed()` base64'd the bytes
+without looking at them, drawio drew nothing at all, and the build reported success. **Nothing
+anywhere checks that an embedded logo is well-formed.**
+
+**Decode the payload and parse it** when a logo does not appear:
+
+```
+ET.fromstring(base64.b64decode(payload))   # names the line and column immediately
+```
+
+Three logos parsed and one did not, which took the diagnosis from minutes to seconds.
+
 ### Three classes of defect, and only one of them has checks
 
 | Class | Example | Caught by |
