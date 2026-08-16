@@ -47,7 +47,22 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
-	-- **0.11 STOPS DISAGREEING WITH THE WIDGET, and that is what finally works.**
+	-- **0.12 RETIRES `simple_list` FOR THE PICKER. Checkboxes, two panes, arrows.**
+	--
+	-- Terry's design: *"check things on left side and click add arrow to move
+	-- right"*, two panes rather than one combined list, and the filter touching
+	-- the left pane only.
+	--
+	-- A checkbox is a bound boolean, so a toggle always changes the value and
+	-- always fires. The dead-row class of bug disappears rather than being
+	-- worked around -- and the arrows now act on EVERY checked row at once,
+	-- which is a batch move that neither earlier design could do.
+	--
+	-- **LrView builds its view tree ONCE**, so all 744 rows exist up front and
+	-- `visible` decides what is on screen. Build time is the risk, so the dialog
+	-- times itself and reports it.
+	--
+	-- **0.11 STOPPED DISAGREEING WITH THE WIDGET, and it was still simple_list.**
 	--
 	-- Four versions tried to clear simple_list's selection after a move and none
 	-- could: value = {}, value = "", the reference's own value_equal hook, and
@@ -129,6 +144,10 @@ return {
 			file = "TransferPicker.lua",
 		},
 		{
+			title = "FGA: group picker -- CHECKBOXES (Library)",
+			file = "CheckboxPicker.lua",
+		},
+		{
 			title = "FGA: connectivity probe (Library)",
 			file = "ConnectivityProbe.lua",
 		},
@@ -148,10 +167,14 @@ return {
 			file = "TransferPicker.lua",
 		},
 		{
+			title = "FGA: group picker -- CHECKBOXES (File)",
+			file = "CheckboxPicker.lua",
+		},
+		{
 			title = "FGA: connectivity probe (File)",
 			file = "ConnectivityProbe.lua",
 		},
 	},
 
-	VERSION = { major = 0, minor = 11, revision = 0 },
+	VERSION = { major = 0, minor = 12, revision = 0 },
 }
