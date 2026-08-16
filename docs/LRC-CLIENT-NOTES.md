@@ -483,6 +483,66 @@ necessary on security grounds. It is not, and that claim was made before reading
 **This still becomes an ADR** — it is a new credential class with its own revocation story, and
 ADR-10's cookie assumptions do not cover it.
 
+#### The contracts, proposed 2026-08-15. NOT built, and NOT decided.
+
+**Three endpoints. None exists yet.**
+
+| | |
+|---|---|
+| `POST /api/v001/device/start` | No auth. Returns `{ code, userCode, expiresAt, pollAfter }` |
+| `GET /link?code=…` | The browser page. **Session cookie required**, so ADR-10 does the identity work |
+| `POST /api/v001/device/poll` | Body `{ code }`. Returns `pending`, `denied`, `expired`, or `{ token }` |
+
+**Two codes, not one, and the split is the whole security design.**
+
+- **`code` is the polling handle** — 32 bytes from `crypto.getRandomValues`, base64url. The plug-in
+  holds it and never shows it.
+- **`userCode` is what a human reads** — short, unambiguous, and **displayed in Lightroom**. It is
+  the thing the person compares against the browser page.
+
+**State lives in a Durable Object, one per flow**, exactly like ADR-08's OAuth Request Token. Same
+argument: a short-lived single-writer object with an alarm that deletes itself beats a D1 row that
+needs sweeping, and the polling is naturally serialized by the single writer.
+
+#### The phishing weakness is REAL, and FGA's version of it is worse than most
+
+**Every device flow has this hole.** An attacker starts a flow on their own machine, sends the
+victim `flickrgroupaddr.com/link?code=…`, and the victim — already signed in — approves it. The
+attacker's plug-in then polls and collects a token for the victim's account.
+
+**PKCE does NOT close it.** The attacker started the flow, so the attacker holds the verifier. PKCE
+protects against an intercepted code, which is a different attack.
+
+**And the usual "the blast radius is small" consolation does not apply here.** ADR-01 says a request
+that reached a moderator is terminal. So a phished token can push a stranger's photos into volunteer
+review queues, and **that effect cannot be taken back** — not by revoking the token, not by deleting
+the requests. **The irreversibility is the reason this needs more care than a typical device flow,
+not less.**
+
+**Three mitigations, and the first is the one that matters:**
+
+1. **The `/link` page MUST display the `userCode` and require the person to confirm it matches what
+   Lightroom is showing.** A victim who never started a flow has no code on screen to match, which
+   is the moment the attack becomes visible. Prefilling from the query string is fine for
+   convenience; **auto-approving from it is not.**
+2. **The page MUST say plainly what it grants** — that a Lightroom plug-in will be able to queue
+   group adds as them — rather than "authorize this device".
+3. **Short TTL and a rate limit.** Ten minutes, and `pollAfter` tells the plug-in how long to wait.
+   A plug-in that ignores it should be throttled server-side rather than trusted.
+
+#### Three things a future session MUST settle before writing code
+
+- **What the token authorizes.** It is not a session. It SHOULD reach the queueing and preflight
+  endpoints and nothing else — no account settings, no revocation of other tokens, no Flickr
+  credential access.
+- **Revocation, and where the user sees it.** A credential a user cannot list is a credential they
+  cannot revoke. There is no UI for this today.
+- **Whether the token expires.** Adobe's `auth_token` does not. A non-expiring credential on a
+  laptop is a real exposure, and [[threat-model-the-thief-not-the-owner]] applies: the question is
+  not what Terry knows, it is who else ends up holding the catalog.
+
+**Terry decides all three.** Nothing here is built.
+
 ### Feedback is preflight. Commitment is one batch submit.
 
 **Clicking a group fires a debounced `POST /api/v001/photos/:photoId/preflight`** and marks the chip
