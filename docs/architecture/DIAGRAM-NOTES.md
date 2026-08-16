@@ -209,7 +209,13 @@ session and **is NOT yet in the generator.** Its shape:
 | A3 | `LrHttp.openUrlInBrowser` — **the Lua side, which does not exist** | **No** |
 | A4 | DNS | **Yes** |
 
-**THE PLUG-IN NEEDS ITS OWN DNS EDGE, and the canvas does not have one.** Found 2026-08-16 while
+**THE PLUG-IN NEEDS ITS OWN DNS EDGE. DRAWN 2026-08-16 as `e21`**, plug-in bottom-right corner to
+the DNS tile's top-left. `e1` was re-cornered the same way, browser top-right to DNS bottom-left, so
+the two converge on the tile instead of crossing the channel. **`e21` carries no badge**, because
+the plug-in's DNS query is not a step in the current thirteen-step journey and the build requires
+the row count and the badge count to agree. It gets one when the two-panel rewrite lands.
+
+Found 2026-08-16 while
 Terry walked the journey aloud. **The plug-in is a network client before it is a browser launcher**:
 it calls `POST /api/v001/device/start` first and must therefore resolve `flickrgroupaddr.com`
 itself. It cannot delegate that to the browser, because `LrHttp.openUrlInBrowser` is fire-and-forget
