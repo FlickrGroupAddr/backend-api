@@ -204,10 +204,14 @@ MUTATIONS = [
         "\tif (false as boolean) {",
     ),
     (
+        # **Anchor re-cut 2026-08-16**, when `consume` grew a `returnPath` and the old
+        # anchor stopped matching. The harness reported it SKIPPED rather than passing,
+        # which is the design working -- a mutation whose anchor has drifted defends
+        # nothing, and a silent skip would have read as coverage.
         "ADR-08: return the login secret more than once",
         "src/oauth/login-attempt.ts",
-        "\t\tawait this.ctx.storage.deleteAll();\n\t\treturn { requestTokenSecret: attempt.requestTokenSecret };",
-        "\t\treturn { requestTokenSecret: attempt.requestTokenSecret };",
+        "\t\tawait this.ctx.storage.deleteAll();\n\t\treturn {",
+        "\t\treturn {",
     ),
     (
         "ADR-17: cap the pagination limit at nothing",
@@ -283,6 +287,32 @@ MUTATIONS = [
         "src/routes/api.ts",
         'const status = inPool.has(groupId)\n\t\t\t\t? "already_in_pool"',
         'const status = false\n\t\t\t\t? "already_in_pool"',
+    ),
+    (
+        # The open redirect. Drop the origin check and `returnTo=https://evil.com`
+        # resolves to somebody else's site -- with the session cookie already set,
+        # because the callback sets it before it redirects.
+        "ADR-11: let returnTo escape our origin",
+        "src/oauth/return-to.ts",
+        "\tif (resolved.origin !== base.origin) return null;",
+        "\tif (false && resolved.origin !== base.origin) return null;",
+    ),
+    (
+        # ADR-17's bound on the destination list. Without it any same-origin path is
+        # a landing spot, which is safe today only because no path is dangerous today.
+        "ADR-11: accept any path as a login destination",
+        "src/oauth/return-to.ts",
+        "\tif (!ALLOWED_RETURN_PATHS.has(resolved.pathname)) return null;",
+        "\tif (false) return null;",
+    ),
+    (
+        # **The regression itself.** This IS the defect found on 2026-08-16: the
+        # callback ignored where the login started and always went to the app root,
+        # so a user who signed in mid-device-link arrived home with the code gone.
+        "ADR-11: send every login back to the app root",
+        "src/routes/oauth.ts",
+        'return c.redirect(uiUrl(c.env, "ok", attempt.returnPath), 302);',
+        'return c.redirect(uiUrl(c.env, "ok"), 302);',
     ),
 ]
 

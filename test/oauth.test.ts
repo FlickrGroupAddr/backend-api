@@ -6,6 +6,7 @@ import {
 	parseFormResponse,
 	protocolParams,
 } from "../src/flickr/oauth.js";
+import { safeReturnPath } from "../src/oauth/return-to.js";
 import type { Param } from "../src/oauth/signature.js";
 
 /** The Flickr login: parameter assembly, and ADR-08's single-use secret store. */
@@ -166,4 +167,121 @@ it("sends a login to Flickr carrying a request token", async () => {
 	const location = new URL(response.headers.get("Location") ?? "");
 	expect(location.host).toBe("www.flickr.com");
 	expect(location.searchParams.get("oauth_token")).not.toBeNull();
+});
+
+describe("ADR-11: returnTo can never leave our origin", () => {
+	const ORIGIN = "https://flickrgroupaddr.com";
+
+	it("accepts the paths a login is allowed to finish on", () => {
+		expect(safeReturnPath("/", ORIGIN)).toBe("/");
+		expect(safeReturnPath("/link", ORIGIN)).toBe("/link");
+		// The query survives, which is the whole point for the device flow.
+		expect(safeReturnPath("/link?userCode=ABC123", ORIGIN)).toBe(
+			"/link?userCode=ABC123",
+		);
+		// Absolute but same-origin resolves to its own path.
+		expect(safeReturnPath(`${ORIGIN}/link`, ORIGIN)).toBe("/link");
+	});
+
+	it.each([
+		["https://evil.com", "absolute off-site URL"],
+		["https://evil.com/link", "off-site URL wearing an allowed path"],
+		["//evil.com", "protocol-relative"],
+		["//evil.com/link", "protocol-relative wearing an allowed path"],
+		["/\\evil.com", "backslash, which WHATWG normalizes to a second slash"],
+		["\\\\evil.com", "double backslash"],
+		["http://flickrgroupaddr.com/link", "right host, WRONG SCHEME"],
+		["https://flickrgroupaddr.com.evil.com/link", "suffix-confusion host"],
+	])("refuses %s -- %s", (candidate) => {
+		expect(safeReturnPath(candidate, ORIGIN)).toBeNull();
+	});
+
+	// Annotated because a bare array of mixed tuples makes TypeScript infer a UNION of
+	// tuple types, which `it.each` cannot match to a single callback signature.
+	const NOT_A_DESTINATION: ReadonlyArray<[string | null | undefined, string]> =
+		[
+			["/admin", "a real path that is not an allowed destination"],
+			["/%2f%2fevil.com", "percent-encoded escape attempt"],
+			["", "empty"],
+			[null, "absent"],
+			[undefined, "undefined"],
+		];
+
+	it.each(NOT_A_DESTINATION)("refuses %s -- %s", (candidate) => {
+		expect(safeReturnPath(candidate, ORIGIN)).toBeNull();
+	});
+
+	it("returns a PATH, never anything carrying an origin", () => {
+		// Defense in depth by return type: even a wrong check above cannot emit a host.
+		for (const candidate of ["/", "/link", `${ORIGIN}/link`]) {
+			const got = safeReturnPath(candidate, ORIGIN);
+			expect(got).not.toBeNull();
+			expect(got?.startsWith("/")).toBe(true);
+			expect(got).not.toMatch(/^\/\//);
+		}
+	});
+});
+
+describe("ADR-11: the callback returns where the login STARTED", () => {
+	/** Drives both legs. The outbound stub answers request_token and access_token. */
+	async function login(query: string): Promise<URL> {
+		const started = await SELF.fetch(
+			`https://api.flickrgroupaddr.com/oauth/login${query}`,
+			{ redirect: "manual" },
+		);
+		expect(started.status).toBe(302);
+
+		const back = await SELF.fetch(
+			"https://api.flickrgroupaddr.com/oauth/callback" +
+				"?oauth_token=test-request-token&oauth_verifier=test-verifier",
+			{ redirect: "manual" },
+		);
+		expect(back.status).toBe(302);
+		return new URL(back.headers.get("Location") ?? "");
+	}
+
+	it("lands on the app root when no returnTo was given", async () => {
+		const location = await login("");
+		expect(location.origin).toBe("https://flickrgroupaddr.com");
+		expect(location.pathname).toBe("/");
+		expect(location.searchParams.get("login")).toBe("ok");
+	});
+
+	it("carries the device-link code through the whole Flickr round trip", async () => {
+		// The defect this closes: before 2026-08-16 the callback always redirected to
+		// the app root, so a user who signed in mid-link arrived home with the code
+		// gone and the flow had no way to finish.
+		const location = await login(
+			`?returnTo=${encodeURIComponent("/link?userCode=ABC123")}`,
+		);
+		expect(location.origin).toBe("https://flickrgroupaddr.com");
+		expect(location.pathname).toBe("/link");
+		expect(location.searchParams.get("userCode")).toBe("ABC123");
+		expect(location.searchParams.get("login")).toBe("ok");
+	});
+
+	it("ignores an off-site returnTo and still lands on our origin", async () => {
+		// The open redirect. A victim clicking a crafted login link MUST end up here,
+		// not on the attacker's site holding a fresh session cookie.
+		const location = await login("?returnTo=https%3A%2F%2Fevil.com");
+		expect(location.origin).toBe("https://flickrgroupaddr.com");
+		expect(location.pathname).toBe("/");
+	});
+
+	it("keeps the destination out of the callback URL entirely", async () => {
+		// Flickr controls the callback's query string. If the destination travelled
+		// there, Flickr -- or anyone who could tamper with that redirect -- would be
+		// choosing where an authenticated user lands. It lives in the Durable Object.
+		await SELF.fetch(
+			`https://api.flickrgroupaddr.com/oauth/login?returnTo=${encodeURIComponent("/link")}`,
+			{ redirect: "manual" },
+		);
+		const stub = env.OAUTH_LOGIN.get(
+			env.OAUTH_LOGIN.idFromName("test-request-token"),
+		);
+		expect(await stub.consume("test-request-token")).toEqual({
+			requestTokenSecret: "test-request-token-secret",
+			returnPath: "/link",
+		});
+	});
 });

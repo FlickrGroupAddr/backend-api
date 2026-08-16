@@ -5,6 +5,7 @@ import {
 	exchangeAccessToken,
 	fetchRequestToken,
 } from "../flickr/oauth.js";
+import { safeReturnPath } from "../oauth/return-to.js";
 import {
 	clearSessionCookie,
 	mintSession,
@@ -17,14 +18,29 @@ import {
 
 export const oauthRoutes = new Hono<{ Bindings: Env }>();
 
-function uiUrl(env: Env, outcome: string): string {
-	const url = new URL(env.UI_ORIGIN);
+/**
+ * Where the browser lands when the login finishes.
+ *
+ * **`returnPath` is composed here rather than trusted from anywhere**, and it has already
+ * passed `safeReturnPath`. Building it against `UI_ORIGIN` means even a wrong validator
+ * cannot produce an off-site destination.
+ */
+function uiUrl(env: Env, outcome: string, returnPath?: string): string {
+	const url =
+		returnPath === undefined
+			? new URL(env.UI_ORIGIN)
+			: new URL(returnPath, env.UI_ORIGIN);
 	url.searchParams.set("login", outcome);
 	return url.toString();
 }
 
 oauthRoutes.get("/oauth/login", async (c) => {
 	const callbackUrl = `${c.env.API_BASE_URL}/oauth/callback`;
+
+	// ADR-11. Validated HERE, at the edge, so nothing downstream handles a raw value.
+	// Null means "no usable destination", which uiUrl reads as the app root.
+	const returnPath =
+		safeReturnPath(c.req.query("returnTo"), c.env.UI_ORIGIN) ?? undefined;
 
 	const temporary = await fetchRequestToken(
 		c.env.FLICKR_CONSUMER_KEY,
@@ -40,7 +56,7 @@ oauthRoutes.get("/oauth/login", async (c) => {
 	// MUST complete before the redirect. If the browser reached Flickr and came back
 	// faster than this write, the callback would find nothing -- rare, real, and
 	// near-impossible to reproduce.
-	await stub.start(temporary.token, temporary.tokenSecret);
+	await stub.start(temporary.token, temporary.tokenSecret, returnPath);
 
 	return c.redirect(buildAuthorizeUrl(temporary.token), 302);
 });
@@ -88,7 +104,12 @@ oauthRoutes.get("/oauth/callback", async (c) => {
 		await mintSession(c.env.DB, access.nsid, c.env.SESSION_KEY),
 	);
 
-	return c.redirect(uiUrl(c.env, "ok"), 302);
+	// **The destination comes out of the Durable Object, never out of this request.**
+	// Flickr chose the query string that reached us; it did not choose where the user
+	// goes next. Before 2026-08-16 this always landed on the app root, which stranded
+	// any flow that began somewhere else -- the device-link page most of all, because a
+	// user who signed in mid-link arrived home with their code gone.
+	return c.redirect(uiUrl(c.env, "ok", attempt.returnPath), 302);
 });
 
 /**

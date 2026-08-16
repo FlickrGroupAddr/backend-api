@@ -224,6 +224,13 @@ session and **is NOT yet in the generator.** Its shape:
 **The publish panel drafts to 9 steps**, from the catalog read through preflight and
 `POST /api/v001/requests/batch` to the 00:15 UTC sweep calling `groups.pools.add`.
 
-**A17 IS BLOCKED BY A REAL BUG, and the diagram MUST NOT draw it as working.** See
-`docs/LRC-CLIENT-NOTES.md` — `src/routes/oauth.ts` always ends the callback at `UI_ORIGIN?login=ok`,
-so a user who signs in mid-link lands on the app root and the flow is stranded.
+**A17 WAS BLOCKED BY A REAL BUG. FIXED 2026-08-16, so the diagram no longer has to flag it.**
+`src/routes/oauth.ts` used to end the callback unconditionally at `UI_ORIGIN?login=ok`, stranding
+any flow that began somewhere else. It now carries a validated `returnTo` through the Flickr round
+trip in the ADR-08 login attempt. **See ADR-11**, which gained the open-redirect rule in the same
+change, and which has three mutations defending it.
+
+**The rest of the device flow is still unbuilt** — `/device/start`, `/link` and `/device/poll` do
+not exist. The panel draws a DECIDED design, which is the same call Terry made deliberately for the
+plug-in tile itself. **If the device flow is ever abandoned, the panel comes out**, same rule that
+removed the read replica.

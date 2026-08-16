@@ -53,21 +53,22 @@ staging, the report, and the add-only scoping.
   credential of both kinds instantly, because the HMAC is checked before any database read.
   **What is NOT built is the flow that issues a plug-in token** — `/device/start`, `/link` and
   `/device/poll`. Nothing can mint one yet, which is why there is nothing to revoke.
-- **THE OAUTH CALLBACK STRANDS THE DEVICE FLOW. Found 2026-08-16, in code, not yet fixed.**
-  `src/routes/oauth.ts` ends `GET /oauth/callback` with `c.redirect(uiUrl(c.env, "ok"), 302)`, and
-  `uiUrl` builds `UI_ORIGIN` plus `?login=ok`. **That is the app root.**
+- **THE OAUTH CALLBACK STRANDED THE DEVICE FLOW. Found and FIXED 2026-08-16.**
+  `GET /oauth/callback` used to end with `c.redirect(uiUrl(c.env, "ok"), 302)` — the app root. A
+  user who arrived at `/link?userCode=…` without a session, signed in with Flickr, and came back
+  through the callback **landed on the home page with the code gone.** The linking step had no way
+  to finish.
 
-  So a user who arrives at `/link?userCode=…` without a session, signs in with Flickr, and comes
-  back through the callback **lands on the home page with the code gone.** The device flow cannot
-  complete. The linking step is the one part of the journey that has no way to finish.
+  **`GET /oauth/login` now takes a `returnTo`**, validated by `src/oauth/return-to.ts` and carried
+  through the Flickr round trip **inside the ADR-08 login attempt Durable Object** — never in the
+  callback URL, because Flickr controls that query string.
 
-  **The fix has to carry the code through the OAuth leg** — most likely a `returnTo` held in the
-  login attempt Durable Object, which already exists per ADR-08 and is already keyed by the request
-  token. **It MUST NOT be carried in the callback URL**: Flickr controls that redirect's query
-  string, and ADR-11's rules about what may be reflected apply.
+  **ADR-11 gained the rule**, since it is the same subject as never reflecting `Origin`: a login
+  MUST NOT redirect anywhere the request chose. Two independent checks, a path-not-URL return type,
+  and three mutations in `scripts/mutation-check.py` that all get caught.
 
-  **This is why the diagram MUST NOT draw step A17 as working.** See
-  `docs/architecture/DIAGRAM-NOTES.md`.
+  **What this does NOT do: build the device flow.** `/device/start`, `/link` and `/device/poll`
+  still do not exist. This removed the blocker under them.
 - **The diagram's `e19` arrow head. CLOSED 2026-08-16.** Terry chose option 1: one head, plug-in to
   Browser. The picture now matches steps 12 and 13 and matches the device flow, and the token
   arrives on `e18` where it actually does. See `docs/architecture/DIAGRAM-NOTES.md`.

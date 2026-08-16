@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**22 decisions · 54 test blocks · 35 mutations**
+**23 decisions · 56 test blocks · 38 mutations**
 
 ## Forward: decision to verification
 
@@ -26,10 +26,10 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
 | **ADR-06** | The work engine is a nightly cron over D1 | Test | `sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | — |
 | **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
-| **ADR-08** | OAuth state lives in a Durable Object | Test | `oauth.test.ts` protocolParams<br>`oauth.test.ts` authorizationHeader<br>`oauth.test.ts` buildAuthorizeUrl<br>`oauth.test.ts` parseFormResponse<br>`oauth.test.ts` the login attempt, ADR-08<br>`oauth.test.ts` sends a login to Flickr carrying a request token | yes |
+| **ADR-08** | OAuth state lives in a Durable Object | Test | `oauth.test.ts` protocolParams<br>`oauth.test.ts` authorizationHeader<br>`oauth.test.ts` buildAuthorizeUrl<br>`oauth.test.ts` parseFormResponse<br>`oauth.test.ts` the login attempt, ADR-08<br>`oauth.test.ts` sends a login to Flickr carrying a request token<br>`oauth.test.ts` ADR-11: returnTo can never leave our origin<br>`oauth.test.ts` ADR-11: the callback returns where the login STARTED | yes |
 | **ADR-09** | Tokens are AES-GCM encrypted in D1, under a separate key | Test | `crypto.test.ts` round trip<br>`crypto.test.ts` nonce handling<br>`crypto.test.ts` rejection<br>`schema.test.ts` ADR-07 and ADR-09, users | yes |
 | **ADR-10** | The session is an opaque, revocable handle | Test | `api.test.ts` ADR-10, authentication<br>`session.test.ts` mint and verify<br>`session.test.ts` revocation, which ADR-10 could not do<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op | — |
-| **ADR-11** | The session cookie is host-only, and `Origin` is never reflected | Test | `session.test.ts` mint and verify<br>`session.test.ts` revocation, which ADR-10 could not do<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op<br>`worker.test.ts` ADR-11, CORS | yes |
+| **ADR-11** | The session cookie is host-only, and `Origin` is never reflected | Test | `oauth.test.ts` ADR-11: returnTo can never leave our origin<br>`oauth.test.ts` ADR-11: the callback returns where the login STARTED<br>`session.test.ts` mint and verify<br>`session.test.ts` revocation, which ADR-10 could not do<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op<br>`worker.test.ts` ADR-11, CORS | yes |
 | **ADR-12** | No cache in front of D1 | Test | `admin.test.ts` ADR-19, the admin gate<br>`api.test.ts` ADR-12, nothing behind a session reaches a shared cache<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in | — |
 | **ADR-13** | TypeScript, on the current stable toolchain | Inspection | *by inspection* | — |
 | **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
@@ -41,6 +41,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-20** | The warning arrives before the commitment | Test | `batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`batch.test.ts` the batch endpoint's shape<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
 | **ADR-21** | The web sourcemap ships, and reopening this needs an extreme bar | Inspection | *by inspection* | — |
 | **ADR-22** | The schema enforces the rules, and every table is `STRICT` | Test | `photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type | — |
+| **ADR-23** | Randomness comes from the Worker, and the undocumented `LrUUID` MUST NOT be used | Inspection | *by inspection* | — |
 
 ## Backward: every test block defends something
 
@@ -73,6 +74,8 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `oauth.test.ts` | parseFormResponse | ADR-08 |
 | `oauth.test.ts` | the login attempt, ADR-08 | ADR-08 |
 | `oauth.test.ts` | sends a login to Flickr carrying a request token | ADR-08 |
+| `oauth.test.ts` | ADR-11: returnTo can never leave our origin | ADR-08, ADR-11 |
+| `oauth.test.ts` | ADR-11: the callback returns where the login STARTED | ADR-08, ADR-11 |
 | `photo-groups.test.ts` | ADR-17, the groups a photo is already in | ADR-01, ADR-12, ADR-17, ADR-22 |
 | `plugin-scope.test.ts` | ADR-19, a plug-in token reaches only its allow-list | ADR-17, ADR-19 |
 | `preflight.test.ts` | ADR-20, the batch preflight | ADR-04, ADR-05, ADR-20 |
@@ -140,3 +143,6 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR-19: answer 403 instead of 404, confirming the surface exists | ADR-19 |
 | ADR-20: let preflight read another account's moderation history | ADR-20 |
 | ADR-20: warn about a photo that is already in the pool | ADR-20 |
+| ADR-11: let returnTo escape our origin | ADR-11 |
+| ADR-11: accept any path as a login destination | ADR-11 |
+| ADR-11: send every login back to the app root | ADR-11 |
