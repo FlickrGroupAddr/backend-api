@@ -11,6 +11,45 @@ change is actually made.
 **`CLAUDE.md` carries the render loop and the traps a Claude session hits.** This file is about the
 artifact. Where they overlap, `CLAUDE.md` wins for procedure and this one for facts about output.
 
+## THIS DIAGRAM IS SCOPED TO THE LIGHTROOM CLASSIC JOURNEY
+
+**Terry, 2026-08-16: *"For this diagram I'm pretending we have no web client and that rescues
+this."*** He is right that it rescues it, and the reason is structural rather than convenient.
+
+**Two first-class clients cannot both be drawn as line-of-flow on one canvas.** Their flows
+interleave — the plug-in starts a device link, the browser authorizes it, the plug-in resumes — so
+neither one sequence nor two independent sequences describes the pair. Every attempt produced
+crossings, because the real relationship is a mesh.
+
+**Scoping to the plug-in demotes the browser from a CLIENT to a STEP**, and a step only needs the
+routes its own flow touches. That deleted the browser's arrow to `/api/v001/*`, which was the edge
+making the mesh a mesh.
+
+**THE WEB UI GENUINELY EXISTS — see ADR-18, a Svelte app shell on the same origin.** A reader who
+takes this canvas as the whole system will conclude there is no browser client. **Say so on the
+canvas**, in a subtitle or the legend, before this diagram goes anywhere.
+
+### What that scoping bought, in one table
+
+Five route tiles, five straight horizontals, no crossings and no routed edges:
+
+| Line | Route | Caller |
+|---|---|---|
+| 388 | `/auth/device-link/start` | plug-in |
+| 430 | `/auth/device-link/poll` | plug-in |
+| 472 | `/api/v001/*` | plug-in |
+| — | *the DNS band, 483 to 543* | *separates the two callers* |
+| 554 | `/auth/device-link/approve` | browser |
+| 596 | `/auth/flickr/*` | browser |
+
+**The plug-in tile spans 370 to 490 for exactly one reason: so its three exits land on `0.15`, `0.5`
+and `0.85`.** That evenness was not aimed at. It falls out of a 120-tall tile whose three targets sit
+42 apart, and it is a good check that the geometry is right.
+
+**The User Journey panel is now STALE against the picture.** It still describes a browser-first
+ordering and calls step 10 `flickrgroupaddr.com/api/v001/*` as a browser call. **The picture and the
+panel disagree**, which is the defect class this file warns about, and it is the last one open.
+
 ## THE ROUTE LABELS ARE A PROPOSAL. THE CODE DOES NOT HAVE THESE PATHS
 
 **As of 2026-08-16 the diagram is AHEAD of the implementation**, and a reader who takes the Worker's
@@ -476,6 +515,30 @@ answer was quoted back in conversation an hour before anyone acted on it.
 **A tile may stand for an exact path or for a namespace, and the label must say which.** The four
 route tiles now do: a bare path means one route, a trailing `*` means a prefix. Plurality follows —
 `API endpoint` against `API endpoints`.
+
+### Park an edge on a floating `sourcePoint` while its anchor is out of reach
+
+**A tile sometimes has to move before the shape its arrow comes from can reach the new line.** On
+2026-08-16 `/api/v001/*` moved up to `y=454`, putting its arrow at `y=472` — above the Browser
+glyph's top edge at `490`. No fraction of that shape reaches 472; `exitY` would have to go negative.
+
+**Do not bend it, and do not delete it.** Drop `source` and the whole `exit*` set, and give the
+geometry an explicit point:
+
+```xml
+<mxGeometry x="0.55" relative="1" as="geometry">
+  <mxPoint x="186.25" y="472" as="sourcePoint" />
+</mxGeometry>
+```
+
+**The arrow stays dead horizontal and visibly unfinished**, which is the honest state while a
+multi-step move is in flight. Reattaching later is one edit: restore `source` and `exitX`/`exitY`.
+
+**Pick the floating `x` to match where the eventual anchor's edge will be**, so the reattachment
+moves the endpoint as little as possible.
+
+**Two things go quiet while an edge floats.** `scripts/badge-positions.py` skips it, because it
+needs both ends attached to tiles. And any badge riding it is orphaned until the rescue lands.
 
 ### `scripts/badge-positions.py` answers where a badge goes
 
