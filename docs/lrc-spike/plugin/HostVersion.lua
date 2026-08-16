@@ -71,8 +71,6 @@ function HostVersion.classify(hostMajor)
 		return {
 			supported = false,
 			badge = WARN,
-			color = { 0.65, 0.40, 0.0 },
-			bold = true,
 			summary = "Lightroom version unknown " .. WARN,
 			detail = "The plug-in could not read the Lightroom version, so it cannot "
 				.. "say whether this release was tested. Treating it as untested.",
@@ -90,7 +88,6 @@ function HostVersion.classify(hostMajor)
 			     and only the warning is colored.** That is the better hierarchy
 			     anyway: a badge that shouts on success has nothing left for the case
 			     that matters. ]]
-			bold = false,
 			summary = "supported " .. TICK,
 			detail = string.format("Tested against Lightroom Classic %d.", tested),
 		}
@@ -100,16 +97,10 @@ function HostVersion.classify(hostMajor)
 	return {
 		supported = false,
 		badge = WARN,
-		--[[ **Dark amber rather than the named "yellow".** Named yellow is
-		     `LrColor(1, 1, 0)`, which on a light dialog is close to invisible -- the
-		     same defect Terry caught in green, worse. This is dark enough to read on
-		     gray and still reads as CAUTION rather than as an error, which is the
-		     honest signal: an untested major is unproven, not broken. ]]
-		color = { 0.65, 0.40, 0.0 },
-		--[[ Weight as well as color, so the warning survives a display, a colorblind
-		     reader, or a screenshot that lost its palette. **Two signals, because one
-		     of them is a color and colors do not always arrive.** ]]
-		bold = true,
+		--[[ **No color here. `classify` stays SEMANTIC and the probe owns
+		     presentation.** An earlier version carried an RGB triple and a bold flag
+		     through this table, which put a rendering decision inside the function
+		     whose self-test is supposed to be about meaning. ]]
 		summary = "major version unsupported " .. WARN,
 		detail = string.format(
 			"This is Lightroom Classic %d, %s the %d this plug-in was tested "
@@ -123,23 +114,30 @@ function HostVersion.classify(hostMajor)
 	}
 end
 
---[[ **Returns nil when there is nothing to color**, and a nil `text_color` key is
-     simply absent in Lua -- so the caller gets the platform default without a
-     branch.
+--[[ **US road-sign warning yellow**, which is roughly Pantone 116 / #FFCC00. Black
+     on this is the highest-contrast warning pairing in common use, and it is what
+     Terry asked for: *"black text on high-contrast alert yellow, similar to US road
+     signs that are warnings."*
 
-     **A high-contrast fill was the first choice and LrView cannot do it.**
-     `background_color` exists only on `scrolled_view` and `catalog_photo`, never
-     on `static_text`, `row` or `column` -- read from the reference on 2026-08-16.
-     Wrapping a one-line badge in a scrolled view to get a fill would buy contrast
-     and cost a scrollbar.
+     **A colored PANEL is possible, and only just.** `background_color` exists on
+     exactly three views -- `scrolled_view`, `catalog_photo` and `picture`'s frame --
+     and on nothing else. Read from the reference 2026-08-16 by sweeping every
+     documented factory method, because "LrView cannot fill a background" was the
+     answer until the sweep found the one that can.
 
-     Kept out of `classify` so that function stays pure and testable without
-     Lightroom. ]]
-function HostVersion.color(classification)
-	local rgb = classification.color
-	if rgb == nil then
-		return nil
-	end
+     **`scrolled_view` is usable because its scrollbars are optional.**
+     `horizontal_scroller` and `vertical_scroller` are documented Booleans that
+     default to true. Without them this would be a yellow panel wearing two grayed
+     scrollbars on Windows. ]]
+HostVersion.WARNING_FILL = { 1.0, 0.80, 0.0 }
+
+--[[ **The minimum `scrolled_view` height, and it is a floor rather than a choice:**
+     *"Will not be allowed to be smaller than 80."* A one-line badge in an 80px
+     panel is chunky, which for a warning banner is the point. ]]
+HostVersion.BANNER_HEIGHT = 80
+
+function HostVersion.fillColor()
+	local rgb = HostVersion.WARNING_FILL
 	return LrColor(rgb[1], rgb[2], rgb[3])
 end
 

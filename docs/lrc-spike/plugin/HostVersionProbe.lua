@@ -44,18 +44,38 @@ local function run()
 			font = "<system/bold>",
 		}),
 
-		--[[ **The good news is plain and only the warning is colored.** Terry, after
-		     seeing the first render: *"Green text doesn't work."* A high-contrast
-		     fill was the first choice and LrView cannot do it -- `background_color`
-		     exists only on `scrolled_view` and `catalog_photo`.
+		--[[ **THE GOOD NEWS IS PLAIN AND THE WARNING IS A ROAD SIGN.**
 
-		     `HostVersion.color` returns nil when supported, and a nil key is simply
-		     absent in Lua, so the default color arrives with no branch here. ]]
-		f:static_text({
-			title = "(" .. host.summary .. ")",
-			text_color = HostVersion.color(host),
-			font = host.bold and "<system/bold>" or nil,
-		}),
+		     Terry, on the first render: *"Green text doesn't work."* Then:
+		     *"black text on high-contrast alert yellow, similar to US road signs
+		     that are warnings."*
+
+		     Supported takes the platform default color -- a badge that shouts on
+		     success has nothing left for the case that matters. Unsupported gets a
+		     filled panel, because black on #FFCC00 is the highest-contrast warning
+		     pairing in common use and it survives a bad display.
+
+		     **`scrolled_view` is the ONLY view here that can hold a fill**, and it
+		     is usable only because `horizontal_scroller` and `vertical_scroller` are
+		     documented Booleans. Left at their default of true this would be a
+		     yellow panel wearing two grayed-out scrollbars on Windows. ]]
+		host.supported
+				and f:static_text({
+					title = "(" .. host.summary .. ")",
+				})
+			or f:scrolled_view({
+				background_color = HostVersion.fillColor(),
+				horizontal_scroller = false,
+				vertical_scroller = false,
+				width = 520,
+				height = HostVersion.BANNER_HEIGHT,
+
+				f:static_text({
+					title = host.summary,
+					text_color = LrColor(0, 0, 0),
+					font = "<system/bold>",
+				}),
+			}),
 
 		f:separator({ fill_horizontal = 1 }),
 
@@ -90,6 +110,38 @@ local function run()
 			),
 			text_color = LrColor("gray"),
 		}),
+
+		--[[ **A warning nobody can see until the day it fires is a warning nobody
+		     has reviewed.** On a supported major the banner above never renders, so
+		     its design would go unexamined for a year and then appear for the first
+		     time on the morning Terry least wants a surprise.
+
+		     Shown ONLY when the real badge is the plain one, and labeled, so it can
+		     never be mistaken for the live state. Same argument as the toolchain
+		     banner: the loud shape has to be earned, and it has to have been LOOKED
+		     at before it is earned. ]]
+		host.supported and f:static_text({
+			title = "Preview -- what an untested major will look like:",
+			text_color = LrColor("gray"),
+		}) or f:spacer({ height = 1 }),
+
+		host.supported
+				and f:scrolled_view({
+					background_color = HostVersion.fillColor(),
+					horizontal_scroller = false,
+					vertical_scroller = false,
+					width = 520,
+					height = HostVersion.BANNER_HEIGHT,
+
+					f:static_text({
+						title = HostVersion.classify(
+							HostVersion.TESTED_AGAINST_MAJOR + 1
+						).summary,
+						text_color = LrColor(0, 0, 0),
+						font = "<system/bold>",
+					}),
+				})
+			or f:spacer({ height = 1 }),
 	})
 
 	LrDialogs.presentModalDialog({
