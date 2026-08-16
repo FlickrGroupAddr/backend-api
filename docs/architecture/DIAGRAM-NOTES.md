@@ -33,18 +33,22 @@ canvas**, in a subtitle or the legend, before this diagram goes anywhere.
 
 Five route tiles, five straight horizontals, no crossings and no routed edges:
 
-| Line | Route | Caller |
-|---|---|---|
-| 388 | `/auth/device-link/start` | plug-in |
-| 430 | `/auth/device-link/poll` | plug-in |
-| 472 | `/api/v001/*` | plug-in |
-| — | *the DNS band, 483 to 543* | *separates the two callers* |
-| 554 | `/auth/device-link/approve` | browser |
-| 596 | `/auth/flickr/*` | browser |
+**Stated as a rhythm rather than as five numbers**, because the absolute lines have moved twice since
+this table was written and the rhythm never has. `python scripts/build-diagram.py` prints the
+current values.
 
-**The plug-in tile spans 370 to 490 for exactly one reason: so its three exits land on `0.15`, `0.5`
-and `0.85`.** That evenness was not aimed at. It falls out of a 120-tall tile whose three targets sit
-42 apart, and it is a good check that the geometry is right.
+| Order, top to bottom | Route | Caller | Gap to the previous |
+|---|---|---|---|
+| 1 | `/auth/device-link/start` | plug-in | — |
+| 2 | `/auth/device-link/poll` | plug-in | **42** |
+| 3 | `/api/v001/*` | plug-in | **42** |
+| — | *the DNS band, 60 tall* | *separates the two callers* | **11** |
+| 4 | `/auth/device-link/approve` | browser | **11 below the band** |
+| 5 | `/auth/flickr/*` | browser | **42** |
+
+**The plug-in tile is 120 tall for exactly one reason: so its three exits land on `0.15`, `0.5` and
+`0.85`.** That evenness was not aimed at. It falls out of a 120-tall tile whose three targets sit 42
+apart, and it is a good check that the geometry is right.
 
 **The User Journey panel is now STALE against the picture.** It still describes a browser-first
 ordering and calls step 10 `flickrgroupaddr.com/api/v001/*` as a browser call. **The picture and the
@@ -161,12 +165,40 @@ actually print:
 |---|---|
 | Page | `1700 x 1100` — 17 x 11 inches |
 | Printable area, **0.30 in** margins | **`1640 x 1040`** |
-| Content bounds | x 30 to 1670, y 20 to 1050 |
+| Content bounds | x 30 to 1670, y **16.35 to 1046.35** |
 | Content size | **`1640 x 1030`** |
 | Scale | **100.0%** — width binds exactly, height has 10 to spare |
 
 **The content is CENTERED horizontally and is NOT centered vertically.** x 30 to 1670 leaves 30 a
-side, which is exactly the margin. y 20 to 1050 leaves **20 above against 50 below**.
+side, which is exactly the margin. y 16.35 to 1046.35 leaves 16.35 above against 53.65 below **as
+boxes** — and that is the wrong way to read the top, for the reason below.
+
+### THE TOP MARGIN IS MEASURED IN INK, and ink is 13.65 below the box
+
+**Terry's requirement, 2026-08-16: the top pixel of the title sits ON the 0.30 in margin.** A text
+box is taller than the letters inside it, so putting the *box* on `y=30` would push the visible top
+of the drawing to `y=43.65` and throw away 0.14 in of a sheet that has none to spare.
+
+The chain, for `title` at `fontSize=28` in a 48-tall box with `verticalAlign=middle`:
+
+| Step | | |
+|---|---|---|
+| Line box top | `(48 - 28*1.2) / 2` | **7.200** |
+| Ascent top | plus half-leading, `(33.6 - 1.117*28) / 2` | **1.162** |
+| Baseline | plus the ascender, `0.905 * 28` | **25.340** |
+| **Cap top** | minus the cap height, `0.716 * 28` | **13.654 below the box** |
+
+**The ratios are Arial's, and Helvetica maps to Arial on this box.** Verified two ways: Chrome's
+canvas `TextMetrics` agreed, and the render put the title-to-date glyph gap at ~32.8 against this
+model's 32.96.
+
+**Chrome ROUNDS `TextMetrics` to integers** as a fingerprinting mitigation, so reading them back
+gives 13.5 rather than 13.654. Layout uses the real values. **The render measurement is what settles
+it, and it favors the unrounded model.**
+
+**`ink_top()` in the generator computes this, and `title ink sits ON the top margin` asserts it.**
+Proven in both directions on 2026-08-16 — moving the title 1 unit made it fail with
+`31.00 against 30`.
 
 ### The margin is 0.30 in, not 0.25 in, and the reason is a specific printer
 
@@ -210,9 +242,9 @@ fit immediately**, and the two outer columns — `lrcapp` at x=30 and `journey`/
 x=1670 — are what pin it.
 
 **Vertical headroom is 20 units, or 0.2 inch, for the whole sheet.** The lowest ink is not a tile:
-it is `e11`'s routed run at **y=1050**, the Browser-to-Flickr-API arrow. Next below it is `cfframe`
-at 1005. **So the run has 45 units of clearance it does not need**, and raising it to about y=1020
-would free roughly 30 more units at no visual cost. Not done, because nothing needs the room yet.
+it is **`e11`'s routed run**, the Browser-to-Flickr-API arrow. Next above it is `cfframe`. **So the
+run has 45 units of clearance it does not need**, and raising it by about 30 would free that much at
+no visual cost. Not done, because nothing needs the room yet.
 
 **`check_page_fit()` in the generator DOES see that run**, since 2026-08-16. It used to match
 `<mxGeometry>` with a regex while a waypoint is an `<mxPoint>`, so it measured to y=1005 and
@@ -334,8 +366,9 @@ it.** This is not a corner problem and it has bitten repeatedly:
 | `d1` narrowed 190 to 169 | `e14`, `e15` | Recompute the nearest-point pairs |
 
 **A horizontal run is the case that matters**, because a 2-unit drift reads as a mistake rather than
-as a change. `e18` and `e3` share `y=388` and carry the device-link handshake straight across the
-canvas as one line; `e9` and `e10` land on `flickrapi` at `y=536` and `y=860`.
+as a change. **`e18` and `e3` SHARE A LINE** and carry the device-link handshake straight across the
+canvas as one; `e9` and `e10` land on `flickrapi` **324 apart**. The generator asserts both as
+equalities, which is why neither needs a number here.
 
 ### Step badges: ON the line now, and the ring is what makes them work
 
@@ -344,8 +377,8 @@ changes which constraint binds. Beside the line, the limit was the shortest visi
 Worker Secrets to the API Worker, at 30 units. **On the line, run length stops mattering entirely**
 and the limit becomes the spacing between two parallel arrows.
 
-**The tightest pair is the browser's two channels**: `e22` to `/oauth` at `y=512` and `e13` to `/api`
-at `y=554`, **42 units apart**. Two badges centered on those lines touch at diameter 42.
+**The tightest pair is the browser's two channels**: `e22` to `/oauth` and `e13` to `/api`, **42
+units apart**. Two badges centered on those lines touch at diameter 42.
 
 | | |
 |---|---|
@@ -561,8 +594,8 @@ re-layout that spent a horizontal run, or leaving the loop visibly open.
 **Terry's fix was to stop drawing one node.** The routes were never shared — `start` and `poll` are
 the plug-in's and are unauthenticated, `approve` and `deny` are browser-only and carry
 `requireBrowserSession`. **So the surface splits cleanly by ROUTE, and each half sits where its
-caller already points.** `start` keeps the plug-in's straight sweep at `y=388`; `approve` joins the
-browser's stack. Two straight arrows, zero crossings, zero routed edges.
+caller already points.** `start` keeps the plug-in's straight sweep; `approve` joins the browser's
+stack. Two straight arrows, zero crossings, zero routed edges.
 
 **The generalizable form: a node that two callers reach by DISJOINT sub-surfaces is two nodes.**
 Ask whether the callers actually share endpoints before spending layout to make one box reachable
@@ -576,8 +609,8 @@ route tiles now do: a bare path means one route, a trailing `*` means a prefix. 
 ### Park an edge on a floating `sourcePoint` while its anchor is out of reach
 
 **A tile sometimes has to move before the shape its arrow comes from can reach the new line.** On
-2026-08-16 `/api/v001/*` moved up to `y=454`, putting its arrow at `y=472` — above the Browser
-glyph's top edge at `490`. No fraction of that shape reaches 472; `exitY` would have to go negative.
+2026-08-16 `/api/v001/*` moved up, putting its arrow **18 units above the Browser glyph's top edge**.
+No fraction of that shape reaches a line above its own top; `exitY` would have to go negative.
 
 **Do not bend it, and do not delete it.** Drop `source` and the whole `exit*` set, and give the
 geometry an explicit point:
@@ -696,16 +729,18 @@ true and saying only that.
 - **The Nightly Event Trigger tile is cramped** — four wrapped lines in a small box.
 - **Dead space bottom-right inside the Cloudflare frame**, **269.6 wide by 221.6 tall**, measured
   from the artifact on 2026-08-16 after the +20 shift. It runs right of the Nightly Retry Logic
-  Worker (`retry` ends x=779.4) and below the SQL Database (`d1` ends y=783.4), out to `cfframe` at
-  x=1049, y=1005. It shrank with the 2026-08-16 relayout but did not close. **The figures here were
-  wrong before this measurement** — they read `265 x 265` from an older layout, which is why they
-  are now derived rather than remembered.
-- **The canvas is NOT centered vertically.** Content runs y 20 to 1050 on an 1100 page, so **20
-  above against 50 below**. Terry caught the horizontal version of this by eye and the whole canvas
-  moved +20 in x. **A uniform +15 in y balances it the same way** — content 1030 tall on an 1100
-  page wants 35 a side — and the same transform applies, because `e11`'s routed run is an
-  `<mxPoint>` and moves with everything else. **Not done only because Terry asked for the horizontal
-  axis.**
+  Worker (`retry` ends x=779.4) and below the SQL Database (`d1` ends y=779.75), out to `cfframe` at
+  x=1049, y=1001.35. It shrank with the 2026-08-16 relayout but did not close. **The figures here
+  were wrong before this measurement** — they read `265 x 265` from an older layout, which is why
+  they are now derived rather than remembered.
+- **The BOTTOM margin is not settled, and it is not going to be settled by centering.** The top is
+  done: the whole canvas moved **-3.65 in y** on 2026-08-16 so the title's cap top lands on `y=30`,
+  and `title ink sits ON the top margin` asserts it. The bottom ink is `e11`'s routed run, which now
+  leaves **52.15** against the top's 30. **Terry's direction is to STRETCH the content down the
+  page, not to center it**, so the fix is a redistribution rather than another translate — and
+  `CLAUDE.md` refuses a coordinate rescale, which would stretch boxes without stretching the text
+  inside them. **The y bounds are reported on every build and deliberately not asserted until this
+  lands.**
 - **No logo for Lightroom Classic.** Cloudflare and Flickr both carry their marks; the Lightroom
   card carries only text. Adobe ships an "Lr" mark and Wikimedia Commons hosts Adobe product icons,
   which is where the other two came from. **The trap is that Lightroom Classic and Lightroom (CC)
@@ -732,8 +767,8 @@ true and saying only that.
   than 10 units**, so `MUST_BE_HORIZONTAL` and a visible dotted line were in direct conflict.
 
   **The legend row won, because horizontality is meaningless on a line nobody can see.** `e6` left
-  `MUST_BE_HORIZONTAL` and became an orthogonal route: it exits `cron`'s bottom at (372.2, 783.4),
-  drops to `retry`'s mid-height and enters its left edge at (479.4, 878.3) — legs of **94.9 and
+  `MUST_BE_HORIZONTAL` and became an orthogonal route: it exits `cron`'s bottom at (372.2, 779.75),
+  drops to `retry`'s mid-height and enters its left edge at (479.4, 874.65) — legs of **94.9 and
   107.2**, about **202 units** of visible run.
 
   **The replacement check is the part that mattered.** `MIN_VISIBLE_BROKEN_RUN = 60.0` demands that
