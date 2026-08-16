@@ -363,7 +363,7 @@ lie within the hour; a relationship tells the next session which lever it is act
 | `e18` and `e3` share one `y` | The device-link handshake, plug-in to `/device` to the Durable Object, as ONE line across the canvas |
 | `e9` and `e10` land on `flickrapi`'s left edge | Every Worker-to-Flickr call |
 | `e22` and `e13` land on the Worker's route tiles | The browser's two channels |
-| `retry`'s vertical CENTER | `e10` leaves at `exitY=0.5` and `e6` arrives at `entryY=0.5`. **Resize `retry` from the top, never the bottom** |
+| `e10` leaves `retry` level with `flickrapi` | **The ABSOLUTE line is the constraint, not the tile's midpoint.** `exitY` was `0.5` only while 0.5 happened to land on it; moving the tile down 18.3 on 2026-08-16 took the line with it, and the fraction is now `0.343590`. `e6` genuinely is a midpoint arrival, because an orthogonal route needs no level partner |
 
 **Shared edges and columns. Break one and the eye sees raggedness before it sees why:**
 
