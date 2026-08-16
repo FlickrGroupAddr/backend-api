@@ -101,6 +101,24 @@ describe("ADR-24: starting a link needs no credential", () => {
 		expect(reply.verificationUri).not.toContain(reply.userCode);
 	});
 
+	/**
+	 * **Every one of these responses carries a bearer credential in its body**, and
+	 * mounting `deviceRoutes` ahead of `apiRoutes` means ADR-12's blanket
+	 * `no-store` on `/api/v001/*` never runs for them. The same ordering that
+	 * makes `start` unauthenticated also skipped the cache rule.
+	 */
+	it("marks credential-bearing replies no-store, which the mount order skipped", async () => {
+		const started = await post("/api/v001/device/start", {});
+		expect(started.headers.get("Cache-Control")).toContain("no-store");
+
+		const reply = (await started.json()) as StartReply;
+		const polled = await post("/api/v001/device/poll", {
+			userCode: reply.userCode,
+			deviceCode: reply.deviceCode,
+		});
+		expect(polled.headers.get("Cache-Control")).toContain("no-store");
+	});
+
 	it("gives every start a different pair", async () => {
 		const a = await start();
 		const b = await start();

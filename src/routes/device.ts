@@ -62,6 +62,29 @@ export const deviceRoutes = new Hono<{
 }>();
 
 /**
+ * ADR-12's `no-store`, RESTATED HERE, and the restatement is the bug fix.
+ *
+ * **`apiRoutes` puts `Cache-Control: private, no-store` on `/api/v001/*`, and these
+ * routes never see it.** Mounting `deviceRoutes` first is what keeps `start`
+ * reachable without a session -- a handler that returns without calling `next()`
+ * ends the chain, so every middleware registered later is skipped. **The same
+ * ordering that bought the exemption silently took the cache rule with it.**
+ *
+ * That matters more here than on the rest of the API. **Every reply from these
+ * four routes carries a bearer credential in its body** -- `deviceCode` from
+ * `start`, the session token from `poll`. A cached copy is a credential sitting
+ * in a store nobody is watching.
+ *
+ * **Found by re-reading the file after it passed 24 tests**, and the header was
+ * `null`. A skipped middleware leaves no trace: nothing errors, nothing warns,
+ * and the only symptom is an absent header nobody asserted on.
+ */
+deviceRoutes.use("/api/v001/device/*", async (c, next) => {
+	await next();
+	c.header("Cache-Control", "private, no-store");
+});
+
+/**
  * **Registered BEFORE the handlers, because Hono composes middleware in
  * registration order and a handler registered first would short-circuit it.**
  *

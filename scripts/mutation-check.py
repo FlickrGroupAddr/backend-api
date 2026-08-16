@@ -363,6 +363,15 @@ MUTATIONS = [
     (
         # A throttled poll that MOVES the window means a client polling in a tight
         # loop refuses itself forever instead of recovering after one honest wait.
+        # Every reply from these routes carries a bearer credential in its body, and
+        # mounting deviceRoutes ahead of apiRoutes means ADR-12's blanket no-store
+        # never runs for them. The header was genuinely absent until 2026-08-16.
+        "ADR-12: let a credential-bearing device reply be cached",
+        "src/routes/device.ts",
+        '\tc.header("Cache-Control", "private, no-store");',
+        "\t// mutation",
+    ),
+    (
         "ADR-24: let a throttled poll push the window forward",
         "src/device/link-attempt.ts",
         "\t\t\treturn { kind: \"slow_down\" };",

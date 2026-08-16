@@ -1172,6 +1172,32 @@ Lightroom major.** The column keys **policy**, not provenance. A future plug-in 
 lifetime and the same allow-list SHOULD keep this value. **A new value MUST be introduced only when
 a client needs different treatment.**
 
+### The mount order buys an exemption and takes things with it
+
+**Mounting `deviceRoutes` before `apiRoutes` is what keeps `start` reachable without a session** — a
+handler that returns without calling `next()` ends the chain, so every middleware registered later
+is skipped.
+
+**It skipped ADR-12's `no-store` too, and that was a real defect**, found by re-reading the file
+after it had passed 24 tests. The header was `null`. **Every reply from these four routes carries a
+bearer credential in its body**, so a cached copy is a credential sitting somewhere nobody watches.
+`deviceRoutes` now restates the cache rule itself, and a mutation defends it.
+
+**The lesson generalizes past this file: an exemption bought by ordering is an exemption from
+EVERYTHING registered later, not from the one rule you had in mind.** A skipped middleware leaves no
+trace — nothing errors, nothing warns, and the only symptom is a header nobody asserted on.
+
+### Two accepted costs, written down so they are not mistaken for oversights
+
+**A `userCode` collision would overwrite an in-flight attempt.** Eight characters from a 30-symbol
+alphabet is about 6.6e11, and attempts live ten minutes, so this is negligible at any volume this
+project will see. **It is an availability risk, never a security one** — the colliding party cannot
+read the other attempt's `deviceCode`, which is what a token needs.
+
+**Polling a well-formed but unknown `userCode` instantiates a Durable Object** that holds no storage,
+sets no alarm, and is evicted. It costs a request. **That is a cost-amplification vector rather than
+a security one**, and it is no worse than any other unauthenticated endpoint.
+
 ### Still open
 
 **Revocation has no UI, and Terry is genuinely unsure he wants one:** *"I'm not even sure I care

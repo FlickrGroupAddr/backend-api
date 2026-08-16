@@ -205,10 +205,24 @@ session and **is NOT yet in the generator.** Its shape:
 
 | Steps | What they cover | Built? |
 |---|---|---|
-| A1–A3 | `POST /api/v001/device/start`, the Durable Object, `openUrlInBrowser` with `userCode` | **No** |
-| A4–A6 | DNS, `GET /link`, redirect to `GET /oauth/login` | Partly |
-| A7–A16 | The whole Flickr OAuth leg, unchanged from today's steps 4–9 | **Yes** |
-| A17–A18 | `userCode` confirmation, then `POST /api/v001/device/poll` | **No** |
+| A1–A2 | `POST /api/v001/device/start`, the `DeviceLinkAttempt` Durable Object | **Yes**, 2026-08-16 |
+| A3 | `LrHttp.openUrlInBrowser` — **the Lua side, which does not exist** | **No** |
+| A4 | DNS | **Yes** |
+| A5 | `GET /link` — **a Svelte route, not a Worker one** | **No** |
+| A6 | Redirect to `GET /oauth/login`, carrying `returnTo` | **Yes**, 2026-08-16 |
+| A7–A16 | The whole Flickr OAuth leg | **Yes** |
+| A17 | `userCode` confirmation, then `POST /api/v001/device/approve` | **API yes, page no** |
+| A18 | `POST /api/v001/device/poll`, and the token it mints | **Yes**, 2026-08-16 |
+
+**So the auth panel is now mostly a picture of things that EXIST**, which changes the honesty
+calculation the panel was drawn under. **What remains unbuilt is a page and a Lua client**, not a
+design.
+
+**The remaining gaps are on the two ends, not in the middle.** A3 is the plug-in, and A5/A17 are the
+`/link` page — ADR-18 gives `/` to the app shell and `run_worker_first` does not list `/link`, so it
+is Svelte's. **Its confirmation step is the only defense against device-flow phishing**, and ADR-24
+makes that a page requirement precisely because no backend route can substitute for it: nothing
+auto-approves, and approval is always a POST a person had to cause.
 
 **Three constraints that bind the design, and each has already caught something:**
 
@@ -230,7 +244,8 @@ any flow that began somewhere else. It now carries a validated `returnTo` throug
 trip in the ADR-08 login attempt. **See ADR-11**, which gained the open-redirect rule in the same
 change, and which has three mutations defending it.
 
-**The rest of the device flow is still unbuilt** — `/device/start`, `/link` and `/device/poll` do
-not exist. The panel draws a DECIDED design, which is the same call Terry made deliberately for the
-plug-in tile itself. **If the device flow is ever abandoned, the panel comes out**, same rule that
-removed the read replica.
+**And the device flow itself was BUILT later the same day, as ADR-24.** `start`, `poll`, `approve`
+and `deny` all exist, with 25 tests and six mutations. **The panel therefore draws mostly shipped
+behavior rather than a decided design**, and the honesty question it was raising has mostly gone
+away. **If the device flow is ever abandoned, the panel comes out**, same rule that removed the
+read replica.
