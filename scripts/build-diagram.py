@@ -57,6 +57,12 @@ FLICKR = embed("flickr-mark-tight.svg")
 # neighbor on the canvas is a piece of software; this one should be too.
 WORKSTATION = embed("workstation.svg")
 
+# Adobe's Lightroom Classic "LrC" mark, hand-drawn as paths. Terry asked for it
+# 2026-08-16, to put the Lightroom card on the same footing as the Cloudflare and
+# Flickr cards, which both carry their marks. **Classic's icon, not Lightroom
+# CC's** -- see that file's own comment for why the distinction matters here.
+LRC_MARK = embed("lightroom-classic-mark.svg")
+
 # ---------------------------------------------------------------------------
 # PAGE SIZE: tabloid landscape, 11x17 inches.
 #
@@ -64,10 +70,11 @@ WORKSTATION = embed("workstation.svg")
 # US Letter landscape is 1100 x 850.
 #
 # **Terry printed this on Letter landscape and called it "a fuckin unusable
-# eyechart", which the arithmetic agrees with.** Measured content is 1770 x 1303
-# units, so fitting it to Letter scales to 65%. Fitting the same content to
-# tabloid scales to 84%, on a sheet 1.55x larger in each direction -- roughly
-# DOUBLE the physical text size.
+# eyechart", which the arithmetic agreed with.** The content was 1770 x 1303 units
+# then, so fitting it to Letter scaled to 65%. Fitting the same content to tabloid
+# scaled to 84%, on a sheet 1.55x larger in each direction -- roughly DOUBLE the
+# physical text size. **Those numbers are HISTORY. The content is 1650 x 1030
+# today** and the current figures are below.
 #
 # **DPI DOES NOT APPLY TO A PDF, and the distinction is worth one paragraph.** A
 # PDF stores shapes as coordinates and text as glyphs, so it re-renders sharp at
@@ -81,20 +88,32 @@ WORKSTATION = embed("workstation.svg")
 PAGE_WIDTH = 1700  # 17 inches
 PAGE_HEIGHT = 1100  # 11 inches
 
-# **THE CONTENT DOES NOT FIT THIS PAGE, and that is stated rather than hidden.**
-# Measured content is 1770 x 1303 against 1700 x 1100 -- 4% over in width, 18%
-# over in height. `check_page_fit()` prints the overflow on every build.
+# **THE CONTENT FITS THIS PAGE 1:1, as of 2026-08-16, and it never did before.**
 #
-# **So export with "Fit to Page" checked.** That yields a genuine 11x17 PDF
-# carrying the whole drawing at about 84%. Exporting without it tiles the drawing
-# across four sheets.
+#   Printable area  1650 x 1050   (1700 x 1100, less 25 per side)
+#   Content         1650 x 1030   x 5 to 1655, y 20 to 1050
+#   Scale           100.0%        width binds exactly, height has 20 to spare
 #
-# **A 1:1 fit needs the canvas relaid out, and that is deferred deliberately.**
-# Height is the binding constraint: the Cloudflare frame is 1080 units tall on its
-# own, badge `n7` hangs to y=1327 beneath it, and every assertion in this file
-# keys off those positions. **Scaling every coordinate and font by 0.84 would
-# change no physical text size** -- it moves the same 84% out of the export dialog
-# and into the file -- so it buys tidiness rather than legibility.
+# **So export WITHOUT "Fit to Page".** That option is now the wrong choice -- it
+# would shrink a drawing that already fits. This reverses the instruction that
+# stood here from 2026-08-14 to 2026-08-16, when the content was 1770 x 1303 and
+# ran 4% over in width and 18% over in height.
+#
+# **Three separate changes closed that gap**, and none of them was a rescale:
+# the step badges came off (badge `n7` used to hang to y=1327, 227 units below the
+# page), the Cloudflare frame lost 140 units of height, and the right column
+# narrowed from 350 to 330 on 2026-08-16 -- the last 20 units of width.
+#
+# **Scaling every coordinate to chase a page was always the wrong fix**, and it
+# still is. It changes no physical text size -- it moves the shrink out of the
+# export dialog and into the file -- while silently invalidating every absolute
+# threshold here: the badge band, `CHAR_W`, every hand-set box height. None of
+# them would fail. They would stop meaning anything.
+#
+# **THE MARGIN NOW BINDS, which is the cost of fitting exactly.** At 1650 of 1650
+# there is zero slack in width, so a driver cannot absorb an overflow by scaling a
+# percent or two. Anything that widens the canvas breaks the 1:1 fit immediately.
+# `check_page_fit()` prints the figures on every build.
 
 TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
   <diagram id="fga-architecture" name="FlickrGroupAddr Architecture">
@@ -104,10 +123,10 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="1" parent="0" />
 
         <mxCell id="title" value="FlickrGroupAddr Architecture" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="30" y="20" width="700" height="48" as="geometry" />
+          <mxGeometry x="5" y="20" width="700" height="48" as="geometry" />
         </mxCell>
         <mxCell id="date" value="{DATE}" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="30" y="56" width="493" height="36" as="geometry" />
+          <mxGeometry x="5" y="56" width="493" height="36" as="geometry" />
         </mxCell>
 
         <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
@@ -123,8 +142,8 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="lrcapp" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#546E7A;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
           <mxGeometry x="5" y="110" width="180" height="320" as="geometry" />
         </mxCell>
-        <mxCell id="lrctitle" value="Lightroom Classic" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
-          <mxGeometry x="21" y="126" width="148" height="24" as="geometry" />
+        <mxCell id="lrcmark" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={LRC_MARK}" vertex="1" parent="1">
+          <mxGeometry x="75" y="126" width="40" height="39" as="geometry" />
         </mxCell>
         <mxCell id="lrc" value="&lt;b&gt;FGA plug-in&lt;/b&gt;&lt;br&gt;&lt;i&gt;Lua&lt;br&gt;All we add&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#546E7A;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="30" y="306" width="130" height="105" as="geometry" />

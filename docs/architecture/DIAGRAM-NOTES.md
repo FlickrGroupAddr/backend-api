@@ -89,9 +89,43 @@ enterprise color laser at FedEx Office, which is the safe case.
 
 ### The page size matters most when it is exactly right
 
-The content measures **1650 x 1055** inside a `1700x1100` page, so it prints **1:1 with no
-fit-to-page shrink**. That is the case where the margin actually binds — a driver asked to fit a
-mismatched page would scale by a percent or two and absorb a small overflow. Do not rely on that.
+**Measured 2026-08-16 from the ARTIFACT, not the template**, because the question is what would
+actually print:
+
+| | |
+|---|---|
+| Page | `1700 x 1100` — 17 x 11 inches |
+| Printable area, quarter-inch margins | **`1650 x 1050`** |
+| Content bounds | x 5 to 1655, y 20 to 1050 |
+| Content size | **`1650 x 1030`** |
+| Scale | **100.0%** — width binds exactly, height has 20 to spare |
+
+**So export WITHOUT "Fit to Page".** That option is now the wrong choice: it would shrink a drawing
+that already fits.
+
+**This reverses the instruction that stood from 2026-08-14 to 2026-08-16**, when the content was
+`1770 x 1303` — 4% over in width and 18% over in height — and Fit to Page was the only way to get a
+single sheet. **A future session finding an old note that says otherwise is reading history.**
+
+**Three changes closed that gap, and none of them was a rescale:** the step badges came off (`n7`
+hung to y=1327, 227 units below the page), the Cloudflare frame lost 140 units of height, and the
+right column narrowed from 350 to 330 — the last 20 units of width.
+
+**THE MARGIN NOW BINDS, and that is the cost of fitting exactly.** At 1650 of 1650 there is zero
+slack in width. A driver asked to fit a mismatched page would scale a percent or two and absorb a
+small overflow; there is nothing left to absorb. **Anything that widens the canvas breaks the 1:1
+fit immediately**, and the two outer columns — `lrcapp` at x=5 and `journey`/`key` ending at
+x=1655 — are what pin it.
+
+**Vertical headroom is 20 units, or 0.2 inch, for the whole sheet.** The lowest ink is not a tile:
+it is `e11`'s routed run at **y=1050**, the Browser-to-Flickr-API arrow. Next below it is `cfframe`
+at 1005. **So the run has 45 units of clearance it does not need**, and raising it to about y=1020
+would free roughly 30 more units at no visual cost. Not done, because nothing needs the room yet.
+
+**`check_page_fit()` in the generator does NOT see that run.** Its regex matches `<mxGeometry>` and
+a waypoint is an `<mxPoint>`, so it measures to y=1005 and under-reports the content height by 45.
+It also compares against the full page rather than the printable area. **Treat its output as a
+lower bound until that is fixed.**
 
 ## Changing the layout
 
@@ -162,7 +196,52 @@ from anything drawn. **Compute the artwork's radius from its own `viewBox`**, ne
 ```
 
 **`arcSize` is a PERCENTAGE, not a radius.** draw.io computes `r = min(w, h) * arcSize / 100`, so the
-same `arcSize=12` gives a different radius on every tile.
+same `arcSize=12` gives a different radius on every tile. On this canvas it ranges from **4.32**
+(`dns`, 120x36) to **32.88** (`api`, 300x274).
+
+#### The symptom SIZE varies, and a small one is not a small bug
+
+**`entryPerimeter=1` sometimes returns the corner unchanged, which hides the same defect behind a
+1-unit gap instead of a 4-unit one.** The projection lands wherever the center-to-point ray crosses
+the bounding rectangle. When a tile's half-extents happen to tie at the corner — `dns` is 120x36,
+and its corner sits at exactly `(60, 18)` from center — the ray exits through the corner itself, so
+the returned point is the box corner and the ONLY error is the arc inset.
+
+**So a gap of one unit and a gap of four units are the same bug.** Do not read a small gap as
+"close enough"; read it as a tile whose proportions happened to be forgiving.
+
+#### TWO rounded corners facing each other need a different formula
+
+45° is correct when one end is a corner and the other is not. **When both ends are corner arcs, the
+shortest bridge is the line between the two arc CENTERS**, and each endpoint sits its own radius
+along that unit vector. Used by `e14` (`api` to `d1`) and `e15` (`retry` to `d1`).
+
+```
+# nearest point pair between two rounded corners:
+#   c1, c2 = the two arc centers
+#   u      = (c2 - c1) / |c2 - c1|
+#   p1     = c1 + r1 * u        # leaves the first arc
+#   p2     = c2 - r2 * u        # enters the second
+```
+
+**45° is the special case of this where the corners are diagonally opposed** — `e15`'s unit vector
+came out `(0.70711, -0.70711)` on its own, which is a useful check that the arithmetic is right.
+
+#### Resizing a tile DRAGS every arrow attached to it
+
+**`exitY` and `entryY` are fractions of the box, so changing a tile's height moves every endpoint on
+it.** This is not a corner problem and it has bitten repeatedly:
+
+| Change | Broke | Fix |
+|---|---|---|
+| `api` grew 244 to 274 | `e3`, `e9`, `e14` | Recompute each `exitY` to pin its absolute `y` |
+| `flickrapi` grew 380 to 398 | `e9`, `e10` | Same, for `entryY` |
+| `users` shrank 112 to 104 | `e22`, `e13` | Same |
+| `d1` narrowed 190 to 169 | `e14`, `e15` | Recompute the nearest-point pairs |
+
+**A horizontal run is the case that matters**, because a 2-unit drift reads as a mistake rather than
+as a change. `e18` and `e3` share `y=388` and carry the device-link handshake straight across the
+canvas as one line; `e9` and `e10` land on `flickrapi` at `y=536` and `y=860`.
 
 ### Three classes of defect, and only one of them has checks
 
@@ -176,7 +255,22 @@ same `arcSize=12` gives a different radius on every tile.
 others, so they prevent the return of known problems and are blind to new ones. On 2026-08-15 the
 build passed all fifteen assertion blocks over a diagram Terry called horrific.
 
-## Open, as of 2026-08-15
+## THE ASSERTIONS ARE CURRENTLY OFF
+
+**`CHECKS_ENABLED = False` near the top of the check block in `scripts/build-diagram.py` short
+circuits every geometry and quality assertion**, and the build prints a banner saying so on every
+run. **Terry turned them off on 2026-08-16** for a canvas overhaul he reviews by eye through the
+live preview: nearly every assertion is pinned to a coordinate the overhaul moves, so they fired on
+every intermediate state, and a check that fires on every run is a check nobody reads.
+
+**Restoring is one word.** Set the flag to `True`, run, and fix what it reports. **Expect several
+failures** — the badge checks have empty tables, `check_page_fit()` has never seen the current
+layout, and the boxed-text slack band was tuned against tiles that have all since moved.
+
+**A future session MUST NOT turn them back on unasked.** That is Terry's call, the same way the
+layout is.
+
+## Open, as of 2026-08-16
 
 **None of these blocks anything. They are written down so they are not rediscovered.**
 
@@ -184,8 +278,20 @@ build passed all fifteen assertion blocks over a diagram Terry called horrific.
   Every other tile is hand-sized, which is why raising the body type from 7.9 pt to 12.2 pt burst
   the Nightly Retry Worker's box while the build reported clean. **Extending it to every text tile
   is the highest-value check still missing.**
+- **`check_page_fit()` cannot see a routed waypoint.** Its regex matches `<mxGeometry>`, and `e11`'s
+  run along the page bottom is a pair of `<mxPoint>` elements — so it measures the content 45 units
+  shorter than it is. It also scales against the full page rather than the printable area. **The
+  fix is deferred until the layout settles**, because the checking machinery is not being touched
+  mid-overhaul.
 - **The Nightly Event Trigger tile is cramped** — four wrapped lines in a small box.
-- **Dead space bottom-right inside the Cloudflare frame**, roughly 265 x 335.
+- **Dead space bottom-right inside the Cloudflare frame**, now roughly **265 x 265** — right of the
+  Nightly Retry Logic Worker (ends x=730) and below D1 (ends y=740), out to the frame at x=995,
+  y=1005. It shrank with the 2026-08-16 relayout but did not close.
+- **No logo for Lightroom Classic.** Cloudflare and Flickr both carry their marks; the Lightroom
+  card carries only text. Adobe ships an "Lr" mark and Wikimedia Commons hosts Adobe product icons,
+  which is where the other two came from. **The trap is that Lightroom Classic and Lightroom (CC)
+  have DIFFERENT icons**, and this diagram means Classic specifically — the whole
+  `getPublishServices(nil)` cross-plugin mechanism is Classic-only.
 - **The PDF export has never been inspected.** Terry: *"the PDF looks some different from the drawio   DIRTY-WORDS-EXEMPT: quoting Terry
   render"*. The `Read` tool opens PDFs natively via its `pages` parameter, so the only missing step
   is producing the file.
@@ -217,6 +323,23 @@ build passed all fifteen assertion blocks over a diagram Terry called horrific.
 
 ## Closed on 2026-08-16
 
+- **THE DIAGRAM FITS AN 11x17 SHEET AT 100%, for the first time.** See the printing section. It had
+  been 4% over in width and 18% over in height.
+- **Every arrow lands on drawn pixels rather than on a bounding box.** `exitPerimeter=0` /
+  `entryPerimeter=0`, plus the corner arithmetic above. Six edges: `e1`, `e21`, `e11`, `e14`, `e15`,
+  and the `dns` ends of the first two.
+- **The left column was rebuilt.** The Lightroom card widened leftward to 180 so its arrows are not
+  cramped against its own border while the 30-unit gap to the Cloudflare frame held; the Browser
+  glyph matches the plug-in tile's width and shares its centerline, which made `e19` vertical for
+  free; the Catalog tile lost a line and rose; and DNS sits where its two diagonals make equal
+  angles, which is also the midpoint between the plug-in's bottom and the glyph's top.
+- **The Catalog tile says what it holds.** "Local SQLite / Published photo IDs" became "Flickr photo
+  IDs". The plug-in reads Adobe's Flickr publish service records out of the catalog and never calls
+  Flickr, so the ids are the fact worth naming. See `docs/LRC-CLIENT-NOTES.md`.
+- **The Cloudflare mark is no longer 0.12% squashed.** Its box now uses the artwork's own
+  `viewBox="0 0 101.4 33.5"` ratio of 3.0268657 rather than the 3.023256 it happened to sit in.
+  **The 1% distortion assertion passed that happily**, which is the reminder that a band is not a
+  measurement.
 - **`e19` is ONE HEAD. Terry chose it**, from the three options this section used to list. The
   picture now matches journey steps 12 and 13 and matches the device flow: `LrHttp.openUrlInBrowser`
   is fire-and-forget, and the token arrives on `e18`, which is already double-headed.

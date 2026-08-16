@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 234" role="img" aria-label="Adobe Lightroom Classic">
+  <rect x="0" y="0" width="240" height="234" rx="42" ry="42" fill="#001E36"/>
+  <g fill="#31A8FF">
+    <path d="M46 74 h19 v62 h37 v19 H46 Z"/>
+    <path d="M114 100 h18 v12 c5,-9 14,-13 25,-13 v20 c-16,0 -25,7 -25,21 v15 h-18 Z"/>
+  </g>
+  <path d="M212.6 97.1 A35 35 0 1 0 212.6 132.9"
+        fill="none" stroke="#31A8FF" stroke-width="18"/>
+</svg>
+<!--
+Adobe Lightroom Classic's "LrC" mark, HAND-DRAWN from the application icon rather
+than lifted from an Adobe file.
+
+NOTE TO A FUTURE EDITOR: an XML comment MUST NOT contain two consecutive hyphens.
+This project's prose uses them as an em dash constantly, and the first version of
+this comment carried four. That made the file malformed, `embed()` base64'd it
+anyway, and the icon rendered as nothing at all. Use an em dash or a colon here.
+
+Drawn rather than downloaded for two reasons. Terry asked for a higher-resolution
+replacement for a small raster grab, and paths stay sharp at any size and survive
+a PDF export. An SVG text element would depend on a font being present at render
+time, which drawio's export cannot guarantee.
+
+Colors are Adobe's Lightroom Classic pair: #001E36 for the ground, #31A8FF for
+the letters.
+
+It is a trademark, used nominatively to identify the software this system
+integrates with, exactly as cloudflare-mark.svg and flickr-mark-tight.svg are.
+
+Lightroom Classic and Lightroom (CC) have DIFFERENT icons, and this is Classic's.
+The distinction is load-bearing: the cross-plugin mechanism this diagram depends
+on, catalog:getPublishServices(nil) through publishedPhoto:getRemoteId(), exists
+only in Classic. A CC icon would make the picture claim the wrong product.
+-->

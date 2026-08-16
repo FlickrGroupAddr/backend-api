@@ -6,10 +6,10 @@
         <mxCell id="1" parent="0" />
 
         <mxCell id="title" value="FlickrGroupAddr Architecture" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="30" y="20" width="700" height="48" as="geometry" />
+          <mxGeometry x="5" y="20" width="700" height="48" as="geometry" />
         </mxCell>
         <mxCell id="date" value="2026-08-16" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="30" y="56" width="493" height="36" as="geometry" />
+          <mxGeometry x="5" y="56" width="493" height="36" as="geometry" />
         </mxCell>
 
         <mxCell id="cfframe" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1A1A1A;strokeWidth=2;" vertex="1" parent="1">
@@ -25,8 +25,8 @@
         <mxCell id="lrcapp" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#546E7A;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
           <mxGeometry x="5" y="110" width="180" height="320" as="geometry" />
         </mxCell>
-        <mxCell id="lrctitle" value="Lightroom Classic" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
-          <mxGeometry x="21" y="126" width="148" height="24" as="geometry" />
+        <mxCell id="lrcmark" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDAgMjM0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkFkb2JlIExpZ2h0cm9vbSBDbGFzc2ljIj4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMjQwIiBoZWlnaHQ9IjIzNCIgcng9IjQyIiByeT0iNDIiIGZpbGw9IiMwMDFFMzYiLz4KICA8ZyBmaWxsPSIjMzFBOEZGIj4KICAgIDxwYXRoIGQ9Ik00NiA3NCBoMTkgdjYyIGgzNyB2MTkgSDQ2IFoiLz4KICAgIDxwYXRoIGQ9Ik0xMTQgMTAwIGgxOCB2MTIgYzUsLTkgMTQsLTEzIDI1LC0xMyB2MjAgYy0xNiwwIC0yNSw3IC0yNSwyMSB2MTUgaC0xOCBaIi8+CiAgPC9nPgogIDxwYXRoIGQ9Ik0yMTIuNiA5Ny4xIEEzNSAzNSAwIDEgMCAyMTIuNiAxMzIuOSIKICAgICAgICBmaWxsPSJub25lIiBzdHJva2U9IiMzMUE4RkYiIHN0cm9rZS13aWR0aD0iMTgiLz4KPC9zdmc+CjwhLS0KQWRvYmUgTGlnaHRyb29tIENsYXNzaWMncyAiTHJDIiBtYXJrLCBIQU5ELURSQVdOIGZyb20gdGhlIGFwcGxpY2F0aW9uIGljb24gcmF0aGVyCnRoYW4gbGlmdGVkIGZyb20gYW4gQWRvYmUgZmlsZS4KCk5PVEUgVE8gQSBGVVRVUkUgRURJVE9SOiBhbiBYTUwgY29tbWVudCBNVVNUIE5PVCBjb250YWluIHR3byBjb25zZWN1dGl2ZSBoeXBoZW5zLgpUaGlzIHByb2plY3QncyBwcm9zZSB1c2VzIHRoZW0gYXMgYW4gZW0gZGFzaCBjb25zdGFudGx5LCBhbmQgdGhlIGZpcnN0IHZlcnNpb24gb2YKdGhpcyBjb21tZW50IGNhcnJpZWQgZm91ci4gVGhhdCBtYWRlIHRoZSBmaWxlIG1hbGZvcm1lZCwgYGVtYmVkKClgIGJhc2U2NCdkIGl0CmFueXdheSwgYW5kIHRoZSBpY29uIHJlbmRlcmVkIGFzIG5vdGhpbmcgYXQgYWxsLiBVc2UgYW4gZW0gZGFzaCBvciBhIGNvbG9uIGhlcmUuCgpEcmF3biByYXRoZXIgdGhhbiBkb3dubG9hZGVkIGZvciB0d28gcmVhc29ucy4gVGVycnkgYXNrZWQgZm9yIGEgaGlnaGVyLXJlc29sdXRpb24KcmVwbGFjZW1lbnQgZm9yIGEgc21hbGwgcmFzdGVyIGdyYWIsIGFuZCBwYXRocyBzdGF5IHNoYXJwIGF0IGFueSBzaXplIGFuZCBzdXJ2aXZlCmEgUERGIGV4cG9ydC4gQW4gU1ZHIHRleHQgZWxlbWVudCB3b3VsZCBkZXBlbmQgb24gYSBmb250IGJlaW5nIHByZXNlbnQgYXQgcmVuZGVyCnRpbWUsIHdoaWNoIGRyYXdpbydzIGV4cG9ydCBjYW5ub3QgZ3VhcmFudGVlLgoKQ29sb3JzIGFyZSBBZG9iZSdzIExpZ2h0cm9vbSBDbGFzc2ljIHBhaXI6ICMwMDFFMzYgZm9yIHRoZSBncm91bmQsICMzMUE4RkYgZm9yCnRoZSBsZXR0ZXJzLgoKSXQgaXMgYSB0cmFkZW1hcmssIHVzZWQgbm9taW5hdGl2ZWx5IHRvIGlkZW50aWZ5IHRoZSBzb2Z0d2FyZSB0aGlzIHN5c3RlbQppbnRlZ3JhdGVzIHdpdGgsIGV4YWN0bHkgYXMgY2xvdWRmbGFyZS1tYXJrLnN2ZyBhbmQgZmxpY2tyLW1hcmstdGlnaHQuc3ZnIGFyZS4KCkxpZ2h0cm9vbSBDbGFzc2ljIGFuZCBMaWdodHJvb20gKENDKSBoYXZlIERJRkZFUkVOVCBpY29ucywgYW5kIHRoaXMgaXMgQ2xhc3NpYydzLgpUaGUgZGlzdGluY3Rpb24gaXMgbG9hZC1iZWFyaW5nOiB0aGUgY3Jvc3MtcGx1Z2luIG1lY2hhbmlzbSB0aGlzIGRpYWdyYW0gZGVwZW5kcwpvbiwgY2F0YWxvZzpnZXRQdWJsaXNoU2VydmljZXMobmlsKSB0aHJvdWdoIHB1Ymxpc2hlZFBob3RvOmdldFJlbW90ZUlkKCksIGV4aXN0cwpvbmx5IGluIENsYXNzaWMuIEEgQ0MgaWNvbiB3b3VsZCBtYWtlIHRoZSBwaWN0dXJlIGNsYWltIHRoZSB3cm9uZyBwcm9kdWN0LgotLT4K" vertex="1" parent="1">
+          <mxGeometry x="75" y="126" width="40" height="39" as="geometry" />
         </mxCell>
         <mxCell id="lrc" value="&lt;b&gt;FGA plug-in&lt;/b&gt;&lt;br&gt;&lt;i&gt;Lua&lt;br&gt;All we add&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#546E7A;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="30" y="306" width="130" height="105" as="geometry" />
