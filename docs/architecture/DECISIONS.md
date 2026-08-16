@@ -806,10 +806,22 @@ the same value, which a random one cannot.
 **Plug-in code MUST NOT `import` any namespace absent from the API Reference of the SDK version this
 project pins.** `scripts/lua-imports.py` fails `npm run check` on a violation.
 
-**Function level is a SHOULD, and nothing enforces it. Said plainly rather than implied.** A
-namespace is checkable against a list of filenames; an undocumented *function* inside a documented
-namespace needs HTML parsing per module plus alias tracking through locals. **A rule that cannot be
-checked is a promise, and calling it a MUST would be a lie told by a build script.**
+**Plug-in code MUST NOT call `<Namespace>.<member>` where the member is absent from that SDK's
+reference.** The same gate enforces it, against `scripts/lrc-sdk-api.json` — 355 members across 38
+namespaces.
+
+**Instance methods stay a SHOULD, and nothing enforces them. Said plainly rather than implied.**
+`catalog:getPublishServices()` needs to know the type of `catalog`, and Lua has none. **The gate
+prints how many it skipped on every run** — 79 across the current plug-in — because silence there
+would read as coverage. **A rule that cannot be checked is a promise, and calling it a MUST would be
+a lie told by a build script.**
+
+#### An empty member list means OBJECT-ORIENTED, never "nothing is allowed"
+
+**18 of 56 namespaces have no dotted members at all**, `LrPhoto` and `LrProgressScope` among them.
+Their surface is reached with a colon, so there is nothing of the `Namespace.member` shape to check.
+**The gate skips them, and reading an empty list as a prohibition would reject every correct use of
+the modules FGA leans on hardest.**
 
 **Rule 2 is an instance of this, not a separate policy.** It is stated separately anyway because
 `LrUUID` is the one somebody will actually reach for, and a named prohibition survives where a
@@ -835,6 +847,36 @@ otherwise open: a stale JSON after an SDK bump, silently approving a namespace t
 **The script announces which instrument ran**, because "verified against the SDK" and "verified
 against a file somebody generated in April" are different assurances — the same reason
 `lua-balance.py` says whether it ran `luac` or its fallback.
+
+#### The docs are PROVABLY incomplete, and the scraper that proved it was wrong first
+
+**Adobe ships undocumented functions inside documented namespaces.** Measured 2026-08-16 by
+comparing the archive against a runtime `pairs()` sweep, then confirmed by a literal substring
+search of **every file in the archive**:
+
+| Member | Status |
+|---|---|
+| `LrSystemInfo.getRamUsage`, `.machineName`, `.getSystemOs` and 9 more | **Nowhere in the archive.** 12 of that namespace's 23 members |
+| `LrDigest.SHA384` | **Nowhere in the archive** |
+| `LrUUID.generateUUID` | **Nowhere in the archive** |
+
+**So `LrUUID` was not an exception. It was the visible corner of a pattern**, and that is a stronger
+argument for Rule 3 than the one this ADR opened with.
+
+**THE FIRST SCRAPE WAS WRONG AND ITS ERROR IS THE MORE USEFUL RECORD.** It matched only
+`LrFoo.bar (` — a member written as a *call* — and reported `LrDigest` as having **one** documented
+member against seven at runtime. The page names its factories in prose: *"provides the following
+hashing factories: LrDigest.SHA256 and LrDigest.SHA512"*, no parens anywhere. Corrected, `LrDigest`
+scores 6 of 7 and only `SHA384` is genuinely undocumented.
+
+**Terry caught it by remembering that I had quoted that exact sentence out of this archive an hour
+earlier.** The instrument disagreed with something already known, and the instrument was believed.
+**A conclusion drawn from a new measurement MUST be checked against what is already established**,
+because the measurement is the thing more likely to be broken. See ADR-14's cousin lesson about
+tools that report cleanly because they cannot see.
+
+**Over-inclusive is the safe direction for an allow-list**, and the scraper is now written that way:
+a spurious entry loosens the gate by one name, while a missing one rejects working code.
 
 #### A DYNAMIC import is unverified, never allowed — and this hole was real
 

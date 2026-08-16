@@ -105,13 +105,31 @@ Typecheck (both tsconfigs), lint, the US English check, the Lua parse check, **t
 import gate**, 251 tests, the traceability gate, and the web build. **It MUST be clean before a
 commit.**
 
-**`scripts/lua-imports.py` refuses any `import` of a namespace the pinned LrC SDK does not
-document.** It reads `scripts/lrc-sdk-modules.json` — committed, because `vendor/`'s archive is
-gitignored and a fresh clone has no SDK — and **cross-checks it against the archive when one is
-present**, so a stale list after an SDK bump fails rather than silently approving a dropped
-namespace. **A dynamic `import(name)` is reported `UNVERIFIABLE` and needs an explicit
-`SDK-UNDOCUMENTED-EXEMPT: <reason>`**; that hole was real, and the gate's first run reported
-`0 undocumented` against the one file that imports `LrUUID`.
+**`scripts/lua-imports.py` refuses any `import` of a namespace, or any `Namespace.member` call, that
+the pinned LrC SDK does not document.** It reads two committed indexes —
+`scripts/lrc-sdk-modules.json` (56 namespaces) and `scripts/lrc-sdk-api.json` (355 members across
+38) — because `vendor/`'s archive is gitignored and a fresh clone has no SDK. It **cross-checks the
+namespace list against the archive when one is present**, so a stale index after an SDK bump fails
+rather than silently approving a dropped namespace. Regenerate with `--regenerate` and
+`--regenerate-api`.
+
+**Three traps it exists to remember:**
+
+- **A dynamic `import(name)` is `UNVERIFIABLE`, never allowed.** That hole was real — the gate's
+  first run reported `0 undocumented` against the one file that imports `LrUUID`, because the file
+  reads candidates out of a table.
+- **An empty member list means OBJECT-ORIENTED, not forbidden.** 18 namespaces including `LrPhoto`
+  are reached with a colon. **Reading empty as "nothing is allowed" would reject the modules this
+  project uses most.** Instance methods are unchecked and the gate **prints how many it skipped**,
+  because silence would read as coverage.
+- **The scraper MUST NOT require a call paren.** The first one matched `LrFoo.bar (` only and
+  reported `LrDigest` as having one member against seven, because the page names its factories in
+  prose. **Over-inclusive is the safe direction** — a spurious entry loosens the gate by a name, a
+  missing one rejects working code.
+
+**The docs are provably incomplete: `LrSystemInfo` hides 12 of its 23 members, `LrDigest.SHA384` and
+`LrUUID.generateUUID` appear nowhere in the archive.** Exempt a deliberate use with
+`SDK-UNDOCUMENTED-EXEMPT: <reason>` on the line.
 
 **`scripts/lua-balance.py` runs the REAL Lua 5.1 compiler.** It extracts `Lua Compiler/win/luac.exe` on demand from the SDK archive this repo vendors, and parse-checks every plug-in file. **An earlier version of this line said no `luac` existed here** -- a search for names matching `*Lightroom*SDK*` and `luac*.exe`, against an archive named `LrC_...` holding the binary INSIDE the zip. Neither pattern could have matched. **A search that finds nothing is not evidence that nothing is there.** Its block-balance pass survives as a FALLBACK for a machine without the archive, and the script announces which instrument ran -- a balance pass and a real parse are very different assurances. It is a
 block-balance check and **NOT a parser** — it catches a block left open or closed twice, which is
