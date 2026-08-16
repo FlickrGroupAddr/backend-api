@@ -137,7 +137,16 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         </mxCell>
 
         <mxCell id="dns" value="&lt;b&gt;FGA DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="250" y="422" width="170" height="50" as="geometry" />
+          <mxGeometry x="250" y="449" width="170" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="apidevice" value="&lt;b&gt;/device&lt;/b&gt; REST API endpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B85C0A;strokeColor=#FFFFFF;strokeWidth=1;fontColor=#FFFFFF;fontSize=13;arcSize=14;" vertex="1" parent="1">
+          <mxGeometry x="450" y="400" width="260" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="apioauth" value="&lt;b&gt;/oauth&lt;/b&gt; REST API endpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B85C0A;strokeColor=#FFFFFF;strokeWidth=1;fontColor=#FFFFFF;fontSize=13;arcSize=14;" vertex="1" parent="1">
+          <mxGeometry x="450" y="494" width="260" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="apirest" value="&lt;b&gt;/api&lt;/b&gt; REST API endpoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B85C0A;strokeColor=#FFFFFF;strokeWidth=1;fontColor=#FFFFFF;fontSize=13;arcSize=14;" vertex="1" parent="1">
+          <mxGeometry x="450" y="536" width="260" height="36" as="geometry" />
         </mxCell>
         <mxCell id="secrets" value="&lt;b&gt;App Secrets Store&lt;/b&gt;&lt;br&gt;&lt;i&gt;Worker Secrets&lt;br&gt;FGA Flickr API credentials&lt;br&gt;Token key (encryption)&lt;br&gt;Session key (signing)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="430" y="640" width="300" height="150" as="geometry" />
@@ -155,7 +164,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="oauthdo" value="&lt;b&gt;OAuth Request Token&lt;/b&gt;&lt;br&gt;&lt;i&gt;One Durable Object&lt;br&gt;per login attempt&lt;br&gt;Self-deletes after ~15 min&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontSize=15;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="800" y="336" width="175" height="155" as="geometry" />
         </mxCell>
-        <mxCell id="api" value="&lt;b&gt;flickrgroupaddr.com&lt;/b&gt;&lt;div style=&quot;font-size:13px;margin-top:5px&quot;&gt;&lt;b&gt;Root directory:&lt;/b&gt; App shell (Svelte), Workers Static Assets&lt;/div&gt;&lt;div style=&quot;font-size:13px&quot;&gt;&lt;b&gt;/api/v001/*&lt;/b&gt; &amp;#8212; REST API&lt;/div&gt;&lt;div style=&quot;font-size:14px;margin-top:6px&quot;&gt;&lt;i&gt;ONE Cloudflare Worker, one origin&lt;/i&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=15;arcSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+        <mxCell id="api" value="&lt;b&gt;flickrgroupaddr.com&lt;/b&gt;&lt;div style=&quot;font-size:14px;margin-top:6px&quot;&gt;&lt;i&gt;Single Cloudflare Worker&lt;/i&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=15;arcSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="430" y="336" width="300" height="244" as="geometry" />
         </mxCell>
         <mxCell id="retry" value="&lt;b&gt;Nightly Retry Logic&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare Worker&lt;br&gt;Attempt to flush every queue with&lt;br&gt;pending requests. Stop a queue at&lt;br&gt;its first throttle status&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=15;arcSize=12;" vertex="1" parent="1">
@@ -186,46 +195,6 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="1325" y="800" width="350" height="126" as="geometry" />
         </mxCell>
 
-        <mxCell id="n1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="202" y="493" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="185" y="571" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n3" value="3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="248" y="571" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="585" y="587" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="796" y="571" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n6" value="6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="742" y="393" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="62" y="1029" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="374" y="571" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="311" y="571" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="866" y="571" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n11" value="11" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="936" y="571" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n12" value="12" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="110" y="452" width="46" height="46" as="geometry" />
-        </mxCell>
-        <mxCell id="n13" value="13" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="288" y="338" width="46" height="46" as="geometry" />
-        </mxCell>
-
         <mxCell id="journey" value="&lt;div style=&quot;font-size:14px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Static assets served by the same Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;User authorizes FGA&#39;s write access @ Flickr &#8212; HTTP response has HTTP redirect to API OAuth callback&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser follows HTTP redirect instructed by Flickr to OAuth callback, carrying a verifier&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker reads the token secret back out and trades the verifier for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;REST API endpoints: flickrgroupaddr.com/api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;12&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Lightroom plug-in opens the browser to link itself. It never calls Flickr&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;13&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Lightroom plug-in polls for its token, then queues a batch in one call&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=15;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
           <mxGeometry x="1325" y="110" width="350" height="488" as="geometry" />
         </mxCell>
@@ -233,13 +202,16 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="dns">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e13" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.942623;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="api">
+        <mxCell id="e13" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.392857;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="apirest">
           <mxGeometry x="0.55" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.017857;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="apioauth">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e21" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="dns">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e18" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.215164;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="api">
+        <mxCell id="e18" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.780952;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="apidevice">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e20" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="lrcat">
@@ -248,7 +220,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="e19" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="users">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.215164;exitDx=0;exitDy=0;entryX=0;entryY=0.338710;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="oauthdo">
+        <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.336066;exitDx=0;exitDy=0;entryX=0;entryY=0.529032;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="secrets" target="api">
@@ -314,6 +286,11 @@ import xml.etree.ElementTree as ET
 # Frames, labels, and the pieces that sit inside the Flickr card on purpose.
 NOT_OBSTACLES = {
     "cfframe", "netb", "cflogo", "title", "date",
+    # **The Worker tile became a CONTAINER on 2026-08-16** and holds three inner
+    # route tiles. An edge aimed at `apidevice`, `apioauth` or `apirest` must cross
+    # `api` to reach it, so treating the parent as an obstacle reports a collision
+    # for every one of its own children. Same reasoning as the Flickr card above.
+    "api",
     "flickrlogo", "flickr", "flickrtitle",
     # The Lightroom Classic card is a CONTAINER, exactly like the Flickr card
     # above it: edges legitimately terminate on the tiles stacked inside it, and
@@ -592,7 +569,8 @@ if not even:
 # far and it reads as an unrelated blob, too near and it is back to hiding the
 # arrow it is meant to annotate. Nothing else would catch either, since badges
 # are excluded from the collision check by design.
-BADGE_ON_EDGE = {
+BADGE_ON_EDGE: dict[str, str] = {}
+_RETIRED_BADGE_ON_EDGE = {
     "n1": "e1",    # browser -> Cloudflare DNS
     "n13": "e18",  # Lightroom plug-in -> the Worker, its only network edge
     "n2": "e13",   # browser -> Worker, the app shell (Workers static assets)
@@ -656,7 +634,8 @@ for badge, eid in BADGE_ON_EDGE.items():
 # A diagonal that cuts the Cloudflare frame, the PoP boundary and two columns on
 # its way says nothing about what it connects. An L-shaped route down a gutter
 # and along a channel says "this client reaches that Worker", which is the fact.
-ROUTED_RUNS = {
+ROUTED_RUNS: dict[str, tuple] = {}
+_RETIRED_ROUTED_RUNS = {
     # badge: (edge, run y, run x from, run x to)
     "n7": ("e11", 1080.0, 57.0, 1160.0),   # browser -> Flickr, the authorize detour
 }
@@ -670,8 +649,8 @@ for badge, (eid, run_y, run_x0, run_x1) in ROUTED_RUNS.items():
     if not on_run:
         problems += 1
 
-n7x, n7y, n7w, n7h = boxes["n7"]
-n7c = (n7x + n7w / 2, n7y + n7h / 2)
+# n7 is gone with the rest of the badges.
+
 
 # n7 rides a long horizontal run, so nothing about the arrow decides where along
 # it the badge sits. It used to be pinned to the center of App Secrets Store,
@@ -697,7 +676,8 @@ n7c = (n7x + n7w / 2, n7y + n7h / 2)
 # to sit, and the two rules became unsatisfiable together. **An assertion pinned to
 # a coordinate outlives the layout that made it true**; one pinned to the thing it
 # is actually about does not.
-BADGE_GROUPS = {
+BADGE_GROUPS: dict[str, list] = {}
+_RETIRED_BADGE_GROUPS = {
     "e13": ["n2", "n3", "n8", "n10"],   # every browser-to-Worker step
     "e9": ["n5", "n9", "n11"],          # every Worker-to-Flickr call, one arrow
 }
@@ -725,7 +705,7 @@ for edge, members in BADGE_GROUPS.items():
 # the first badged version shipped unreadable. The descriptions live in the
 # "User journey" key instead, where they have room to be sentences.
 print("  badged arrows carry no competing label:")
-for badge, eid in list(BADGE_ON_EDGE.items()) + [("n7", "e11")]:
+for badge, eid in list(BADGE_ON_EDGE.items()):
     label = (edge_by_id[eid].get("value") or "").strip()
     clean = "clear" if not label else f"HAS LABEL {label!r}"
     print(f"    {eid:4} ({badge}) {clean}")
@@ -919,9 +899,11 @@ badge_count = len([c for c in cells if re.fullmatch(r"n\d+", c.get("id") or "")]
 print(f"  User Journey rows are number-plus-text pairs: {len(journey_rows)} rows vs"
       f" {badge_count} badges,"
       f" {'all two cells' if not wrong_cells else f'WRONG CELL COUNT in rows {wrong_cells}'}")
-if len(journey_rows) != badge_count:
+if badge_count == 0:
+    print("    -> badges are deliberately OFF; the rule bites at the first one")
+elif len(journey_rows) != badge_count:
     print(f"    -> {len(journey_rows)} steps but {badge_count} badges; every step needs one")
-if len(journey_rows) != badge_count or wrong_cells:
+if (badge_count and len(journey_rows) != badge_count) or wrong_cells:
     problems += 1
 
 
