@@ -229,7 +229,7 @@ endpoint should, not because a decision asked for it.
 python scripts/mutation-check.py
 ```
 
-**It breaks the source in 42 specific ways and checks the suite screams at each.**
+**It breaks the source in 45 specific ways and checks the suite screams at each.**
 **This count drifts exactly like the test count above.** It read 25 while the harness ran 34,
 found 2026-08-15. Quote what the runner prints. Every mutation is
 a decision this project made against — retry a photo a moderator saw, drop `HttpOnly`, reflect the
@@ -239,6 +239,19 @@ CORS origin, reuse a crypto nonce.
 the tag out of the name and nothing else links the two. An untagged mutation makes the matrix report
 `—` for a decision that is genuinely mutation-covered, which understates the safety net rather than
 overstating it. Two are untagged on purpose, and `mutation-check.py` says which and why.
+
+### Anchor a mutation to its CONDITION, never to the code around it
+
+**This cost two re-cuts on 2026-08-16 alone.** An anchor that spans a check and its neighbor breaks
+the moment anything is inserted between them, and the two edits that broke it were both routine:
+`consume` grew a return field, and `poll` grew a throttle.
+
+**The harness said so both times — `SKIPPED, anchor appears 0 times` — and that is the design
+working.** A mutation whose anchor has drifted defends nothing, and a silent skip would have read
+as coverage. **A SKIPPED mutation is a SURVIVOR**; treat it as a hole, not as a warning.
+
+So anchor on the thing the mutation is actually about. `got.byteLength !== want.byteLength || …`
+survives an edit two lines away; `return …;\n}\n\nif (attempt.denied) {` does not.
 
 **A green suite proves it AGREES with the code, never that it would NOTICE the code being wrong.**
 Those are different claims, and only the second one matters when tests are being deleted or
