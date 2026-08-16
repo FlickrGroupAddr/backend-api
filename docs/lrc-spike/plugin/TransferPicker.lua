@@ -63,6 +63,9 @@ local ALREADY_IN_COUNT = 8
 local MARK_AT_FLICKR = "\226\151\143 "
 local MARK_QUEUED = "+ "
 
+--[[ What "no row is selected" is written as. See the long note in `rebuild`. ]]
+local NO_SELECTION = ""
+
 local WORDS = {
 	"Canada", "Landscapes", "Black and White", "Long Exposure", "Wildlife",
 	"Alberta", "Sunrise", "Macro", "Street", "Architecture", "Portraits",
@@ -134,8 +137,8 @@ local function run()
 		props.filter = ""
 		props.leftItems = {}
 		props.rightItems = {}
-		props.leftValue = {}
-		props.rightValue = {}
+		props.leftValue = NO_SELECTION
+		props.rightValue = NO_SELECTION
 		props.leftStats = ""
 		props.rightStats = ""
 		props.pending = ""
@@ -197,8 +200,34 @@ local function run()
 
 			props.leftItems = leftItems
 			props.rightItems = rightItems
-			props.leftValue = {}
-			props.rightValue = {}
+
+			--[[ **`nil`, NOT `{}` -- and this was a real bug, found by Terry on the
+			     first click.**
+
+			     With `allows_multiple_selection = true` the value is an array and
+			     `{}` clears it; `PickerProbe.lua` relies on exactly that. With
+			     single selection the value is a SCALAR, so assigning a table is a
+			     nonsense value the widget ignores -- it kept its own selection,
+			     positionally.
+
+			     The visible symptom was cosmetic and the real one was not. After a
+			     move, the row that slid into the vacated slot stayed highlighted,
+			     and the widget believed it was already selected. **Clicking it
+			     changed nothing, so no observer fired and the row went dead.** The
+			     user had to click a different row first.
+
+			     Same scalar-versus-table ambiguity this file already guards on the
+			     READ side in `onlyPick`. Guarding one direction and not the other
+			     is what let it through.
+
+			     **`NO_SELECTION` rather than `nil`, and the difference matters.**
+			     Assigning nil to a Lua table DELETES the key, which a binding may
+			     read as "nothing changed" and skip -- leaving the widget's own
+			     selection untouched all over again. An empty string is
+			     unambiguously a value CHANGE, it is a scalar, and no group id can
+			     ever equal it. `onlyPick` treats it as no selection. ]]
+			props.leftValue = NO_SELECTION
+			props.rightValue = NO_SELECTION
 
 			--[[ **The filter applies to the LEFT list only**, so `hidden` counts
 			     only unselected groups. A selected group is never hidden, which
@@ -238,13 +267,18 @@ local function run()
 		     string returns its length, so the empty test has to come after the type
 		     check rather than before it. ]]
 		local function onlyPick(value)
-			if value == nil then
+			if value == nil or value == NO_SELECTION then
 				return nil
 			end
 			if type(value) ~= "table" then
 				return value
 			end
-			return value[1]
+			-- An empty table is the multi-select shape of "nothing selected".
+			local first = value[1]
+			if first == NO_SELECTION then
+				return nil
+			end
+			return first
 		end
 
 		props:addObserver("leftValue", function()

@@ -92,20 +92,49 @@ async function idHash(id: string): Promise<string> {
  * to persist is a session that can never authenticate, and it would fail somewhere
  * unrelated and much later.
  */
+/**
+ * The two credential classes, sharing one mechanism.
+ *
+ * **A separate table for plug-in tokens was the obvious alternative and it is the wrong
+ * one.** It means a second minting path and a second verification path, and this file's
+ * own history is the argument: the cookie's attributes were once duplicated and one copy
+ * had silently lost `HttpOnly`. **Policy differs; mechanism MUST NOT.**
+ */
+export type SessionKind = "browser" | "plugin";
+
+/**
+ * A plug-in cannot ask its user to sign in again every day, and a browser can.
+ *
+ * **The plug-in's longer life is bought with a narrower reach, not given away.** See
+ * `requireBrowserSession` -- a plug-in token is refused anywhere it could revoke another
+ * credential or change the account, so a stolen laptop cannot lock the owner out.
+ */
+const LIFETIME_SECONDS: Record<SessionKind, number> = {
+	browser: SESSION_LIFETIME_SECONDS,
+	plugin: 90 * 24 * 60 * 60,
+};
+
 export async function mintSession(
 	db: D1Database,
 	nsid: string,
 	signingKey: string,
+	kind: SessionKind = "browser",
 ): Promise<string> {
 	const id = toBase64Url(crypto.getRandomValues(new Uint8Array(ID_BYTES)));
 	const now = Date.now();
 
 	await db
 		.prepare(
-			`INSERT INTO sessions (id_hash, nsid, created_at, expires_at)
-       VALUES (?, ?, ?, ?)`,
+			`INSERT INTO sessions (id_hash, nsid, created_at, expires_at, kind)
+       VALUES (?, ?, ?, ?, ?)`,
 		)
-		.bind(await idHash(id), nsid, now, now + SESSION_LIFETIME_SECONDS * 1000)
+		.bind(
+			await idHash(id),
+			nsid,
+			now,
+			now + LIFETIME_SECONDS[kind] * 1000,
+			kind,
+		)
 		.run();
 
 	return `${id}.${await sign(id, signingKey)}`;
@@ -119,11 +148,16 @@ export async function mintSession(
  * leaks their contents through timing, one byte at a time. Cloudflare's runtime
  * provides it -- probed, not assumed.
  */
+export type VerifiedSession = {
+	readonly nsid: string;
+	readonly kind: SessionKind;
+};
+
 export async function verifySession(
 	db: D1Database,
 	token: string,
 	signingKey: string,
-): Promise<string | null> {
+): Promise<VerifiedSession | null> {
 	const separator = token.indexOf(".");
 	if (separator <= 0) return null;
 
@@ -145,16 +179,24 @@ export async function verifySession(
 
 	// Only now does a database read happen. A forger never gets this far.
 	const row = await db
-		.prepare("SELECT nsid, expires_at FROM sessions WHERE id_hash = ?")
+		.prepare("SELECT nsid, expires_at, kind FROM sessions WHERE id_hash = ?")
 		.bind(await idHash(id))
-		.first<{ nsid: string; expires_at: number }>();
+		.first<{ nsid: string; expires_at: number; kind: string }>();
 
 	if (row === null) return null;
 
 	// Checked on the row already fetched, so an unswept table stays correct.
 	if (row.expires_at <= Date.now()) return null;
 
-	return row.nsid;
+	/**
+	 * **The kind comes from the ROW, never from the caller.** A column read is the only
+	 * honest source: the token itself carries nothing, deliberately, so there is no
+	 * self-reported claim here to be wrong about or to forge.
+	 */
+	return {
+		nsid: row.nsid,
+		kind: row.kind === "plugin" ? "plugin" : "browser",
+	};
 }
 
 /** Logout, and the reason this file exists. **Deleting the row is what ADR-10 could

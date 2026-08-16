@@ -118,6 +118,13 @@
 				// because that distinction is the whole point of the decision.
 				"name": "OAUTH_LOGIN",
 				"class_name": "OAuthLoginAttempt"
+			},
+			{
+				// One object per LINK ATTEMPT, not per user or per device. Same
+				// reasoning as OAUTH_LOGIN above: at `start` nobody has authorized
+				// anything, so there is no identity to key on yet.
+				"name": "DEVICE_LINK",
+				"class_name": "DeviceLinkAttempt"
 			}
 		]
 	},
@@ -127,6 +134,14 @@
 			"tag": "v1",
 			// SQLite-backed storage, which is the current default for new classes.
 			"new_sqlite_classes": ["OAuthLoginAttempt"]
+		},
+		{
+			// **A NEW TAG, never an edit to v1.** Migration tags are applied in order
+			// and already-applied tags are not re-run, so adding a class to v1 would
+			// be a no-op against any environment that has already seen v1 -- and it
+			// would look correct in the file.
+			"tag": "v2",
+			"new_sqlite_classes": ["DeviceLinkAttempt"]
 		}
 	]
 }

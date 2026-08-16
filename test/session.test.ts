@@ -57,7 +57,10 @@ beforeEach(async () => {
 describe("mint and verify", () => {
 	it("round-trips the NSID", async () => {
 		const token = await mintSession(env.DB, NSID, env.SESSION_KEY);
-		expect(await verifySession(env.DB, token, env.SESSION_KEY)).toBe(NSID);
+		expect(await verifySession(env.DB, token, env.SESSION_KEY)).toEqual({
+			nsid: NSID,
+			kind: "browser",
+		});
 	});
 
 	it("CARRIES NOTHING about the user, which is the whole point", async () => {
@@ -161,7 +164,10 @@ describe("mint and verify", () => {
 describe("revocation, which ADR-10 could not do", () => {
 	it("kills the handle for everyone holding it", async () => {
 		const token = await mintSession(env.DB, NSID, env.SESSION_KEY);
-		expect(await verifySession(env.DB, token, env.SESSION_KEY)).toBe(NSID);
+		expect(await verifySession(env.DB, token, env.SESSION_KEY)).toEqual({
+			nsid: NSID,
+			kind: "browser",
+		});
 
 		await revokeSession(env.DB, token);
 		expect(await verifySession(env.DB, token, env.SESSION_KEY)).toBeNull();
@@ -172,7 +178,10 @@ describe("revocation, which ADR-10 could not do", () => {
 		const second = await mintSession(env.DB, NSID, env.SESSION_KEY);
 
 		await revokeSession(env.DB, first);
-		expect(await verifySession(env.DB, second, env.SESSION_KEY)).toBe(NSID);
+		expect(await verifySession(env.DB, second, env.SESSION_KEY)).toEqual({
+			nsid: NSID,
+			kind: "browser",
+		});
 	});
 
 	it("dies with the user row, rather than outliving the account", async () => {

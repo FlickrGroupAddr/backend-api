@@ -10,6 +10,7 @@ import { oauthRoutes } from "./routes/oauth.js";
 import { readSessionCookie, verifySession } from "./session.js";
 import { sweep } from "./sweep.js";
 
+export { DeviceLinkAttempt } from "./device/link-attempt.js";
 export { OAuthLoginAttempt } from "./oauth/login-attempt.js";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -105,7 +106,10 @@ app.get("/api/debug", async (c) => {
 	const nsid =
 		cookie === undefined
 			? null
-			: await verifySession(c.env.DB, cookie, c.env.SESSION_KEY);
+			: // `verifySession` now reports the credential's KIND as well as its owner,
+				// and this page only ever wanted the owner.
+				((await verifySession(c.env.DB, cookie, c.env.SESSION_KEY))?.nsid ??
+				null);
 
 	// Stays a PLAIN string: every `html` interpolation below is escaped, so pre-escaping
 	// here would double-encode it.

@@ -26,6 +26,7 @@ import {
 } from "../flickr/api.js";
 import { requireAdmin } from "../middleware/admin.js";
 import {
+	requireBrowserSession,
 	requireSession,
 	type SessionVariables,
 } from "../middleware/session.js";
@@ -70,6 +71,16 @@ apiRoutes.use("/api/v001/*", requireSession);
  * so the session is verified first. Swapped, `c.get("nsid")` would be undefined and the
  * allowlist would compare against nothing.
  */
+/**
+ * **The admin surface is browser-only, and that is a separate rule from the allowlist.**
+ *
+ * A plug-in token lives for 90 days on a laptop protected by nothing but the filesystem.
+ * The allowlist asks *is this person an admin*; this asks *is this credential one I am
+ * willing to let act as an admin*. An admin's stolen laptop MUST NOT be an admin console.
+ *
+ * Registered before `requireAdmin` so the cheaper, broader refusal runs first.
+ */
+apiRoutes.use("/api/v001/admin/*", requireBrowserSession);
 apiRoutes.use("/api/v001/admin/*", requireAdmin);
 
 /**
