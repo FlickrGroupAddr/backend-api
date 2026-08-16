@@ -27,7 +27,7 @@
 -- it has existed since migration 0001 and nothing has ever read it.
 
 CREATE TABLE sessions (
-  -- base64url of SHA-256(id). The id itself is never stored, anywhere.
+  -- base64url of SHA2-256(id). The id itself is never stored, anywhere.
   id_hash    TEXT    PRIMARY KEY NOT NULL,
 
   -- ON DELETE CASCADE so removing a user removes their ability to authenticate,

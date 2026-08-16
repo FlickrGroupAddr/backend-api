@@ -201,7 +201,7 @@ Lives in `src/crypto/tokens.ts`.
 
 **The cookie is `<id>.<hmac>`. Neither half says anything about the user.** `id` is 256 random bits
 from `crypto.getRandomValues`, base64url. `hmac` is HMAC-SHA256 of `id` under `SESSION_KEY`. **Only
-`SHA-256(id)` is stored**, alongside `nsid`, `created_at` and `expires_at`.
+`SHA2-256(id)` is stored**, alongside `nsid`, `created_at` and `expires_at`.
 
 **The Flickr token MUST NOT reach the browser.** That part is unchanged from the first version of
 this decision and is the oldest rule here.
@@ -908,7 +908,7 @@ argument for Rule 3 than the one this ADR opened with.
 `LrFoo.bar (` — a member written as a *call* — and reported `LrDigest` as having **one** documented
 member against seven at runtime. The page names its factories in prose: *"provides the following
 hashing factories: LrDigest.SHA256 and LrDigest.SHA512"*, no parens anywhere. Corrected, `LrDigest`
-scores 6 of 7 and only `SHA384` is genuinely undocumented.
+scores 6 of 7 and only `SHA384` is genuinely undocumented.   <!-- DIRTY-WORDS-EXEMPT: Adobe identifier -->
 
 **Terry caught it by remembering that I had quoted that exact sentence out of this archive an hour
 earlier.** The instrument disagreed with something already known, and the instrument was believed.
@@ -955,7 +955,7 @@ exception**, which is why this one has none.
 
 **An idempotency key for `POST /api/v001/requests/batch` is the instructive case.** ADR-01 makes a
 double-submit expensive, so the key matters — and the right key is
-`SHA-256(nsid, photoId, sorted groupIds)`, **not** a random identifier. A random one changes on
+`SHA2-256(nsid, photoId, sorted groupIds)`, **not** a random identifier. A random one changes on
 retry and defeats the entire purpose. **Wanting a UUID there is a sign the requirement was misread.**
 
 ### `LrUUID` EXISTS, and that is not sufficient. Measured 2026-08-16
@@ -1059,9 +1059,9 @@ not generate.
 | Generate | **The Worker.** `crypto.getRandomValues` |
 | Store on the laptop | `LrPasswords.store` — OS-backed encryption, **scoped by plug-in ID so another plug-in cannot read it** |
 | Prove possession | Send it in the `POST /api/v001/device/poll` body. **Never a URL** |
-| Hash | `LrDigest.SHA256`, `SHA384`, `SHA512`, and `LrDigest.HMAC` |
+| Hash | `LrDigest.SHA256`, `SHA384`, `SHA512`, and `LrDigest.HMAC` |   <!-- DIRTY-WORDS-EXEMPT: Adobe identifiers -->
 
-**`SHA384` is present and undocumented**, which is the second case found on 2026-08-16 of the
+**`SHA384` is present and undocumented**, which is the second case found on 2026-08-16 of the   <!-- DIRTY-WORDS-EXEMPT: Adobe identifier -->
 reference understating the runtime. `LrStringUtils` also carries `encodeBase64` and `decodeBase64`.
 
 ## ADR-24 — The Lightroom plug-in gets its credential by device link, and holds no Flickr token
@@ -1104,7 +1104,7 @@ retype is too short to be a bearer credential.** That is the whole argument for 
 but the string on their Lightroom screen. **The typed path is the real path; the link is a
 convenience.**
 
-**Only `SHA-256(deviceCode)` is stored**, and it is compared with `crypto.subtle.timingSafeEqual`.
+**Only `SHA2-256(deviceCode)` is stored**, and it is compared with `crypto.subtle.timingSafeEqual`.
 Same reasoning as `src/session.ts` never storing a session id.
 
 ### `start` and `poll` are unauthenticated, and that is not a hole

@@ -42,7 +42,7 @@ export const SESSION_COOKIE = `__Host-${SESSION_COOKIE_NAME}`;
 
 /** 256 bits. `KEY-ROTATION-NOTES.md` records that 122 would have been overwhelmingly
  *  sufficient and that the extra costs about 100 nanoseconds, because 16 and 32 bytes
- *  both fit in one SHA-256 compression block. */
+ *  both fit in one SHA2-256 compression block. */
 const ID_BYTES = 32;
 
 const encoder = new TextEncoder();

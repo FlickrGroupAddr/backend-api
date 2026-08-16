@@ -193,7 +193,7 @@ revocation worth the D1 read rather than a nice-to-have.
 |---|---|---|
 | `id` | 256 random bits from `crypto.getRandomValues`, base64url | Unguessable, and carries nothing |
 | `hmac` | HMAC-SHA256 of `id` under the newest `SESSION_KEYS` entry | Rejects forgeries with **no D1 read** |
-| Stored | **SHA-256 of `id`**, plus `nsid`, `created_at`, `expires_at`, `session_key_at` | A D1 leak yields hashes, not usable tokens |
+| Stored | **SHA2-256 of `id`**, plus `nsid`, `created_at`, `expires_at`, `session_key_at` | A D1 leak yields hashes, not usable tokens |
 
 **Verify in that order: HMAC first, then look up.** An attacker spraying random cookies is rejected
 on CPU alone and never costs a database read.
@@ -217,13 +217,13 @@ times on this project.
 
 | | |
 |---|---|
-| Digests present | `SHA-1`, `SHA-256`, `SHA-384`, `SHA-512`, and `MD5` as a Cloudflare extension |
+| Digests present | `SHA-1`, `SHA2-256`, `SHA2-384`, `SHA2-512`, and `MD5` as a Cloudflare extension |   <!-- DIRTY-WORDS-EXEMPT: Web Crypto identifiers -->
 | Digests **absent** | `SHA3-256`, `SHA3-512`, `BLAKE2b-256`, `BLAKE3` — *"Unrecognized or unimplemented digest algorithm requested"* |
-| HMAC hashes | `SHA-1`, `SHA-256`, `SHA-384`, `SHA-512`. **No SHA-3** |
+| HMAC hashes | `SHA-1`, `SHA2-256`, `SHA2-384`, `SHA2-512`. **No SHA3 family at all** |   <!-- DIRTY-WORDS-EXEMPT: Web Crypto identifiers -->
 | `crypto.subtle.timingSafeEqual` | **Present and working** |
 
-**So SHA-3 is not a choice here.** It is not in the Web Crypto specification and Cloudflare has not
-extended it. Any design naming SHA-3 is unimplementable on this runtime.
+**So SHA3-256, SHA3-384 and SHA3-512 are not choices here.** All three are absent from the
+Web Crypto specification, and Cloudflare has not extended it. Any design naming one is
 
 **`crypto.subtle.timingSafeEqual` MUST NOT be destructured.** Pulling it off the object loses the
 `this` binding and throws `Illegal invocation` — **at runtime only**, so it passes both typecheck and
@@ -255,19 +255,19 @@ doubles the entropy requirement. **256 prevents no attack that 122 allows.**
 fails the HMAC gate before the database is touched, so the id's entropy is the second line rather
 than the first.
 
-**It costs 100 NANOSECONDS.** Both 16 and 32 bytes fit inside a single SHA-256 compression block —
+**It costs 100 NANOSECONDS.** Both 16 and 32 bytes fit inside a single SHA2-256 compression block —
 the block is 64 bytes — so the wider id buys the same number of compression calls.
 
 | Operation | Measured |
 |---|---|
 | `getRandomValues(32)` | **0.45 µs** |
 | `randomUUID()` | 0.20 µs |
-| `SHA-256` of **16** bytes | 1.65 µs |
-| `SHA-256` of **32** bytes | **1.75 µs** |
-| `SHA-512` of 32 bytes | 1.90 µs |
+| `SHA2-256` of **16** bytes | 1.65 µs |
+| `SHA2-256` of **32** bytes | **1.75 µs** |
+| `SHA2-512` of 32 bytes | 1.90 µs |
 | `HMAC-SHA256` sign, 32 bytes | **2.25 µs** |
 
-**Per authenticated request the crypto totals about 4 µs** — one HMAC verify plus one SHA-256 — against
+**Per authenticated request the crypto totals about 4 µs** — one HMAC verify plus one SHA2-256 — against
 a D1 read measured in milliseconds. **The crypto is well under a tenth of one percent of the
 request.** Terry estimated "small double-digit ms at most"; the real figure is three orders of
 magnitude smaller.
@@ -296,10 +296,10 @@ precision and is quantization. 20,000 gives 0.05 µs steps. **Lowering it to spe
 widens every number downstream.**
 
 **Re-measured 2026-08-15 by the committed benchmark**, and the agreement is close enough to trust
-the table: `randomUUID` 0.20 identical, `SHA-256` of 16 bytes 1.70 against 1.65, `HMAC-SHA256` 2.30
+the table: `randomUUID` 0.20 identical, `SHA2-256` of 16 bytes 1.70 against 1.65, `HMAC-SHA256` 2.30
 against 2.25. **Every row within 0.1 µs.**
 
-**If more overkill is ever wanted, SHA-512 costs 0.15 µs more and adds no security** — the input is
+**If more overkill is ever wanted, SHA2-512 costs 0.15 µs more and adds no security** — the input is
 one block either way and there is no length-extension exposure to close. Recorded so the option is
 priced rather than re-argued.
 

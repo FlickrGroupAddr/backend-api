@@ -522,7 +522,7 @@ for tile, expected in IN_EDGE_POP.items():
 # them and D1 inside that channel. Terry approved it by eye -- "I like it as is,
 # the diamond shape works for me" -- so it earned a check.
 #
-# On 2026-08-15 he replaced the arrangement: *"probably can vertically stack DNS,   US-ENGLISH-EXEMPT: quoting Terry
+# On 2026-08-15 he replaced the arrangement: *"probably can vertically stack DNS,   DIRTY-WORDS-EXEMPT: quoting Terry
 # API, App Secrets Store, and Nightly Retry logic into one vertical chain over on
 # left"*. A four-tile chain fills that channel by definition, so the check could
 # not survive the layout that superseded it. **The person who made the call is
@@ -642,7 +642,7 @@ for badge, eid in BADGE_ON_EDGE.items():
 #
 # **They are routed because a straight line between their endpoints reads as a
 # slash across the canvas.** Terry, 2026-08-15, on the Lightroom arrow before it
-# was routed: *"look at the arrow from the plugin to FGA API"*.   US-ENGLISH-EXEMPT: quoting Terry
+# was routed: *"look at the arrow from the plugin to FGA API"*.   DIRTY-WORDS-EXEMPT: quoting Terry
 # A diagonal that cuts the Cloudflare frame, the PoP boundary and two columns on
 # its way says nothing about what it connects. An L-shaped route down a gutter
 # and along a channel says "this client reaches that Worker", which is the fact.
@@ -679,7 +679,7 @@ n7c = (n7x + n7w / 2, n7y + n7h / 2)
 # and 10 are four things that happen on one HTTPS connection to one origin, and
 # drawing them as three near-parallel arrows out of a small tile produced a
 # starburst with numbers scattered through it. Terry, 2026-08-15, looking at the
-# render: *"the horrific mess of arrows and badges between browser and FGA"*.   US-ENGLISH-EXEMPT: quoting Terry
+# render: *"the horrific mess of arrows and badges between browser and FGA"*.   DIRTY-WORDS-EXEMPT: quoting Terry
 # One channel carrying four numbers says the same thing and reads at a glance.
 # **The axis is the ARROW they label, not a tile.** The first version named `dns`
 # and `d1`, which was true only for one arrangement: when the Worker moved into the

@@ -32,7 +32,7 @@ is 0.14 in, which is **10.1 pt**.
 **7.9 pt is footnote size**, and it made the first 8.5x11 print unreadable. Terry called it an
 eyechart, and the fix was type rather than page size.
 
-**Then 12.2 pt overshot.** Terry, 2026-08-16: *"the current text across the diagram is kind of   <!-- US-ENGLISH-EXEMPT: quoting Terry -->
+**Then 12.2 pt overshot.** Terry, 2026-08-16: *"the current text across the diagram is kind of   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
 comically huge. I appreciate you dialing it up but we overshot some. This will be on an 11x17 in
 piece of paper in front of me and I have 20/20."*
 
@@ -148,7 +148,7 @@ build passed all fifteen assertion blocks over a diagram Terry called horrific.
   is the highest-value check still missing.**
 - **The Nightly Event Trigger tile is cramped** — four wrapped lines in a small box.
 - **Dead space bottom-right inside the Cloudflare frame**, roughly 265 x 335.
-- **The PDF export has never been inspected.** Terry: *"the PDF looks some different from the drawio   US-ENGLISH-EXEMPT: quoting Terry
+- **The PDF export has never been inspected.** Terry: *"the PDF looks some different from the drawio   DIRTY-WORDS-EXEMPT: quoting Terry
   render"*. The `Read` tool opens PDFs natively via its `pages` parameter, so the only missing step
   is producing the file.
 - **A contradiction check does not exist.** Three defects in one session were the drawing asserting
@@ -191,7 +191,7 @@ build passed all fifteen assertion blocks over a diagram Terry called horrific.
 ## The next change: a TWO-PANEL User Journey, plug-in first
 
 **Terry's direction, 2026-08-16: two panels split between login/auth and publish, with the auth
-panel drawn in full.** His reasoning, and it decides the level of detail: *"Terry of 2031 will   <!-- US-ENGLISH-EXEMPT: quoting Terry -->
+panel drawn in full.** His reasoning, and it decides the level of detail: *"Terry of 2031 will   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
 appreciate us being pedantic af today. Hold his hand."*
 
 **Why the journey is being rewritten at all:** today's runs browser-first and the plug-in appears at

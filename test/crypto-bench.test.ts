@@ -126,7 +126,7 @@ describe("crypto costs, for KEY-ROTATION-NOTES.md", () => {
 	it("confirms 16 and 32 bytes cost the same to hash, which is why 256 bits is free", async () => {
 		/**
 		 * The load-bearing claim behind the 256-bit session id: both widths fit in one
-		 * 64-byte SHA-256 compression block, so the wider id buys the same number of
+		 * 64-byte SHA2-256 compression block, so the wider id buys the same number of
 		 * compression calls. **Asserted as a RATIO, not a duration** -- a ratio is
 		 * stable under load in a way a microsecond figure is not.
 		 */
@@ -137,7 +137,9 @@ describe("crypto costs, for KEY-ROTATION-NOTES.md", () => {
 			crypto.subtle.digest("SHA-256", new Uint8Array(32).fill(1)),
 		);
 
-		console.log(`\n  SHA-256 32B / 16B ratio: ${(large / small).toFixed(2)}\n`);
+		console.log(
+			`\n  SHA2-256 32B / 16B ratio: ${(large / small).toFixed(2)}\n`,
+		);
 
 		// Generous bound. One extra compression block would roughly double it; this
 		// catches that without failing on ordinary scheduling noise.

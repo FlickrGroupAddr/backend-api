@@ -67,7 +67,7 @@ staging, the report, and the add-only scoping.
   so an endpoint added later is closed to a plug-in token until somebody opens it deliberately.
   **Expiry is a FIXED 90 days and it is BUILT** — not sliding, because a hard ceiling is easier to
   reason about than one a weekly user resets forever.
-  **A revocation UI is DEFERRED**, and Terry is genuinely unsure it is wanted: *"I'm not even sure   US-ENGLISH-EXEMPT: quoting Terry
+  **A revocation UI is DEFERRED**, and Terry is genuinely unsure it is wanted: *"I'm not even sure   DIRTY-WORDS-EXEMPT: quoting Terry
   I care about revocation but defer for now for sure"*. **Treat it as an open question rather than
   as queued work.** One escape hatch exists today: rotating `SESSION_KEY` invalidates every
   credential of both kinds instantly, because the HMAC is checked before any database read.
@@ -313,7 +313,7 @@ time in one day that has happened here.
 
 | Namespace | What is really there |
 |---|---|
-| `LrDigest` | `SHA256`, `SHA384`, `SHA512`, `HMAC`, and deprecated `MD4`, `MD5`, `SHA1`. **`SHA384` is undocumented** — the reference names only SHA256 and SHA512 |
+| `LrDigest` | `SHA256`, `SHA384`, `SHA512`, `HMAC`, and deprecated `MD4`, `MD5`, `SHA1`. **`SHA384` is undocumented** — the reference names only SHA256 and SHA512 |   <!-- DIRTY-WORDS-EXEMPT: Adobe identifiers -->
 | `LrStringUtils` | 12 functions including **`encodeBase64` and `decodeBase64`** |
 | `LrPasswords` | `store` and `retrieve`, OS-backed and **scoped by plug-in ID** |
 | `LrUUID` | **PRESENT and undocumented.** One key, `generateUUID`. 1024 draws, 0 duplicates, all version-4 shape, 4.0 ms |
@@ -498,7 +498,7 @@ before trusting a clean pass.**
 **IT IS IN THIS REPO, at `vendor/LrC_15.3_202604090947-8f3672ed.release_SDK.zip`.**
 
 **An earlier version of this line said the opposite, and the real lesson is worse than a bad
-search.** `vendor/README.md` already documented all of it — the archive, its SHA-256, the Lua
+search.** `vendor/README.md` already documented all of it — the archive, its SHA2-256, the Lua
 compiler at `Lua Compiler/win/luac.exe`, the `luac -p` invocation, and even the rule to prove the
 checker can fail first. It was written earlier the same day.
 
@@ -556,7 +556,7 @@ evidence, and only one survives a disagreement.
 
 ### The Lightroom crash: one, on the FIRST run, none since
 
-**Terry, 2026-08-15:** *"that first ever plugin we ran and LrC crashed? happy to report there have   US-ENGLISH-EXEMPT: quoting Terry
+**Terry, 2026-08-15:** *"that first ever plugin we ran and LrC crashed? happy to report there have   DIRTY-WORDS-EXEMPT: quoting Terry
 been no more LrC crashes. I hope it wasn't our plugin, but just data for you"*
 
 **Recorded because a negative result is worth as much as a positive one**, and because "it crashed
@@ -1427,7 +1427,7 @@ put a modal in front of the one interaction the whole design exists to make fast
 stage removals; it does not, and `/api/v001/requests/:publicId/withdraw` only cancels a queued
 request before it is sent.
 
-**His decision:** *"I am going to stop complicating my life -- can only add groups, not remove. If a   US-ENGLISH-EXEMPT: quoting Terry
+**His decision:** *"I am going to stop complicating my life -- can only add groups, not remove. If a   DIRTY-WORDS-EXEMPT: quoting Terry
 pic is in a group when the dialog comes up, we just prune it from the initial candidate list."*
 
 So the groups a photo already belongs to are **pruned from the candidate list and never shown**, and

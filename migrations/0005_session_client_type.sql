@@ -1,6 +1,6 @@
 -- A second CLIENT TYPE: the Lightroom plug-in's token.
 --
--- **Named `client_type` rather than `kind`.** Terry, 2026-08-15: *"'Session kinds' pulls a  US-ENGLISH-EXEMPT: quoting the objection this column exists to answer
+-- **Named `client_type` rather than `kind`.** Terry, 2026-08-15: *"'Session kinds' pulls a  DIRTY-WORDS-EXEMPT: quoting the objection this column exists to answer
 -- 404 in my brain, I can't decipher what that is."* He is right -- `kind` is a word that
 -- means nothing until you already know the answer, and a column name has to work for the
 -- reader who arrives without it.
@@ -17,7 +17,7 @@
 -- that must be kept in step.
 --
 -- **WHAT IS ACTUALLY THE SAME.** Both are opaque bearer handles naming an nsid. Both
--- store only `SHA-256(id)`. Both verify the HMAC before any read. None of that wants
+-- store only `SHA2-256(id)`. Both verify the HMAC before any read. None of that wants
 -- reinventing per credential class.
 --
 -- **WHAT DIFFERS IS POLICY, NOT MECHANISM:**

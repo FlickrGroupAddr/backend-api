@@ -55,7 +55,7 @@ because a box that is too large passes.
 ### RENDER IT AND LOOK, before saying anything about how it turned out
 
 **A green run is not evidence the diagram is good.** On 2026-08-15 it passed every assertion and
-Terry's verdict was *"its horrific my bro"*. He was right: 7.9pt body text, four arrows bursting   US-ENGLISH-EXEMPT: quoting Terry
+Terry's verdict was *"its horrific my bro"*. He was right: 7.9pt body text, four arrows bursting   DIRTY-WORDS-EXEMPT: quoting Terry
 out of one tile, a third of the page empty. **The checks are a RATCHET, not a designer** — each one
 exists because a specific defect got past the others, so they prevent the return of known problems
 and are blind to new ones.
@@ -67,7 +67,7 @@ python scripts/build-diagram.py && git commit && git push && git rev-parse HEAD
 ```
 
 Then load `https://viewer.diagrams.net/?lightbox=1&nav=1#U<raw GitHub URL>` and screenshot it.
-**Pin the raw URL to the commit SHA, not to `main`** — GitHub's CDN serves a stale copy of `main`
+**Pin the raw URL to the commit hash, not to `main`** — GitHub's CDN serves a stale copy of `main`
 for minutes, and a cached render looks exactly like a change that did not work.
 
 **Claude MUST NOT report a diagram change as done without looking at the render.**
@@ -142,18 +142,33 @@ after stripping the dashes and it read a bare `}` as a mistaken `end` — which 
 closes. **A checker validated in only one direction is half-validated**: prove it stays silent on
 known-good input as well as firing on known-bad.
 
-### `scripts/us-english.py` enforces the US English standing order
+### `scripts/claude-dirty-words.py` enforces THREE word lists, not just US English
+
+**Renamed from `us-english.py` on 2026-08-16.** Terry: *"UK english is only ONE of the things   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
+caught by that script now."* The exemption marker moved with it — `DIRTY-WORDS-EXEMPT`, not the
+old one — because a marker naming a scope the file no longer has is the same drift one level down.
+
+| List | Rule |
+|---|---|
+| **British spellings** | The standing order below |
+| **House phrases** | Say CLIENT TYPE, never "kind", when you mean a browser session against a plug-in token |
+| **House terms** | **Name the hash family.** `SHA2-256`, never the bare three letters and never `SHA-256`   <!-- DIRTY-WORDS-EXEMPT: naming the banned form --> |
+
+**The hash rule is Terry's, 2026-08-16**, and `SHA-256` does not satisfy it: SHA3-256 exists, so   <!-- DIRTY-WORDS-EXEMPT: naming the banned form -->
+the family is implied by convention rather than stated. **The check refuses a match preceded by a
+quote, a dot or a hyphen**, which leaves `crypto.subtle.digest("SHA-256", …)`, `LrDigest.SHA256`
+and RFC 5849's `HMAC-SHA1` alone — rewriting any of those would break a call or a wire value.
 
 **Terry is American and the rule covers prose, comments, docs, commit messages and identifiers.**
-It kept slipping anyway — `scripts/build-diagram.py` printed `badge colour distinct from tile fills`   US-ENGLISH-EXEMPT: quoting the defect
+It kept slipping anyway — `scripts/build-diagram.py` printed `badge colour distinct from tile fills`   DIRTY-WORDS-EXEMPT: quoting the defect
 on every run for days. **A rule nobody enforces is a rule written down, not a rule kept.**
 
 **The word list is EXPLICIT and MUST NOT become a pattern.** A regex for `-ise` matches `precise`,
 `advertise`, `surprise`, `expertise` and `otherwise`. `analysis` is correct US English while
-`analyse` is not, which is why the file lists words rather than stems. **A checker that cries wolf   US-ENGLISH-EXEMPT: naming a banned form
+`analyse` is not, which is why the file lists words rather than stems. **A checker that cries wolf   DIRTY-WORDS-EXEMPT: naming a banned form
 gets ignored.**
 
-**Exempt a legitimate use with `US-ENGLISH-EXEMPT: <reason>` on the line** — quoting somebody else's
+**Exempt a legitimate use with `DIRTY-WORDS-EXEMPT: <reason>` on the line** — quoting somebody else's
 text, naming a third-party package, or a fixture that must be misspelled.
 
 ### It also checks HOUSE PHRASES, and the list is phrases for a reason
