@@ -678,9 +678,25 @@ endpoint that exists to turn forty round trips into one is, today, dead code wit
 
 **That is a deliberate order rather than an oversight.** The endpoint had to exist before either
 client could adopt it, and the Lightroom plug-in is the client the batch shape was designed for.
-**A future session SHOULD move the web client onto it** — the change is small and the measured win
-is roughly twelve seconds — but ADR-20's per-group acknowledgement has to come across intact, since
-the browser is the surface where a user actually reads the moderation warning.
+
+**IT IS NOT A DROP-IN TRANSPORT SWAP, checked 2026-08-15.** An earlier line here called the change
+small. It is not, and the reason is worth stating before somebody starts it at the end of an
+evening.
+
+| Endpoint | Statuses a caller must render |
+|---|---|
+| `POST /requests` | `queued`, `resolved`, `needs_acknowledgement` |
+| `POST /requests/batch` | those three **plus `already_in_pool` and `already_queued`** |
+
+`web/src/lib/submission.ts` models exactly the first three in its `ItemState` union, and `toState`
+switches over them exhaustively. The two extra statuses need **new UI states and new sentences**,
+and those sentences live in `web/src/lib/outcomes.ts` — which `CLAUDE.md` names as *"ADR-01's
+promise, as the sentences a user reads"*.
+
+**So the work is user-facing ADR-01 copy, not plumbing.** It also has to keep ADR-20's per-group
+acknowledgement intact, because the browser is where a person actually reads the moderation warning.
+**Twelve seconds of latency is not worth rushing that**, and the single-POST path is correct today —
+merely slow.
 
 **The section below is the design it was built from, kept because the reasoning still governs
 changes to it.**
