@@ -3,9 +3,29 @@
 **RFC 2119 keywords. MUST and MUST NOT are absolute. SHOULD is a strong default a good argument may
 overrule. MAY is optional.**
 
-## PICK UP HERE — 2026-08-15, end of session
+## PICK UP HERE — 2026-08-16
 
-**The picker is BLOCKED on one SDK fact and the fix is designed but not built.**
+**THE BACKEND IS DONE. The two things left are a Svelte page and Lua.**
+
+**The device link flow shipped 2026-08-16 as ADR-24** — `POST /api/v001/device/start`, `/poll`,
+`/approve` and `/deny`, with 27 tests and seven mutations. **A plug-in can obtain a credential the
+moment something exists to ask for one.** `GET /api/v001/me` now reports `clientType`, so the
+plug-in's diagnostic can confirm it holds `lrc15_plugin` rather than merely being authenticated.
+
+**Two gaps, and neither is in the Worker:**
+
+| Gap | Where it lives |
+|---|---|
+| **The `/link` approval page** | Svelte. ADR-18 gives `/` to the app shell and `run_worker_first` does not list `/link` |
+| **The Lua client** — `/device/start`, `openUrlInBrowser`, the poll loop, `LrPasswords` storage | `docs/lrc-spike/plugin/` |
+
+**The page is not optional and it is not cosmetic.** Its confirmation step — show the `userCode`,
+make the person say it matches their Lightroom screen — **is the only defense against device-flow
+phishing**, which under ADR-01 is worse here than in most flows because a phished token can push a
+stranger's photos into volunteer queues irreversibly. The backend deliberately cannot substitute:
+nothing auto-approves, and approval is always a POST a person had to cause.
+
+### And the picker is still BLOCKED on one SDK fact, unchanged from 2026-08-15
 
 ### What works, measured on Terry's machine
 

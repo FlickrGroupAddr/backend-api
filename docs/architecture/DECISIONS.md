@@ -1198,6 +1198,26 @@ read the other attempt's `deviceCode`, which is what a token needs.
 sets no alarm, and is evicted. It costs a request. **That is a cost-amplification vector rather than
 a security one**, and it is no worse than any other unauthenticated endpoint.
 
+**`approve` is not rate limited, and the arithmetic is why.** A signed-in attacker guessing
+`userCode`s would be searching **30⁸ ≈ 6.6 × 10¹¹** against however many attempts are live in a
+ten-minute window. At a sustained 100 requests per second for the whole window that is 6 × 10⁴
+guesses — **about one in ten million even if a code is live the entire time.** Adding a limiter
+would be defending a door nobody can find.
+
+**Note what a successful guess would actually do**, because it is not the obvious thing: it attaches
+the ATTACKER's nsid to the victim's link, so the victim's Lightroom ends up driving the attacker's
+queue. Confusing and wrong, and **not a disclosure of anything belonging to the victim** — the
+attacker never learns the victim's `deviceCode`, which is what a token needs.
+
+### A refusal is STICKY, and the polarity is deliberate
+
+**`deny` then `approve` leaves the attempt denied. `approve` then `deny` leaves it denied too.**
+The safe answer wins a race between the two in both directions.
+
+So a person who said no cannot have that reversed by a second click, a double submit, or anybody
+else who learned the code — and an approval that a denial overrode leaves **no credential behind**,
+because nothing is minted until collection. Two tests and a mutation hold this.
+
 ### Still open
 
 **Revocation has no UI, and Terry is genuinely unsure he wants one:** *"I'm not even sure I care

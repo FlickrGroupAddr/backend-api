@@ -363,6 +363,14 @@ MUTATIONS = [
     (
         # A throttled poll that MOVES the window means a client polling in a tight
         # loop refuses itself forever instead of recovering after one honest wait.
+        # A refusal must be STICKY. Drop the `denied` guard and a second click, a
+        # double submit, or anybody else holding the code can reverse a person's no.
+        "ADR-24: let an approval override a denial",
+        "src/device/link-attempt.ts",
+        "if (attempt === undefined || attempt.denied) return false;",
+        "if (attempt === undefined) return false;",
+    ),
+    (
         # Every reply from these routes carries a bearer credential in its body, and
         # mounting deviceRoutes ahead of apiRoutes means ADR-12's blanket no-store
         # never runs for them. The header was genuinely absent until 2026-08-16.

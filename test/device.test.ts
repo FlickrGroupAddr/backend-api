@@ -468,6 +468,57 @@ describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 		expect(response.status).toBe(403);
 	});
 
+	/**
+	 * **A refusal is STICKY, and the polarity is the point.** `deny` then `approve`
+	 * leaves the attempt denied; the reverse leaves it denied too. So the safe
+	 * answer always wins a race between the two, and a person who said no cannot
+	 * have that reversed by a second click, a double submit, or anybody else who
+	 * learned the code.
+	 */
+	it("cannot be approved after it was denied", async () => {
+		const reply = await start();
+
+		expect(
+			(await asBrowser("/api/v001/device/deny", { userCode: reply.userCode }))
+				.status,
+		).toBe(200);
+
+		// The approval is refused rather than silently ignored.
+		expect(
+			(
+				await asBrowser("/api/v001/device/approve", {
+					userCode: reply.userCode,
+				})
+			).status,
+		).toBe(404);
+
+		// And the plug-in still learns it was declined, not that it timed out.
+		const polled = await post("/api/v001/device/poll", {
+			userCode: reply.userCode,
+			deviceCode: reply.deviceCode,
+		});
+		expect(await polled.json()).toMatchObject({ status: "denied" });
+	});
+
+	it("lets a denial override an approval that has not been collected", async () => {
+		// The other order. Same requirement: the safe answer wins.
+		const reply = await start();
+		await asBrowser("/api/v001/device/approve", { userCode: reply.userCode });
+		await asBrowser("/api/v001/device/deny", { userCode: reply.userCode });
+
+		const polled = await post("/api/v001/device/poll", {
+			userCode: reply.userCode,
+			deviceCode: reply.deviceCode,
+		});
+		expect(await polled.json()).toMatchObject({ status: "denied" });
+
+		// No credential was left behind by the approval it overrode.
+		const count = await env.DB.prepare(
+			"SELECT COUNT(*) AS n FROM sessions WHERE client_type = 'lrc15_plugin'",
+		).first<{ n: number }>();
+		expect(count?.n).toBe(0);
+	});
+
 	it("answers 404 for an unknown code, telling a prober nothing", async () => {
 		const response = await asBrowser("/api/v001/device/approve", {
 			userCode: "ABCDEFGH",
