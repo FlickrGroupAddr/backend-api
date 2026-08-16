@@ -29,7 +29,6 @@ local LrDialogs = import("LrDialogs")
 local LrHttp = import("LrHttp")
 local LrTasks = import("LrTasks")
 local LrPathUtils = import("LrPathUtils")
-local LrFileUtils = import("LrFileUtils")
 
 local BASE = "https://flickrgroupaddr.com"
 
@@ -123,16 +122,22 @@ local function run()
 	--[[ Written to a file as well as shown. A modal dialog cannot be
 	     copy-pasted usefully, and this output is evidence that belongs in
 	     docs/LRC-CLIENT-NOTES.md rather than in a screenshot. ]]
+	--[[ **The write is guarded, and the guard is the point.** The measurement is the
+	     HTTP result; the file is a convenience. An `io.open` that fails -- a
+	     read-only desktop, a sandbox, a locked file -- MUST NOT throw away the
+	     answer the probe just spent 30 seconds getting.
+
+	     An earlier version tested `LrFileUtils.writeFile` for existence and then
+	     called `io.open` anyway, which checked one door and walked through
+	     another. ]]
 	local out = LrPathUtils.child(LrPathUtils.getStandardFilePath("desktop"), "fga-connectivity.txt")
-	local ok = LrFileUtils.writeFile and true or false
-	if ok then
-		local handle = io.open(out, "w")
-		if handle then
-			handle:write(text)
-			handle:close()
-		else
-			out = "(could not write file)"
-		end
+	local wrote = LrTasks.pcall(function()
+		local handle = assert(io.open(out, "w"))
+		handle:write(text)
+		handle:close()
+	end)
+	if not wrote then
+		out = "(could not write the file -- the report above is the result)"
 	end
 
 	LrDialogs.message("FGA connectivity probe", text .. "\n\nWritten to:\n" .. out, "info")
