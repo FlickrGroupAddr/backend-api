@@ -1259,11 +1259,83 @@ the line. **A rate limit that fires on correct behavior teaches clients to ignor
   `slow_down` — **a denial of service costing one guessed string.** A wrong code returns before the
   window is read or written, so it cannot move what it never sees.
 
+## ADR-25 — The plug-in reports whether it was TESTED against this Lightroom major
+
+**Verification: Inspection**, plus a self-test the plug-in runs and displays. `HostVersion.lua` is
+Lua, and `scripts/mutation-check.py` runs the Vitest suite, which cannot see it — the same honest
+gap ADR-13, ADR-15 and ADR-21 carry. **`HostVersion.selfTest()` exercises the classifier in both
+polarities and its result is shown in the dialog**, because a badge that is always green is
+indistinguishable from a plug-in that is always supported.
+
+**The plug-in MUST compare `LrApplication.versionTable().major` against a compiled-in
+`TESTED_AGAINST_MAJOR` integer, and MUST show the result beside the version.** Supported reads
+`(supported ✅)`. Anything else reads `(major version unsupported ⚠)` in yellow.
+
+**It is a NUDGE, not a gate.** Terry, 2026-08-16: *"It's a nudge to future Terry to recompile per LR
+major version, test, then upgrade."* **The plug-in keeps working on an untested major. It stops
+claiming it was tested there.**
+
+### The constant is a CLAIM A HUMAN MAKES, and that is the entire mechanism
+
+**`TESTED_AGAINST_MAJOR` does not describe what the code can do. It records that somebody ran this
+plug-in against that Lightroom major and watched it work.**
+
+**So it MUST NOT be derived, and it MUST NOT be bumped speculatively.** Reading the host version and
+assigning it to the constant would make the badge permanently green and mean nothing — the check
+would then assert only that Lightroom is the version Lightroom says it is. **Bumping it is the last
+step of testing, never the first step of supporting.**
+
+**This is the same distinction ADR-24 draws about `client_type`: a version is provenance, and a
+support claim is policy.** ADR-24 refuses to derive a credential class from the host version; this
+refuses to derive a support claim from it. Same reason, different field.
+
+### MAJOR only, because a minor check would cry wolf on the normal state of his machine
+
+**Terry runs Lightroom Classic 15.5 against an SDK documented at 15.3**, and everything works. A
+check comparing minors would warn every day about nothing, and **a warning that fires when nothing
+is wrong is a warning he learns to scroll past** — the same reasoning that keeps the toolchain
+banner rare.
+
+Adobe lands breaking SDK changes on majors, and **majors are yearly**. Terry's own cost assessment:
+*"a minor recurring time impact."* One re-test a year, and nothing in between.
+
+### It fails toward UNSUPPORTED
+
+If `versionTable()` throws, or returns no numeric `major`, the answer is unknown and the badge is
+the warning one. **A check that cannot read the version MUST NOT report success** — the same rule
+this project applies to a grep that finds nothing and a mutation whose anchor drifted. A `"15"`
+string fails too, and the self-test pins that case.
+
+### It does NOT replace `LrSdkMinimumVersion`, and the two point opposite ways
+
+| | Direction | Behavior |
+|---|---|---|
+| `Info.lua`'s `LrSdkMinimumVersion` | Lightroom OLDER than the SDK we target | **Refuses to load.** Fails CLOSED |
+| ADR-25 | Lightroom NEWER than we tested | **Loads and warns.** Fails OPEN |
+
+**The asymmetry is correct.** Older cannot work — the APIs are absent, so refusing is the honest
+answer. Newer probably works and is merely unproven, so refusing would strand Terry on release day
+for a problem that usually does not exist.
+
+### The glyph is decoration and the words carry the meaning
+
+**Lua 5.1 has no `\u{}`** — that is a 5.3 escape and a syntax error here — and spike 0.9 tried
+decimal byte escapes, which something in the toolchain read as OCTAL and rendered as garbage. These
+are literal UTF-8 in the source instead.
+
+**So the badge MUST read correctly with the glyph stripped.** `(supported)` and `(major version
+unsupported)` are complete sentences on their own, and the color carries the urgency independently.
+**Rendering is unverified on Terry's machine and MUST be confirmed there** — but nothing depends on
+it.
+
 ## Considered and rejected
 
 | Option | Why not |
 |---|---|
 | AWS | Every piece has a simpler Cloudflare equivalent here |
+| Blocking the plug-in on an untested Lightroom major | Fails closed where the code probably works. Strands Terry on release day for a problem that usually does not exist. ADR-25 warns instead |
+| Comparing the MINOR version too | Terry runs 15.5 against a 15.3 SDK and it works. It would warn daily about nothing, and a warning that fires when nothing is wrong stops being read |
+| Deriving `TESTED_AGAINST_MAJOR` from the running host | Makes the badge permanently green and the check meaningless. The constant is a claim a human makes after testing |
 | A separate `device_tokens` table | A second minting path and a second verification path. `src/session.ts` has already lost `HttpOnly` from a duplicated copy once. Policy differs; mechanism MUST NOT |
 | A dashed plug-in-to-Flickr edge | Reads cleaner and asserts exactly what ADR-24 exists to prevent: that Lua holds Flickr credentials |
 | PKCE on the device flow | Does not close the phishing hole, because the attacker starts the flow and therefore holds the verifier |

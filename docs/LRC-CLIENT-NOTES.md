@@ -590,6 +590,21 @@ check against. **An unknown attribute fails the whole dialog rather than renderi
 wrong costs a full cycle to learn something cosmetic. It is out. Add it once the reference is on
 hand.
 
+**CLOSED 2026-08-16: `<system/bold>` IS documented**, in `LrView control view properties`. The
+reference is on hand, which is exactly the condition that note set, and `HostVersionProbe.lua` uses
+it.
+
+**The same check caught a real one in the same file.** `wraps = true` on a `static_text` would have
+failed the whole dialog: **`wraps` is an EDIT FIELD property.** `LrView text properties` — the page
+`static_text` actually draws from — lists only `height_in_lines`, `width_in_chars` and
+`width_in_digits`, and says outright *"If height_in_lines is set to -1, and width or width_in_digits
+or width_in_chars is specified, text wraps."* **So `-1` IS the wrap instruction**, and the attribute
+that looks like it does the job belongs to a different widget.
+
+**That is the cost asymmetry the original note described, arriving both ways at once:** one
+attribute was safe and had been withheld, another looked safe and was not. **Reading the reference
+settled both in a minute.**
+
 ### Loading spike 0.6
 
 The plug-in lives at `C:\Photography\FgaSpike.lrdevplugin`, mirrored into

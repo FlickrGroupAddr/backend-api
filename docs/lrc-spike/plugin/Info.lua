@@ -47,6 +47,23 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
+	-- **0.16 ADDS THE HOST VERSION BADGE. ADR-25, and it is a NUDGE rather than a
+	-- gate.**
+	--
+	-- Terry, 2026-08-16: *"It's a nudge to future Terry to recompile per LR major
+	-- version, test, then upgrade... As major versions are yearly, this is a minor
+	-- recurring time impact."*
+	--
+	-- `HostVersion.lua` holds `TESTED_AGAINST_MAJOR`, an integer somebody set after
+	-- WATCHING the plug-in work on that Lightroom major. It is compared against
+	-- `LrApplication.versionTable().major` and the badge reads `supported` or
+	-- `major version unsupported`.
+	--
+	-- **The plug-in keeps working either way.** `LrSdkMinimumVersion` above already
+	-- fails CLOSED on an older Lightroom, where the APIs are genuinely absent. This
+	-- fails OPEN on a newer one, where the code probably works and is merely
+	-- unproven -- refusing there would strand Terry on release day for a problem
+	-- that usually does not exist.
 	-- **0.15 ADDS THE ENTROPY PROBE, and it exists to close a question rather
 	-- than to open one.**
 	--
@@ -200,6 +217,10 @@ return {
 			title = "FGA: entropy probe -- is LrUUID real? (Library)",
 			file = "EntropyProbe.lua",
 		},
+		{
+			title = "FGA: Lightroom version -- tested against? (Library)",
+			file = "HostVersionProbe.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -227,7 +248,11 @@ return {
 			title = "FGA: entropy probe -- is LrUUID real? (File)",
 			file = "EntropyProbe.lua",
 		},
+		{
+			title = "FGA: Lightroom version -- tested against? (File)",
+			file = "HostVersionProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 15, revision = 0 },
+	VERSION = { major = 0, minor = 16, revision = 0 },
 }

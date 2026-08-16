@@ -317,6 +317,54 @@ def build() -> tuple[str, list[str]]:
     return "\n".join(lines), gaps
 
 
+def staleness_gaps(expected: str) -> list[str]:
+    """Is the COMMITTED matrix what this script would generate right now?
+
+    **This closes the hole that let ADR-23 sit missing from the matrix for hours
+    while `--check` reported "Traceability holds in both directions".** The check
+    validated the ADR-to-test relationship, which was genuinely intact, and never
+    looked at the generated document. Terry asked on 2026-08-16; the gap was
+    already real when he did.
+
+    **The generator is the checker.** `build()` produces the exact text, so
+    comparing it to disk needs no second implementation to drift out of step --
+    which is the same argument this file already makes for generating the matrix
+    at all rather than maintaining it.
+
+    **Newlines are normalized on both sides deliberately.** The writer emits LF;
+    `core.autocrlf` on this machine hands back CRLF. Comparing raw bytes would
+    fail on every Windows checkout and teach everybody to ignore the check, which
+    is worse than not having it.
+    """
+    if not MATRIX.exists():
+        return [
+            f"{MATRIX.relative_to(ROOT)} is MISSING. "
+            "Run `python scripts/traceability.py` to write it."
+        ]
+
+    with open(MATRIX, encoding="utf-8", newline="") as handle:
+        on_disk = handle.read().replace("\r\n", "\n")
+
+    if on_disk == expected:
+        return []
+
+    # **Name the ADRs that are absent, because "the file is stale" is not
+    # actionable.** This is the specific failure worth calling out: a decision
+    # that exists and is invisible in the matrix everyone reads.
+    missing = [
+        adr for adr in adrs_declared() if f"**{adr}**" not in on_disk
+    ]
+    detail = (
+        f" ADR(s) absent from it: {', '.join(sorted(missing))}."
+        if missing
+        else " Its content differs; the ADR list itself is complete."
+    )
+    return [
+        f"{MATRIX.relative_to(ROOT)} is STALE -- it is not what this script "
+        f"generates.{detail} Run `python scripts/traceability.py`."
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
@@ -328,6 +376,8 @@ def main() -> int:
         with open(MATRIX, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(text)
         print(f"Wrote {MATRIX.relative_to(ROOT)}")
+    else:
+        gaps.extend(staleness_gaps(text))
 
     if gaps:
         print(f"\n{len(gaps)} traceability gap(s):")

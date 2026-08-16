@@ -210,12 +210,26 @@ because it counts as coverage.
 - A test citing an ADR `DECISIONS.md` does not define.
 - `DECISIONS.md` sections out of ascending ADR order.
 - The old-to-new renumbering table going missing.
+- **`docs/TRACEABILITY.md` being STALE** — not byte-for-byte what the script would generate now.
 
 **Numbers encode importance.** ADR-01 governs, and it descends from there. They were renumbered once,
 on 2026-08-14. **MUST NOT be renumbered again** — 167 mentions across 65 commit messages already
 depend on one mapping table, and a second would make readers chain through two.
 
 `docs/TRACEABILITY.md` is **generated** by the same script. Do not edit it.
+
+**The staleness check was added 2026-08-16 and it closed a real hole.** `--check` used to validate
+only the ADR-to-test relationship, so **ADR-23 sat missing from the matrix for hours while the gate
+reported "Traceability holds in both directions"** — the relationship genuinely was intact, and
+nothing looked at the generated document. Terry asked whether the matrix had been updated; it had
+not, and `npm run check` had passed the whole time.
+
+**The generator is the checker.** `build()` produces the exact text, so `--check` compares it to
+disk and needs no second implementation to drift. **Newlines are normalized on both sides** — the
+writer emits LF and `core.autocrlf` hands back CRLF, so a raw byte compare would fail on every
+Windows checkout and teach everybody to ignore the check.
+
+**A missing ADR is named by number**, because "the file is stale" is not actionable.
 
 **Tag at the `describe` level, not per test.** A block is one coherent risk, which is the
 unit an ADR maps onto. Put the tag in the block name so it shows in failure output.
