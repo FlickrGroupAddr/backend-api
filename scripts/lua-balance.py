@@ -10,6 +10,7 @@ clean verdict has never been compared to a working file is a checker whose clean
 verdict means nothing.
 """
 
+import os
 import re
 import sys
 
@@ -136,14 +137,83 @@ def mirror_drift(repo_dir):
     return problems, True
 
 
+# **The REAL Lua 5.1 compiler ships in the SDK archive this repo already vendors.**
+# An earlier version of this file said no luac existed on this machine. That was a
+# search with the wrong filter -- it looked for names matching `*Lightroom*SDK*`
+# while the archive is `LrC_...`, and `luac.exe` lives INSIDE the zip rather than
+# on disk. Terry knew it was here. **A search that found nothing is not evidence
+# that nothing is there.**
+VENDOR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "vendor"
+)
+LUAC_IN_ZIP = "Lua Compiler/win/luac.exe"
+
+
+def find_luac():
+    """Return a path to luac.exe, extracting it from the vendored SDK if needed.
+
+    Extracted to a temp directory rather than into the tree: `vendor/` is somebody
+    else's archive and MUST stay one, and a 386 KB binary does not belong in git.
+    """
+    import glob
+    import tempfile
+    import zipfile
+
+    cached = os.path.join(tempfile.gettempdir(), "fga-luac-5.1.exe")
+    if os.path.exists(cached):
+        return cached
+
+    zips = glob.glob(os.path.join(VENDOR, "*SDK*.zip"))
+    for path in zips:
+        try:
+            with zipfile.ZipFile(path) as archive:
+                if LUAC_IN_ZIP not in archive.namelist():
+                    continue
+                with archive.open(LUAC_IN_ZIP) as src, open(cached, "wb") as dst:
+                    dst.write(src.read())
+                return cached
+        except (OSError, zipfile.BadZipFile):
+            continue
+    return None
+
+
+def parse_check(luac, paths):
+    """`luac -p` -- the authoritative answer, not an approximation."""
+    import subprocess
+
+    problems = []
+    for path in paths:
+        done = subprocess.run(
+            [luac, "-p", path], capture_output=True, text=True, check=False
+        )
+        if done.returncode != 0:
+            detail = (done.stderr or done.stdout).strip().splitlines()
+            problems.append((path, detail[-1] if detail else "parse failed"))
+    return problems
+
+
 if __name__ == "__main__":
     targets = expand(sys.argv[1:])
     if not targets:
         print("No .lua files found -- refusing to report success on nothing.")
         sys.exit(1)
-    print(f"Checking {len(targets)} Lua file(s) for block balance:")
+    # **Prefer the real compiler; fall back only if it is genuinely absent.**
+    luac = find_luac()
     bad = False
-    for path in targets:
+    if luac is not None:
+        print(f"Parse-checking {len(targets)} Lua file(s) with luac 5.1:")
+        for path, detail in parse_check(luac, targets):
+            bad = True
+            print(f"  FAILED  {os.path.basename(path)}: {detail}")
+        if not bad:
+            for path in targets:
+                print(f"  ok      {os.path.basename(path)}")
+    else:
+        # **Say which instrument ran.** A block-balance pass and a real parse are
+        # very different assurances, and identical output would hide the swap.
+        print("luac not found -- falling back to a BLOCK BALANCE check, not a parse.")
+        print(f"Checking {len(targets)} Lua file(s) for block balance:")
+    for path in [] if luac is not None else targets:
         problems = check(path)
         name = path.rsplit("\\", 1)[-1].rsplit("/", 1)[-1]
         if problems:

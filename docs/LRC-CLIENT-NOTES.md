@@ -251,12 +251,40 @@ Plug-in Extras and works everywhere.
 parse-checks a plug-in file without Lightroom. **Prove it can fail on deliberately broken input
 before trusting a clean pass.**
 
-**It is NOT on this machine, measured 2026-08-15.** A recursive search of `C:\` six levels deep, the
-user profile and `PATH` found no `luac`, no `lua`, and no extracted SDK. So the sentence above says
-where to get one, not where one is. **`scripts/lua-balance.py` stands in** — a block-balance check
-rather than a parser, wired into `npm run check`, and validated in both directions: silent on the
-files Lightroom already loads, and firing on deliberately broken fixtures including the exact
-`}`-instead-of-`end` error that killed 0.1.
+**IT IS IN THIS REPO, at `vendor/LrC_15.3_202604090947-8f3672ed.release_SDK.zip`.**
+
+**An earlier version of this line said the opposite**, and the way it was wrong is the lesson. The
+search looked for filenames matching `*Lightroom*SDK*` and `luac*.exe`. The archive is named
+`LrC_...`, and `luac.exe` lives INSIDE the zip rather than on disk, so neither pattern could ever
+have matched. **A search that finds nothing is not evidence that nothing is there** — and Terry knew
+where it was while the docs asserted it did not exist. See [[justified-premises-go-unchecked]].
+
+`npm run lua` now **extracts `Lua Compiler/win/luac.exe` on demand** into a temp file and parse-checks
+every plug-in file for real. `vendor/` stays an archive and a 386 KB binary stays out of git.
+
+**`scripts/lua-balance.py` keeps its block-balance pass as a FALLBACK**, for a machine without the
+archive, and it announces which instrument ran. A block-balance pass and a real parse are very
+different assurances; identical output would hide the swap.
+
+### Four SDK traps, all found by READING on 2026-08-15
+
+**Reading was the only QA available** — no Lightroom to run, no `luac` to parse-check. It found four
+real defects in code written the same evening, three of which would have cost a full load-and-test
+cycle each. **Budget a careful re-read of any Lua before handing it over**, because the feedback loop
+through Lightroom is minutes long and the person paying for it is Terry.
+
+| Trap | What it would have done |
+|---|---|
+| **`\u{25CF}` is a Lua 5.3 escape** | Lightroom runs 5.1, where it is a **syntax error**. The whole file fails to load, not just the glyph |
+| **`simple_list.value` may be a scalar** | With `allows_multiple_selection = false`. `("abc")[1]` is nil, so the observer runs `selected[nil] = true` and **dies on the first click** |
+| **`os.clock()` is CPU time** | An HTTP request is almost all waiting, so a 15-second timeout would report a few milliseconds. Use `LrDate.currentTime()` for fractional wall seconds |
+| **An unguarded `io.open`** | A read-only desktop or a locked file would throw and take the HTTP result with it. The measurement MUST outlive the convenience of saving it |
+
+**And one thing deliberately NOT done.** `font = "<system/bold>"` on the picker's two headings is
+almost certainly valid `LrView` — and *almost certainly* is recall, with no SDK on this machine to
+check against. **An unknown attribute fails the whole dialog rather than rendering plain**, so being
+wrong costs a full cycle to learn something cosmetic. It is out. Add it once the reference is on
+hand.
 
 ### Loading spike 0.6
 

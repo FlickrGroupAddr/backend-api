@@ -104,7 +104,7 @@ npm run check
 Typecheck (both tsconfigs), lint, the US English check, the Lua block-balance check, 245 tests, the
 traceability gate, and the web build. **It MUST be clean before a commit.**
 
-**`scripts/lua-balance.py` stands in for `luac`, which is NOT installed on this machine.** It is a
+**`scripts/lua-balance.py` runs the REAL Lua 5.1 compiler.** It extracts `Lua Compiler/win/luac.exe` on demand from the SDK archive this repo vendors, and parse-checks every plug-in file. **An earlier version of this line said no `luac` existed here** -- a search for names matching `*Lightroom*SDK*` and `luac*.exe`, against an archive named `LrC_...` holding the binary INSIDE the zip. Neither pattern could have matched. **A search that finds nothing is not evidence that nothing is there.** Its block-balance pass survives as a FALLBACK for a machine without the archive, and the script announces which instrument ran -- a balance pass and a real parse are very different assurances. It is a
 block-balance check and **NOT a parser** — it catches a block left open or closed twice, which is
 the error that has actually bitten (a `for` loop closed with `}`, JavaScript muscle memory). It
 takes a DIRECTORY and refuses to report success on an empty match, so a new plug-in file cannot go
