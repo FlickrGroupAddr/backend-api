@@ -241,6 +241,32 @@ HTTPS, custom request headers and a readable status code. `LrSocket` exists if a
 is ever wanted. Pass `{ field = 'Content-Type', value = 'skip' }` to suppress Lightroom's automatic
 `Content-Type: text/plain`.
 
+### A plug-in CAN ask which Lightroom it is running in. `LrApplication`, since SDK 2.0
+
+**Two functions, both documented, both in `scripts/lrc-sdk-api.json` so the ADR-23 gate accepts
+them.**
+
+| Call | Returns |
+|---|---|
+| `LrApplication.versionString()` | A display string — *"the current version of the application as a user-displayable string (for instance, "2.0")"* |
+| `LrApplication.versionTable()` | **The parseable one.** `major`, `minor`, `revision`, plus `build_version` and a public-beta indicator |
+
+**Take `versionTable()` and never parse `versionString()`.** The reference is explicit that the
+table exists *"as a table that can be parsed"*, and a display string is Adobe's to reformat.
+
+**One trap the reference names.** `build_version` is a **string** and is only available from 8.3.0.
+Before that the build number was a 6- or 7-digit number, and in 8.3.0 it became a date as
+`YYYYMMDDHHmm`. **Anything treating it as an integer is wrong twice over.** Terry runs 15.5, so this
+is history rather than a live concern — recorded because a field that changed type once is a field
+somebody will assume about.
+
+**This does NOT make the SDK version knowable.** `LrApplication` reports the APPLICATION version,
+and `LRC-CLIENT-NOTES` already records that the SDK trails the app by two point releases. **The app
+version MUST NOT be used to derive the SDK version**, which is the same rule stated further down
+this file.
+
+**And it MUST NOT be used to derive `client_type` either — see ADR-24.**
+
 ### The crypto surface, MEASURED at runtime 2026-08-16 — see ADR-23 for what it means
 
 **`docs/lrc-spike/plugin/EntropyProbe.lua` swept twelve namespaces and enumerated `_G` against

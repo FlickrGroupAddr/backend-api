@@ -1172,6 +1172,20 @@ Lightroom major.** The column keys **policy**, not provenance. A future plug-in 
 lifetime and the same allow-list SHOULD keep this value. **A new value MUST be introduced only when
 a client needs different treatment.**
 
+#### "The plug-in can just report its Lightroom version" MUST NOT reopen this
+
+**It can, and that is not the question.** `LrApplication.versionTable()` has been documented since
+SDK 2.0 and returns `major`, `minor`, `revision` and `build_version` — confirmed 2026-08-16 against
+the vendored reference, and both it and `versionString()` are in `scripts/lrc-sdk-api.json`.
+
+**So the exact host version IS knowable, and `client_type` still MUST NOT be derived from it.**
+Deriving it would mint a distinct value on every Lightroom release, fragmenting a policy key across
+clients that are treated identically — and the fragmentation would be invisible until somebody tried
+to change the lifetime of "the plug-in" and found four values to update.
+
+**A version is provenance. `client_type` is policy.** The plug-in MAY report its version in a
+diagnostic; **the credential MUST NOT be keyed on it.**
+
 ### The mount order buys an exemption and takes things with it
 
 **Mounting `deviceRoutes` before `apiRoutes` is what keeps `start` reachable without a session** — a
