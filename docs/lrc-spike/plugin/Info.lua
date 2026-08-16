@@ -47,7 +47,24 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
-	-- **0.8 FIXES THE DEAD ROW FOR REAL, from the SDK reference rather than a guess.**
+	-- **0.10 fixes the button arrows, which 0.9 rendered as garbage.**
+	--
+	-- 0.9 wrote them as decimal byte escapes and something in the toolchain read
+	-- the digits as OCTAL:  octal is 0x96, \ octal is a backslash, f
+	-- octal is "f". So "Add ->" arrived as "Add" plus a stray byte and a literal
+	-- . They are plain ASCII now -- a spike does not need to win that argument.
+	--
+	-- **0.9 STOPPED FIGHTING THE WIDGET: buttons move rows, clicks only select.**
+	--
+	-- 0.6, 0.7 and 0.8 each tried to make click-to-move work and each failed the
+	-- same way on Terry's machine. simple_list keeps a POSITIONAL selection that
+	-- survives an items rebind, and the list a row DEPARTS from keeps it -- so
+	-- clicking that row produces no change, no observer, and a dead control.
+	--
+	-- A button click always fires. Two clicks per group is a real cost against
+	-- what Terry asked for, and it beats a control that can go dead.
+	--
+	-- **0.8 TRIED the reference's own value_equal hook, and it did not clear it.**
 	--
 	-- 0.7 was a guess and it failed identically to 0.6. The reference settles it:
 	-- `simple_list.value` is an ARRAY, so 0.7's bare string was the wrong TYPE and
@@ -123,5 +140,5 @@ return {
 		},
 	},
 
-	VERSION = { major = 0, minor = 8, revision = 0 },
+	VERSION = { major = 0, minor = 10, revision = 0 },
 }

@@ -78,17 +78,6 @@ local MARK_QUEUED = "+ "
      mechanism the reference describes rather than a trick. ]]
 local NO_SELECTION = "__fga_no_selection__"
 
---[[ Called per item. The reference does not fix which argument is the control
-     value and which is the item, so this is symmetric on purpose. ]]
-local function valueEqual(a, b)
-	if a == nil or b == nil then
-		return false
-	end
-	if a == NO_SELECTION or b == NO_SELECTION then
-		return false
-	end
-	return a == b
-end
 
 local WORDS = {
 	"Canada", "Landscapes", "Black and White", "Long Exposure", "Wildlife",
@@ -161,17 +150,23 @@ local function run()
 		props.filter = ""
 		props.leftItems = {}
 		props.rightItems = {}
-		props.leftValue = { NO_SELECTION }
-		props.rightValue = { NO_SELECTION }
 		props.leftStats = ""
 		props.rightStats = ""
 		props.pending = ""
+		props.canAdd = false
+		props.canRemove = false
 
 		--[[ **A move rebinds both lists, which clears `value`, which fires the
 		     observer again.** Without a guard that second firing is read as a
 		     click on nothing. The flag is the whole defense and it MUST wrap
 		     every rebuild. ]]
-		local moving = false
+		--[[ **The plug-in owns the selection, not the widget.** Set by the
+		     observers, consumed by the buttons, cleared on every move -- so a
+		     second press without a fresh pick does nothing. ]]
+		local pickedLeft = nil
+		local pickedRight = nil
+
+
 
 		local function counts()
 			local sel, adds, removes = 0, 0, 0
@@ -190,8 +185,6 @@ local function run()
 		end
 
 		local function rebuild()
-			moving = true
-
 			local needle = (props.filter or ""):lower()
 			local left, right, hidden = {}, {}, 0
 
@@ -250,8 +243,6 @@ local function run()
 			     selection untouched all over again. An empty string is
 			     unambiguously a value CHANGE, it is a scalar, and no group id can
 			     ever equal it. `onlyPick` treats it as no selection. ]]
-			props.leftValue = { NO_SELECTION }
-			props.rightValue = { NO_SELECTION }
 
 			--[[ **The filter applies to the LEFT list only**, so `hidden` counts
 			     only unselected groups. A selected group is never hidden, which
@@ -273,8 +264,6 @@ local function run()
 					removes
 				)
 			end
-
-			moving = false
 		end
 
 		--[[ Single-row hopping, which Terry chose after testing shift-click and
@@ -305,33 +294,53 @@ local function run()
 			return first
 		end
 
-		props:addObserver("leftValue", function()
-			if moving then
+		--[[ **The observers RECORD; the buttons MOVE.** Click-to-move was Terry's
+		     design and it cannot be made to work.
+
+		     `simple_list` keeps a POSITIONAL selection that survives an `items`
+		     rebind, and the list a row DEPARTS from keeps it -- observed every
+		     time. Clicking a row the widget already considers selected produces no
+		     change, no observer call, and a dead row.
+
+		     Three fixes shipped to Terry's Lightroom and all three failed the same
+		     way: `value = {}` in 0.6, `value = ""` in 0.7, and the reference's own
+		     `value_equal` hook in 0.8. **A button click always fires**, so a button
+		     does not care what the widget believes. Two clicks per group is a real
+		     cost against what he asked for, and a control that cannot go dead is
+		     worth it. ]]
+		--[[ Each move clears only OUR record of the pick, never the widget's. The
+		     widget may keep whatever highlight it likes; the button reads these
+		     variables, so it can never act on a stale row. ]]
+		local function addSelected()
+			if pickedLeft == nil then
 				return
 			end
-			local id = onlyPick(props.leftValue)
-			if id == nil then
-				return
-			end
-			selected[id] = true
+			selected[pickedLeft] = true
+			pickedLeft = nil
+			props.canAdd = false
 			rebuild()
+		end
+
+		local function removeSelected()
+			if pickedRight == nil then
+				return
+			end
+			selected[pickedRight] = nil
+			pickedRight = nil
+			props.canRemove = false
+			rebuild()
+		end
+
+		props:addObserver("leftValue", function()
+			pickedLeft = onlyPick(props.leftValue)
+			props.canAdd = pickedLeft ~= nil
 		end)
 
 		props:addObserver("rightValue", function()
-			if moving then
-				return
-			end
-			local id = onlyPick(props.rightValue)
-			if id == nil then
-				return
-			end
-			selected[id] = nil
-			rebuild()
+			pickedRight = onlyPick(props.rightValue)
+			props.canRemove = pickedRight ~= nil
 		end)
 
-		--[[ **`immediate = true` is what makes filtering realtime.** Without it
-		     the binding updates only on commit, so a user types and watches
-		     nothing happen. It fails as a NO-OP rather than as an error. ]]
 		props:addObserver("filter", function()
 			rebuild()
 		end)
@@ -353,7 +362,7 @@ local function run()
 			spacing = factory:control_spacing(),
 
 			factory:static_text({
-				title = "Click any row to move it to the other side. The filter searches the left list only.",
+				title = "Select a group, then use the arrow buttons. The filter searches the left list only.",
 			}),
 
 			factory:edit_field({
@@ -379,6 +388,26 @@ local function run()
 					factory:static_text({
 						title = LrView.bind("leftStats"),
 						width = listWidth,
+					}),
+				}),
+
+				--[[ Between the lists, so the direction of travel is obvious from
+				     position as well as from the arrow. Disabled until a row is
+				     picked, which removes the one case a press could do nothing. ]]
+				factory:column({
+					spacing = 10,
+					factory:static_text({ title = " " }),
+					factory:push_button({
+						title = "Add  -->",
+						width = 100,
+						enabled = LrView.bind("canAdd"),
+						action = addSelected,
+					}),
+					factory:push_button({
+						title = "<--  Remove",
+						width = 100,
+						enabled = LrView.bind("canRemove"),
+						action = removeSelected,
 					}),
 				}),
 
