@@ -645,6 +645,40 @@ unreadable mess on the sad path is not usable, and the sad path is where a real 
 session, no network, a hotel captive portal. A well-behaved API answers 401 with JSON rather than an
 HTML login page, and this reports which one Lightroom actually receives.
 
+#### RESULT: everything passed, measured 2026-08-15 on spike 0.7
+
+```
+PUBLIC    -> GET /health          status 200   160 ms   {"status":"ok"}
+NO AUTH   -> GET /api/v001/me     status 401    14 ms   {"error":"not_authenticated"}
+```
+
+Both replies carried `content-type: application/json` and a `cf-ray`, so the requests genuinely
+reached Cloudflare rather than something in between. The report also wrote to the desktop, so the
+guarded `io.open` path works.
+
+**Four assumptions become facts:**
+
+| Was assumed | Now measured |
+|---|---|
+| `LrHttp` can reach flickrgroupaddr.com over TLS | It does |
+| `headersTable.status` is readable | It is — 200 and 401 both came through |
+| A refused call is legible | **401 with a JSON body**, not an HTML login page |
+| The elapsed figure is real | 160 ms then 14 ms, which `os.clock()` could never have shown |
+
+**The two numbers matter more than the pass.**
+
+**160 ms then 14 ms, an 11x difference on the same connection.** The first call pays TLS setup and a
+cold Worker; the second is warm. So a plug-in that makes several calls in a row is fast after the
+first, and **the group list fetch should be the first call rather than a later one** — pay the cold
+cost while the user is still opening the dialog.
+
+**14 ms for the 401 says the refusal is cheap.** `requireSession` rejects before touching D1, which
+is the design working: a caller with no credential never reaches the database.
+
+**Caveat: this tested the DEPLOYED Worker**, which predates the session-client-type work. The bearer
+header path is not live yet, so `/api/v001/me` refused for want of a cookie rather than after
+examining a header.
+
 **Two `LrHttp` details the probe handles and a naive client would not:**
 
 - **A transport failure returns a nil body and puts the reason in `headersTable.error`**, so "no
