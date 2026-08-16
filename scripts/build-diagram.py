@@ -278,6 +278,9 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="288" y="537" width="34" height="34" as="geometry" />
         </mxCell>
+        <mxCell id="n14" value="14" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="98" y="297.7" width="34" height="34" as="geometry" />
+        </mxCell>
 
       </root>
     </mxGraphModel>
