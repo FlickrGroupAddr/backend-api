@@ -293,6 +293,63 @@ reference, so this file can say "the SDK does not support X" when the running ap
 **Nothing here has hit that yet**, and it is worth remembering before concluding something is
 impossible.
 
+### The Lightroom crash: one, on the FIRST run, none since
+
+**Terry, 2026-08-15:** *"that first ever plugin we ran and LrC crashed? happy to report there have   US-ENGLISH-EXEMPT: quoting Terry
+been no more LrC crashes. I hope it wasn't our plugin, but just data for you"*
+
+**Recorded because a negative result is worth as much as a positive one**, and because "it crashed
+once early on" is exactly the kind of thing that gets remembered vaguely and feared forever.
+
+| | |
+|---|---|
+| Crashes | **One**, on the first plug-in run |
+| Since | **Zero**, across roughly eight loads and versions 0.1 through 0.8 |
+
+**The obvious suspect is the bare `pcall`, and the record ARGUES AGAINST it.** That defect is
+written up above, and it did not crash anything: 0.1 caught `Yielding is not allowed within a C or
+metamethod call` and reported `VERDICT: REFUTED`. **A caught error with a message is not a crash.**
+
+So attributing the crash to a bug that demonstrably failed a different way would be tidy and wrong —
+and worse, it would tell a future session the cause is known and fixed, so stop looking.
+
+**The honest state: one unexplained crash, and no recurrence.** Terry's own framing was *"I hope it
+wasn't our plugin"*, and nothing here can confirm or clear it. Reproducing it deliberately would
+cost a catalog risk to buy a footnote, so nobody is going to.
+
+**The useful half is the clean record since.** Whatever it was, it has not recurred across every
+spike this project has shipped — so a future session hitting a crash should treat it as NEW rather
+than as a known flaky plug-in.
+
+### `simple_list` selection, settled from the reference on 2026-08-15
+
+**Two facts, and between them they explain every selection oddity this spike hit.**
+
+> `value` : (table) The current control value; **an array** of the values corresponding to each
+> selected list item, if any.
+>
+> `value_equal` : A function called to compare the control value to the value of each item in turn,
+> to determine selection. **If no item returns true, no item is selected in the list.**
+
+**`value` is an ARRAY even when `allows_multiple_selection` is false.** Writing a bare string is a
+type error the widget ignores silently — it does not misbehave, it does nothing, which is far harder
+to diagnose.
+
+**Without `value_equal`, the widget keeps a POSITIONAL selection**, and that survives an `items`
+rebind. Observed directly: after a row moved out of the left list, whatever slid into its index was
+highlighted; a row returning to the list landed at that index and was highlighted in turn. On the
+right list the highlight passed to whatever took slot 1.
+
+**The consequence is functional rather than cosmetic.** The widget believed the highlighted row was
+already selected, so clicking it produced no selection change, **no observer call, and a dead row**.
+A user had to click elsewhere first.
+
+**So a list whose contents change under it MUST supply `value_equal`** and clear the selection with
+a sentinel that matches no item. `TransferPicker.lua` does both.
+
+**This cost two of Terry's load-and-test cycles**, and the reference that answers it was already in
+`vendor/`. See [[verify-package-apis-from-node-modules]].
+
 ### Four SDK traps, all found by READING on 2026-08-15
 
 **Reading was the only QA available** — no Lightroom to run, no `luac` to parse-check. It found four

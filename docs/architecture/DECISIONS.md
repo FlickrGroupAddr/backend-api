@@ -780,6 +780,26 @@ as a decision rather than as laziness.
 
 ## Still open
 
+- **The session `client_type` column is BUILT and is not yet an ADR, deliberately.** Migration 0005
+  adds `client_type` to `sessions` with `CHECK (client_type IN ('browser', 'plugin'))`, and
+  `requireSession` now accepts an `Authorization: Bearer` header as well as a cookie. It is a real
+  architectural decision — **one credential mechanism, two policies** — and it belongs here
+  eventually.
+
+  **It stays out until a test verifies it specifically.** `scripts/traceability.py` refuses an ADR
+  that no test block cites, and claiming `**Verification: Inspection**` for behavior that is plainly
+  testable would be the forced link that gate exists to prevent. Today `session.test.ts` proves the
+  mechanism and nothing proves the *policy* — that a plug-in credential is refused where a browser
+  one is accepted.
+
+  **What it will say when it lands.** A separate `device_tokens` table was the obvious alternative
+  and it is the wrong one: `CLAUDE.md` records that this project already duplicated the cookie's
+  attributes once and *"one copy had silently lost `HttpOnly`"*. A second table means a second mint,
+  a second verify, and a second place for a security attribute to go quietly missing. Policy
+  differs — 90 days versus a browser session, header versus cookie, and `requireBrowserSession`
+  refusing a plug-in token on the admin surface so a stolen laptop is not an admin console.
+  **Mechanism MUST NOT.**
+
 - **An unanswered add is terminal, and that MAY be too strict.** A dropped connection has no error
   code, and the pool may be moderated. `flickr.groups.getInfo` reports whether a pool is moderated,
   and **for an unmoderated pool the ambiguity disappears** — `getAllContexts` then answers
