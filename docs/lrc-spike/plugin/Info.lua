@@ -74,6 +74,10 @@ return {
 			title = "FGA: group picker -- TWO LISTS (Library)",
 			file = "TransferPicker.lua",
 		},
+		{
+			title = "FGA: connectivity probe (Library)",
+			file = "ConnectivityProbe.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -89,7 +93,11 @@ return {
 			title = "FGA: group picker -- TWO LISTS (File)",
 			file = "TransferPicker.lua",
 		},
+		{
+			title = "FGA: connectivity probe (File)",
+			file = "ConnectivityProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 5, revision = 0 },
+	VERSION = { major = 0, minor = 6, revision = 0 },
 }

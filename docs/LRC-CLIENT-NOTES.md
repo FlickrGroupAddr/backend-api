@@ -543,6 +543,38 @@ not less.**
 
 **Terry decides all three.** Nothing here is built.
 
+### Spike 0.6, `ConnectivityProbe.lua`: can the plug-in reach FGA at all?
+
+**Every design in this file rests on `LrHttp` reaching flickrgroupaddr.com over TLS and handing back
+a readable status code, and that is written down from the SDK reference rather than watched.** It is
+the same shape as the publish-service premise, which came back confirmed **only because somebody ran
+it**.
+
+**The Worker is live.** `GET https://flickrgroupaddr.com/health` answered `200 {"status":"ok"}` from
+this machine on 2026-08-15, so the probe has something real to talk to.
+
+It calls two endpoints and sends no credentials:
+
+| Call | Expected |
+|---|---|
+| `GET /health` | 200, public. If this fails nothing else in the report means anything |
+| `GET /api/v001/me` | **Expected to FAIL** — the plug-in holds no session |
+
+**The failing call is the more valuable one.** A client that works on the happy path and produces an
+unreadable mess on the sad path is not usable, and the sad path is where a real user lives — expired
+session, no network, a hotel captive portal. A well-behaved API answers 401 with JSON rather than an
+HTML login page, and this reports which one Lightroom actually receives.
+
+**Two `LrHttp` details the probe handles and a naive client would not:**
+
+- **A transport failure returns a nil body and puts the reason in `headersTable.error`**, so "no
+  status" covers both a refused connection and a served 500 unless both are handled.
+- **There is no documented default timeout.** A hung request inside a modal is indistinguishable
+  from a frozen Lightroom, so the probe passes 15 seconds explicitly.
+
+It writes its report to `fga-connectivity.txt` on the desktop as well as showing it, because a modal
+cannot be copy-pasted and this output is evidence that belongs in this file.
+
 ### The picker's data path, audited 2026-08-15: one gap and one arithmetic problem
 
 **`GET /api/v001/groups` already serves the left list.** It returns exactly what a picker needs —
