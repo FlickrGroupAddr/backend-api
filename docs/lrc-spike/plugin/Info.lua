@@ -47,7 +47,20 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
-	-- **0.10 fixes the button arrows, which 0.9 rendered as garbage.**
+	-- **0.11 STOPS DISAGREEING WITH THE WIDGET, and that is what finally works.**
+	--
+	-- Four versions tried to clear simple_list's selection after a move and none
+	-- could: value = {}, value = "", the reference's own value_equal hook, and
+	-- then buttons that ignored the selection entirely. The widget goes on
+	-- highlighting whatever slid into the vacated slot, and it will not fire for
+	-- a row it already considers selected -- so that row was dead every time.
+	--
+	-- 0.11 adopts it instead. The widget says that row is selected; the plug-in
+	-- now says so too. Nothing asks the widget to change anything, which is
+	-- exactly why this works where four attempts did not. It reads better as
+	-- well: after a move the next row is already armed.
+	--
+	-- **0.10 fixed the button arrows, which 0.9 rendered as garbage.**
 	--
 	-- 0.9 wrote them as decimal byte escapes and something in the toolchain read
 	-- the digits as OCTAL:  octal is 0x96, \ octal is a backslash, f
@@ -140,5 +153,5 @@ return {
 		},
 	},
 
-	VERSION = { major = 0, minor = 10, revision = 0 },
+	VERSION = { major = 0, minor = 11, revision = 0 },
 }

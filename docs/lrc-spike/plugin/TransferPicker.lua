@@ -166,6 +166,11 @@ local function run()
 		local pickedLeft = nil
 		local pickedRight = nil
 
+		--[[ The ids in the order each list was last built. A move needs to know
+		     what took the vacated slot, and this is the only place that knows. ]]
+		local leftIds = {}
+		local rightIds = {}
+
 
 
 		local function counts()
@@ -213,6 +218,15 @@ local function run()
 			for i, g in ipairs(right) do
 				local mark = atFlickr[g.id] and MARK_AT_FLICKR or MARK_QUEUED
 				rightItems[i] = { title = mark .. g.name, value = g.id }
+			end
+
+			leftIds = {}
+			for i, g in ipairs(left) do
+				leftIds[i] = g.id
+			end
+			rightIds = {}
+			for i, g in ipairs(right) do
+				rightIds[i] = g.id
 			end
 
 			props.leftItems = leftItems
@@ -311,24 +325,51 @@ local function run()
 		--[[ Each move clears only OUR record of the pick, never the widget's. The
 		     widget may keep whatever highlight it likes; the button reads these
 		     variables, so it can never act on a stale row. ]]
+		--[[ **After a move, ADOPT the widget's selection instead of fighting it.**
+
+		     `simple_list` keeps a POSITIONAL selection through an `items` rebind,
+		     and nothing clears it -- `value = {}`, `value = ""` and the reference's
+		     own `value_equal` hook were all tried against Terry's Lightroom and all
+		     three failed. So the widget goes on highlighting whatever slid into the
+		     vacated slot, and it will not fire for a row it already considers
+		     selected. That is what made one row dead after every move.
+
+		     **The fix is to stop disagreeing with it.** The widget says that row is
+		     selected; the plug-in now says so too. Nothing here asks the widget to
+		     change anything, which is why this works where three attempts did not.
+
+		     It also reads better than the alternative: after a move the next row is
+		     already armed, which is how a transfer list usually behaves. ]]
+		local function indexOf(ids, wanted)
+			for i, id in ipairs(ids) do
+				if id == wanted then
+					return i
+				end
+			end
+			return nil
+		end
+
 		local function addSelected()
 			if pickedLeft == nil then
 				return
 			end
+			local slot = indexOf(leftIds, pickedLeft)
 			selected[pickedLeft] = true
-			pickedLeft = nil
-			props.canAdd = false
 			rebuild()
+			-- One row left the list, so everything below it shifted up by one.
+			pickedLeft = slot ~= nil and leftIds[slot] or nil
+			props.canAdd = pickedLeft ~= nil
 		end
 
 		local function removeSelected()
 			if pickedRight == nil then
 				return
 			end
+			local slot = indexOf(rightIds, pickedRight)
 			selected[pickedRight] = nil
-			pickedRight = nil
-			props.canRemove = false
 			rebuild()
+			pickedRight = slot ~= nil and rightIds[slot] or nil
+			props.canRemove = pickedRight ~= nil
 		end
 
 		props:addObserver("leftValue", function()
