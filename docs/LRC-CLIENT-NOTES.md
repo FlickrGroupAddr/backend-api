@@ -1180,7 +1180,32 @@ put a modal in front of the one interaction the whole design exists to make fast
 4. Are the `\u{25CF}` and `+` markers readable, or does the distinction need another treatment?
 5. Do two 330-wide lists plus the stat lines fit his screen?
 
-#### The right list is MEMBERSHIP, not a shopping basket
+#### SUPERSEDED 2026-08-15: the right list is an ADD LIST, and FGA cannot remove
+
+**FGA HAS NO REMOVAL CAPABILITY. The only Flickr write in the entire codebase is
+`flickr.groups.pools.add`.** Terry asked whether a removal endpoint existed after seeing the picker
+stage removals; it does not, and `/api/v001/requests/:publicId/withdraw` only cancels a queued
+request before it is sent.
+
+**His decision:** *"I am going to stop complicating my life -- can only add groups, not remove. If a   US-ENGLISH-EXEMPT: quoting Terry
+pic is in a group when the dialog comes up, we just prune it from the initial candidate list."*
+
+So the groups a photo already belongs to are **pruned from the candidate list and never shown**, and
+the right pane holds this session's additions only. He also considered a desired-state endpoint --
+*"here is target state of groups for this pic"* -- and scoping to add-only deleted three real
+problems it would have created:
+
+- An **etag** to stop a stale read destroying a membership added while the dialog sat open.
+- The question of what a reconcile should do with a **queued-but-unsent** add.
+- The risk of a **remove-then-add cycle laundering away ADR-04's memory** that a pair already
+  reached a moderator, which is exactly the harm ADR-01 exists to prevent.
+
+**`GET /api/v001/photos/:photoId/groups` is still needed. Pruning is now the reason it exists.**
+
+**The section below is the superseded membership design**, kept because its reasoning about telling
+two kinds of row apart still governs any future removal feature.
+
+#### The superseded design: the right list as MEMBERSHIP
 
 **Terry, same session:** *"I may use the plugin to add/remove groups from pics that already have
 been added to some groups. In that case the groups the pic is ALREADY in should be pre-populated on
