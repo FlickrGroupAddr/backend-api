@@ -280,6 +280,13 @@ local function run()
 
 		rebuild()
 
+		--[[ **No `font` attribute anywhere in this dialog, deliberately.**
+		     `font = "<system/bold>"` is almost certainly valid LrView -- and
+		     "almost certainly" is recall. There is no SDK on this machine to check
+		     against, and an unknown attribute fails the WHOLE dialog rather than
+		     rendering plain, which would cost a full load-and-test cycle to learn
+		     something cosmetic. The headings read as headings from their position.
+		     Add bold once the reference is on hand. ]]
 		local listHeight = 420
 		local listWidth = 330
 
@@ -303,7 +310,7 @@ local function run()
 
 				factory:column({
 					spacing = 4,
-					factory:static_text({ title = "Unselected groups", font = "<system/bold>" }),
+					factory:static_text({ title = "Unselected groups" }),
 					factory:simple_list({
 						items = LrView.bind("leftItems"),
 						value = LrView.bind("leftValue"),
@@ -319,7 +326,7 @@ local function run()
 
 				factory:column({
 					spacing = 4,
-					factory:static_text({ title = "Selected groups", font = "<system/bold>" }),
+					factory:static_text({ title = "Selected groups" }),
 					factory:simple_list({
 						items = LrView.bind("rightItems"),
 						value = LrView.bind("rightValue"),
