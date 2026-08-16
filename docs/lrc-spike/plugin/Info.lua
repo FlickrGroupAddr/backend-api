@@ -47,6 +47,25 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
+	-- **0.15 ADDS THE ENTROPY PROBE, and it exists to close a question rather
+	-- than to open one.**
+	--
+	-- The vendored SDK reference documents NO randomness at all: no `LrUUID`, no
+	-- `getRandomValues`, and `LrMath` carries only `bitAnd`, `bitOr`, `bitXor`.
+	-- Terry's question is the right one -- **absent from the documentation is not
+	-- absent from the runtime**, and Adobe ships namespaces it does not document.
+	--
+	-- Nothing outside Lightroom can answer it. `luac -p` parse-checks the file and
+	-- only the application can execute `import("LrUUID")`.
+	--
+	-- It sweeps twelve candidate namespaces AND enumerates `_G`, because guessing
+	-- names finds only what you thought of. If a generator turns up it draws 1024
+	-- values and checks for collisions and version-4 shape.
+	--
+	-- **A pass would NOT settle the design.** Shape is not provenance: a
+	-- clock-seeded generator masked into UUID layout passes every check in the
+	-- file. A collision, or an absent namespace, IS decisive -- which is the
+	-- outcome this is really built to catch.
 	-- **0.14 fixes three layout defects 0.13 shipped, all found by looking.**
 	--
 	-- Panes were 320 wide and group names clipped, with a horizontal scrollbar
@@ -177,6 +196,10 @@ return {
 			title = "FGA: connectivity probe (Library)",
 			file = "ConnectivityProbe.lua",
 		},
+		{
+			title = "FGA: entropy probe -- is LrUUID real? (Library)",
+			file = "EntropyProbe.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -200,7 +223,11 @@ return {
 			title = "FGA: connectivity probe (File)",
 			file = "ConnectivityProbe.lua",
 		},
+		{
+			title = "FGA: entropy probe -- is LrUUID real? (File)",
+			file = "EntropyProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 14, revision = 0 },
+	VERSION = { major = 0, minor = 15, revision = 0 },
 }
