@@ -88,7 +88,7 @@ function HostVersion.classify(hostMajor)
 			     and only the warning is colored.** That is the better hierarchy
 			     anyway: a badge that shouts on success has nothing left for the case
 			     that matters. ]]
-			summary = "supported " .. TICK,
+			summary = "Supported " .. TICK,
 			detail = string.format("Tested against Lightroom Classic %d.", tested),
 		}
 	end
@@ -101,7 +101,7 @@ function HostVersion.classify(hostMajor)
 		     presentation.** An earlier version carried an RGB triple and a bold flag
 		     through this table, which put a rendering decision inside the function
 		     whose self-test is supposed to be about meaning. ]]
-		summary = "major version unsupported " .. WARN,
+		summary = "Major version unsupported " .. WARN,
 		detail = string.format(
 			"This is Lightroom Classic %d, %s the %d this plug-in was tested "
 				.. "against. It will probably still work. Re-test on %d and bump "
@@ -131,13 +131,23 @@ end
      scrollbars on Windows. ]]
 HostVersion.WARNING_FILL = { 1.0, 0.80, 0.0 }
 
+--[[ **Dark green, so WHITE text on it clears WCAG AA.** Roughly #006B2E, which is
+     about a 6:1 contrast ratio against white.
+
+     **A lighter, prettier green would fail the only job it has.** Terry has already
+     rejected green once here -- as TEXT on the light dialog -- and the fix both
+     times is the same: the color goes behind the text, and it goes dark enough that
+     white sits on it cleanly. ]]
+HostVersion.SUPPORTED_FILL = { 0.0, 0.42, 0.18 }
+
 --[[ **The minimum `scrolled_view` height, and it is a floor rather than a choice:**
      *"Will not be allowed to be smaller than 80."* A one-line badge in an 80px
      panel is chunky, which for a warning banner is the point. ]]
 HostVersion.BANNER_HEIGHT = 80
 
-function HostVersion.fillColor()
-	local rgb = HostVersion.WARNING_FILL
+--[[ Takes one of the two fill tables above. Kept here rather than in the probe so
+     the RGB values and the reasoning for them live together. ]]
+function HostVersion.fillColor(rgb)
 	return LrColor(rgb[1], rgb[2], rgb[3])
 end
 

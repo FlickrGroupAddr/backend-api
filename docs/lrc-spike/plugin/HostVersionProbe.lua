@@ -26,6 +26,35 @@ local function run()
 
 	local f = LrView.osFactory()
 
+	--[[ **Both states are banners now**, at Terry's direction: white on dark green
+	     for the happy path, black on alert yellow for the warning.
+
+	     **`f:scrolled_view` is the only fillable container LrView offers**, and it is
+	     usable only because `horizontal_scroller` and `vertical_scroller` are
+	     documented Booleans. `height` will not go below 80 -- that is the SDK's
+	     floor, not a layout choice.
+
+	     One builder for both, so the two banners cannot drift apart in size,
+	     weight or padding. ]]
+	local function banner(fillRgb, textRgb, title)
+		return f:scrolled_view({
+			background_color = HostVersion.fillColor(fillRgb),
+			horizontal_scroller = false,
+			vertical_scroller = false,
+			width = 520,
+			height = HostVersion.BANNER_HEIGHT,
+
+			f:static_text({
+				title = title,
+				text_color = LrColor(textRgb[1], textRgb[2], textRgb[3]),
+				font = "<system/bold>",
+			}),
+		})
+	end
+
+	local WHITE = { 1, 1, 1 }
+	local BLACK = { 0, 0, 0 }
+
 	--[[ Adobe's own samples pair `text_color` with `static_text` -- see
 	     `helloworld.lrdevplugin/RadioButtons.lua` and `flickr.lrdevplugin/FlickrAPI.lua`.
 	     Copied rather than invented, because an unknown LrView attribute fails the
@@ -44,38 +73,24 @@ local function run()
 			font = "<system/bold>",
 		}),
 
-		--[[ **THE GOOD NEWS IS PLAIN AND THE WARNING IS A ROAD SIGN.**
+		--[[ **BOTH STATES ARE ROAD SIGNS**, and the pairing is the point.
 
-		     Terry, on the first render: *"Green text doesn't work."* Then:
-		     *"black text on high-contrast alert yellow, similar to US road signs
-		     that are warnings."*
+		     Terry, across three renders: *"Green text doesn't work"*, then *"black
+		     text on high-contrast alert yellow, similar to US road signs that are
+		     warnings"*, then *"bold white with high contrast green for the happy
+		     path."*
 
-		     Supported takes the platform default color -- a badge that shouts on
-		     success has nothing left for the case that matters. Unsupported gets a
-		     filled panel, because black on #FFCC00 is the highest-contrast warning
-		     pairing in common use and it survives a bad display.
+		     **The color goes BEHIND the text, never on it.** Green text on the light
+		     dialog was the original defect; the same green as a dark fill with white
+		     on top is legible from across the room. That is why the first attempt
+		     failed and this one does not -- it is not a different green, it is a
+		     different place to put it.
 
-		     **`scrolled_view` is the ONLY view here that can hold a fill**, and it
-		     is usable only because `horizontal_scroller` and `vertical_scroller` are
-		     documented Booleans. Left at their default of true this would be a
-		     yellow panel wearing two grayed-out scrollbars on Windows. ]]
+		     Both banners come from one builder, so they cannot drift apart in size,
+		     weight or padding. ]]
 		host.supported
-				and f:static_text({
-					title = "(" .. host.summary .. ")",
-				})
-			or f:scrolled_view({
-				background_color = HostVersion.fillColor(),
-				horizontal_scroller = false,
-				vertical_scroller = false,
-				width = 520,
-				height = HostVersion.BANNER_HEIGHT,
-
-				f:static_text({
-					title = host.summary,
-					text_color = LrColor(0, 0, 0),
-					font = "<system/bold>",
-				}),
-			}),
+				and banner(HostVersion.SUPPORTED_FILL, WHITE, host.summary)
+			or banner(HostVersion.WARNING_FILL, BLACK, host.summary),
 
 		f:separator({ fill_horizontal = 1 }),
 
@@ -112,35 +127,25 @@ local function run()
 		}),
 
 		--[[ **A warning nobody can see until the day it fires is a warning nobody
-		     has reviewed.** On a supported major the banner above never renders, so
+		     has reviewed.** On a supported major the yellow banner never renders, so
 		     its design would go unexamined for a year and then appear for the first
 		     time on the morning Terry least wants a surprise.
 
-		     Shown ONLY when the real badge is the plain one, and labeled, so it can
-		     never be mistaken for the live state. Same argument as the toolchain
-		     banner: the loud shape has to be earned, and it has to have been LOOKED
-		     at before it is earned. ]]
+		     Shown ONLY on a supported major, and labeled, so it can never be mistaken
+		     for the live state. Same argument as the toolchain banner: the loud shape
+		     has to be earned, and it has to have been LOOKED at before it is
+		     earned. ]]
 		host.supported and f:static_text({
 			title = "Preview -- what an untested major will look like:",
 			text_color = LrColor("gray"),
 		}) or f:spacer({ height = 1 }),
 
 		host.supported
-				and f:scrolled_view({
-					background_color = HostVersion.fillColor(),
-					horizontal_scroller = false,
-					vertical_scroller = false,
-					width = 520,
-					height = HostVersion.BANNER_HEIGHT,
-
-					f:static_text({
-						title = HostVersion.classify(
-							HostVersion.TESTED_AGAINST_MAJOR + 1
-						).summary,
-						text_color = LrColor(0, 0, 0),
-						font = "<system/bold>",
-					}),
-				})
+				and banner(
+					HostVersion.WARNING_FILL,
+					BLACK,
+					HostVersion.classify(HostVersion.TESTED_AGAINST_MAJOR + 1).summary
+				)
 			or f:spacer({ height = 1 }),
 	})
 

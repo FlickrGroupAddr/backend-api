@@ -1335,23 +1335,41 @@ emoji. **That is the substitution this design was built to tolerate**, and it co
 the word carries the meaning. A badge that had said only `✅` would now say only `☑`, which is
 almost as good — but "almost" is not a property to depend on.
 
-#### The GOOD news is plain, and only the warning is colored
+#### Both states are ROAD SIGNS, and the color goes BEHIND the text
 
-**Terry, seeing that render: *"Green text doesn't work."*** He is right — green on the dialog's
-light gray is poor contrast, and **LrView cannot put white on a colored fill instead**:
-`background_color` exists only on `scrolled_view` and `catalog_photo`, never on `static_text`, `row`
-or `column`. Wrapping a one-line badge in a scrolled view to buy contrast would cost a scrollbar.
+**Terry's direction arrived across three renders**, and the sequence is the useful part:
 
-**So `supported` takes the platform default color.** That is the better hierarchy regardless: **a
-badge that shouts on success has nothing left for the case that matters.**
+| He said | What changed |
+|---|---|
+| *"Green text doesn't work"* | Green **on** the light dialog is poor contrast |
+| *"black text on high-contrast alert yellow, similar to US road signs"* | The warning became a filled panel |
+| *"bold white with high contrast green for the happy path"* | So did the calm state |
 
-**The warning is dark amber, `LrColor(0.65, 0.40, 0.0)`, not the named `"yellow"`.** Named yellow is
-`LrColor(1, 1, 0)` and on a light dialog it is close to invisible — the same defect Terry caught in
-green, worse. Amber still reads as **caution rather than error**, which is the honest signal: an
-untested major is unproven, not broken.
+**The fix was never a different green. It was a different PLACE to put it.** Colored text on a light
+background is the defect; the same hue as a dark fill with white on top is legible from across the
+room.
 
-**It is bold as well as colored.** Two signals, because one of them is a color and colors do not
-always arrive — a projector, a colorblind reader, a screenshot that lost its palette.
+| State | Fill | Text |
+|---|---|---|
+| Supported | `LrColor(0.0, 0.42, 0.18)` ≈ `#006B2E` | **Bold white**, about 6:1 |
+| Untested major | `LrColor(1.0, 0.80, 0.0)` ≈ `#FFCC00`, Pantone 116 | **Bold black** |
+
+**Never use the named `"yellow"` or `"green"`.** `LrColor("yellow")` is `(1,1,0)` and
+`LrColor("green")` is bright — both are the defect Terry caught, wearing a name.
+
+**A COLORED PANEL IS ONLY JUST POSSIBLE, and an earlier draft of this ADR said it was not.**
+`background_color` exists on `scrolled_view`, `catalog_photo` and `picture`'s frame, and on nothing
+else — established by sweeping every documented factory method rather than by probing for the
+property. **`scrolled_view` is usable because `horizontal_scroller` and `vertical_scroller` are
+documented Booleans**; left at their default of `true` it is a colored rectangle wearing two
+grayed-out scrollbars on Windows. `height` will not go below 80, which is the SDK's floor rather
+than a layout choice.
+
+**Both banners come from one builder**, so they cannot drift apart in size, weight or padding.
+
+**Both start with a capital**, per the standing rule that a line a human reads starts with one.
+`Supported ☑` and `Major version unsupported ⚠`. **Terry caught both**; the rule had been applied to
+program output everywhere else in this project and not to these two strings.
 
 ## Considered and rejected
 
