@@ -208,6 +208,16 @@ session and **is NOT yet in the generator.** Its shape:
 | A1–A2 | `POST /api/v001/device/start`, the `DeviceLinkAttempt` Durable Object | **Yes**, 2026-08-16 |
 | A3 | `LrHttp.openUrlInBrowser` — **the Lua side, which does not exist** | **No** |
 | A4 | DNS | **Yes** |
+
+**THE PLUG-IN NEEDS ITS OWN DNS EDGE, and the canvas does not have one.** Found 2026-08-16 while
+Terry walked the journey aloud. **The plug-in is a network client before it is a browser launcher**:
+it calls `POST /api/v001/device/start` first and must therefore resolve `flickrgroupaddr.com`
+itself. It cannot delegate that to the browser, because `LrHttp.openUrlInBrowser` is fire-and-forget
+and the `deviceCode` would land in a tab the plug-in cannot read.
+
+**`docs/LRC-CLIENT-NOTES.md` recorded the opposite** — *"only the browser connects to the app shell
+and to DNS"* — which was true before ADR-24 and is corrected there now. **A note that argues against
+drawing a real edge is worse than a missing edge**, because it makes the omission look deliberate.
 | A5 | `GET /link` — **a Svelte route, not a Worker one** | **No** |
 | A6 | Redirect to `GET /oauth/login`, carrying `returnTo` | **Yes**, 2026-08-16 |
 | A7–A16 | The whole Flickr OAuth leg | **Yes** |

@@ -854,8 +854,26 @@ oversight, and that is written here so nobody "corrects" it later.**
   diagram", which is right. **The catalog is a store, the SDK is a library**, and this diagram's own
   rule is to say what a thing holds rather than what it does. Same reason the canvas shows D1 and
   not a D1 client.
-- Both clients connect to the API Worker. **Only the browser connects to the app shell and to
-  DNS**, since the plug-in fetches no HTML.
+- Both clients connect to the API Worker. **Only the browser connects to the app shell**, since the
+  plug-in fetches no HTML.
+
+  **CORRECTED 2026-08-16: the DNS half of that sentence is now WRONG, and it was the diagram
+  telling a reader something false.** It read *"only the browser connects to the app shell and to
+  DNS"*. It was true when written — before ADR-24, the plug-in made no network call of its own.
+
+  **The plug-in is a network client BEFORE it is a browser launcher**, and that ordering is forced
+  rather than chosen. It calls `POST /api/v001/device/start` first, so it must resolve
+  `flickrgroupaddr.com` itself. **It cannot delegate that call to the browser**, because
+  `LrHttp.openUrlInBrowser` is fire-and-forget: the response would land in a browser tab and the
+  plug-in would never see the `deviceCode` it has to poll with.
+
+  **So the canvas needs a plug-in ↔ DNS edge**, and the old note would have argued against drawing
+  one.
+
+  **This is the THIRD instance of one defect class in a day**, all of them the picture implying the
+  BROWSER does something the PLUG-IN does. The `e19` arrow head was the first — it said the token
+  came back through the browser when the plug-in polls for it. **Terry found this one by walking the
+  journey aloud**, which is the only instrument that has ever caught this class.
 - **Auth is drawn as THREE HOPS, decided 2026-08-15.** Terry challenged an earlier line reading "the
   plug-in gets no edge to Flickr", correctly — that left the canvas silent on how a plug-in ever
   gets a credential. **The resolution is that Flickr appears in the plug-in's journey, but the
@@ -863,7 +881,7 @@ oversight, and that is written here so nobody "corrects" it later.**
 
   | Edge | Meaning |
   |---|---|
-  | Plug-in → API Worker | Its only NETWORK edge |
+  | Plug-in → API Worker | Its only HTTP edge. **Corrected 2026-08-16 from "its only NETWORK edge"** — it also resolves DNS, so the canvas needs a plug-in ↔ DNS edge |
   | **Plug-in → Browser client** | `LrHttp.openUrlInBrowser`. **A launch, not a request** — label it so |
   | Browser client → Flickr | Already on the canvas as `e11` |
 
