@@ -914,6 +914,12 @@ put a modal in front of the one interaction the whole design exists to make fast
 - **`\u{25CF}` is a Lua 5.3 escape and Lightroom runs 5.1**, where it is a SYNTAX ERROR rather than
   a bad glyph — the whole file fails to load. The marker is written as raw UTF-8 bytes,
   `"\226\151\143 "`.
+- **`simple_list.value` may be a TABLE or a bare id, and the reference does not settle which.** With
+  `allows_multiple_selection = true` it is clearly an array; with it false, the widget may hand back
+  the selected value itself. **Indexing a string with `[1]` returns nil**, so a naive reader would
+  run `selected[nil] = true` and die on the FIRST click. `TransferPicker.lua` reads both shapes.
+  **Which one Lightroom actually sends is still unmeasured** — the code no longer cares, which is
+  the point, but the answer is worth writing down when the spike runs.
 - **This machine has no `luac`**, so `scripts/lua-balance.py` stands in. It is a block-balance check
   and **NOT a parser**; it catches an unclosed or over-closed block, which is the error that has
   actually bitten. It was validated in both directions — against the three files Lightroom already

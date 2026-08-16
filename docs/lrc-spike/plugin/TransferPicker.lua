@@ -228,15 +228,34 @@ local function run()
 		     ctrl-click both working: "single row hopping at a time is more
 		     intuitive." A later session MUST NOT reintroduce multi-select as an
 		     improvement -- it was removed on purpose. ]]
+		--[[ **`value` may be a TABLE or a bare id, and the SDK reference does not
+		     settle which.** `allows_multiple_selection = true` clearly yields an
+		     array; with it false, `simple_list` may hand back the selected value
+		     itself. Indexing a string with `[1]` returns nil, so the naive version
+		     would run `selected[nil] = true` and die on the FIRST click.
+
+		     Reading both shapes costs four lines and removes the guess. `#` on a
+		     string returns its length, so the empty test has to come after the type
+		     check rather than before it. ]]
+		local function onlyPick(value)
+			if value == nil then
+				return nil
+			end
+			if type(value) ~= "table" then
+				return value
+			end
+			return value[1]
+		end
+
 		props:addObserver("leftValue", function()
 			if moving then
 				return
 			end
-			local picked = props.leftValue or {}
-			if #picked == 0 then
+			local id = onlyPick(props.leftValue)
+			if id == nil then
 				return
 			end
-			selected[picked[1]] = true
+			selected[id] = true
 			rebuild()
 		end)
 
@@ -244,11 +263,11 @@ local function run()
 			if moving then
 				return
 			end
-			local picked = props.rightValue or {}
-			if #picked == 0 then
+			local id = onlyPick(props.rightValue)
+			if id == nil then
 				return
 			end
-			selected[picked[1]] = nil
+			selected[id] = nil
 			rebuild()
 		end)
 
