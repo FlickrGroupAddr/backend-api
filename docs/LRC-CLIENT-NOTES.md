@@ -543,6 +543,36 @@ not less.**
 
 **Terry decides all three.** Nothing here is built.
 
+### The picker's data path, audited 2026-08-15: one gap and one arithmetic problem
+
+**`GET /api/v001/groups` already serves the left list.** It returns exactly what a picker needs —
+`id`, `name`, `photos`, `members`, `poolModerated`, `inviteOnly` — after deliberately dropping the
+979 KB of descriptions and rules the raw Flickr reply carries. **No new endpoint is needed for the
+group list**, which was not obvious until it was checked.
+
+**But nothing serves the RIGHT list.** The two-list picker opens pre-populated with the groups the
+photo is already in, and there is no endpoint that answers "which groups is this photo in".
+
+**The obvious workaround does not fit, and the arithmetic is the reason.** `POST
+/photos/:photoId/preflight` caps `groupIds` at **200**. Terry belongs to **372** groups. So
+pre-population by preflight is **two round trips** — and the cap buys nothing upstream, because
+preflight makes **one** `getAllContexts` call no matter how many groups it is asked about.
+`getAllContexts` is per-photo, not per-group.
+
+**RECOMMENDED: add `GET /api/v001/photos/:photoId/groups`.** One `getAllContexts` call, returning
+the short list of pools the photo is in.
+
+- It is the question the picker actually asks on open. Preflight answers a different one — *what
+  would happen if I submitted these* — and that is the right call at commit time, not at open time.
+- The reply is naturally small. A photo is in a handful of groups, not hundreds, so **ADR-17 is
+  satisfied by the upstream shape rather than by a cap** — but the ceiling MUST still be stated
+  rather than assumed, per ADR-17's second kind of list.
+- It leaves preflight alone. Raising its 200 cap to `MAX_USER_GROUPS` (5000) would work and is
+  worse: it grows the response for every caller to serve one caller's opening screen.
+
+**Not built, and it needs Terry.** It is a new endpoint, so it is a new row in the traceability
+matrix and wants a test naming the ADR it serves.
+
 ### Feedback is preflight. Commitment is one batch submit.
 
 **Clicking a group fires a debounced `POST /api/v001/photos/:photoId/preflight`** and marks the chip
