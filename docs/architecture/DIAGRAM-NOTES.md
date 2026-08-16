@@ -187,10 +187,10 @@ it is `e11`'s routed run at **y=1050**, the Browser-to-Flickr-API arrow. Next be
 at 1005. **So the run has 45 units of clearance it does not need**, and raising it to about y=1020
 would free roughly 30 more units at no visual cost. Not done, because nothing needs the room yet.
 
-**`check_page_fit()` in the generator does NOT see that run.** Its regex matches `<mxGeometry>` and
-a waypoint is an `<mxPoint>`, so it measures to y=1005 and under-reports the content height by 45.
-It also compares against the full page rather than the printable area. **Treat its output as a
-lower bound until that is fixed.**
+**`check_page_fit()` in the generator DOES see that run**, since 2026-08-16. It used to match
+`<mxGeometry>` with a regex while a waypoint is an `<mxPoint>`, so it measured to y=1005 and
+under-reported the content height by 45. It now collects every `<mxPoint>` into `waypoints` and
+compares against the printable area rather than the full sheet. **Its output is the real figure.**
 
 ## Changing the layout
 
@@ -629,11 +629,13 @@ true and saying only that.
   Every other tile is hand-sized, which is why raising the body type from 7.9 pt to 12.2 pt burst
   the Nightly Retry Worker's box while the build reported clean. **Extending it to every text tile
   is the highest-value check still missing.**
-- **`check_page_fit()` cannot see a routed waypoint.** Its regex matches `<mxGeometry>`, and `e11`'s
-  run along the page bottom is a pair of `<mxPoint>` elements — so it measures the content 45 units
-  shorter than it is. It also scales against the full page rather than the printable area. **The
-  fix is deferred until the layout settles**, because the checking machinery is not being touched
-  mid-overhaul.
+- **The visible-run check does not MEASURE a routed edge.** `segments` sets its `routed` flag from
+  `"orthogonalEdgeStyle" in style`, and `MIN_VISIBLE_BROKEN_RUN` skips any edge carrying it —
+  reporting `routed, measured by eye`. **So the check that closed the `e6` defect below would pass
+  on a 5-unit orthogonal stub exactly as it passes on today's 202.** The label is honest about
+  deferring to the eye, which is why this is a hole rather than a lie. **Closing it means deriving
+  the L legs from the exit and entry sides**, which is the same perimeter arithmetic
+  `perimeter_point` already does.
 - **The Nightly Event Trigger tile is cramped** — four wrapped lines in a small box.
 - **Dead space bottom-right inside the Cloudflare frame**, now roughly **265 x 265** — right of the
   Nightly Retry Logic Worker (ends x=730) and below D1 (ends y=740), out to the frame at x=995,
@@ -650,29 +652,33 @@ true and saying only that.
   something `DECISIONS.md` or the User Journey denies. Comparing an edge's endpoints against the
   step text that cites it is mechanical and nobody has written it.
 
-- **The dotted "Scheduled trigger" legend row has NOTHING VISIBLE to point at.** Found 2026-08-16 by
-  looking at a render, and it is the sharpest example on this page of an assertion passing over a
-  defect.
-
-  `e6` carries `dashed=1;dashPattern=1 4` and the `LINE_STYLE` check reports `dotted ok`. **The
-  render shows a bare arrowhead.** `cron` ends at x=420 and `retry` begins at x=430 — a **10-unit
-  gap**, one tenth of an inch, which the arrowhead consumes entirely. No reader can tell it from
-  solid, so the legend defines a line style the drawing never visibly uses.
-
-  **The geometry is boxed in, and that is why this is not a one-line fix.** The left and right
-  columns are separated by a single 10-unit corridor at x≈425. `netb` spans 245..760, `cron` cannot
-  move left past 250, and the right column's left edge is pinned by the *flush* and *one column*
-  checks. **A straight horizontal `e6` can never be longer than 10 units.**
-
-  So `MUST_BE_HORIZONTAL` and a visible dotted line are in direct conflict, and one must give.
-  **The legend row is the more important of the two** — horizontality is meaningless on a line you
-  cannot see. The fix is an orthogonal route (a U below both tiles, roughly 300 units of visible
-  run), which means removing `e6` from `MUST_BE_HORIZONTAL` and **replacing it with a check that
-  catches the real defect**: any edge whose declared style is broken MUST have a minimum visible run.
-  That replacement is the part that matters; deleting the old check without it is how a ratchet
-  loses a tooth.
-
 ## Closed on 2026-08-16
+
+- **The dotted "Scheduled trigger" legend row now has a VISIBLE LINE to point at.** It was the
+  sharpest example on this page of an assertion passing over a defect: `e6` carried
+  `dashed=1;dashPattern=1 4`, the `LINE_STYLE` check reported `dotted ok`, and the render showed a
+  bare arrowhead. `cron` ended at x=420 and `retry` began at x=430 — a **10-unit gap**, one tenth of
+  an inch, which the arrowhead consumed entirely.
+
+  **The geometry was boxed in, which is why this was not a one-line fix.** A single 10-unit corridor
+  at x≈425 separated the columns, `netb` spanned 245..760, and the right column's left edge was
+  pinned by the *flush* and *one column* checks. **A straight horizontal `e6` could never be longer
+  than 10 units**, so `MUST_BE_HORIZONTAL` and a visible dotted line were in direct conflict.
+
+  **The legend row won, because horizontality is meaningless on a line nobody can see.** `e6` left
+  `MUST_BE_HORIZONTAL` and became an orthogonal route: it exits `cron`'s bottom at (352.2, 783.4),
+  drops to `retry`'s mid-height and enters its left edge at (459.4, 878.3) — legs of **94.9 and
+  107.2**, about **202 units** of visible run.
+
+  **The replacement check is the part that mattered.** `MIN_VISIBLE_BROKEN_RUN = 60.0` demands that
+  any edge whose declared style is broken carry a run a reader can see. Deleting the old check
+  without it is how a ratchet loses a tooth. **It still does not measure a routed edge** — see the
+  open item above.
+- **`check_page_fit()` can see a routed waypoint.** Its old regex matched `<mxGeometry>` while
+  `e11`'s run along the page bottom is a pair of `<mxPoint>` elements, so it measured the content 45
+  units short and scaled against the full sheet rather than the printable area. It now collects
+  every `<mxPoint>` into `waypoints`, subtracts `MARGIN = 25.0` on each side, and **fails the
+  build**. It reported before only because the content genuinely exceeded the page.
 
 - **THE DIAGRAM FITS AN 11x17 SHEET AT 100%, for the first time.** See the printing section. It had
   been 4% over in width and 18% over in height.
