@@ -460,8 +460,32 @@ pcall(), but in a way that allows a call to LrTasks.yield() to occur inside it."
 **A measurement tool MUST distinguish "the answer is no" from "I broke".** 0.1 had two verdicts and
 so its own failure read as a finding. 0.2 has three, and an error is `INCONCLUSIVE`.
 
-**Changing `Info.lua` needs Remove then Add in the Plug-in Manager.** Disable and re-enable is NOT
-enough — the version number updated while the new menu item never appeared. Terry found this.
+**ALWAYS Remove then Add. Any change, every time.** Terry, 2026-08-16: *"always add/remove, it's
+just safer and won't get weirdness."* **MUST, and the argument that MUST NOT reopen it is "only a
+menu file changed, so a lighter reload is fine"** — that is exactly the reasoning that failed below.
+**The rule is cheap and the exception costs a debugging session.**
+
+**Changing `Info.lua` needs it.** Disable and re-enable is NOT enough — the version number updated
+while the new menu item never appeared. Terry found this.
+
+**And so does changing a `require`d MODULE. Found 2026-08-16, and the symptom is misleading.**
+Lightroom re-reads a menu-item file on every invocation and **caches a `require`d module**. So
+editing `HostVersionProbe.lua` and `HostVersion.lua` together, then re-running the menu item, picked
+up only the first.
+
+**The dialog then showed NEW LAYOUT DRIVEN BY OLD LOGIC** — the new banner shape, filled with the
+previous module's yellow and its lowercase text. **It reads as a bug in code that is correct on
+disk**, which sends you back to re-read source that is already right.
+
+**This is new to this project.** Every earlier probe was one self-contained file, so re-running the
+menu item always sufficed. **`HostVersion.lua` is the first `require`d module here, and it changed
+the reload rules with nothing announcing that.**
+
+**Mitigation: a shared module carries a STAMP that the UI prints.** `HostVersion.MODULE_STAMP` is a
+date string, bumped whenever the file changes, and `HostVersionProbe.lua` displays it beside
+`TESTED_AGAINST_MAJOR`. **A stamp on screen disagreeing with the one in the editor is the fastest
+read on "Lightroom is running something else."** Same reasoning as the architecture diagram carrying
+its own date.
 
 **Register a menu item in BOTH `LrLibraryMenuItems` and `LrExportMenuItems`.** The first lands under
 Library > Plug-in Extras and exists only in the Library module; the second lands under File >

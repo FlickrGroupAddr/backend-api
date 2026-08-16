@@ -52,6 +52,21 @@ local HostVersion = {}
      Lightroom major, never before. See the header. ]]
 HostVersion.TESTED_AGAINST_MAJOR = 15
 
+--[[ **A stamp so a STALE COPY OF THIS MODULE ANNOUNCES ITSELF.**
+
+     **Lightroom caches a `require`d module and re-reads a menu-item file.** So
+     editing `HostVersionProbe.lua` takes effect on the next invocation, and editing
+     THIS file does not until the plug-in is Removed and Added. On 2026-08-16 that
+     produced a dialog showing the NEW layout driven by the OLD module -- a yellow
+     "supported" banner in lowercase -- which reads as a bug in code that is
+     actually correct on disk.
+
+     **Bump this whenever this file changes.** The probe prints it, so the stamp on
+     screen and the stamp in the editor disagreeing is the fastest way to see that
+     Lightroom is running something else. Same reasoning as the architecture
+     diagram carrying its own date. ]]
+HostVersion.MODULE_STAMP = "2026-08-16c"
+
 --[[ Literal UTF-8 rather than escapes. **Lua 5.1 has no `\u{}`** -- that is a 5.3
      escape and a syntax error here -- and spike 0.9 tried decimal byte escapes,
      which something in the toolchain read as OCTAL and rendered as garbage.

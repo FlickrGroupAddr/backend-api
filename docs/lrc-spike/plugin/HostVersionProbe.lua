@@ -118,10 +118,19 @@ local function run()
 			text_color = passed and LrColor("gray") or LrColor("red"),
 		}),
 
+		--[[ **The stamp is here so a cached module is VISIBLE.** Lightroom re-reads
+		     this menu file every invocation and caches `require("HostVersion")`, so
+		     the two can disagree -- and when they do, the dialog shows new layout
+		     driven by old logic, which looks like a bug in correct code.
+
+		     If this stamp is not the one in the editor, Lightroom is running a stale
+		     module. Remove and Add the plug-in; disable and re-enable is not
+		     enough. ]]
 		f:static_text({
 			title = string.format(
-				"TESTED_AGAINST_MAJOR = %d, in HostVersion.lua",
-				HostVersion.TESTED_AGAINST_MAJOR
+				"TESTED_AGAINST_MAJOR = %d, HostVersion.lua stamp %s",
+				HostVersion.TESTED_AGAINST_MAJOR,
+				HostVersion.MODULE_STAMP or "MISSING -- stale module"
 			),
 			text_color = LrColor("gray"),
 		}),
