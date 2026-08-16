@@ -14,6 +14,24 @@ repository is public. The contents here belong to somebody else.
 | Size | 8,756,604 bytes |
 | SHA-256 | `5A33BA3F7DCA01EBB0EFD4348F4E7C1F2148947DC62DCB7611AC43B52430BFF0` |
 | Verified | 2026-08-15 — hash matched the source, and the archive opened clean at 215 entries |
+| Current? | **YES as of 2026-08-15.** v15.3 is the newest offered for App Version 2026 |
+
+### The release history, read off the console on 2026-08-15
+
+| SDK | Released |
+|---|---|
+| **v15.3** | Apr 2026 — **what is vendored here, and still the newest** |
+| v15.2 | Feb 2026 |
+| v15.1 | Dec 2025 |
+| v15.0 | Oct 2025 |
+
+**Two facts worth having, and both correct guesses made before the data arrived.**
+
+**The cadence is about every two months, not "a few times a year."** Four releases in six months.
+
+**But it STOPPED.** v15.3 shipped in April and nothing has followed it in the four months since,
+while Lightroom Classic itself moved on to 15.5. **So the SDK genuinely does not track the
+application**, and this is the evidence rather than an assertion — see the rejected shortcut below.
 
 ## Why it is stored rather than re-downloaded
 
@@ -68,8 +86,10 @@ scenery.** It would spend the banner's credibility and return nothing.
   declares `LrSdkVersion = 3.0`, from roughly 2010, and it still runs against 15.3. Terry's own
   framing: *"the Adobe Flickr plugin uses API version zero.ancient, I'm not too worried about big   US-ENGLISH-EXEMPT: quoting Terry
   drift"*.
-- **Cadence mismatch.** The SDK ships a few times a year. A daily check is roughly 90 runs per
-  change.
+- **Cadence mismatch.** Measured at roughly one release every two months, so a daily check is about
+  60 runs per change. **This figure was guessed at "a few times a year" before Terry supplied the
+  console's release list**, which is a reminder that a cadence claim is a measurement like any
+  other.
 - **`luac` cannot go stale.** `npm run check` now depends on `Lua Compiler/win/luac.exe` from this
   archive, which is the one real build dependency here — and **Lua 5.1.5 has had no release since
   2012.**
@@ -84,7 +104,8 @@ worth more here than a current one.
 console page needs a login and the release notes do not.** It rests on the SDK version tracking the
 application version.
 
-**It does not.** Terry, 2026-08-15: *"LrC is currently 15.5 but SDK is 15.3."*
+**It does not.** Terry, 2026-08-15: *"LrC is currently 15.5 but SDK is 15.3."* The release table
+above is the proof: the SDK's last release was April, and the application has shipped twice since.
 
 So that check would report **behind** on every Lightroom point release the SDK did not follow, and
 the SDK does not follow most of them. **It would fire, be wrong, and be wrong repeatedly** — which
