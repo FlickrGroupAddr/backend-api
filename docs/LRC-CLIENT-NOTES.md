@@ -253,11 +253,19 @@ before trusting a clean pass.**
 
 **IT IS IN THIS REPO, at `vendor/LrC_15.3_202604090947-8f3672ed.release_SDK.zip`.**
 
-**An earlier version of this line said the opposite**, and the way it was wrong is the lesson. The
-search looked for filenames matching `*Lightroom*SDK*` and `luac*.exe`. The archive is named
-`LrC_...`, and `luac.exe` lives INSIDE the zip rather than on disk, so neither pattern could ever
-have matched. **A search that finds nothing is not evidence that nothing is there** — and Terry knew
-where it was while the docs asserted it did not exist. See [[justified-premises-go-unchecked]].
+**An earlier version of this line said the opposite, and the real lesson is worse than a bad
+search.** `vendor/README.md` already documented all of it — the archive, its SHA-256, the Lua
+compiler at `Lua Compiler/win/luac.exe`, the `luac -p` invocation, and even the rule to prove the
+checker can fail first. It was written earlier the same day.
+
+**The session searched `C:\` six levels deep instead of reading it, and then wrote "no luac on this
+machine" into two files as a fact.** The filter matched `*Lightroom*SDK*` and `luac*.exe` against an
+archive named `LrC_...` holding the binary inside a zip, so neither pattern could ever have matched
+— a clean result meant *the filter was wrong*, not *the thing is absent*.
+
+**`docs/ORIENTATION.md` listed `vendor/` under what NOT to read**, which is how a file holding the
+answer got routed around. That row is fixed. **Grep this repository's own docs before searching
+disks.** See [[justified-premises-go-unchecked]].
 
 `npm run lua` now **extracts `Lua Compiler/win/luac.exe` on demand** into a temp file and parse-checks
 every plug-in file for real. `vendor/` stays an archive and a 386 KB binary stays out of git.
