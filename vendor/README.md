@@ -12,7 +12,7 @@ repository is public. The contents here belong to somebody else.
 | File | `LrC_15.3_202604090947-8f3672ed.release_SDK.zip` |
 | What | Adobe Lightroom Classic SDK, **v15.3, April 2026** |
 | Size | 8,756,604 bytes |
-| SHA-256 | `5A33BA3F7DCA01EBB0EFD4348F4E7C1F2148947DC62DCB7611AC43B52430BFF0` |
+| SHA2-256 | `5A33BA3F7DCA01EBB0EFD4348F4E7C1F2148947DC62DCB7611AC43B52430BFF0` |
 | Verified | 2026-08-15 — hash matched the source, and the archive opened clean at 215 entries |
 | Current? | **YES as of 2026-08-15.** v15.3 is the newest offered for App Version 2026 |
 
@@ -84,7 +84,7 @@ scenery.** It would spend the banner's credibility and return nothing.
 
 - **The SDK is nearly impossible to fall dangerously behind.** Adobe's own bundled Flickr sample
   declares `LrSdkVersion = 3.0`, from roughly 2010, and it still runs against 15.3. Terry's own
-  framing: *"the Adobe Flickr plugin uses API version zero.ancient, I'm not too worried about big   US-ENGLISH-EXEMPT: quoting Terry
+  framing: *"the Adobe Flickr plugin uses API version zero.ancient, I'm not too worried about big   DIRTY-WORDS-EXEMPT: quoting Terry
   drift"*.
 - **Cadence mismatch.** Measured at roughly one release every two months, so a daily check is about
   60 runs per change. **This figure was guessed at "a few times a year" before Terry supplied the
@@ -96,7 +96,7 @@ scenery.** It would spend the banner's credibility and return nothing.
   on 17 Feb 2012. **There will be no further releases of Lua 5.1.**"* Terry found that on
   2026-08-15. **A compiler for a language with a terminal release cannot be behind.**
 
-**What replaces it: this file.** The version, date, SHA-256, byte count and download path above are
+**What replaces it: this file.** The version, date, SHA2-256, byte count and download path above are
 the durable record. **Verify the archive rather than its freshness** — an intact known-good copy is
 worth more here than a current one.
 

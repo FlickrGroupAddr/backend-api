@@ -91,13 +91,13 @@ page verifies the cookie and shows the NSID it recovered.
 ## 6. Deploy
 
 ```
-npm run check
 npm run deploy
 ```
 
-`npm run deploy` builds `web/dist` first and then runs `wrangler deploy`. **Running
-`npx wrangler deploy` by hand ships whatever is already in `web/dist`**, which on a fresh clone is
-nothing and on a stale one is worse than nothing.
+**`npm run deploy` runs `check`, then builds `web/dist`, then `wrangler deploy`.** So a failing
+typecheck, lint, test, US English check, Lua parse, import gate or traceability gate stops the
+deploy. **Running `npx wrangler deploy` by hand skips all of that AND ships whatever is already in
+`web/dist`**, which on a fresh clone is nothing and on a stale one is worse than nothing.
 
 The cron trigger starts firing at once, nightly at 00:15 UTC.
 
