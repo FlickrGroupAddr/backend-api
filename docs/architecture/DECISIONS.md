@@ -1009,6 +1009,12 @@ has no code on screen, which is the moment the attack becomes visible. **Prefill
 string is fine. Auto-approving from it is NOT**, and no route here will do it. The page MUST also say
 plainly what it grants, rather than "authorize this device". TTL is ten minutes.
 
+**The page MUST carry a Cancel button, and Cancel POSTs `deny`.** Terry, 2026-08-17: *"unlikely I
+ever click it but it's a kindness -- 'you know what nmind'."* **Functionally it changes nothing** --
+declining and walking away both end with the plug-in holding no token. **It changes what the user is
+TOLD**, which is ADR-01's rule on a new surface: without it a refusal takes ten minutes and then
+reads as `expired`, and a user who believes the link BROKE will try again when they meant to say no.
+
 ### `client_type` names the CLIENT, and it is POLICY rather than provenance
 
 **The value is `lrc15_plugin`, not `plugin`.** Terry: *"let's not assume there will never be another
