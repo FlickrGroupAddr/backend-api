@@ -20,6 +20,7 @@ function scripted(byPhoto: Record<string, number | null>): {
 	order: string[];
 } {
 	const order: string[] = [];
+	// biome-ignore lint/suspicious/useAwait: AttemptFn returns a Promise by contract, so async is the signature rather than an oversight.
 	const attempt: AttemptFn = async (head) => {
 		order.push(head.photoId);
 		return classifyAdd(byPhoto[head.photoId] ?? null);
@@ -91,13 +92,18 @@ describe("queues are independent", () => {
 		const { attempt, order } = scripted({ p1: 5 });
 		await sweep(env.DB, attempt);
 
-		expect(order.sort()).toEqual(["p1", "p2", "p3"]);
+		expect([...order].sort((a, b) => a.localeCompare(b))).toEqual([
+			"p1",
+			"p2",
+			"p3",
+		]);
 	});
 
 	it("survives one queue throwing, reports it, and leaves that request pending", async () => {
 		await enqueue(env.DB, USER, "boom", "g1");
 		await enqueue(env.DB, OTHER, "p2", "g1");
 
+		// biome-ignore lint/suspicious/useAwait: AttemptFn returns a Promise by contract, so async is the signature rather than an oversight.
 		const attempt: AttemptFn = async (head) => {
 			if (head.photoId === "boom") throw new Error("network gone");
 			return classifyAdd(null);

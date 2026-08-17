@@ -33,5 +33,4 @@ export const requireAdmin = createMiddleware<{
 	if (!admin) return c.json({ error: "not_found" }, 404);
 
 	await next();
-	return undefined;
 });

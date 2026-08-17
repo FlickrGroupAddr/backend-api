@@ -77,8 +77,8 @@ describe("ADR-20, the batch preflight", () => {
 			.run();
 
 		const body = (await (await check("p1", ["g1", "g2"])).json()) as Reply;
-		expect(await statusOf(body, "g1")).toBe("needs_acknowledgement");
-		expect(await statusOf(body, "g2")).toBe("ready");
+		expect(statusOf(body, "g1")).toBe("needs_acknowledgement");
+		expect(statusOf(body, "g2")).toBe("ready");
 
 		const warned = body.groups.find((g) => g.groupId === "g1");
 		// Code 7 means the ORIGINAL is still undecided, which reads differently.
@@ -200,6 +200,6 @@ describe("ADR-20, the batch preflight", () => {
 	});
 });
 
-async function statusOf(body: Reply, groupId: string): Promise<string> {
+function statusOf(body: Reply, groupId: string): string {
 	return body.groups.find((g) => g.groupId === groupId)?.status ?? "missing";
 }

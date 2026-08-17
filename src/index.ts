@@ -54,7 +54,6 @@ app.use("*", async (c, next) => {
 	}
 
 	await next();
-	return undefined;
 });
 
 /**
@@ -137,21 +136,23 @@ app.get("/api/debug", async (c) => {
 	const who =
 		username === null ? (nsid ?? "") : `${username} (NSID: ${nsid ?? ""})`;
 
-	const session =
-		nsid !== null
-			? html`<p><strong>Signed in as <code>${who}</code></strong><br>
-<small>Read from the session cookie and signature-verified just now, not from the redirect.</small></p>`
-			: outcome === "ok"
-				? html`<p><strong>The callback reported success, but no valid session cookie came back.</strong><br>
-<small>That is a cookie problem rather than a login problem -- check that the browser is not blocking it.</small></p>`
-				: html`<p>Not signed in.</p>`;
+	let session: ReturnType<typeof html> | string;
+	if (nsid !== null) {
+		session = html`<p><strong>Signed in as <code>${who}</code></strong><br>
+<small>Read from the session cookie and signature-verified just now, not from the redirect.</small></p>`;
+	} else if (outcome === "ok") {
+		session = html`<p><strong>The callback reported success, but no valid session cookie came back.</strong><br>
+<small>That is a cookie problem rather than a login problem -- check that the browser is not blocking it.</small></p>`;
+	} else {
+		session = html`<p>Not signed in.</p>`;
+	}
 
-	const banner =
-		outcome === "expired"
-			? html`<p><strong>That login attempt expired or was already used.</strong> Start again.</p>`
-			: outcome === "invalid"
-				? html`<p><strong>Flickr sent back an incomplete callback.</strong> Start again.</p>`
-				: "";
+	let banner: ReturnType<typeof html> | string = "";
+	if (outcome === "expired") {
+		banner = html`<p><strong>That login attempt expired or was already used.</strong> Start again.</p>`;
+	} else if (outcome === "invalid") {
+		banner = html`<p><strong>Flickr sent back an incomplete callback.</strong> Start again.</p>`;
+	}
 
 	return c.html(
 		html`<!doctype html><meta charset="utf-8">

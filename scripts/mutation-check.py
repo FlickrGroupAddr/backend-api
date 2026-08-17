@@ -140,8 +140,19 @@ MUTATIONS = [
         # ADR-05. A pair already in the pool must never be resubmitted.
         "ADR-05: queue a batch group whose photo is already in the pool",
         "src/routes/api.ts",
-        "\t\tif (inPool.has(groupId) || succeeded.has(groupId)) {",
-        "\t\tif (false as boolean) {",
+        # **The line below is part of the anchor, and it has to be.** The
+        # preflight route grew an identical condition at one deeper indent on
+        # 2026-08-17, when its nested ternary became an if-chain -- and this
+        # two-tab form is a SUBSTRING of that three-tab one. Naming what the
+        # branch DOES is what tells the two apart.
+        (
+            '\t\tif (inPool.has(groupId) || succeeded.has(groupId)) {\n'
+            '\t\t\tdecided.push({ groupId, status: "already_in_pool" });'
+        ),
+        (
+            '\t\tif (false as boolean) {\n'
+            '\t\t\tdecided.push({ groupId, status: "already_in_pool" });'
+        ),
     ),
     (
         "ADR-11: reflect the request Origin in CORS",
@@ -285,8 +296,18 @@ MUTATIONS = [
         # A false warning spends exactly the credibility the real one needs.
         "ADR-20: warn about a photo that is already in the pool",
         "src/routes/api.ts",
-        'const status = inPool.has(groupId)\n\t\t\t\t? "already_in_pool"',
-        'const status = false\n\t\t\t\t? "already_in_pool"',
+        # Re-cut 2026-08-17: the nested ternary this used to anchor on became an
+        # if-chain when Biome's `noNestedTernary` was enabled. **The condition is
+        # unchanged; only its spelling moved**, which is exactly the case the
+        # anchor rule in CLAUDE.md is about.
+        (
+            '\t\t\tif (inPool.has(groupId) || succeeded.has(groupId)) {\n'
+            '\t\t\t\tstatus = "already_in_pool";'
+        ),
+        (
+            '\t\t\tif (false as boolean) {\n'
+            '\t\t\t\tstatus = "already_in_pool";'
+        ),
     ),
     (
         # The open redirect. Drop the origin check and `returnTo=https://evil.com`

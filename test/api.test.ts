@@ -365,7 +365,9 @@ describe("ADR-01, the queue view is where fail-polite becomes visible", () => {
 		await seed(NSID, "p3", "g2");
 
 		const body = await page();
-		expect(body.queues.map((q) => q.groupId).sort()).toEqual(["g1", "g2"]);
+		expect(
+			body.queues.map((q) => q.groupId).sort((a, b) => a.localeCompare(b)),
+		).toEqual(["g1", "g2"]);
 		const g1 = body.queues.find((q) => q.groupId === "g1");
 		expect(g1?.requests.map((r) => r.position)).toEqual([1, 2]);
 	});
@@ -477,7 +479,9 @@ describe("ADR-17, a list FGA cannot bound: the Flickr group list", () => {
 
 	it("walks EVERY page, not just the first", async () => {
 		const body = (await (await listGroups()).json()) as Groups;
-		expect(body.groups.map((group) => group.id).sort()).toEqual(ALL_SIX);
+		expect(
+			body.groups.map((group) => group.id).sort((x, y) => x.localeCompare(y)),
+		).toEqual(ALL_SIX);
 	});
 
 	it("does not treat a page shorter than `per_page` as the end", async () => {

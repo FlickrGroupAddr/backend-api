@@ -14,8 +14,8 @@ async function importKey(base64Key: string): Promise<CryptoKey> {
 	let raw: Uint8Array;
 	try {
 		raw = Uint8Array.from(atob(base64Key), (char) => char.charCodeAt(0));
-	} catch {
-		throw new Error("Token key is not valid base64");
+	} catch (error) {
+		throw new Error("Token key is not valid base64", { cause: error });
 	}
 
 	if (raw.length !== KEY_BYTES) {

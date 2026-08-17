@@ -45,6 +45,16 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
+			// **`preset: "all"` was measured and REFUSED.** It reports 858
+			// diagnostics here, and the bulk is style opinion rather than defect:
+			// 242 noMagicNumbers, 111 useNamingConvention, 67 noTernary, 62
+			// useBlockStatements, and 24 noHexColors in a repository whose job
+			// includes DRAWING THINGS. It also enables framework rules for
+			// frameworks this project does not use -- 19 useQwikValidLexicalScope.
+			//
+			// So the rules below were picked the same way ruff's were: run
+			// everything once, then keep what reports DEFECTS and drop what
+			// reports taste. Each addition carries its hit count from that run.
 			"preset": "recommended",
 			"nursery": {
 				"noFloatingPromises": "error",
@@ -54,7 +64,63 @@
 				"useExhaustiveSwitchCases": "error"
 			},
 			"suspicious": {
-				"noExplicitAny": "error"
+				"noExplicitAny": "error",
+
+				// **`noUnnecessaryConditions` IS DELIBERATELY OFF, and this is the
+				// most important note in this file.**
+				//
+				// It reported 6 hits, all in `src/flickr/oauth.ts`, all on guards
+				// like `if (token === undefined || tokenSecret === undefined)`
+				// after reading `parseFormResponse`, which is declared
+				// `Record<string, string>`.
+				//
+				// **`tsconfig.json` sets `noUncheckedIndexedAccess`, so every
+				// index access is `string | undefined` and those guards are
+				// REQUIRED. Biome does not implement that flag.**
+				//
+				// **Measured 2026-08-17 rather than argued**: deleting one guard
+				// and running `tsc --noEmit` produced
+				// `error TS2322: Type 'string | undefined' is not assignable to
+				// type 'string'` twice, then the file was restored byte for byte.
+				//
+				// **So this rule would have had us delete a check the compiler
+				// requires, in the function that parses Flickr's OAuth
+				// credentials.** A linter that disagrees with the typechecker
+				// about the actual type is worse than no linter, and MUST stay
+				// off until Biome honors `noUncheckedIndexedAccess`.
+
+				// `[10, 9, 1].sort()` yields `[1, 10, 9]`, because the default
+				// comparator is LEXICOGRAPHIC. A classic, silent, wrong answer.
+				"useArraySortCompare": "error", // 3
+
+				// An `async` function with no `await` is nearly always a mistake,
+				// and it returns a promise nobody expects.
+				"useAwait": "error" // 3
+
+				// **`noMisplacedAssertion` is OFF, measured and refused.** All 5
+				// hits were test HELPERS asserting their own preconditions --
+				// `start()` in device.test.ts, `login()` in oauth.test.ts,
+				// `loginSetCookie()` in session.test.ts. Vitest runs those inside
+				// a test, so the assertions do count, and failing fast at the
+				// helper beats returning garbage that fails confusingly later.
+				// **That is the pattern this repository wants, not a defect.**
+			},
+			"complexity": {
+				"noUselessUndefined": "error" // 5
+
+				// **`useSimplifiedLogicExpression` is OFF.** Its one hit asked to
+				// rewrite `!photoId.success || !body.success` as
+				// `!(photoId.success && body.success)`. That is De Morgan's law
+				// and it is HARDER to read, which loses to the standing order
+				// "readability over cleverness".
+			},
+			"style": {
+				// Preserve the cause chain. A rethrow that drops it turns a
+				// specific failure into a generic one at exactly the wrong moment.
+				"useErrorCause": "error", // 1
+
+				// **Readability over cleverness, which is a standing order here.**
+				"noNestedTernary": "error" // 5
 			}
 		}
 	},

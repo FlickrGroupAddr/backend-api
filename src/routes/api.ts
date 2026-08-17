@@ -236,15 +236,22 @@ apiRoutes.post("/api/v001/photos/:photoId/preflight", async (c) => {
 			// Order matters and mirrors POST /requests exactly. Pool membership beats a
 			// moderation record, because a photo in the pool was approved -- that is the
 			// one direction an invisible decision becomes visible.
-			const status = inPool.has(groupId)
-				? "already_in_pool"
-				: succeeded.has(groupId)
-					? "already_in_pool"
-					: pending.has(groupId)
-						? "already_queued"
-						: seen !== undefined
-							? "needs_acknowledgement"
-							: "ready";
+			// A chain reads as a chain. The two "already_in_pool" arms merge,
+			// which the nested ternary hid.
+			let status:
+				| "already_in_pool"
+				| "already_queued"
+				| "needs_acknowledgement"
+				| "ready";
+			if (inPool.has(groupId) || succeeded.has(groupId)) {
+				status = "already_in_pool";
+			} else if (pending.has(groupId)) {
+				status = "already_queued";
+			} else if (seen !== undefined) {
+				status = "needs_acknowledgement";
+			} else {
+				status = "ready";
+			}
 
 			return {
 				groupId,

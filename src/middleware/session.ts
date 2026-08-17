@@ -62,7 +62,6 @@ export const requireSession = createMiddleware<{
 	c.set("nsid", session.nsid);
 	c.set("sessionClientType", session.clientType);
 	await next();
-	return undefined;
 });
 
 /**
@@ -90,7 +89,6 @@ export const requireBrowserSession = createMiddleware<{
 		return c.json({ error: "browser_session_required" }, 403);
 	}
 	await next();
-	return undefined;
 });
 
 /**
@@ -148,5 +146,4 @@ export const restrictPluginScope = createMiddleware<{
 		}
 	}
 	await next();
-	return undefined;
 });
