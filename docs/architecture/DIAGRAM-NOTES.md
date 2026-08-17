@@ -360,6 +360,33 @@ others. On 2026-08-15 the build passed every assertion over a diagram you called
 
 **None of this blocks anything. It is written down so it is not rediscovered.**
 
+- **IN FLIGHT 2026-08-17: the Auth Data Flow panel's font size is not yet maximized.** `text_height`
+  now measures FRACTIONAL sizes, so a binary search is possible. Measured with `CHECKS_ENABLED` on:
+
+  | Row font | Text height | Slack against the 917 box |
+  |---|---|---|
+  | 12px | ~823 | **+94** |
+  | 13px | ~1015 | **-98** |
+  | 14px | ~1178 | -261 |
+
+  **The answer is between 12 and 13**, and the rule Terry set is *bottom padding at least equal to
+  top padding*. `spacingTop` on that tile is **8**, so the target is text height <= **909**. Binary
+  search between 12.0 and 13.0. The header div stays larger than the rows -- hold it at 16px while
+  the rows move.
+
+- **IN FLIGHT: `justification` wants more bottom padding.** It sits at the SLACK_MIN of 12, which is
+  the legal minimum rather than a design choice.
+
+- **IN FLIGHT: the Legend sits too low in its own gap.** Terry, 2026-08-17: it needs equal padding
+  above and below. It moved to column 2 under Project Justification this session and was never
+  re-centered in the space between `justification` and `flickr`.
+
+- **The `lrcat`/`lrc`/`users` axis check WILL fail when the suite comes back on.** It asserts a
+  shared WIDTH of 130, and `users` is now 183 wide. **The requirement was never the width** -- it is
+  the shared center AXIS at 121.5, which is what keeps `e19` and `e20` plumb, and that still holds.
+  Rewrite the assertion to check the axis.
+
+
 - **No Lightroom Classic logo.** Cloudflare and Flickr both carry their marks. **The trap: Lightroom
   Classic and Lightroom (CC) have different icons**, and this diagram means Classic specifically —
   the whole `getPublishServices(nil)` mechanism is Classic-only.
