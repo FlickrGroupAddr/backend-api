@@ -1,0 +1,52 @@
+# sqlfluff, the SQL half of the language-tooling standing order.
+#
+#     python -m sqlfluff lint migrations        # via `npm run sql`
+#
+# **Terry, 2026-08-17: every language in a project gets an LSP and a best-of-breed
+# linter at best-practice pedantry, XOR his written override.** SQL is the last of
+# this repository's languages to be equipped.
+#
+# ## ITS VALUE HERE IS THE PARSER, NOT THE STYLE RULES, and that was measured
+#
+# A bare run on the 6 migrations reported **375 findings and NOT ONE was a
+# defect**:
+#
+#     168  LT02  indentation
+#     112  LT05  line length
+#      82  LT01  "expected only single space before data type identifier"
+#       8  LT03  trailing binary operator
+#       3  LT09  select targets on a new line
+#       2  AL03  column expression without alias
+#
+# **373 are `layout`, and this project's migrations are hand-aligned into columns
+# on purpose** -- LT01 is literally objecting to that alignment. Reformatting six
+# working migrations to satisfy a layout preference is churn against a file type
+# that MUST NOT change after it has run against a real database.
+#
+# **The last 2 are FALSE POSITIVES.** Both are `INSERT INTO t (cols...) SELECT
+# expr, ...` -- the target columns come from the INSERT list, so a SELECT alias
+# names nothing. `AL03` is right in general and wrong in that shape.
+#
+# ## So why keep it at all
+#
+# **Because it PARSES the SQL, and nothing else in `npm run check` does.** D1
+# discovers a malformed migration at apply time, which is the worst moment. With
+# this wired in, migration #7 has to parse against the `sqlite` dialect before the
+# gate goes green. **The yield is zero today and the point is tomorrow.**
+#
+# **Proven to fire**: a deliberate syntax error in a throwaway migration draws an
+# unparsable violation, then the file is deleted.
+
+[sqlfluff]
+dialect = sqlite
+
+# **Layout is excluded wholesale, not rule by rule.** Naming the six individually
+# would leave the seventh to arrive silently on the next sqlfluff release, and
+# every one of them is a preference this project has already decided against.
+exclude_rules = layout, aliasing.expression
+
+[sqlfluff:indentation]
+# The migrations use a two-space continuation style throughout. Recorded so a
+# future reader knows it is a choice rather than an accident, even though the
+# layout rules that would enforce it are off.
+tab_space_size = 2

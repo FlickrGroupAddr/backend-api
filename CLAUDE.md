@@ -485,10 +485,31 @@ Tracked file counts as of 2026-08-17.
 |---|---|---|---|---|
 | TypeScript | 50 | `biome`, 8 rules past `recommended` | **pending** | Version-gated to TS 7.1; `npm run lsp` turns red on its own |
 | Python | 13 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
-| **Lua** | **9** | `lua-balance.py` + `lua-imports.py` | **NONE** | **NOT COMPLIANT** — see below |
+| Lua | 9 | `selene` + `lua-balance.py` + `lua-imports.py` | `lua-lsp` | **Equipped** |
+| SQL | 6 | `sqlfluff`, parser only | — | **Equipped**, and read why below |
 | **Svelte** | **4** | none — Biome cannot read the template | none | **NOT COMPLIANT** — blocked by the same TS 7 pin, ADR-13 |
-| **SQL** | **6** | none | none | **NOT COMPLIANT** — migrations only |
 | CSS / HTML | 1 each | `biome` covers CSS | — | One file each |
+
+**Svelte is the one gap left, and it is the only one with no tool to install.**
+`svelte-check` peers on TypeScript `^5 || ^6` against ADR-13's 7.0.2. **It needs Terry's
+written override or the same 7.1 release everything else is waiting on.**
+
+### `sqlfluff` earns its place as a PARSER, and the numbers are funny
+
+**A bare run on 6 migrations reported 375 findings, and not one was a defect.** 373 were
+`layout` — including 82 objecting to the hand-aligned column formatting that makes these
+files readable — and the other 2 were false positives: `AL03` on an
+`INSERT INTO t (cols…) SELECT …`, where the target columns come from the INSERT list so a
+SELECT alias names nothing.
+
+**Terry's reaction is the right one: *"we have like 20 lines of SQL. That's hilarious."***
+Measured, it is 176 lines of actual SQL across 40 statements, under 194 lines of comment.
+**2.1 findings per line of SQL, all of them noise.**
+
+**So `exclude_rules = layout, aliasing.expression`, and what remains is the parser.**
+Nothing else in `npm run check` parses SQL — D1 discovers a malformed migration at apply
+time, which is the worst possible moment. **Proven to fire**: a deliberate `CREATE TABEL`
+draws an unparsable violation. **The yield is zero today and the point is migration #7.**
 
 ### Lua is the clearest gap, and both halves exist
 

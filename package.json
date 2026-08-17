@@ -21,11 +21,12 @@
 		"dirty-words": "python scripts/claude-dirty-words.py",
 		"lua": "python scripts/lua-balance.py docs/lrc-spike/plugin",
 		"lua:lint": "selene docs/lrc-spike/plugin",
+		"sql": "python -m sqlfluff lint migrations",
 		"typehints": "python -m ruff check --no-cache scripts/",
 		"types:py": "python -m pyright scripts/",
 		"lsp": "python scripts/lsp-check.py",
 		"lua:imports": "python scripts/lua-imports.py docs/lrc-spike/plugin",
-		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run test && npm run trace && npm run build:web"
+		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run sql && npm run test && npm run trace && npm run build:web"
 	},
 	"dependencies": {
 		"hono": "4.13.2",
