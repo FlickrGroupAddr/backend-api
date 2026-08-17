@@ -52,12 +52,32 @@ past everything already there, so a firing check is usually right.
 appears only where the number itself is the rule. They are written from the pinned-relationship table
 in `docs/architecture/DIAGRAM-NOTES.md`; **read that table before a layout change.**
 
-**Turning them off for a design pass is legitimate, and it happened once.** Terry disabled every
-assertion on 2026-08-16 for an overhaul he reviewed by eye, because each one was pinned to a
-coordinate the overhaul moved and they fired on every intermediate state. **A check that fires on
-every run is a check nobody reads.** If it happens again, use ONE flag plus a banner on every build,
-never commented-out blocks — and **rewrite the suite when it comes back, rather than switching it on.
-A suite flipped back on after a redesign asserts the design that no longer exists.**
+### `CHECKS_ENABLED` is a PERMANENT LEVER, and Claude MUST NOT remove it
+
+**Standing order, Terry, 2026-08-16, verbatim: *"Note that I plan to flip that toggle often, so
+leave standing orders to never remove it. That's a lever I pull often."*** RFC 2119 sense — **MUST
+NOT is absolute.**
+
+**Claude MUST NOT delete `CHECKS_ENABLED` from `scripts/build-diagram.py` as cleanup**, MUST NOT
+fold it into a command-line argument, and MUST NOT simplify it away once the checks are green again.
+**Finding it set to `True` is NOT evidence it has stopped being needed** — `True` is its resting
+state, and the point is that Terry moves it.
+
+**Why he needs it.** The build otherwise refuses to write a diagram that fails any check. That is
+right as a default and wrong during a design pass: an assertion pinned to a layout being redrawn
+fires on every intermediate state, and **a check that fires on every run is a check nobody reads.**
+It also spends wall-clock time per edit, which is what a design loop has least of.
+
+**The shape is fixed: ONE flag, never commented-out blocks, and a banner on EVERY build.** The
+banner is load-bearing — the first time the suite went off, two documents still said so eight hours
+later and nothing on screen disagreed.
+
+**Turning it back on is NOT flipping the flag. A suite switched back on after a redesign asserts the
+design that no longer exists.** Re-read the suite against the new layout and rewrite what has
+stopped being true.
+
+**While it is off, Claude MUST say so when reporting a diagram change.** An unvalidated render and a
+validated one look identical in a screenshot.
 
 **Distrust the text estimator.** It models what a browser does to wrapped text, and five things it
 did not represent at all were found by looking at a render. **When a box looks wrong on screen, the
