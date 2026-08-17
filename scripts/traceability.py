@@ -65,7 +65,7 @@ EXEMPT = re.compile(r"TRACE-EXEMPT:\s*(.+?)\s*(?:\*/)?\s*$", re.MULTILINE)
 
 
 def read(path: Path) -> str:
-    with open(path, "r", encoding="utf-8", newline="") as handle:
+    with open(path, encoding="utf-8", newline="") as handle:
         return handle.read()
 
 
@@ -215,16 +215,18 @@ def build() -> tuple[str, list[str]]:
             gaps.append(f"FORWARD  {tag} is verified by no test block")
 
     # BACKWARD: a test block defending nothing.
-    for block in test_blocks:
-        if not block["adrs"] and not block["exempt"]:
-            gaps.append(
-                f"BACKWARD {block['file']} > \"{block['name']}\" cites no ADR "
-                f"and is not TRACE-EXEMPT"
-            )
+    gaps.extend(
+        f"BACKWARD {block['file']} > \"{block['name']}\" cites no ADR "
+        f"and is not TRACE-EXEMPT"
+        for block in test_blocks
+        if not block["adrs"] and not block["exempt"]
+    )
 
     # An ADR cited by a test that does not exist is a typo, and a silent one.
-    for tag in sorted(set(by_adr) - set(declared)):
-        gaps.append(f"UNKNOWN  tests cite {tag}, which DECISIONS.md does not define")
+    gaps.extend(
+        f"UNKNOWN  tests cite {tag}, which DECISIONS.md does not define"
+        for tag in sorted(set(by_adr) - set(declared))
+    )
 
     # MAPPING: the old-to-new renumbering table MUST survive.
     #
@@ -245,7 +247,9 @@ def build() -> tuple[str, list[str]]:
     if numbers != sorted(numbers):
         out_of_place = [
             tag
-            for tag, want in zip(declared, sorted(declared, key=lambda t: int(t.split("-")[1])))
+            for tag, want in zip(declared,
+                                 sorted(declared, key=lambda t: int(t.split("-")[1])),
+                                 strict=True)
             if tag != want
         ]
         gaps.append(
@@ -266,8 +270,10 @@ def build() -> tuple[str, list[str]]:
         "| Verified by | Does anything actually check this decision? |",
         "| Mutation | Would the test NOTICE the code breaking it? |",
         "",
-        f"**{len(declared)} decisions · {len(test_blocks)} test blocks · "
-        f"{len(muts)} mutations**",
+        (
+            f"**{len(declared)} decisions · {len(test_blocks)} test blocks · "
+            f"{len(muts)} mutations**"
+        ),
         "",
         "## Forward: decision to verification",
         "",
@@ -338,8 +344,10 @@ def staleness_gaps(expected: str) -> list[str]:
     """
     if not MATRIX.exists():
         return [
-            f"{MATRIX.relative_to(ROOT)} is MISSING. "
-            "Run `python scripts/traceability.py` to write it."
+            (
+                f"{MATRIX.relative_to(ROOT)} is MISSING. "
+                "Run `python scripts/traceability.py` to write it."
+            )
         ]
 
     with open(MATRIX, encoding="utf-8", newline="") as handle:
@@ -360,8 +368,10 @@ def staleness_gaps(expected: str) -> list[str]:
         else " Its content differs; the ADR list itself is complete."
     )
     return [
-        f"{MATRIX.relative_to(ROOT)} is STALE -- it is not what this script "
-        f"generates.{detail} Run `python scripts/traceability.py`."
+        (
+            f"{MATRIX.relative_to(ROOT)} is STALE -- it is not what this script "
+            f"generates.{detail} Run `python scripts/traceability.py`."
+        )
     ]
 
 

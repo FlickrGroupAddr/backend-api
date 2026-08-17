@@ -166,7 +166,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _requested(self) -> pathlib.Path:
-        route, _, query = self.path.partition("?")
+        query = self.path.partition("?")[2]
         slug = urllib.parse.parse_qs(query).get("sheet", [""])[0]
         return sheet_diagram(slug)
 
@@ -178,7 +178,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if route == "/mtime":
                 target = self._requested()
                 stat = target.stat()
-                stamp = datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%H:%M:%S")
+                # **Terry's LOCAL wall clock, which is the point of the bar.**
+                # `tz=None` on `astimezone` resolves to this machine's zone, and
+                # naming it is what tells a reader the choice was deliberate.
+                stamp = (datetime.datetime.fromtimestamp(stat.st_mtime, tz=datetime.UTC)
+                         .astimezone()
+                         .strftime("%H:%M:%S"))
                 body = json.dumps({
                     "mtime": stat.st_mtime,
                     "name": target.name,
@@ -203,7 +208,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # to the authored sheet and showing a picture nobody asked for.
             self.send_error(404, f"No sheet named {exc.args[0]}")
 
-    def log_message(self, fmt: str, *args: object) -> None:
+    def log_message(self, _fmt: str, *args: object) -> None:
+        # **The leading underscore is what silences the unused-argument rule**, and
+        # it beats a `noqa` because it says the same thing to a human reader.
+        # This OVERRIDES `BaseHTTPRequestHandler.log_message`, whose callers pass
+        # the format string POSITIONALLY, so renaming the parameter is safe.
         # The poll runs twice a second, so logging every request would bury the
         # one line that matters. Only a real diagram fetch gets printed.
         #

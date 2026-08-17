@@ -1,51 +1,101 @@
-# Ruff, used here for ONE job: every Python signature MUST be fully type hinted.
+# Ruff, the Python half of this repository's gate. Biome does the same job for
+# TypeScript, and this file exists so the two are equally serious.
 #
-# **Standing order, Terry, 2026-08-17: "all claude generated python MUST be fully
-# type hinted. That's a thing I'm militant about."** RFC 2119 sense -- MUST is
-# absolute. The rule is global and lives in `~/.claude/CLAUDE.md`; ruff is how
-# this repository holds the line.
+# **Widened from ANN-only on 2026-08-17.** Terry: *"I'm feeling like I left money
+# on the table. We installed and used Biome for full TS linting, but I think I
+# told you to ONLY use the Python linter for type hint checks ... turn on the
+# highest sane level of pedantry ... Don't overkill it, just what is best
+# practice."*
 #
-# **INTEGRATE BEFORE INNOVATE, and this file exists because that rule was nearly
-# broken.** A hand-rolled AST checker was written first, ~190 lines with its own
-# self-test, before anyone asked whether a maintained tool already did the job.
-# Terry caught it: "Dunno if any linters can flag it for you? Integrate before
-# innovate." Ruff's flake8-annotations rules are exactly this check, so the
-# hand-rolled script was deleted.
+# **INTEGRATE BEFORE INNOVATE.** A hand-rolled AST checker was written first and
+# deleted. npm's `ruff` is an UNRELATED IMPOSTOR package -- see CLAUDE.md.
 #
-# **THE SURVEY IS RECORDED BECAUSE "THERE WASN'T ONE" NEEDS EVIDENCE:**
+#     python -m ruff check scripts/         # via `npm run typehints`
 #
-#   ruff, PyPI 0.16.3     the answer. ANN001/002/003/2xx are precisely the rule
-#   pyright, npm 1.1.413  real and official, but it INFERS return types, so a
-#                         missing return annotation is not an error to it
-#   mypy, npm 1.0.1       checks correctness, not presence; would flood
-#   @astral-sh/ruff       DOES NOT EXIST on npm -- 404
-#
-# **npm `ruff` IS AN IMPOSTOR AND MUST NOT BE INSTALLED.** `npm view ruff`
-# returns version 1.5.4, "Coroutine with ES6 generators simpler then ever", from
-# github.com/coderaiser/ruff. It is an unrelated package that happens to share
-# the name. Astral's ruff is PyPI-only and its versions are 0.x. **A version
-# number that disagrees with the tool's real release line is the tell.**
-#
-# **Ruff is a pip tool, so it sits OUTSIDE the npm freshness net.**
-# `~/.claude/hooks/npm-toolchain-check.py` watches node, npm, tsc and the direct
-# npm dependencies. It does not see this one, so ruff can go stale silently.
-# Install or update it with `python -m pip install --upgrade ruff`.
+# **Every selection below was chosen from a measurement, not from a list.**
+# `--select ALL` was run against this repository first, and each family was kept
+# or dropped on what it actually reported here.
 
 target-version = "py313"
+line-length = 100
 
 [lint]
-# **ONLY the annotation rules, and that is deliberate rather than lazy.**
-# Turning on ruff's defaults today would report hundreds of style findings across
-# scripts that predate this decision, and a checker that cries wolf gets switched
-# off -- the same argument `scripts/claude-dirty-words.py` makes about keeping its
-# word list explicit. **Widening this is a decision to take on purpose**, with the
-# backlog cleared first, not a tidy-up.
-select = ["ANN"]
+# **BUGS FIRST.** These are the families that reported real defects on the first
+# run: `F821` found an undefined name in a live hook, `B023` found three closures
+# capturing a loop variable, `ARG002` found a parameter nothing reads.
+select = [
+    "F",     # pyflakes -- undefined names, unused imports. Never optional
+    "E", "W",# pycodestyle
+    "I",     # import sorting
+    "N",     # PEP 8 naming
+    "UP",    # pyupgrade -- modern syntax for the pinned target-version
+    "B",     # bugbear -- the highest-yield bug family here
+    "A",     # shadowed builtins
+    "C4",    # comprehensions
+    "SIM",   # simplifications that read better
+    "RET",   # return-statement hygiene
+    "ARG",   # unused arguments
+    "PIE",   # miscellaneous correctness
+    "PERF",  # obvious performance mistakes
+    "RUF",   # ruff's own
+    "ANN",   # THE STANDING ORDER: every signature fully type hinted
+    "DTZ",   # naive datetimes
+    "ISC",   # implicit string concatenation
+    "FURB",  # modernization
+    "TID",   # tidy imports
+    "SLF",   # private member access
+]
 
-# `self` and `cls` are exempt, and ruff already agrees: ANN101 and ANN102 were
-# removed from ruff for exactly that reason. Nothing to configure.
+# **Each of these was measured and refused. The count is what it reported here.**
+# A checker that cries wolf gets switched off -- the argument
+# `scripts/claude-dirty-words.py` already makes about keeping its word list
+# explicit. **Adding a family back is a decision, not a tidy-up.**
+#
+#   T20   112  `print` IS the interface. Every file here is a CLI tool or a hook
+#   D      55  Docstrings here are house-styled essays, not PEP 257 one-liners
+#   PTH   154  See the note below -- deferred with a reason, not refused
+#   EM/TRY 32  Wants a custom exception class per raise. No defect caught
+#   PLR2004 13 Magic values, in scripts whose whole job is numeric layout
+#   PLC0415 8  Imports inside functions are DELIBERATE here, for hook startup time
+#   S      11  Bandit flags subprocess and ElementTree, which are the job
+#   FBT     9  Boolean-trap is a design opinion, not a defect
+#   CPY    11  No copyright headers in a personal repository
+#   INP     7  Wants __init__.py in a directory of standalone scripts
+#   C901/PLR0912  Complexity thresholds would force a refactor of working code
+ignore = [
+    # The formatter owns these, and ruff itself warns that they fight it.
+    "COM812", "ISC001",
+    # The house style uses em dashes and curly quotes on purpose.
+    "RUF001", "RUF002", "RUF003",
+]
+
 [lint.flake8-annotations]
-# A bare `*args` / `**kwargs` hides as much as an unannotated positional does.
 allow-star-arg-any = false
-# `__init__` returning None is not worth stating, and requiring it is noise.
 mypy-init-return = true
+
+[lint.per-file-ignores]
+# **Three files where a long line is DATA, not prose, and wrapping it would
+# change behavior.** Measured 2026-08-17: 23 of 30 E501 hits were unwrappable for
+# one of these reasons, so the exception is the finding rather than a shortcut.
+#
+# `build-diagram.py`   -- the output is one enormous f-string. Its base64 image
+#                         payloads and XML template lines ARE the artifact.
+# `claude-dirty-words.py` -- its own docstring quotes the words it bans, so most
+#                         lines carry a trailing `DIRTY-WORDS-EXEMPT` marker that
+#                         MUST stay on the line it exempts.
+# `mutation-check.py`  -- every long line is a mutation ANCHOR: source text that
+#                         must match the TypeScript byte for byte. Reflowing one
+#                         silently turns its mutation into a SKIP, and this
+#                         repository's own rule is that a SKIPPED mutation is a
+#                         survivor.
+"scripts/build-diagram.py" = ["E501"]
+"scripts/claude-dirty-words.py" = ["E501"]
+"scripts/mutation-check.py" = ["E501"]
+
+# **PTH is NOT selected, and this is the note the ignore list points at.**
+# It reported 154 findings across this repository and `~/.claude/hooks/` -- more
+# than every other family combined -- and every fix is manual: `os.path.join` to
+# `Path.__truediv__`, `open` to `Path.open`, and a str-to-Path type change that
+# ripples through call sites. **`os.path` is not deprecated and these scripts
+# work.** Migrating live file I/O in hooks that fail open, for zero behavior
+# gain, is the definition of overkill. **New code SHOULD use `pathlib` anyway.**

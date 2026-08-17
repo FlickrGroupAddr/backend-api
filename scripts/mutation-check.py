@@ -333,8 +333,10 @@ MUTATIONS = [
         # anchored to its neighbors breaks whenever a neighbor moves.
         "ADR-24: collect a token without proving you started the flow",
         "src/device/link-attempt.ts",
-        "\t\t\tgot.byteLength !== want.byteLength ||\n"
-        "\t\t\t!crypto.subtle.timingSafeEqual(got, want)",
+        (
+            "\t\t\tgot.byteLength !== want.byteLength ||\n"
+            "\t\t\t!crypto.subtle.timingSafeEqual(got, want)"
+        ),
         "\t\t\tfalse",
     ),
     (
@@ -383,9 +385,11 @@ MUTATIONS = [
         "ADR-24: let a throttled poll push the window forward",
         "src/device/link-attempt.ts",
         "\t\t\treturn { kind: \"slow_down\" };",
-        "\t\t\tawait this.ctx.storage.put<StoredAttempt>(\"attempt\", {\n"
-        "\t\t\t\t...attempt,\n\t\t\t\tlastPolledAt: now,\n\t\t\t});\n"
-        "\t\t\treturn { kind: \"slow_down\" };",
+        (
+            "\t\t\tawait this.ctx.storage.put<StoredAttempt>(\"attempt\", {\n"
+            "\t\t\t\t...attempt,\n\t\t\t\tlastPolledAt: now,\n\t\t\t});\n"
+            "\t\t\treturn { kind: \"slow_down\" };"
+        ),
     ),
 ]
 
@@ -398,7 +402,7 @@ def read(path: Path) -> str:
     was LF comes back CRLF -- a silent reformat of every mutated file, which is precisely
     the damage a restore is supposed to avoid. Caught by Biome after the first run.
     """
-    with open(path, "r", encoding="utf-8", newline="") as handle:
+    with open(path, encoding="utf-8", newline="") as handle:
         return handle.read()
 
 

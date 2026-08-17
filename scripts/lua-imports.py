@@ -107,7 +107,7 @@ IMPORT = re.compile(r"""import\s*\(?\s*["']([^"']+)["']""")
 # gate, because the clean line reads as coverage.
 DYNAMIC_IMPORT = re.compile(r"""import\s*\(\s*([A-Za-z_][\w.\[\]"']*)\s*\)""")
 
-LONG_COMMENT = re.compile(r"--\[(=*)\[.*?\]\1\]", re.S)
+LONG_COMMENT = re.compile(r"--\[(=*)\[.*?\]\1\]", re.DOTALL)
 LINE_COMMENT = re.compile(r"--[^\n]*")
 
 
@@ -330,7 +330,8 @@ def self_test(documented: set[str]) -> None:
         ("local d = import 'LrDialogs'", ["LrDialogs"], "bare string argument"),
         ('-- import("LrDialogs")', [], "line comment is not an import"),
         ('--[[ import("LrDialogs") ]]', [], "block comment is not an import"),
-        ('local a = import("LrTasks")\nlocal b = import("LrHttp")', ["LrTasks", "LrHttp"], "two on two lines"),
+        ('local a = import("LrTasks")\nlocal b = import("LrHttp")',
+         ["LrTasks", "LrHttp"], "two on two lines"),
     ]
     for source, want, why in cases:
         got = [m.group(1) for m in IMPORT.finditer(blank_comments(source))]
@@ -407,8 +408,14 @@ def main() -> int:
         lines = raw.splitlines()
         code = blank_comments(raw)
 
-        def report(line_no: int, what: str, detail: str) -> bool:
-            """True when the line carries an exemption. Prints either way."""
+        def report(line_no: int, what: str, detail: str, *,
+                   lines: list[str] = lines,
+                   path: pathlib.Path = path) -> bool:
+            """True when the line carries an exemption. Prints either way.
+
+            `lines` and `path` are bound as keyword defaults so the closure
+            captures THIS iteration's values rather than the loop variable.
+            """
             line = lines[line_no - 1] if line_no <= len(lines) else ""
             exempt = EXEMPT.search(line)
             if exempt:

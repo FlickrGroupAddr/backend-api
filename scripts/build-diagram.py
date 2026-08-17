@@ -29,8 +29,11 @@ attribution comment travels inside the SVG itself.
 """
 
 import base64
+import itertools
+import math
 import pathlib
-
+import re
+import xml.etree.ElementTree as ET
 from collections.abc import Callable
 
 from diagram_sheets import AUTHORED, SHEETS, Sheet, sheet_path
@@ -436,10 +439,6 @@ if not CHECKS_ENABLED:
 # Every check prints as it goes, so the run is the list.
 # ===========================================================================
 
-import math
-import re
-import xml.etree.ElementTree as ET
-
 root = ET.parse(OUT).getroot()
 cells = root.findall(".//mxCell")
 by_id = {c.get("id"): c for c in cells}
@@ -457,9 +456,11 @@ for c in cells:
         )
     elif c.get("edge") == "1":
         edges.append(c)
-    for pt in g.findall(".//mxPoint"):
-        if pt.get("x") is not None and pt.get("y") is not None:
-            waypoints.append((float(pt.get("x")), float(pt.get("y"))))
+    waypoints.extend(
+        (float(pt.get("x")), float(pt.get("y")))
+        for pt in g.findall(".//mxPoint")
+        if pt.get("x") is not None and pt.get("y") is not None
+    )
 
 edge_by_id = {e.get("id"): e for e in edges}
 problems = 0
@@ -756,7 +757,7 @@ note("The Worker's route stack:")
 _pitches = []
 for group, label in ((PLUGIN_ROUTES, "plug-in"), (BROWSER_ROUTES, "browser")):
     ordered = sorted(group, key=top)
-    steps = [top(b) - top(a) for a, b in zip(ordered, ordered[1:])]
+    steps = [top(b) - top(a) for a, b in itertools.pairwise(ordered)]
     _pitches += steps
     check(f"{label:8} group evenly pitched",
           max(steps) - min(steps) < EPS if steps else True,
@@ -1369,8 +1370,10 @@ for _e in edges:
         _ink_x += [(_x - _s, _eid), (_x + _s, _eid)]
         _ink_y += [(_y - _s, _eid), (_y + _s, _eid)]
 
-_x0, _x0id = min(_ink_x); _x1, _x1id = max(_ink_x)
-_y0, _y0id = min(_ink_y); _y1, _y1id = max(_ink_y)
+_x0, _x0id = min(_ink_x)
+_x1, _x1id = max(_ink_x)
+_y0, _y0id = min(_ink_y)
+_y1, _y1id = max(_ink_y)
 _pw, _ph = AUTHORED.width - 2 * MARGIN, AUTHORED.height - 2 * MARGIN
 CONTENT_W, CONTENT_H = _x1 - _x0, _y1 - _y0
 
@@ -1379,7 +1382,7 @@ note(f"Page fit, {AUTHORED.slug} with 0.30in margins, measured in INK:")
 note(f"    ink x {_x0:.2f} ({_x0id}) to {_x1:.2f} ({_x1id})   width  {CONTENT_W:.2f}")
 note(f"    ink y {_y0:.2f} ({_y0id}) to {_y1:.2f} ({_y1id})   height {CONTENT_H:.2f}")
 note(f"    printable {_pw:.0f} x {_ph:.0f}")
-check("fits 1:1", CONTENT_W <= _pw + EPS and CONTENT_H <= _ph + EPS,
+check("fits 1:1", _pw + EPS >= CONTENT_W and _ph + EPS >= CONTENT_H,
       f"{min(_pw / CONTENT_W, _ph / CONTENT_H) * 100:.1f}%")
 
 for _side, _m, _who in (("left  ", _x0, _x0id), ("right ", AUTHORED.width - _x1, _x1id),
@@ -1651,13 +1654,14 @@ for _sheet in SHEETS:
         _got = column_spans(ET.fromstring(_path.read_text(encoding="utf-8")))
         _wid_ok = len(_got) == len(COLUMNS) and all(
             abs((_g[1] - _g[0]) - (_c[1] - _c[0])) <= 1e-3
-            for _g, _c in zip(_got, COLUMNS))
+            for _g, _c in zip(_got, COLUMNS, strict=True))
         check("every column kept its width", _wid_ok,
               f"{len(_got)} columns")
         _got_gaps = [_got[_i + 1][0] - _got[_i][1] for _i in range(len(_got) - 1)]
         check(f"every gap grew by {_d:.2f}",
               len(_got_gaps) == len(GAPS) and all(
-                  abs(_n - (_o + _d)) <= 1e-3 for _n, _o in zip(_got_gaps, GAPS)),
+                  abs(_n - (_o + _d)) <= 1e-3
+                  for _n, _o in zip(_got_gaps, GAPS, strict=True)),
               "  ".join(f"{_g:.2f}" for _g in _got_gaps))
         # Y is untouched by a horizontal reflow, and one uniform delta proves it.
         #
@@ -1668,7 +1672,7 @@ for _sheet in SHEETS:
         # The geometry was correct the whole time. 16x9 passed, which made it
         # look like a layout fault rather than an arithmetic one.
         _ys = [float(_q.get("y")) - float(_p.get("y"))
-               for _p, _q in zip(_authored_points, _written)]
+               for _p, _q in zip(_authored_points, _written, strict=True)]
         check("nothing moved vertically but the centering",
               all(abs(_v - _dy) <= 1e-3 for _v in _ys),
               f"{len(_written)} points, y all {_dy:+.4f}")
@@ -1696,7 +1700,7 @@ for _sheet in SHEETS:
     _least = min(_vx0, _effw - _vx1, _vy0, _effh - _vy1) * _printed
     check(f"printed margins >= {_sheet.margin:.0f}", _least >= _sheet.margin - EPS,
           f"{_least:.2f} at the tightest side")
-    check("the drawing sits on ONE page", _new_w <= _effw + EPS and CONTENT_H <= _effh + EPS,
+    check("the drawing sits on ONE page", _new_w <= _effw + EPS and _effh + EPS >= CONTENT_H,
           f"page {_effw:.1f} x {_effh:.1f} units, pageScale {_pscale:.4f}")
 
     # **Not a check, because the verdict is Terry's.** The build states the size

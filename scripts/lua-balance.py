@@ -50,7 +50,8 @@ def strip_noise(src: str) -> str:
 
 
 def check(path: str) -> list[str]:
-    src = strip_noise(open(path, encoding="utf-8", newline="").read())
+    with open(path, encoding="utf-8", newline="") as handle:
+        src = strip_noise(handle.read())
     depth, trace, problems = 0, [], []
     for lineno, line in enumerate(src.split("\n"), 1):
         for word in re.findall(r"\b[a-z]+\b", line):
@@ -91,9 +92,9 @@ def expand(args: list[str]) -> list[str]:
     paths = []
     for arg in args:
         if os.path.isdir(arg):
-            for name in sorted(os.listdir(arg)):
-                if name.endswith(".lua"):
-                    paths.append(os.path.join(arg, name))
+            paths.extend(os.path.join(arg, name)
+                         for name in sorted(os.listdir(arg))
+                         if name.endswith(".lua"))
         else:
             paths.append(arg)
     return paths
@@ -131,9 +132,11 @@ def mirror_drift(repo_dir: str) -> tuple[list[str], bool]:
             problems.append(f"{name}: in the repo, MISSING from {LIVE}")
         elif digest(live) != digest(os.path.join(repo_dir, name)):
             problems.append(f"{name}: repo copy DIFFERS from the live plug-in")
-    for name in sorted(os.listdir(LIVE)):
-        if name.endswith(".lua") and not os.path.exists(os.path.join(repo_dir, name)):
-            problems.append(f"{name}: live, MISSING from the repo mirror")
+    problems.extend(
+        f"{name}: live, MISSING from the repo mirror"
+        for name in sorted(os.listdir(LIVE))
+        if name.endswith(".lua") and not os.path.exists(os.path.join(repo_dir, name))
+    )
     return problems, True
 
 

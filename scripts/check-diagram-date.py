@@ -49,7 +49,10 @@ def main() -> None:
         # check's business to complain about.
         sys.exit(0)
 
-    today = datetime.date.today()
+    # **The LOCAL date is the right one, and the tz argument is what says so.**
+    # This compares against a date a human typed into a filename, so it must be
+    # the date on Terry's wall, not UTC.
+    today = datetime.datetime.now(tz=datetime.UTC).astimezone().date()
 
     # Loud: dates are versions here, so two dates across the sheets means a rename
     # stopped halfway and half the set is a previous version of the drawing.
@@ -98,7 +101,8 @@ def main() -> None:
                 f"constant in scripts/build-diagram.py, so a mismatch means the file was "
                 f"hand-edited or a rename was missed. Fix before changing anything else in the "
                 f"diagram.",
-                f"Architecture diagram date drift: {slug} filename {date} vs slide {cell.group(1)}.",
+                f"Architecture diagram date drift: {slug} filename {date} "
+                f"vs slide {cell.group(1)}.",
             )
 
     try:
