@@ -9,7 +9,7 @@
 	"scripts": {
 		"dev": "wrangler dev",
 		"dev:web": "vite",
-		"deploy": "npm run build:web && wrangler deploy",
+		"deploy": "npm run check && npm run build:web && wrangler deploy",
 		"build:web": "vite build",
 		"types": "wrangler types",
 		"typecheck": "tsc --noEmit && tsc --noEmit -p web",
