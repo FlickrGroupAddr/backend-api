@@ -99,6 +99,33 @@ asserts. Its *box* therefore starts above the margin, and that is correct rather
 **All four margins are equal and exact.** The build names the cell that owns each edge, so a failure
 says which shape to move.
 
+### The exports, checked against the real files on 2026-08-16
+
+**Both were inspected rather than assumed**, and the PDF settles a question that had been open since
+the first print.
+
+| | |
+|---|---|
+| PDF page box | **1224 × 792 pt = 17.0000 × 11.0000 in exactly**, one page. No Fit-to-Page scaling happened |
+| PDF internal space | `5100 × 3300` scaled by `0.24` to points — the same grid as the 300 DPI raster |
+| PDF logos | **Vector.** Zero embedded images, so the marks stay sharp at any zoom |
+| PNG | **5100 × 3300**, which is 300 DPI on 17 × 11 |
+
+**Why the PDF looks a little different from the browser: the fonts are LIBERATION SANS, not Arial.**
+`LiberationSans`, `-Bold` and `-Italic`, subset-embedded. draw.io's export substitutes the
+metric-compatible free clone. **Metric-compatible means the advance widths match, so every line break
+and every box fit is identical** — only the glyph shapes differ slightly. **It is a cosmetic
+substitution, not a layout change.**
+
+**The ink model was verified end to end against the export.** `label_ink_y()` predicts the title's
+baseline at **50.052**; the PDF places it at **50.000**. **Off by 0.052 drawing units, which is
+0.0005 inch.** So the top margin in the file that actually prints is 29.95 rather than 30.00.
+
+**One caveat worth keeping: the cap-height ratio in the model is Arial's.** Liberation Sans matches
+Arial on widths by design; its vertical metrics are close but were not measured here. **If the top
+margin ever needs to be exact to better than a tenth of a unit, measure the embedded font rather
+than trusting the ratio.**
+
 ### Other page facts
 
 - **100 drawing units = 1 inch.** A font size converts straight to points: `fontSize=14` is 0.14 in,
@@ -240,8 +267,8 @@ others. On 2026-08-15 the build passed every assertion over a diagram you called
 - **No Lightroom Classic logo.** Cloudflare and Flickr both carry their marks. **The trap: Lightroom
   Classic and Lightroom (CC) have different icons**, and this diagram means Classic specifically —
   the whole `getPublishServices(nil)` mechanism is Classic-only.
-- **The PDF export has never been inspected**, and you have said it looks different from the draw.io
-  render.
+- **The PDF export is CLEAN, inspected 2026-08-16**, and the reason it "looks some different" is a
+  font substitution rather than a layout problem. See below.
 - **Dead space bottom-right inside the Cloudflare frame**, right of the Retry Worker and below D1. It
   shrank with the 2026-08-16 relayout but did not close.
 - **The Nightly Event tile is cramped** — four wrapped lines in a small box.
