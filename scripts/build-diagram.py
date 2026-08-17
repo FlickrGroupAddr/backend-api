@@ -201,7 +201,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="lrcat" value="&lt;b&gt;Catalog&lt;/b&gt;&lt;br&gt;&lt;i&gt;Flickr photo IDs&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#607D8B;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
           <mxGeometry x="56.5" y="229.75" width="130" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={WORKSTATION};fontSize=15;fontStyle=1;labelPosition=center;align=right;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=-6;spacingRight=-27;" vertex="1" parent="1">
+        <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={WORKSTATION};fontSize=15;fontStyle=1;labelPosition=center;align=right;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=-6;spacingRight=0;" vertex="1" parent="1">
           <mxGeometry x="30" y="540.7" width="183" height="146.399"  as="geometry" />
         </mxCell>
 
@@ -225,13 +225,13 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="840.8" y="288.55" width="169" height="142.8" as="geometry" />
         </mxCell>
         <mxCell id="oauthdo_b2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="856.8" y="459.55" width="169" height="128.8" as="geometry" />
+          <mxGeometry x="856.8" y="459.55" width="169" height="142.8" as="geometry" />
         </mxCell>
         <mxCell id="oauthdo_b1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="848.8" y="467.55" width="169" height="128.8" as="geometry" />
+          <mxGeometry x="848.8" y="467.55" width="169" height="142.8" as="geometry" />
         </mxCell>
-        <mxCell id="oauthdo" value="&lt;b&gt;OAuth Request Token&lt;/b&gt;&lt;br&gt;&lt;i&gt;One Durable Object&lt;br&gt;per login attempt&lt;br&gt;~15 min TTL&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="840.8" y="475.55" width="169" height="128.8" as="geometry" />
+        <mxCell id="oauthdo" value="&lt;b&gt;Flickr OAuth State&lt;/b&gt;&lt;br&gt;&lt;i&gt;One Durable Object&lt;br&gt;per login attempt&lt;br&gt;~15 min TTL&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A3D9A;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontSize=13;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="840.8" y="475.55" width="169" height="142.8" as="geometry" />
         </mxCell>
         <mxCell id="api" value="&lt;b&gt;flickrgroupaddr.com&lt;/b&gt;&lt;div style=&quot;font-size:14px;margin-top:6px&quot;&gt;&lt;i&gt;Single Cloudflare Worker&lt;/i&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=15;arcSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="484.4" y="288.55" width="300" height="394.15" as="geometry" />
@@ -268,7 +268,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="flickrtitle" value="Flickr" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
           <mxGeometry x="1109" y="418.35" width="186" height="32" as="geometry" />
         </mxCell>
-        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;div style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:72px&quot;&gt;&lt;b&gt;OAuth Endpoints&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px;margin-top:7px&quot;&gt;oauth/request_token&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;oauth/authorize&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;oauth/access_token&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:72px&quot;&gt;&lt;b&gt;API Functions&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px;margin-top:7px&quot;&gt;groups.pools.getGroups&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;photos.getAllContexts&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;groups.pools.add&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
+        <mxCell id="flickrapi" value="&lt;b&gt;Flickr API&lt;/b&gt;&lt;div style=&quot;font-size:14px&quot;&gt;&lt;i&gt;OAuth 1.0a&lt;/i&gt;&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:72px&quot;&gt;&lt;b&gt;OAuth Endpoints&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px;margin-top:7px&quot;&gt;/oauth/request_token&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;/oauth/authorize&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;/oauth/access_token&lt;/div&gt;&lt;div style=&quot;font-size:15px;border-bottom:2px solid #FFFFFF;display:inline-block;padding-bottom:3px;margin-top:72px&quot;&gt;&lt;b&gt;API Functions&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px;margin-top:7px&quot;&gt;groups.pools.getGroups&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;photos.getAllContexts&lt;/div&gt;&lt;div style=&quot;font-size:14px;line-height:22px&quot;&gt;groups.pools.add&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF0084;strokeColor=none;fontColor=#FFFFFF;fontSize=20;arcSize=8;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
           <mxGeometry x="1109" y="487.35" width="186" height="507.95" as="geometry" />
         </mxCell>
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
@@ -282,11 +282,11 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="1350" y="897.5" width="319" height="126" as="geometry" />
         </mxCell>
 
-        <mxCell id="journey" value="&lt;div style=&quot;font-size:14px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;Auth Data Flow&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;User clicks &lt;b&gt;Authorize with FGA&lt;/b&gt; button in LrC Plugin&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Plugin resolves DNS for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Plugin makes HTTPS POST to /auth/device-link/start&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;API endpoint creates Durable Object identified by &lt;b&gt;User Code&lt;/b&gt; with 10 min TTL&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Server responds with &lt;b&gt;User Code&lt;/b&gt; and &lt;b&gt;Device Code&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;LrC Plugin displays &lt;b&gt;User Code&lt;/b&gt; on screen and launches browser with URL: /auth/device-link/enter-user-code&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser resolves DNS for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser makes HTTPS GET to /auth/device-link/enter-user-code&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Server returns HTTP redirect to /auth/flickr/login due to absence of &lt;b&gt;FGA Session ID&lt;/b&gt; cookie in request headers&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser follows redirect and makes HTTPS GET to /auth/flickr/login&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Server reads FGA&#39;s Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=15;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="1350" y="106.35" width="319" height="448" as="geometry" />
+        <mxCell id="journey" value="&lt;div style=&quot;font-size:14px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;Auth Data Flow&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;User clicks &lt;b&gt;Authorize with FGA&lt;/b&gt; button in LrC Plugin&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Plugin resolves DNS for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Plugin makes HTTPS POST to /auth/device-link/start&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;API endpoint creates Durable Object identified by &lt;b&gt;User Code&lt;/b&gt; with 10 min TTL&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Server responds with &lt;b&gt;User Code&lt;/b&gt; and &lt;b&gt;Device Code&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;LrC Plugin displays &lt;b&gt;User Code&lt;/b&gt; on screen and launches browser with URL: /auth/device-link/enter-user-code&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser resolves DNS for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser makes HTTPS GET to /auth/device-link/enter-user-code&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;/auth/device-link/enter-user-code responds with HTTP redirect to /auth/flickr/login, due to absence of &lt;b&gt;FGA Session ID&lt;/b&gt; cookie in request headers&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser follows redirect and makes HTTPS GET to /auth/flickr/login&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Server reads FGA&#39;s Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;12&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Server calls Flickr /oauth/request_token, signed with HMAC-SHA1&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;13&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Flickr responds with &lt;b&gt;Request Token&lt;/b&gt; and &lt;b&gt;Token Secret&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;14&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Server creates Durable Object identified by &lt;b&gt;Request Token&lt;/b&gt;, holding &lt;b&gt;Token Secret&lt;/b&gt; and return path, ~15 min TTL&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;text-align:right;padding-right:12px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;15&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;/auth/flickr/login responds with HTTP redirect to Flickr API /oauth/authorize, carrying &lt;b&gt;Request Token&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=15;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="106.35" width="319" height="656" as="geometry" />
         </mxCell>
 
-        <mxCell id="e26" value="" style="rounded=0;html=1;endArrow=block;endFill=1;startArrow=block;startFill=1;endSize=3;startSize=3;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.637828;exitDx=0;exitDy=0;entryX=0;entryY=0.500000;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="oauthdo">
+        <mxCell id="e26" value="" style="rounded=0;html=1;endArrow=block;endFill=1;startArrow=block;startFill=1;endSize=3;startSize=3;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.655588;exitDx=0;exitDy=0;entryX=0;entryY=0.500000;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="oauthdo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=block;endFill=1;startArrow=block;startFill=1;endSize=3;startSize=3;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.970711;exitY=0.036612;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="users" target="dns">
@@ -381,10 +381,22 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="400.2" y="546.7" width="24" height="24" as="geometry" />
         </mxCell>
         <mxCell id="n10" value="10" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="365.2" y="588.7" width="24" height="24" as="geometry" />
+          <mxGeometry x="330.2" y="588.7" width="24" height="24" as="geometry" />
         </mxCell>
         <mxCell id="n11" value="11" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=2.5;fontColor=#FFFFFF;fontSize=11;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="647.9" y="686.3" width="21" height="21" as="geometry" />
+        </mxCell>
+        <mxCell id="n12" value="12" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="878.3" y="628" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="n13" value="13" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="948.3" y="628" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="n14" value="14" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="848.8" y="483.55" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="n15" value="15" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="400.2" y="588.7" width="24" height="24" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
@@ -941,7 +953,7 @@ check("centered between the two Workers", abs(_above - _below) < EPS,
 # ---------------------------------------------------------------------------
 
 BADGE_ON_LINE = {"n2": "e21", "n3": "e18", "n5": "e18", "n6": "e19",
-                 "n7": "e1", "n8": "e25", "n9": "e25", "n10": "e22"}
+                 "n7": "e1", "n8": "e25", "n9": "e25", "n10": "e22", "n15": "e22", "n12": "e9", "n13": "e9"}
 # Empty for now. Kept because the beside placement is still the right answer for a
 # short run that a badge would otherwise swallow, and BESIDE_MIN/MAX carry its band.
 BADGE_BESIDE  = {"n11": "e4"}
@@ -950,7 +962,7 @@ BADGE_BESIDE  = {"n11": "e4"}
 # sit beside. A badge tucked into the tile's own corner is the only honest place
 # for it. Declared here so the overlap check exempts exactly this pair and keeps
 # reporting every other badge that lands on a tile.
-BADGE_ON_TILE = {"n1": "lrc", "n4": "devicedo"}
+BADGE_ON_TILE = {"n1": "lrc", "n4": "devicedo", "n14": "oauthdo"}
 BESIDE_MIN, BESIDE_MAX = 10.0, 26.0     # center-to-line, for a 24-unit badge
 COVERAGE_CEILING = 0.55
 
@@ -1020,6 +1032,25 @@ check("badges clear of each other", not _pairs)
 # The badges are a distinct visual language and MUST NOT be confusable with any
 # tile. **The white ring is what separates them from the black arrows** -- navy
 # against #1A1A1A is 1.47:1 -- so this guards the fill against the TILES only.
+#
+# **THE WHITE RING IS LOAD-BEARING AND MUST NOT BE REMOVED**, and this threshold
+# is only defensible because it exists. Terry spotted it on the canvas, 2026-08-17:
+# "man that white border around badges saves 14. The contrast would be tough
+# without that white border." He is right, and the numbers say so.
+#
+#     lrc      #546E7A   105   badge 1 sits ON it
+#     oauthdo  #6A3D9A   108   badge 14 sits ON it
+#
+# **Both clear MIN_COLOR_DISTANCE by under 20, and both carry a badge directly on
+# the fill.** The purple case is the worse one: 106 of its 108 is the red channel
+# alone, and blue-against-purple is where human color discrimination is weakest.
+#
+# **So this check does NOT stand on its own.** It measures fill against fill, and
+# what actually makes a badge readable on a tile is the ring between them. Drop
+# the ring as tidy-up and every number here still passes while three badges become
+# unreadable -- the check would report a canvas it can no longer describe.
+#
+# BADGE_ON_TILE is only a viable placement category for the same reason.
 # ---------------------------------------------------------------------------
 
 BADGE_FILL = "#003087"
@@ -1334,9 +1365,9 @@ LOWERCASE_OPENERS = {
     "/": "URL path prefix",
     "docs/architecture/DECISIONS.md": "path",
     # The Flickr API tile lists the surface FGA calls: method and endpoint names.
-    "oauth/request_token": "OAuth endpoint",
-    "oauth/authorize": "OAuth endpoint",
-    "oauth/access_token": "OAuth endpoint",
+    "/oauth/request_token": "OAuth endpoint",
+    "/oauth/authorize": "OAuth endpoint",
+    "/oauth/access_token": "OAuth endpoint",
     "groups.pools.getGroups": "API method",
     "groups.pools.add": "API method",
     "photos.getAllContexts": "API method",
