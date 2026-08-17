@@ -98,7 +98,7 @@ PAGE_HEIGHT = 1100  # 11 inches
 # to 1670 leaves 30 on each side, which is exactly MARGIN.
 #
 # **The TOP is measured in ink, not in boxes.** The canvas moved -3.65 in y on
-# 2026-08-16 so the title's cap top lands on y=30 -- see `ink_top()` below and
+# 2026-08-16 so the title's cap top lands on y=30 -- see `label_ink_y()` below and
 # the check that asserts it. The box therefore starts at 16.35, which looks like
 # a margin violation and is not. The BOTTOM is unsettled: Terry is stretching the
 # content down the page rather than centering it.
@@ -157,19 +157,19 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         </mxCell>
 
         <mxCell id="lrcapp" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#546E7A;strokeWidth=3;arcSize=6;" vertex="1" parent="1">
-          <mxGeometry x="30" y="106.35" width="180" height="399" as="geometry" />
+          <mxGeometry x="31.5" y="106.35" width="180" height="399" as="geometry" />
         </mxCell>
         <mxCell id="lrcmark" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={LRC_MARK}" vertex="1" parent="1">
-          <mxGeometry x="88" y="122.35" width="64" height="62.4" as="geometry" />
+          <mxGeometry x="89.5" y="122.35" width="64" height="62.4" as="geometry" />
         </mxCell>
         <mxCell id="lrc" value="&lt;b&gt;FGA&lt;br&gt;LrC Plugin&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#546E7A;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="55" y="366.35" width="130" height="120" as="geometry" />
+          <mxGeometry x="56.5" y="366.35" width="130" height="120" as="geometry" />
         </mxCell>
         <mxCell id="lrcat" value="&lt;b&gt;Catalog&lt;/b&gt;&lt;br&gt;&lt;i&gt;Flickr photo IDs&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#607D8B;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="55" y="229.75" width="130" height="60" as="geometry" />
+          <mxGeometry x="56.5" y="229.75" width="130" height="60" as="geometry" />
         </mxCell>
         <mxCell id="users" value="Browser" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={WORKSTATION};fontSize=15;fontStyle=1;labelPosition=center;align=right;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=-6;spacingRight=-35;" vertex="1" parent="1">
-          <mxGeometry x="55" y="550.5" width="130" height="104" as="geometry" />
+          <mxGeometry x="56.5" y="550.5" width="130" height="104" as="geometry" />
         </mxCell>
 
         <mxCell id="dns" value="&lt;b&gt;FGA DNS&lt;/b&gt;&lt;br&gt;&lt;i&gt;Cloudflare DNS&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6821F;strokeColor=none;fontColor=#FFFFFF;fontSize=14;arcSize=12;" vertex="1" parent="1">
@@ -234,11 +234,11 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         </mxCell>
 
         <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#183; &#183; &#183; &#183; Scheduled trigger&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1350" y="897.5" width="320" height="126" as="geometry" />
+          <mxGeometry x="1350" y="897.5" width="319" height="126" as="geometry" />
         </mxCell>
 
         <mxCell id="journey" value="&lt;div style=&quot;font-size:14px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;User Journey&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;DNS query, resolved at the nearest PoP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Static assets served by the same Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Begin login &#8212; the browser calls the API Worker&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker reads the FGA Flickr API credentials from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker signs with them and asks Flickr for a request token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker stashes the token secret in the OAuth Durable Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;User authorizes FGA&#39;s write access @ Flickr &#8212; HTTP response has HTTP redirect to API OAuth callback&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Browser follows HTTP redirect instructed by Flickr to OAuth callback, carrying a verifier&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker reads the token secret back out and trades the verifier for the long-lived access token &#8212; the return legs of 5 and 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;REST API endpoints: flickrgroupaddr.com/api/v001/* &#8212; authenticated calls carrying a session cookie&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Worker calls Flickr as the user &#8212; lists groups, checks pools, adds when clear&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;12&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Lightroom plug-in opens the browser to link itself. It never calls Flickr&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:22px;vertical-align:top;font-size:13px&quot;&gt;&lt;b&gt;13&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:13px&quot;&gt;Lightroom plug-in polls for its token, then queues a batch in one call&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=15;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
-          <mxGeometry x="1350" y="106.35" width="320" height="488" as="geometry" />
+          <mxGeometry x="1350" y="106.35" width="319" height="488" as="geometry" />
         </mxCell>
 
         <mxCell id="e1" value="" style="rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.970692;exitY=0.036635;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="users" target="dns">
@@ -295,7 +295,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=0.984615;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickrapi">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="120" y="1068.5" />
+              <mxPoint x="121.5" y="1068.5" />
               <mxPoint x="1202" y="1068.5" />
             </Array>
           </mxGeometry>
@@ -308,7 +308,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="360.2" y="597.5" width="34" height="34" as="geometry" />
         </mxCell>
         <mxCell id="n14" value="14" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="123" y="311.05" width="34" height="34" as="geometry" />
+          <mxGeometry x="124.5" y="311.05" width="34" height="34" as="geometry" />
         </mxCell>
 
       </root>
@@ -357,7 +357,7 @@ print(f"  total file         : {OUT.stat().st_size} bytes")
 # against the new layout and rewrite what has stopped being true.
 # ===========================================================================
 
-CHECKS_ENABLED = False
+CHECKS_ENABLED = True
 
 if not CHECKS_ENABLED:
     print()
@@ -1211,100 +1211,133 @@ check("every label line starts with a capital", not _bad_case,
 
 
 # ---------------------------------------------------------------------------
-# THE PAGE. It fits 11x17 at 100% as of 2026-08-16, and it never did before.
+# THE PAGE, MEASURED IN INK RATHER THAN IN BOXES.
 #
-# **This now FAILS the build**, where the old version only reported. The content
-# was known to exceed the page then, so a failing check would have been scenery
-# within a day. It fits exactly now -- 1640 of 1640 -- so there is ZERO slack and
-# anything that widens the canvas breaks the 1:1 fit immediately.
+# **A geometry is not what the reader sees, and this block is the only place that
+# difference is load-bearing.** Three corrections separate the two:
 #
-# **Waypoints are included, and their absence was a real bug.** The old regex
-# matched `<mxGeometry>` while a routed run is a pair of `<mxPoint>`, so it
-# measured to the lowest TILE and under-reported the height by 45.
+#   a stroke straddles its path, so half of `strokeWidth` paints OUTSIDE the box
+#   a text box is taller than its letters -- 13.65 for the title alone
+#   a routed edge lives in `<mxPoint>`, not in the `<mxGeometry>` of any tile
 #
-# **SIZE IS NOT POSITION, and only size was ever checked.** A drawing can be
-# narrower than the printable area and still hang off the edge of it. The x axis
-# is now asserted on both, because Terry set the target margin by hand.
+# **All three were wrong here at some point, and each was invisible.** The
+# waypoint miss under-reported the height by 45. The box-versus-ink gap put the
+# reported top margin at 16.35 while the ink sat on 30. And a stroke has never
+# been counted at all until now.
 #
-# **MARGIN went 25 -> 30 on 2026-08-16**, for tomorrow's print at a FedEx Office
-# 11x17 color laser. 0.25in clears the 4-5mm unprintable border those engines
-# carry, but it does NOT clear 6mm plus the ~1mm of image-placement drift a
-# sheet-fed engine is allowed. 0.30in absorbs both and costs 0.1in of a 17in
-# sheet.
+# **MARGIN is 30, for a print at a FedEx Office 11x17 color laser.** 0.25in
+# clears the 4-5mm unprintable border those engines carry, but not 6mm plus the
+# ~1mm of image-placement drift a sheet-fed engine is allowed. 0.30in absorbs
+# both and costs 0.1in of a 17in sheet.
+#
+# **THIS BLOCK FAILS THE BUILD.** The content fits exactly, so there is no slack
+# for a driver to absorb an overflow by scaling a percent or two.
 # ---------------------------------------------------------------------------
 
 MARGIN = 30.0
-
-print()
-note("Page fit, 11x17 with 0.30in margins:")
-_xs = [v for cid in boxes for v in (left(cid), right(cid))] + [p[0] for p in waypoints]
-_ys = [v for cid in boxes for v in (top(cid), bottom(cid))] + [p[1] for p in waypoints]
-_cw, _ch = max(_xs) - min(_xs), max(_ys) - min(_ys)
-_pw, _ph = PAGE_WIDTH - 2 * MARGIN, PAGE_HEIGHT - 2 * MARGIN
-note(f"    content   {_cw:.0f} x {_ch:.0f}   bounds x {min(_xs):.0f}-{max(_xs):.0f}, y {min(_ys):.0f}-{max(_ys):.0f}")
-note(f"    printable {_pw:.0f} x {_ph:.0f}")
-check("fits 1:1", _cw <= _pw and _ch <= _ph,
-      f"{min(_pw / _cw, _ph / _ch) * 100:.1f}%")
-
-_ml, _mr = min(_xs) - 0, PAGE_WIDTH - max(_xs)
-check("left and right margins equal", abs(_ml - _mr) <= EPS, f"{_ml:.0f} / {_mr:.0f}")
-check("x sits inside the printable area", _ml >= MARGIN - EPS and _mr >= MARGIN - EPS,
-      f"want >= {MARGIN:.0f} a side")
-
-
-# ---------------------------------------------------------------------------
-# THE TOP MARGIN IS MEASURED IN INK, NOT IN BOXES, and the two are 13.7 apart.
-#
-# **Terry's requirement, 2026-08-16: the top pixel of the title sits ON the
-# 0.30in margin.** A text box is taller than the letters inside it, so putting
-# the BOX on y=30 would push the visible top of the drawing to y=43.7 and lose
-# 0.14in of a sheet that has none to spare.
-#
-# The chain, for `title` at fontSize 28 in a 48-tall box with verticalAlign=middle:
-#
-#   line box top   (48 - 28*1.2) / 2                        =  7.200
-#   ascent top     + half-leading, (33.6 - 1.117*28) / 2    =  1.162
-#   baseline       + ascender, 0.905 * 28                   = 25.340
-#   CAP TOP        - cap height, 0.716 * 28                 = 13.654 below the box
-#
-# **The ratios are Arial's, and Helvetica maps to Arial on this box.** Verified
-# two ways on 2026-08-16: Chrome's canvas `TextMetrics` agreed, and the render
-# put the title-to-date glyph gap at ~32.8 against this model's 32.96.
-#
-# **Chrome ROUNDS TextMetrics to integers** as a fingerprinting mitigation, so
-# reading them back gives 13.5 rather than 13.654. Layout uses the real values --
-# the render measurement is what settles it, and it favors the unrounded model.
-# ---------------------------------------------------------------------------
-
 CAP_HEIGHT, ASCENDER, DESCENDER = 0.716, 0.905, 0.212
 
 
-def ink_top(cid):
-    """Top of the tallest GLYPH in a single-line label, not the top of its box."""
-    style = by_id[cid].get("style") or ""
+def stroke_half(style):
+    """How far the ink sits OUTSIDE the geometry, because a stroke is centered.
+
+    An image or a bare text label paints no border at all, so the geometry IS
+    the extent. Every tile here names its `strokeColor` explicitly, so an absent
+    one means a shape that does not draw a border rather than a defaulted width.
+    """
+    if "strokeColor=none" in style or "strokeColor=" not in style:
+        return 0.0
+    m = re.search(r"strokeWidth=([\d.]+)", style)
+    return (float(m.group(1)) if m else 1.0) / 2.0
+
+
+def label_ink_y(cid, style):
+    """Cap top and descender bottom of a single-line label, in absolute units.
+
+    **The chain, for `title` at fontSize 28 in a 48-tall box, verticalAlign=middle:**
+
+        line box top   (48 - 28*1.2) / 2                      =  7.200
+        ascent top     + half-leading, (33.6 - 1.117*28) / 2  =  1.162
+        baseline       + ascender, 0.905 * 28                 = 25.340
+        CAP TOP        - cap height, 0.716 * 28               = 13.654 below the box
+
+    **The ratios are Arial's, and Helvetica maps to Arial on this box.** Verified
+    two ways on 2026-08-16: Chrome's canvas `TextMetrics` agreed, and the render
+    put the title-to-date glyph gap at ~32.8 against this model's 32.96. Chrome
+    ROUNDS `TextMetrics` to integers as a fingerprinting mitigation, so reading
+    them back gives 13.5 rather than 13.654 -- layout uses the real values, and
+    the render measurement is what settles it.
+    """
     px = float(re.search(r"fontSize=(\d+)", style).group(1))
     if "verticalAlign=middle" not in style:
-        raise SystemExit(f"ink_top({cid!r}) models verticalAlign=middle only.")
+        raise SystemExit(f"label_ink_y({cid!r}) models verticalAlign=middle only.")
     line_h = px * 1.2
     half_lead = (line_h - (ASCENDER + DESCENDER) * px) / 2
-    baseline = (height(cid) - line_h) / 2 + half_lead + ASCENDER * px
-    return top(cid) + baseline - CAP_HEIGHT * px
+    baseline = top(cid) + (height(cid) - line_h) / 2 + half_lead + ASCENDER * px
+    return baseline - CAP_HEIGHT * px, baseline + DESCENDER * px
 
 
-_ink = ink_top("title")
-note(f"    title box top {top('title'):.2f}, ink top {_ink:.2f}   ink sits {_ink - top('title'):.2f} lower")
-check("title ink sits ON the top margin", abs(_ink - MARGIN) <= EPS,
-      f"{_ink:.2f} against {MARGIN:.0f}")
-check("title is the topmost ink", min(_ys) == top("title"),
-      "nothing starts above it, so no other box can out-rank it")
+# Every extreme carries the id that owns it, because "the drawing is 2 too tall"
+# is not actionable and "`lrcapp`'s 3-wide border is" is.
+_ink_x, _ink_y = [], []
+for _c in cells:
+    _cid, _st = _c.get("id"), _c.get("style") or ""
+    if _c.get("vertex") != "1" or _cid not in boxes:
+        continue
+    if _st.startswith("text;"):
+        _t, _b = label_ink_y(_cid, _st)
+        _ink_y += [(_t, _cid), (_b, _cid)]
+        # **X is taken from the BOX for a label, deliberately.** Measuring glyph
+        # width needs the text estimator, which this file distrusts. Both labels
+        # sit ~940 clear of the right margin, so the box cannot raise a false
+        # failure -- if one ever moves outward, measure it instead of trusting this.
+        _ink_x += [(left(_cid), _cid), (right(_cid), _cid)]
+        continue
+    _s = stroke_half(_st)
+    _ink_x += [(left(_cid) - _s, _cid), (right(_cid) + _s, _cid)]
+    _ink_y += [(top(_cid) - _s, _cid), (bottom(_cid) + _s, _cid)]
 
-# **REPORTED, NOT ASSERTED, and the asymmetry is deliberate.** The vertical is
-# mid-change: Terry is stretching the canvas down the page rather than centering
-# it, so an assertion here would fail on every build until that lands and would
-# be switched off exactly like the last suite was. **Turn it into a check in the
-# same commit that settles the vertical.**
-_mt, _mb = min(_ys) - 0, PAGE_HEIGHT - max(_ys)
-note(f"    y margins {_mt:.0f} top / {_mb:.0f} bottom   -- NOT yet asserted, vertical is mid-change")
+for _e in edges:
+    _eid, _st = _e.get("id"), _e.get("style") or ""
+    _s = stroke_half(_st) or (float(re.search(r"strokeWidth=([\d.]+)", _st).group(1)) / 2
+                              if "strokeWidth=" in _st else 0.5)
+    _pts = []
+    if _eid in segments:
+        _pts += [segments[_eid][2], segments[_eid][3]]
+    _g = _e.find("mxGeometry")
+    if _g is not None:
+        _pts += [(float(_p.get("x")), float(_p.get("y")))
+                 for _p in _g.findall(".//mxPoint")
+                 if _p.get("x") is not None and _p.get("y") is not None]
+    for _x, _y in _pts:
+        _ink_x += [(_x - _s, _eid), (_x + _s, _eid)]
+        _ink_y += [(_y - _s, _eid), (_y + _s, _eid)]
+
+_x0, _x0id = min(_ink_x); _x1, _x1id = max(_ink_x)
+_y0, _y0id = min(_ink_y); _y1, _y1id = max(_ink_y)
+_pw, _ph = PAGE_WIDTH - 2 * MARGIN, PAGE_HEIGHT - 2 * MARGIN
+
+print()
+note("Page fit, 11x17 with 0.30in margins, measured in INK:")
+note(f"    ink x {_x0:.2f} ({_x0id}) to {_x1:.2f} ({_x1id})   width  {_x1 - _x0:.2f}")
+note(f"    ink y {_y0:.2f} ({_y0id}) to {_y1:.2f} ({_y1id})   height {_y1 - _y0:.2f}")
+note(f"    printable {_pw:.0f} x {_ph:.0f}")
+check("fits 1:1", _x1 - _x0 <= _pw + EPS and _y1 - _y0 <= _ph + EPS,
+      f"{min(_pw / (_x1 - _x0), _ph / (_y1 - _y0)) * 100:.1f}%")
+
+for _side, _m, _who in (("left  ", _x0, _x0id), ("right ", PAGE_WIDTH - _x1, _x1id),
+                        ("top   ", _y0, _y0id), ("bottom", PAGE_HEIGHT - _y1, _y1id)):
+    check(f"{_side} ink margin >= {MARGIN:.0f}", _m >= MARGIN - EPS, f"{_m:.2f}   set by {_who}")
+check("left and right ink margins equal", abs(_x0 - (PAGE_WIDTH - _x1)) <= EPS,
+      f"{_x0:.2f} / {PAGE_WIDTH - _x1:.2f}")
+
+# **The title is the one element positioned to the margin by hand**, so it gets
+# its own assertion rather than relying on it happening to be the topmost thing.
+_t_ink, _ = label_ink_y("title", by_id["title"].get("style"))
+note(f"    title box top {top('title'):.2f}, cap top {_t_ink:.2f}   ink sits {_t_ink - top('title'):.2f} lower")
+check("title cap top sits ON the top margin", abs(_t_ink - MARGIN) <= EPS,
+      f"{_t_ink:.2f} against {MARGIN:.0f}")
+check("the title IS the topmost ink", _y0id == "title", f"topmost is {_y0id}")
 note("    export WITHOUT 'Fit to Page' -- it would shrink a drawing that already fits")
 
 
