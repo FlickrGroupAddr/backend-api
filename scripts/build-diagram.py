@@ -443,6 +443,32 @@ root = ET.parse(OUT).getroot()
 cells = root.findall(".//mxCell")
 by_id = {c.get("id"): c for c in cells}
 
+def cell_id(el: ET.Element) -> str:
+    """A cell's id. Every cell in THIS document has one, and a missing one is a
+    malformed artifact rather than a case to handle."""
+    value = el.get("id")
+    if value is None:
+        raise SystemExit(f"A <{el.tag}> carries no id; the diagram is malformed.")
+    return value
+
+
+def attr_f(el: ET.Element, name: str, default: float | None = None) -> float:
+    """One attribute as a float.
+
+    **`Element.get` returns `str | None`, and 22 call sites fed it straight to
+    `float()`.** Every one was guarded by an `is not None` test somewhere nearby,
+    which is exactly the shape a reader trusts and a type checker cannot follow.
+    This makes the contract explicit: absent means malformed unless a default
+    says otherwise.
+    """
+    raw = el.get(name)
+    if raw is None:
+        if default is None:
+            raise SystemExit(f"<{el.tag}> has no {name!r}; the diagram is malformed.")
+        return default
+    return float(raw)
+
+
 boxes: dict[str, tuple[float, float, float, float]] = {}
 edges: list[ET.Element] = []
 waypoints: list[tuple[float, float]] = []
@@ -451,13 +477,14 @@ for c in cells:
     if g is None:
         continue
     if c.get("vertex") == "1" and g.get("x") is not None:
-        boxes[c.get("id")] = tuple(
-            float(g.get(k, 0)) for k in ("x", "y", "width", "height")
+        boxes[cell_id(c)] = (
+            attr_f(g, "x", 0.0), attr_f(g, "y", 0.0),
+            attr_f(g, "width", 0.0), attr_f(g, "height", 0.0),
         )
     elif c.get("edge") == "1":
         edges.append(c)
     waypoints.extend(
-        (float(pt.get("x")), float(pt.get("y")))
+        (attr_f(pt, "x"), attr_f(pt, "y"))
         for pt in g.findall(".//mxPoint")
         if pt.get("x") is not None and pt.get("y") is not None
     )
@@ -465,6 +492,21 @@ for c in cells:
 edge_by_id = {e.get("id"): e for e in edges}
 problems = 0
 EPS = 0.5
+
+
+def matched(pattern: str, text: str, what: str) -> re.Match[str]:
+    """A regex match that MUST succeed, or the artifact is malformed.
+
+    **`re.search` returns `Match | None`, and five call sites reached straight
+    for `.group()`.** Each one is genuinely guaranteed by a style string this
+    file wrote itself -- which is why nobody guarded them, and why a failure
+    would surface as `NoneType has no attribute group` a hundred lines from the
+    cause. Naming what was expected turns that into one readable line.
+    """
+    hit = re.search(pattern, text)
+    if hit is None:
+        raise SystemExit(f"Expected {what} in: {text[:80]!r}")
+    return hit
 
 
 def note(line: str) -> None:
@@ -546,7 +588,7 @@ for e in edges:
     src, tgt = e.get("source"), e.get("target")
     if src not in boxes or tgt not in boxes:
         continue          # a floating edge, parked on an explicit sourcePoint
-    segments[e.get("id")] = (
+    segments[cell_id(e)] = (
         src, tgt, endpoint(src, style, "exit"), endpoint(tgt, style, "entry"),
         "orthogonalEdgeStyle" in style,
     )
@@ -555,7 +597,7 @@ print()
 note("Attachment model:")
 check("perimeter_point self-test", True, "2/2")
 check("edges resolved", len(segments) > 0, f"{len(segments)} of {len(edges)}")
-_floating = [e.get("id") for e in edges if e.get("id") not in segments]
+_floating = [cell_id(e) for e in edges if cell_id(e) not in segments]
 if _floating:
     note(f"    floating (parked on a sourcePoint): {', '.join(_floating)}")
 
@@ -894,7 +936,7 @@ for badge, eid in BADGE_BESIDE.items():
     check(f"{badge:3} beside {eid}", BESIDE_MIN <= d <= BESIDE_MAX and along,
           f"offset {d:.1f}, band {BESIDE_MIN:.0f}-{BESIDE_MAX:.0f}")
 
-BADGES = sorted((c.get("id") for c in cells if re.fullmatch(r"n\d+", c.get("id") or "")),
+BADGES = sorted((cell_id(c) for c in cells if re.fullmatch(r"n\d+", c.get("id") or "")),
                 key=lambda n: int(n[1:]))
 # **CONTAINERS are excluded, for the same reason they are not obstacles.** A
 # badge legitimately sits INSIDE the Lightroom card, beside the arrow it numbers,
@@ -993,7 +1035,7 @@ def text_lines(raw: str) -> list[str]:
     return parts
 
 
-def wrapped_lines(text: str, char_w: dict[int, float], usable: float,
+def wrapped_lines(text: str, char_w: float, usable: float,
                   space_w: float) -> int:
     """Greedy word wrap, the way a browser actually breaks a line.
 
@@ -1099,7 +1141,8 @@ print()
 note("Logos:")
 for cid, art in LOGO_ART.items():
     vb = (SVG / art).read_text(encoding="utf-8")
-    vw, vh = (float(v) for v in re.search(r'viewBox="\S+ \S+ (\S+) (\S+)"', vb).groups())
+    vw, vh = (float(v) for v in
+              matched(r'viewBox="\S+ \S+ (\S+) (\S+)"', vb, "a viewBox").groups())
     skew = abs((width(cid) / height(cid)) - (vw / vh)) / (vw / vh)
     check(f"{cid:11} undistorted", skew <= 0.01,
           f"{width(cid):.0f}x{height(cid):.0f}  {skew * 100:.2f}% off its viewBox")
@@ -1325,7 +1368,7 @@ def label_ink_y(cid: str, style: str) -> tuple[float, float]:
     them back gives 13.5 rather than 13.654 -- layout uses the real values, and
     the render measurement is what settles it.
     """
-    px = float(re.search(r"fontSize=(\d+)", style).group(1))
+    px = float(matched(r"fontSize=(\d+)", style, "a fontSize").group(1))
     if "verticalAlign=middle" not in style:
         raise SystemExit(f"label_ink_y({cid!r}) models verticalAlign=middle only.")
     line_h = px * 1.2
@@ -1356,14 +1399,15 @@ for _c in cells:
 
 for _e in edges:
     _eid, _st = _e.get("id"), _e.get("style") or ""
-    _s = stroke_half(_st) or (float(re.search(r"strokeWidth=([\d.]+)", _st).group(1)) / 2
+    _s = stroke_half(_st) or (float(matched(r"strokeWidth=([\d.]+)", _st,
+                                            "a strokeWidth").group(1)) / 2
                               if "strokeWidth=" in _st else 0.5)
     _pts = []
     if _eid in segments:
         _pts += [segments[_eid][2], segments[_eid][3]]
     _g = _e.find("mxGeometry")
     if _g is not None:
-        _pts += [(float(_p.get("x")), float(_p.get("y")))
+        _pts += [(attr_f(_p, "x"), attr_f(_p, "y"))
                  for _p in _g.findall(".//mxPoint")
                  if _p.get("x") is not None and _p.get("y") is not None]
     for _x, _y in _pts:
@@ -1393,7 +1437,7 @@ check("left and right ink margins equal", abs(_x0 - (AUTHORED.width - _x1)) <= E
 
 # **The title is the one element positioned to the margin by hand**, so it gets
 # its own assertion rather than relying on it happening to be the topmost thing.
-_t_ink, _ = label_ink_y("title", by_id["title"].get("style"))
+_t_ink, _ = label_ink_y("title", by_id["title"].get("style") or "")
 note(f"    title box top {top('title'):.2f}, cap top {_t_ink:.2f}   ink sits {_t_ink - top('title'):.2f} lower")
 check("title cap top sits ON the top margin", abs(_t_ink - MARGIN) <= EPS,
       f"{_t_ink:.2f} against {MARGIN:.0f}")
@@ -1465,7 +1509,7 @@ def column_spans(tree: ET.Element) -> list[tuple[float, float]]:
     assertion that replays the writer's own arithmetic proves nothing.
     """
     spans = sorted(
-        (float(g.get("x")), float(g.get("x")) + float(g.get("width")))
+        (attr_f(g, "x"), attr_f(g, "x") + attr_f(g, "width"))
         for c in tree.iter("mxCell")
         for g in [c.find("mxGeometry")]
         if c.get("vertex") == "1" and g is not None and g.get("x") is not None
@@ -1476,7 +1520,7 @@ def column_spans(tree: ET.Element) -> list[tuple[float, float]]:
             merged.append([a, b])
         else:
             merged[-1][1] = max(merged[-1][1], b)
-    return [tuple(m) for m in merged]
+    return [(m[0], m[1]) for m in merged]
 
 
 COLUMNS = column_spans(ET.fromstring(TEMPLATE))
@@ -1576,6 +1620,8 @@ def moved_sheet(xml: str, sheet: Sheet, page_scale: float,
     """
     tree = ET.fromstring(xml)
     model = tree.find(".//mxGraphModel")
+    if model is None:
+        raise SystemExit("The rendered template has no <mxGraphModel>.")
     model.set("pageWidth", fmt(sheet.width))
     model.set("pageHeight", fmt(sheet.height))
     model.set("pageScale", fmt(page_scale))
@@ -1587,9 +1633,9 @@ def moved_sheet(xml: str, sheet: Sheet, page_scale: float,
         for pt in g.iter("mxPoint") if g is not None else ():
             owner[id(pt)] = cell.get("id")
     for el in absolute_points(tree):
-        x = float(el.get("x"))
+        x = attr_f(el, "x")
         el.set("x", fmt(x + shift(owner.get(id(el)), x)))
-        el.set("y", fmt(float(el.get("y")) + dy))
+        el.set("y", fmt(attr_f(el, "y") + dy))
     return ET.tostring(tree, encoding="unicode") + "\n"
 
 
@@ -1671,7 +1717,7 @@ for _sheet in SHEETS:
         # boundary and float noise sent some points to 9.489 and others to 9.490.
         # The geometry was correct the whole time. 16x9 passed, which made it
         # look like a layout fault rather than an arithmetic one.
-        _ys = [float(_q.get("y")) - float(_p.get("y"))
+        _ys = [attr_f(_q, "y") - attr_f(_p, "y")
                for _p, _q in zip(_authored_points, _written, strict=True)]
         check("nothing moved vertically but the centering",
               all(abs(_v - _dy) <= 1e-3 for _v in _ys),

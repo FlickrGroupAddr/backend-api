@@ -208,11 +208,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # to the authored sheet and showing a picture nobody asked for.
             self.send_error(404, f"No sheet named {exc.args[0]}")
 
-    def log_message(self, _fmt: str, *args: object) -> None:
-        # **The leading underscore is what silences the unused-argument rule**, and
-        # it beats a `noqa` because it says the same thing to a human reader.
-        # This OVERRIDES `BaseHTTPRequestHandler.log_message`, whose callers pass
-        # the format string POSITIONALLY, so renaming the parameter is safe.
+    def log_message(self, format: str, *args: object) -> None:  # noqa: A002, ARG002
+        # **A leading underscore is the right way to silence an unused argument --
+        # EXCEPT on an override, and this is the exception.** Renaming it to
+        # `_fmt` satisfied ruff and then pyright refused the whole method:
+        # `Method "log_message" overrides class "BaseHTTPRequestHandler" in an
+        # incompatible manner`. **A parameter name is part of an override's
+        # contract**, because a caller may pass it by keyword.
+        #
+        # So the base class wins over both lint rules. `A002` fires because
+        # `format` shadows a builtin, and `ARG002` because nothing reads it --
+        # **both are forced by a signature this code does not own.**
         # The poll runs twice a second, so logging every request would bury the
         # one line that matters. Only a real diagram fetch gets printed.
         #

@@ -476,7 +476,14 @@ their architecture.** Precedent is the weakest argument available here.
 
 **`svelte-check` peers on TypeScript `^5 || ^6`, and ADR-13 pins 7.0.2.** So nothing typechecks the
 inside of a `.svelte` file — not `tsc`, not Biome. This is the same bill TypeScript 7 already
-charged for `typescript-eslint`.
+charged for `typescript-eslint` — **and for the TypeScript LANGUAGE SERVER, which is the third item
+on that tab.** The `typescript-lsp` plugin drives `tsserver`, and **TypeScript 7.0.2 ships no
+`tsserver` at all**: `node_modules/typescript/lib` holds `tsc.js` and nothing else. Using it would
+mean a second, older TypeScript analyzing this code with a different compiler than the gate.
+**Pending until the native TS 7 language server lands, same 7.1 milestone. See ADR-13.**
+
+**Python is not in that boat.** `pyright-lsp` is enabled globally, and it catches the one thing
+ruff structurally cannot: **ruff checks that an annotation EXISTS, pyright checks that it is TRUE.**
 
 **The mitigation is placement, not tooling.** Logic goes in `web/src/lib/*.ts` where `tsc --noEmit
 -p web` reads it properly, and components stay thin enough that a mistake is visible. **A component

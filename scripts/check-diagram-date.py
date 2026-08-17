@@ -28,14 +28,29 @@ import json
 import pathlib
 import re
 import sys
+import typing
 
 from diagram_sheets import SHEETS, found_sheets
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
-def emit(context: str, system: str | None = None) -> None:
-    out = {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}
+def emit(context: str, system: str | None = None) -> typing.NoReturn:
+    """Write the hook payload and END THE PROCESS. This never returns.
+
+    **`NoReturn` is load-bearing, not decoration.** Every caller below treats
+    `emit` as terminal -- `if cell is None: emit(...)` and then dereferences
+    `cell` on the next line. Annotated `-> None`, a type checker believes control
+    falls through and reports six phantom errors: three `"group" is not a known
+    attribute of "None"` and three `"age" is possibly unbound`. **All six were the
+    annotation lying, not the code.**
+    """
+    out: dict[str, object] = {
+        "hookSpecificOutput": {
+            "hookEventName": "SessionStart",
+            "additionalContext": context,
+        }
+    }
     if system:
         out["systemMessage"] = system
     print(json.dumps(out))

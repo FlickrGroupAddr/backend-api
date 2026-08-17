@@ -384,6 +384,26 @@ Rust was rejected on maintenance — `workers-rs` had 9 commits in 13 weeks agai
 **TypeScript 7 costs the project `typescript-eslint`, which cannot consume the Go-native compiler
 until 7.1.** Biome parses TypeScript itself and is unaffected.
 
+**It costs the TypeScript LANGUAGE SERVER too, and for the same reason.** Found 2026-08-17 while
+Terry asked whether an LSP existed for TypeScript the way `rust-analyzer-lsp` does for Rust. The
+`typescript-lsp` plugin exists in Claude's official marketplace and drives `typescript-language-server`,
+which drives **`tsserver`**. **The pinned TypeScript 7.0.2 ships `tsc.js` and one `tsc` bin — there
+is no `tsserver` and no `typescript.js`.** Verified by listing `node_modules/typescript/lib`.
+
+**Installing it would require a SECOND, older TypeScript globally**, which would then analyze this
+code with a different compiler than `npm run check` uses. That is the `svelte-check` mismatch one
+level up: an editor confidently disagreeing with the gate. **Refused on that ground, not on cost.**
+
+**Reopen when the native TypeScript 7 language server ships** — the same 7.1 milestone
+`typescript-eslint` is waiting on, since both need the full compiler API. **Adopting an older
+TypeScript to get either one is explicitly NOT the answer.**
+
+**Python has no such problem, and now has the LSP.** `pyright-lsp` is enabled globally: pyright
+ships its own checker, peers on nothing, and closes a gap ruff structurally cannot. Proven the same
+day on a two-line file — ruff at full pedantry reported only an unused import, while pyright caught
+both `"pathlib" is not defined` and `Type "int" is not assignable to return type "str"`. **Ruff
+checks that an annotation EXISTS; pyright checks that it is TRUE.**
+
 **It costs `svelte-check` too**, found 2026-08-14 while adding ADR-18's UI. It peers on
 `typescript: ^5 || ^6`, so nothing typechecks inside a `.svelte` file — not `tsc`, not Biome.
 **The mitigation is placement rather than tooling:** logic lives in `web/src/lib/*.ts` under
