@@ -1,0 +1,51 @@
+# Ruff, used here for ONE job: every Python signature MUST be fully type hinted.
+#
+# **Standing order, Terry, 2026-08-17: "all claude generated python MUST be fully
+# type hinted. That's a thing I'm militant about."** RFC 2119 sense -- MUST is
+# absolute. The rule is global and lives in `~/.claude/CLAUDE.md`; ruff is how
+# this repository holds the line.
+#
+# **INTEGRATE BEFORE INNOVATE, and this file exists because that rule was nearly
+# broken.** A hand-rolled AST checker was written first, ~190 lines with its own
+# self-test, before anyone asked whether a maintained tool already did the job.
+# Terry caught it: "Dunno if any linters can flag it for you? Integrate before
+# innovate." Ruff's flake8-annotations rules are exactly this check, so the
+# hand-rolled script was deleted.
+#
+# **THE SURVEY IS RECORDED BECAUSE "THERE WASN'T ONE" NEEDS EVIDENCE:**
+#
+#   ruff, PyPI 0.16.3     the answer. ANN001/002/003/2xx are precisely the rule
+#   pyright, npm 1.1.413  real and official, but it INFERS return types, so a
+#                         missing return annotation is not an error to it
+#   mypy, npm 1.0.1       checks correctness, not presence; would flood
+#   @astral-sh/ruff       DOES NOT EXIST on npm -- 404
+#
+# **npm `ruff` IS AN IMPOSTOR AND MUST NOT BE INSTALLED.** `npm view ruff`
+# returns version 1.5.4, "Coroutine with ES6 generators simpler then ever", from
+# github.com/coderaiser/ruff. It is an unrelated package that happens to share
+# the name. Astral's ruff is PyPI-only and its versions are 0.x. **A version
+# number that disagrees with the tool's real release line is the tell.**
+#
+# **Ruff is a pip tool, so it sits OUTSIDE the npm freshness net.**
+# `~/.claude/hooks/npm-toolchain-check.py` watches node, npm, tsc and the direct
+# npm dependencies. It does not see this one, so ruff can go stale silently.
+# Install or update it with `python -m pip install --upgrade ruff`.
+
+target-version = "py313"
+
+[lint]
+# **ONLY the annotation rules, and that is deliberate rather than lazy.**
+# Turning on ruff's defaults today would report hundreds of style findings across
+# scripts that predate this decision, and a checker that cries wolf gets switched
+# off -- the same argument `scripts/claude-dirty-words.py` makes about keeping its
+# word list explicit. **Widening this is a decision to take on purpose**, with the
+# backlog cleared first, not a tidy-up.
+select = ["ANN"]
+
+# `self` and `cls` are exempt, and ruff already agrees: ANN101 and ANN102 were
+# removed from ruff for exactly that reason. Nothing to configure.
+[lint.flake8-annotations]
+# A bare `*args` / `**kwargs` hides as much as an unannotated positional does.
+allow-star-arg-any = false
+# `__init__` returning None is not worth stating, and requiring it is noise.
+mypy-init-return = true

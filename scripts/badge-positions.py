@@ -65,7 +65,8 @@ def newest_diagram() -> pathlib.Path:
     return authored_diagram(ROOT)
 
 
-def perimeter_point(bounds, pt):
+def perimeter_point(bounds: tuple[float, float, float, float],
+                    pt: tuple[float, float]) -> tuple[float, float]:
     """Where the ray from the shape's center through `pt` crosses its bounds.
 
     This is `mxRectanglePerimeter`, and reproducing it is the whole point: it is
@@ -84,7 +85,8 @@ def perimeter_point(bounds, pt):
     return cx + dx * t, cy + dy * t
 
 
-def endpoint(bounds, style, prefix):
+def endpoint(bounds: tuple[float, float, float, float], style: str,
+             prefix: str) -> tuple[float, float]:
     """The point draw.io puts this end of the edge at."""
     x, y, w, h = bounds
     fx = re.search(rf"(?<!\w){prefix}X=([\d.]+)", style)
@@ -98,7 +100,8 @@ def endpoint(bounds, style, prefix):
     return perimeter_point(bounds, (x + w / 2.0, y + h / 2.0))
 
 
-def load(path):
+def load(path: pathlib.Path) -> tuple[dict[str, tuple[float, float, float, float]],
+                                     list[ET.Element]]:
     root = ET.parse(path).getroot()
     cells = root.findall(".//mxCell")
     boxes, edges = {}, []
@@ -115,7 +118,9 @@ def load(path):
     return boxes, edges
 
 
-def report(cell, boxes, diameter, gap):
+def report(cell: ET.Element,
+           boxes: dict[str, tuple[float, float, float, float]],
+           diameter: float, gap: float) -> dict[str, object] | None:
     style = cell.get("style") or ""
     src, tgt = cell.get("source"), cell.get("target")
     if src not in boxes or tgt not in boxes:
@@ -141,7 +146,7 @@ def report(cell, boxes, diameter, gap):
     }
 
 
-def geom(center, diameter):
+def geom(center: tuple[float, float], diameter: float) -> str:
     return (f'<mxGeometry x="{center[0] - diameter/2:g}" '
             f'y="{center[1] - diameter/2:g}" '
             f'width="{diameter:g}" height="{diameter:g}" as="geometry" />')

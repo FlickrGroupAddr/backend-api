@@ -170,7 +170,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         slug = urllib.parse.parse_qs(query).get("sheet", [""])[0]
         return sheet_diagram(slug)
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         import datetime
 
         route = self.path.partition("?")[0]
@@ -203,7 +203,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # to the authored sheet and showing a picture nobody asked for.
             self.send_error(404, f"No sheet named {exc.args[0]}")
 
-    def log_message(self, fmt, *args):
+    def log_message(self, fmt: str, *args: object) -> None:
         # The poll runs twice a second, so logging every request would bury the
         # one line that matters. Only a real diagram fetch gets printed.
         #

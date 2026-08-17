@@ -31,7 +31,9 @@ attribution comment travels inside the SVG itself.
 import base64
 import pathlib
 
-from diagram_sheets import AUTHORED, SHEETS, sheet_path
+from collections.abc import Callable
+
+from diagram_sheets import AUTHORED, SHEETS, Sheet, sheet_path
 
 # Dates are versions on this project -- there is no v1/v2 numbering. The
 # filename and the title block MUST carry the same date, so both come from this
@@ -476,14 +478,14 @@ def check(label: str, ok: bool, detail: str = "") -> None:
     print(f"    {'ok  ' if ok else 'FAIL'} {label}{('  ' + detail) if detail else ''}")
 
 
-def left(cid):   return boxes[cid][0]
-def top(cid):    return boxes[cid][1]
-def width(cid):  return boxes[cid][2]
-def height(cid): return boxes[cid][3]
-def right(cid):  return boxes[cid][0] + boxes[cid][2]
-def bottom(cid): return boxes[cid][1] + boxes[cid][3]
-def cx(cid):     return boxes[cid][0] + boxes[cid][2] / 2.0
-def cy(cid):     return boxes[cid][1] + boxes[cid][3] / 2.0
+def left(cid: str) -> float:   return boxes[cid][0]
+def top(cid: str) -> float:    return boxes[cid][1]
+def width(cid: str) -> float:  return boxes[cid][2]
+def height(cid: str) -> float: return boxes[cid][3]
+def right(cid: str) -> float:  return boxes[cid][0] + boxes[cid][2]
+def bottom(cid: str) -> float: return boxes[cid][1] + boxes[cid][3]
+def cx(cid: str) -> float:     return boxes[cid][0] + boxes[cid][2] / 2.0
+def cy(cid: str) -> float:     return boxes[cid][1] + boxes[cid][3] / 2.0
 
 
 # ---------------------------------------------------------------------------
@@ -500,7 +502,7 @@ def cy(cid):     return boxes[cid][1] + boxes[cid][3] / 2.0
 # ---------------------------------------------------------------------------
 
 
-def perimeter_point(bounds, pt):
+def perimeter_point(bounds: tuple[float, float, float, float], pt: tuple[float, float]) -> tuple[float, float]:
     x, y, w, h = bounds
     ox, oy = x + w / 2.0, y + h / 2.0
     dx, dy = pt[0] - ox, pt[1] - oy
@@ -514,7 +516,7 @@ def perimeter_point(bounds, pt):
     return ox + dx * t, oy + dy * t
 
 
-def endpoint(cid, style, prefix):
+def endpoint(cid: str, style: str, prefix: str) -> tuple[float, float]:
     bounds = boxes[cid]
     x, y, w, h = bounds
     fx = re.search(rf"(?<!\w){prefix}X=([\d.]+)", style)
@@ -586,7 +588,7 @@ NOT_OBSTACLES |= {
 }
 
 
-def seg_hits_rect(a, b, rect, pad=6.0):
+def seg_hits_rect(a: tuple[float, float], b: tuple[float, float], rect: tuple[float, float, float, float], pad: float = 6.0) -> bool:
     """True if segment ab passes through rect, grown by pad for near-misses.
 
     Liang-Barsky. The sign convention is the whole trick and is easy to get
@@ -813,7 +815,7 @@ IN_EDGE_POP = {
 }
 
 
-def contains(outer, inner):
+def contains(outer: str, inner: str) -> bool:
     ox, oy, ow, oh = boxes[outer]
     ix, iy, iw, ih = boxes[inner]
     return ix >= ox and ix + iw <= ox + ow and iy >= oy and iy + ih <= oy + oh
@@ -858,7 +860,7 @@ BESIDE_MIN, BESIDE_MAX = 14.0, 30.0     # center-to-line, for a 34-unit badge
 COVERAGE_CEILING = 0.55
 
 
-def point_to_segment(pt, a, b):
+def point_to_segment(pt: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
     ax, ay, bx, by = a[0], a[1], b[0], b[1]
     dx, dy = bx - ax, by - ay
     if dx == 0 and dy == 0:
@@ -902,7 +904,7 @@ TILES = ["dns", "secrets", "cron", "oauthdo", "api", "retry", "d1", "users",
          "apidevice", "apiplugin", "apirest", "apinew", "apioauth"]
 
 
-def overlaps(a, b):
+def overlaps(a: str, b: str) -> bool:
     ax, ay, aw, ah = boxes[a]
     bx, by, bw, bh = boxes[b]
     return not (ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay)
@@ -932,7 +934,7 @@ MIN_COLOR_DISTANCE = 90.0
 COLOR_EXEMPT = {"lrcmark": "artwork, not a tile; 83 from the badge fill"}
 
 
-def rgb(hexcolor):
+def rgb(hexcolor: str) -> tuple[int, ...]:
     h = hexcolor.lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
@@ -973,7 +975,7 @@ SPACE_W = {size: size * 0.28 for size in CHAR_W}
 SLACK_MIN, SLACK_MAX = 12.0, 45.0
 
 
-def text_lines(raw):
+def text_lines(raw: str) -> list[str]:
     """One entry per rendered line, each still carrying its own style tag.
 
     A div is a block element, so its OPENING tag ends the previous line just as
@@ -990,7 +992,8 @@ def text_lines(raw):
     return parts
 
 
-def wrapped_lines(text, char_w, usable, space_w):
+def wrapped_lines(text: str, char_w: dict[int, float], usable: float,
+                  space_w: float) -> int:
     """Greedy word wrap, the way a browser actually breaks a line.
 
     Dividing total width by column width assumes text can break anywhere, and it
@@ -1009,7 +1012,7 @@ def wrapped_lines(text, char_w, usable, space_w):
     return lines
 
 
-def text_height(cid, pad_left=10.0, pad_right=8.0):
+def text_height(cid: str, pad_left: float = 10.0, pad_right: float = 8.0) -> float:
     raw = by_id[cid].get("value") or ""
     chunks = text_lines(raw)
     if len(chunks) < 2:
@@ -1291,7 +1294,7 @@ MARGIN = AUTHORED.margin
 CAP_HEIGHT, ASCENDER, DESCENDER = 0.716, 0.905, 0.212
 
 
-def stroke_half(style):
+def stroke_half(style: str) -> float:
     """How far the ink sits OUTSIDE the geometry, because a stroke is centered.
 
     An image or a bare text label paints no border at all, so the geometry IS
@@ -1304,7 +1307,7 @@ def stroke_half(style):
     return (float(m.group(1)) if m else 1.0) / 2.0
 
 
-def label_ink_y(cid, style):
+def label_ink_y(cid: str, style: str) -> tuple[float, float]:
     """Cap top and descender bottom of a single-line label, in absolute units.
 
     **The chain, for `title` at fontSize 28 in a 48-tall box, verticalAlign=middle:**
@@ -1450,7 +1453,7 @@ COLUMN_GAP_MIN = 8.0
 # silently. If this number ever fires, read the printed spans before editing it.
 EXPECTED_COLUMNS = 4
 
-def column_spans(tree) -> list[tuple[float, float]]:
+def column_spans(tree: ET.Element) -> list[tuple[float, float]]:
     """The vertical bands a drawing occupies, left to right, merged.
 
     **This runs against the WRITTEN sheets too**, which is what makes the reflow
@@ -1526,7 +1529,7 @@ def fmt(v: float) -> str:
     return f"{v:.4f}".rstrip("0").rstrip(".") or "0"
 
 
-def absolute_points(tree):
+def absolute_points(tree: ET.Element) -> list[ET.Element]:
     """Every element in the document whose x and y name an absolute canvas position.
 
     **`relative="1"` means the number is a FRACTION, and it MUST NOT be moved.**
@@ -1561,7 +1564,8 @@ def absolute_points(tree):
     return out
 
 
-def moved_sheet(xml: str, sheet, page_scale: float, shift, dy: float) -> str:
+def moved_sheet(xml: str, sheet: Sheet, page_scale: float,
+                shift: Callable[[str | None, float], float], dy: float) -> str:
     """Write one sheet. `shift` maps a cell id and an x to that point's dx.
 
     **Y takes one global delta and X does not**, because the reflow is purely
@@ -1622,7 +1626,9 @@ for _sheet in SHEETS:
             _p, _q = segments[_eid][2], segments[_eid][3]
             _badge_dx[_b] = (_deltas[column_of(_p[0])] + _deltas[column_of(_q[0])]) / 2
 
-    def _shift(cid, x, _dx0=_dx0, _deltas=_deltas, _badge_dx=_badge_dx):
+    def _shift(cid: str | None, x: float, _dx0: float = _dx0,
+               _deltas: list[float] = _deltas,
+               _badge_dx: dict[str, float] = _badge_dx) -> float:
         return _dx0 + (_badge_dx[cid] if cid in _badge_dx else _deltas[column_of(x)])
 
     print()

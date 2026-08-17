@@ -20,8 +20,9 @@
 		"trace": "python scripts/traceability.py --check",
 		"dirty-words": "python scripts/claude-dirty-words.py",
 		"lua": "python scripts/lua-balance.py docs/lrc-spike/plugin",
+		"typehints": "python -m ruff check --no-cache scripts/",
 		"lua:imports": "python scripts/lua-imports.py docs/lrc-spike/plugin",
-		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run lua && npm run lua:imports && npm run test && npm run trace && npm run build:web"
+		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run lua && npm run lua:imports && npm run test && npm run trace && npm run build:web"
 	},
 	"dependencies": {
 		"hono": "4.13.2",

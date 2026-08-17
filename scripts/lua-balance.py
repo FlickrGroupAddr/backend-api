@@ -18,7 +18,7 @@ OPEN = {"function", "if", "for", "while", "do"}
 CLOSE = {"end", "until"}
 
 
-def strip_noise(src):
+def strip_noise(src: str) -> str:
     """Remove long comments, line comments and strings, preserving line count."""
     out, i, n = [], 0, len(src)
     while i < n:
@@ -49,7 +49,7 @@ def strip_noise(src):
     return "".join(out)
 
 
-def check(path):
+def check(path: str) -> list[str]:
     src = strip_noise(open(path, encoding="utf-8", newline="").read())
     depth, trace, problems = 0, [], []
     for lineno, line in enumerate(src.split("\n"), 1):
@@ -79,7 +79,7 @@ def check(path):
     return problems
 
 
-def expand(args):
+def expand(args: list[str]) -> list[str]:
     """Accept files OR directories.
 
     Naming each file in `package.json` meant a NEW plug-in file would simply go
@@ -105,7 +105,7 @@ def expand(args):
 LIVE = r"C:\Photography\FgaSpike.lrdevplugin"
 
 
-def mirror_drift(repo_dir):
+def mirror_drift(repo_dir: str) -> tuple[list[str], bool]:
     """Compare the repo mirror against the live plug-in, when the live one exists.
 
     **Silent on a machine that has no live copy**, because that is a different
@@ -118,7 +118,7 @@ def mirror_drift(repo_dir):
     if not os.path.isdir(repo_dir) or not os.path.isdir(LIVE):
         return [], False
 
-    def digest(path):
+    def digest(path: str) -> str:
         with open(path, "rb") as handle:
             return hashlib.sha256(handle.read()).hexdigest()
 
@@ -149,7 +149,7 @@ VENDOR = os.path.join(
 LUAC_IN_ZIP = "Lua Compiler/win/luac.exe"
 
 
-def find_luac():
+def find_luac() -> str | None:
     """Return a path to luac.exe, extracting it from the vendored SDK if needed.
 
     Extracted to a temp directory rather than into the tree: `vendor/` is somebody
@@ -177,7 +177,7 @@ def find_luac():
     return None
 
 
-def parse_check(luac, paths):
+def parse_check(luac: str, paths: list[str]) -> list[tuple[str, str]]:
     """`luac -p` -- the authoritative answer, not an approximation."""
     import subprocess
 
