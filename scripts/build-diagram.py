@@ -1420,6 +1420,96 @@ note("    export WITHOUT 'Fit to Page' -- it would shrink a drawing that already
 # than in a print shop.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# THE COLUMNS, derived from the artifact rather than declared.
+#
+# **A wider sheet gets its extra width spread evenly between the columns.**
+# Terry, 2026-08-17: "evenly space out the columns across the additional x-space
+# to use as much of the printable area as we can." Each column keeps its own
+# internal geometry exactly; only the gaps between them grow.
+#
+# **THIS RAISES COVERAGE AND NOT TYPE SIZE, and the distinction is the whole
+# arithmetic.** Height binds on both new sheets, so the print scale is
+# `printable_height / content_height` and adding width cannot touch it. Legal
+# goes from 92.97% of the paper to 100% and stays at 7.7 pt. **Only taking
+# HEIGHT out raises the type**, which is a redesign rather than a reflow.
+#
+# **Text labels are excluded from the derivation, and that is not a detail.**
+# The title box runs x 30 to 730 and the date box to 523, so both straddle the
+# Lightroom spine and the Cloudflare frame. Counting them merges the first gap
+# away -- measured 2026-08-17, the first derivation found three columns.
+# ---------------------------------------------------------------------------
+
+# Any positive threshold works, because a column's own tiles overlap: `cfframe`
+# spans its whole column, so the Edge PoP's 28.2-unit internal gaps are already
+# covered. The value only has to be smaller than the narrowest real gap.
+COLUMN_GAP_MIN = 8.0
+
+# **Four, and the build FAILS if that changes.** A layout edit that splits or
+# merges a column changes how the slack is distributed, and it MUST NOT do so
+# silently. If this number ever fires, read the printed spans before editing it.
+EXPECTED_COLUMNS = 4
+
+def column_spans(tree) -> list[tuple[float, float]]:
+    """The vertical bands a drawing occupies, left to right, merged.
+
+    **This runs against the WRITTEN sheets too**, which is what makes the reflow
+    checkable rather than merely recomputed. Re-deriving the columns from the
+    artifact and comparing widths and gaps is an independent measurement; an
+    assertion that replays the writer's own arithmetic proves nothing.
+    """
+    spans = sorted(
+        (float(g.get("x")), float(g.get("x")) + float(g.get("width")))
+        for c in tree.iter("mxCell")
+        for g in [c.find("mxGeometry")]
+        if c.get("vertex") == "1" and g is not None and g.get("x") is not None
+        and not (c.get("style") or "").startswith("text;"))
+    merged = [list(spans[0])]
+    for a, b in spans[1:]:
+        if a > merged[-1][1] + COLUMN_GAP_MIN:
+            merged.append([a, b])
+        else:
+            merged[-1][1] = max(merged[-1][1], b)
+    return [tuple(m) for m in merged]
+
+
+COLUMNS = column_spans(ET.fromstring(TEMPLATE))
+GAPS = [COLUMNS[_i + 1][0] - COLUMNS[_i][1] for _i in range(len(COLUMNS) - 1)]
+
+print()
+note("Columns, derived from the artifact:")
+for _i, (_a, _b) in enumerate(COLUMNS):
+    note(f"    col {_i}  {_a:8.2f} -> {_b:8.2f}   width {_b - _a:7.2f}")
+    if _i < len(GAPS):
+        note(f"    gap   {' ' * 20}{GAPS[_i]:7.2f}")
+check(f"{EXPECTED_COLUMNS} columns", len(COLUMNS) == EXPECTED_COLUMNS,
+      f"{len(COLUMNS)} found, {len(GAPS)} gaps")
+
+
+def column_of(x: float) -> int:
+    """Which column a coordinate belongs to.
+
+    **The title and its date anchor to the page MARGIN, left of any tile**, so
+    they fall outside the first column's span. Clamping puts them in the column
+    that never moves, which is what "anchored to the margin" means.
+    """
+    for i, (a, b) in enumerate(COLUMNS):
+        if a - EPS <= x <= b + EPS:
+            return i
+    if x < COLUMNS[0][0]:
+        return 0
+    if x > COLUMNS[-1][1]:
+        return len(COLUMNS) - 1
+    raise SystemExit(f"x={x:.2f} sits in a gap between columns; the reflow cannot place it.")
+
+
+# **A badge on a cross-column arrow follows the ARROW, not a column.** `n3` and
+# `n10` sit on runs from the Browser into the Worker, so widening that gap makes
+# their line longer. Shifting them by the mean of the two endpoints' deltas keeps
+# each badge at the same fraction along its own arrow. Shifting by its own
+# column's delta would leave it on the line and visibly drifted toward one end.
+BADGE_EDGE = {**BADGE_ON_LINE, **BADGE_BESIDE}
+
 # **The body size is READ off the canvas, never remembered.** It is the most
 # common `fontSize` among the tiles, and 100 drawing units are 1 inch, so a size
 # converts to points by 0.72. DIAGRAM-NOTES.md records the calibration: 7.9 pt
@@ -1471,14 +1561,27 @@ def absolute_points(tree):
     return out
 
 
-def moved_sheet(xml: str, sheet, page_scale: float, dx: float, dy: float) -> str:
+def moved_sheet(xml: str, sheet, page_scale: float, shift, dy: float) -> str:
+    """Write one sheet. `shift` maps a cell id and an x to that point's dx.
+
+    **Y takes one global delta and X does not**, because the reflow is purely
+    horizontal: the columns keep every internal distance and only the gaps grow.
+    """
     tree = ET.fromstring(xml)
     model = tree.find(".//mxGraphModel")
     model.set("pageWidth", fmt(sheet.width))
     model.set("pageHeight", fmt(sheet.height))
     model.set("pageScale", fmt(page_scale))
+    owner = {}
+    for cell in tree.iter("mxCell"):
+        g = cell.find("mxGeometry")
+        if g is not None:
+            owner[id(g)] = cell.get("id")
+        for pt in g.iter("mxPoint") if g is not None else ():
+            owner[id(pt)] = cell.get("id")
     for el in absolute_points(tree):
-        el.set("x", fmt(float(el.get("x")) + dx))
+        x = float(el.get("x"))
+        el.set("x", fmt(x + shift(owner.get(id(el)), x)))
         el.set("y", fmt(float(el.get("y")) + dy))
     return ET.tostring(tree, encoding="unicode") + "\n"
 
@@ -1490,40 +1593,104 @@ _authored_points = absolute_points(ET.fromstring(TEMPLATE))
 for _sheet in SHEETS:
     _prw = _sheet.width - 2 * _sheet.margin
     _prh = _sheet.height - 2 * _sheet.margin
-    _fit = min(_prw / CONTENT_W, _prh / CONTENT_H)
-    # A drawing that already fits prints at 1:1 and keeps its slack as gutter. One
-    # that does not gets the shrink expressed as pageScale, never as coordinates.
+
+    # **Height sets the scale, so it is computed first and width follows.** A
+    # horizontal reflow cannot change the height, which is exactly why it cannot
+    # change the type size either. `_target_w` is the content width that fills
+    # the printable area at that scale.
+    _fit_h = min(1.0, _prh / CONTENT_H)
+    _target_w = min(_prw / _fit_h, _prw) if _fit_h >= 1.0 else _prw / _fit_h
+    # A sheet narrower than the content in proportion is WIDTH-bound. Nothing to
+    # spread there -- widening would overflow -- so it falls back to a plain move.
+    _extra = max(0.0, _target_w - CONTENT_W)
+    _d = _extra / len(GAPS)
+    _deltas = [_i * _d for _i in range(len(COLUMNS))]
+    _new_w = CONTENT_W + _extra
+
+    _fit = min(_prw / _new_w, _prh / CONTENT_H)
     _pscale = 1.0 if _fit >= 1.0 - 1e-9 else 1.0 / _fit
     _printed = min(1.0, _fit)
     _effw, _effh = _sheet.width * _pscale, _sheet.height * _pscale
-    _dx = (_effw - CONTENT_W) / 2 - _x0
+    _dx0 = (_effw - _new_w) / 2 - _x0
     _dy = (_effh - CONTENT_H) / 2 - _y0
+
+    # A badge on a cross-column arrow rides the arrow, not a column. See the note
+    # beside BADGE_EDGE -- and n14's edge lives inside one column, so it gets 0.
+    _badge_dx = {}
+    for _b, _eid in BADGE_EDGE.items():
+        if _b in boxes and _eid in segments:
+            _p, _q = segments[_eid][2], segments[_eid][3]
+            _badge_dx[_b] = (_deltas[column_of(_p[0])] + _deltas[column_of(_q[0])]) / 2
+
+    def _shift(cid, x, _dx0=_dx0, _deltas=_deltas, _badge_dx=_badge_dx):
+        return _dx0 + (_badge_dx[cid] if cid in _badge_dx else _deltas[column_of(x)])
 
     print()
     note(f"  {_sheet.slug:8s} {_sheet.label}")
     if _sheet == AUTHORED:
-        check("the authored sheet needs no move", abs(_dx) <= EPS and abs(_dy) <= EPS,
-              f"dx {_dx:.2f}, dy {_dy:.2f}")
+        check("the authored sheet needs no move", abs(_dx0) <= EPS and abs(_dy) <= EPS
+              and _extra <= EPS, f"dx {_dx0:.2f}, dy {_dy:.2f}, spread {_extra:.2f}")
     else:
         _path = sheet_path(ROOT, DATE, _sheet)
-        _path.write_text(moved_sheet(TEMPLATE, _sheet, _pscale, _dx, _dy), encoding="utf-8")
+        _path.write_text(moved_sheet(TEMPLATE, _sheet, _pscale, _shift, _dy), encoding="utf-8")
         _written = absolute_points(ET.fromstring(_path.read_text(encoding="utf-8")))
-        _rigid = len(_written) == len(_authored_points) and all(
-            abs(float(_q.get("x")) - float(_p.get("x")) - _dx) <= 1e-3
-            and abs(float(_q.get("y")) - float(_p.get("y")) - _dy) <= 1e-3
-            for _p, _q in zip(_authored_points, _written))
         note(f"    wrote {_path.name}")
-        check("is the authored drawing, rigidly moved", _rigid,
-              f"{len(_written)} points, dx {_dx:+.2f}, dy {_dy:+.2f}")
+        note(f"    spread {_extra:.2f} across {len(GAPS)} gaps, {_d:+.2f} each"
+             f"   -> {'  '.join(f'{_g + _d:.2f}' for _g in GAPS)}")
 
-    _vx0, _vx1, _vy0, _vy1 = _x0 + _dx, _x1 + _dx, _y0 + _dy, _y1 + _dy
+        # **The columns are RE-DERIVED from the file just written**, then their
+        # widths and gaps are compared to the authored ones. Nothing here replays
+        # the writer's arithmetic, so a mis-assigned tile shows up as a column
+        # that changed width rather than as an assertion that agrees with itself.
+        _got = column_spans(ET.fromstring(_path.read_text(encoding="utf-8")))
+        _wid_ok = len(_got) == len(COLUMNS) and all(
+            abs((_g[1] - _g[0]) - (_c[1] - _c[0])) <= 1e-3
+            for _g, _c in zip(_got, COLUMNS))
+        check("every column kept its width", _wid_ok,
+              f"{len(_got)} columns")
+        _got_gaps = [_got[_i + 1][0] - _got[_i][1] for _i in range(len(_got) - 1)]
+        check(f"every gap grew by {_d:.2f}",
+              len(_got_gaps) == len(GAPS) and all(
+                  abs(_n - (_o + _d)) <= 1e-3 for _n, _o in zip(_got_gaps, GAPS)),
+              "  ".join(f"{_g:.2f}" for _g in _got_gaps))
+        # Y is untouched by a horizontal reflow, and one uniform delta proves it.
+        #
+        # **Compare with a TOLERANCE, never by rounding into a set.** The first
+        # version did the latter and failed on 8.5x14 alone: its delta is 9.4895,
+        # whose 4th decimal is exactly 5, so `round(v, 3)` landed on the tie
+        # boundary and float noise sent some points to 9.489 and others to 9.490.
+        # The geometry was correct the whole time. 16x9 passed, which made it
+        # look like a layout fault rather than an arithmetic one.
+        _ys = [float(_q.get("y")) - float(_p.get("y"))
+               for _p, _q in zip(_authored_points, _written)]
+        check("nothing moved vertically but the centering",
+              all(abs(_v - _dy) <= 1e-3 for _v in _ys),
+              f"{len(_written)} points, y all {_dy:+.4f}")
+
+        # **The badges are re-checked against the arrows they now sit on.** The
+        # endpoints move with their own tiles, so the shifted run is exact --
+        # tiles never resize here and the exit/entry fractions never change.
+        for _b, _eid in BADGE_EDGE.items():
+            if _b not in boxes or _eid not in segments:
+                continue
+            _p, _q = segments[_eid][2], segments[_eid][3]
+            _sp = (_p[0] + _dx0 + _deltas[column_of(_p[0])], _p[1] + _dy)
+            _sq = (_q[0] + _dx0 + _deltas[column_of(_q[0])], _q[1] + _dy)
+            _bc = (cx(_b) + _dx0 + _badge_dx[_b], cy(_b) + _dy)
+            _off = point_to_segment(_bc, _sp, _sq)
+            _was = point_to_segment((cx(_b), cy(_b)), _p, _q)
+            check(f"{_b:3} keeps its offset from {_eid}", abs(_off - _was) <= EPS,
+                  f"{_was:.2f} -> {_off:.2f}")
+
+    _vx0, _vx1 = _x0 + _dx0, _x1 + _dx0 + _extra
+    _vy0, _vy1 = _y0 + _dy, _y1 + _dy
     check("ink centered on its page",
           abs(_vx0 - (_effw - _vx1)) <= EPS and abs(_vy0 - (_effh - _vy1)) <= EPS,
           f"x {_vx0:.2f}/{_effw - _vx1:.2f}   y {_vy0:.2f}/{_effh - _vy1:.2f}")
     _least = min(_vx0, _effw - _vx1, _vy0, _effh - _vy1) * _printed
     check(f"printed margins >= {_sheet.margin:.0f}", _least >= _sheet.margin - EPS,
           f"{_least:.2f} at the tightest side")
-    check("the drawing sits on ONE page", CONTENT_W <= _effw + EPS and CONTENT_H <= _effh + EPS,
+    check("the drawing sits on ONE page", _new_w <= _effw + EPS and CONTENT_H <= _effh + EPS,
           f"page {_effw:.1f} x {_effh:.1f} units, pageScale {_pscale:.4f}")
 
     # **Not a check, because the verdict is Terry's.** The build states the size
@@ -1543,9 +1710,9 @@ for _sheet in SHEETS:
     # 92.97%, and the arithmetic below reaches the same number the long way.
     # Widening the content toward a sheet's aspect is the only thing that raises
     # it, and on 8.5x14 that buys 3 points of scale rather than a readable print.
-    _used = (CONTENT_W * _printed) * (CONTENT_H * _printed) / (_prw * _prh)
+    _used = (_new_w * _printed) * (CONTENT_H * _printed) / (_prw * _prh)
     note(f"    covers {_used * 100:.2f}% of the {_prw:.0f} x {_prh:.0f} printable area"
-         f"   (content {CONTENT_W / CONTENT_H:.4f} against sheet {_prw / _prh:.4f})")
+         f"   (content {_new_w / CONTENT_H:.4f} against sheet {_prw / _prh:.4f})")
 
 
 # ---------------------------------------------------------------------------

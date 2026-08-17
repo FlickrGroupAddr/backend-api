@@ -80,23 +80,34 @@ all four sides. Adobe Reader defaults to it. **Say "actual size, 100%" at the co
 
 ### The other two sheets, and what each one costs
 
-**The build prints the resulting body point size for every sheet on every run.** Read it there rather
-than here — these numbers move the moment the content does.
+**The build prints these for every sheet on every run.** Read them there rather than here — they
+move the moment the content does.
 
-| Sheet | Prints at | Body type | Use it for |
-|---|---|---|---|
-| `11x17` | 100% | 10.1 pt | **The print.** The content fits this sheet exactly |
-| `16x9` | 100% | 10.1 pt | A 1920 x 1080 screen or a slide. Gutters at the sides, nothing shrinks |
-| `8.5x14` | 76% | **7.7 pt** | Legal landscape, and read the warning below first |
+| Sheet | Prints at | Body type | Covers | Use it for |
+|---|---|---|---|---|
+| `11x17` | 100% | 10.1 pt | 100% | **The print.** The content fits this sheet exactly |
+| `16x9` | 100% | 10.1 pt | 100% | A 1920 x 1080 screen or a slide |
+| `8.5x14` | 76% | **7.7 pt** | 100% | Legal landscape, and read the warning below first |
 
-**`8.5x14` REPRODUCES THE EYECHART, and the arithmetic is not close.** Legal landscape carries 7.9 in
-of printable height against tabloid's 10.4, so the drawing lands at 76% and the body type at
-**7.7 pt — below the 7.9 pt that made the first print unreadable.** Reflowing the layout to legal's
-aspect would not rescue it: the sheet holds 62% of tabloid's printable *area*, so the ceiling is
-`sqrt(0.62)` = 78.8%, or 7.96 pt. **Making legal readable means cutting content, not moving it.**
+**Each wider sheet spreads its extra width evenly between the four columns**, so all three now fill
+their printable area completely. `16x9` gains 240 units across 3 gaps, `8.5x14` gains 124.
+`build-diagram.py` derives the columns from the artifact and re-derives them from each written sheet
+to prove no column changed width.
 
-**The `16x9` sheet is free**, because a screen has no unprintable border and no fixed size. It uses a
-20-unit gutter rather than 30, and that is exactly what buys an exact 1:1 fit at 1920 x 1080.
+### COVERAGE AND TYPE SIZE ARE DIFFERENT THINGS, and this is the trap
+
+**Spreading the columns raised coverage to 100% and moved the type size by ZERO.** Height binds on
+both new sheets, so the print scale is `printable_height / content_height` and no amount of width
+touches it. **Legal went from 92.97% of the paper to 100% and stayed at 7.7 pt.**
+
+**So `8.5x14` still reproduces the eyechart.** Legal landscape carries 7.9 in of printable height
+against tabloid's 10.4. **7.7 pt is below the 7.9 pt that made the first print unreadable.** The
+sheet holds 62% of tabloid's printable *area*, so even a redesign that traded height for width tops
+out at `sqrt(0.62)` = 78.8%, or 7.96 pt. **Making legal readable means cutting content.**
+
+**The one useful shortcut:** when a dimension binds exactly, the fraction of printable area used is
+the ratio of the two aspect ratios. Content 1.5769 against legal's 1.6962 gave 92.97% before the
+reflow.
 
 **`pageScale` is how `8.5x14` says "print me at 76%".** draw.io's page in drawing units is
 `pageWidth * pageScale`, so a scale above 1 keeps the drawing on ONE page instead of spilling it

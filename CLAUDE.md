@@ -40,10 +40,15 @@ MUST come from one source.** Bumping a date renames the file — use `git mv`.
 **Edit `scripts/build-diagram.py`, never the `.drawio`.** A hand edit is lost on the next build.
 
 **It is ONE drawing on three sheets** — `11x17`, `8.5x14` and `16x9`, named in
-`scripts/diagram_sheets.py`. The content is authored for tabloid; the other two are the same drawing
-**rigidly translated, never rescaled**, so every font size and every threshold in the check suite
-still means what it meant. **Anything that reads the diagram MUST call `authored_diagram()`** — four
-scripts globbed the filename by hand and `sorted(glob)[-1]` silently became the legal sheet.
+`scripts/diagram_sheets.py`. The content is authored for tabloid. The other two hold the same four
+columns with **the extra width spread evenly between them — moved, never rescaled**, so every font
+size and every threshold in the check suite still means what it meant. **Anything that reads the
+diagram MUST call `authored_diagram()`** — four scripts globbed the filename by hand and
+`sorted(glob)[-1]` silently became the legal sheet.
+
+**Spreading columns raises COVERAGE and never type size.** Height binds on both wider sheets, so the
+print scale is `printable_height / content_height`. Legal reached 100% of the paper and stayed at
+7.7 pt, under the 7.9 pt Terry called an eyechart. **Only taking height out raises the type.**
 
 ```
 python scripts/build-diagram.py
