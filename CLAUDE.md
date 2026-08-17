@@ -182,9 +182,15 @@ geometry, and no assertion compares the two.
 npm run check
 ```
 
-Typecheck (both tsconfigs), lint, the US English check, the Lua parse check, **the ADR-23 Rule 3
-import gate**, 290 tests, the traceability gate, and the web build. **It MUST be clean before a
+**Twelve steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check, `ruff`,
+`pyright`, **the LSP gate**, the Lua parse check, `selene`, **the ADR-23 Rule 3 import gate**,
+`sqlfluff`, 297 tests, the traceability gate, and the web build. **It MUST be clean before a
 commit.**
+
+**This list was STALE for three days and nobody noticed** — it still said "290 tests" and named
+neither `ruff`, `pyright`, `selene`, `sqlfluff` nor the LSP gate, all added 2026-08-17. **A
+description of a gate is not the gate**, and it rots exactly like any other number in prose. Quote
+what the runner prints.
 
 **`scripts/lua-imports.py` refuses any `import` of a namespace, or any `Namespace.member` call, that
 the pinned LrC SDK does not document.** It reads two committed indexes —

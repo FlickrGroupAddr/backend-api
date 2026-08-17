@@ -109,6 +109,17 @@ out at `sqrt(0.62)` = 78.8%, or 7.96 pt. **Making legal readable means cutting c
 the ratio of the two aspect ratios. Content 1.5769 against legal's 1.6962 gave 92.97% before the
 reflow.
 
+### One open question on the `16x9` spread, raised and not settled
+
+**The gaps there are 108.5, 110 and 110, while the Edge PoP's internal gaps stay at 28.2.** The
+drawing reads as four islands rather than one diagram, and the Worker-to-Flickr arrows run a long
+way through empty space.
+
+**Terry has not ruled on it.** The obvious alternative is weighting the spread toward the two text
+columns on the right — `justification` / `journey` / `key` are independent panels that tolerate a
+wide gutter, where the arrows between the Worker and Flickr do not. **That is a design call and he
+holds the pen**; this note exists so the observation is not lost with the session that made it.
+
 **`pageScale` is how `8.5x14` says "print me at 76%".** draw.io's page in drawing units is
 `pageWidth * pageScale`, so a scale above 1 keeps the drawing on ONE page instead of spilling it
 across a 2x2 grid. **That figure is asserted by the build and has NOT been checked against a real
