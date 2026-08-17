@@ -77,7 +77,13 @@ state, and the point is that Terry moves it.
 **Why he needs it.** The build otherwise refuses to write a diagram that fails any check. That is
 right as a default and wrong during a design pass: an assertion pinned to a layout being redrawn
 fires on every intermediate state, and **a check that fires on every run is a check nobody reads.**
-It also spends wall-clock time per edit, which is what a design loop has least of.
+
+**That is the WHOLE reason, and it is signal rather than speed.** This block used to add "it also
+spends wall-clock time per edit". **Measured 2026-08-17: the full build is 0.197 s median over seven
+runs, of which 0.070 s is starting Python.** The suite is worth about 0.13 s, so the speed argument
+was never true and it is deleted rather than softened. **The lever stays exactly as it is** — a
+defense resting on a claim the clock refutes is a defense that loses the first time somebody times
+it.
 
 **The shape is fixed: ONE flag, never commented-out blocks, and a banner on EVERY build.** The
 banner is load-bearing — the first time the suite went off, two documents still said so eight hours

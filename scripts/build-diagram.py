@@ -378,9 +378,16 @@ print(f"  total file         : {OUT.stat().st_size} bytes")
 # **Why he needs it.** The build otherwise REFUSES to write a diagram that fails
 # any check. That is the right default and it is wrong during a design pass: an
 # assertion pinned to a layout being redrawn fires on every intermediate state,
-# and a check that fires on every run is a check nobody reads. It also costs a
-# full iteration of wall-clock time per edit, which is the thing a design loop
-# has least of.
+# and a check that fires on every run is a check nobody reads.
+#
+# **That is the WHOLE reason, and it is about signal rather than speed.** This
+# block used to claim the suite "costs a full iteration of wall-clock time per
+# edit". **Measured 2026-08-17: this script runs in 0.197 s, median of seven,
+# and 0.070 s of that is starting Python and importing ElementTree.** The checks
+# are worth roughly 0.13 s. **The speed argument was never true, so it is deleted
+# rather than softened** -- a lever defended on a claim a stopwatch refutes is a
+# lever somebody removes the first time they time it. The signal argument alone
+# is sufficient and does not weaken.
 #
 # **The shape is fixed: ONE flag, never commented-out blocks, and a banner on
 # EVERY build.** The banner is load-bearing. The last time the suite went off,
@@ -1526,6 +1533,19 @@ for _sheet in SHEETS:
     _verdict = (f" -- BELOW the {EYECHART_PT} pt Terry called an eyechart"
                 if _pt < EYECHART_PT else "")
     note(f"    prints at {_printed * 100:.1f}%, body type {_pt:.1f} pt{_verdict}")
+
+    # **How much of the paper the drawing actually covers.** The two figures
+    # answer different questions and both are worth having: the scale says how
+    # small the type gets, and this says how much sheet went unused.
+    #
+    # **When one dimension binds exactly, this fraction IS the ratio of the two
+    # aspect ratios** -- content 1.5769 against legal's printable 1.6962 gives
+    # 92.97%, and the arithmetic below reaches the same number the long way.
+    # Widening the content toward a sheet's aspect is the only thing that raises
+    # it, and on 8.5x14 that buys 3 points of scale rather than a readable print.
+    _used = (CONTENT_W * _printed) * (CONTENT_H * _printed) / (_prw * _prh)
+    note(f"    covers {_used * 100:.2f}% of the {_prw:.0f} x {_prh:.0f} printable area"
+         f"   (content {CONTENT_W / CONTENT_H:.4f} against sheet {_prw / _prh:.4f})")
 
 
 # ---------------------------------------------------------------------------
