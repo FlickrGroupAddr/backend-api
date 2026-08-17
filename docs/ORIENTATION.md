@@ -110,10 +110,13 @@ shape, probe the real runtime for runtime capability, and scan the CLI binary fo
 | Where is the Lightroom SDK, and how do I parse-check Lua? | **`vendor/README.md`** |
 | Is a tool installed, and where? | **The docs above, BEFORE searching disks.** A filesystem search answers "does a file match my pattern", and a wrong pattern returns clean |
 
-**Two files carry decisions that are DECIDED AND UNBUILT**, and both say so at the top:
-`KEY-ROTATION-NOTES.md` and `LRC-CLIENT-NOTES.md`. **Neither is an ADR yet, deliberately** — an ADR
-must be verified by a test or declare inspection, and claiming inspection for behavior nobody wrote
-is the forced link `scripts/traceability.py` exists to prevent.
+**`KEY-ROTATION-NOTES.md` is DECIDED AND UNBUILT, and says so at the top. It is not an ADR yet,
+deliberately** — an ADR must be verified by a test or declare inspection, and claiming inspection for
+behavior nobody wrote is the forced link `scripts/traceability.py` exists to prevent.
+
+**`LRC-CLIENT-NOTES.md` is no longer in that category.** Its decisions became ADR-23, ADR-24 and
+ADR-25; the file now holds the investigation and the design reasoning behind them. **Where the file
+and an ADR disagree, the ADR wins.**
 
 ## Prove you are caught up
 

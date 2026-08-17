@@ -1,154 +1,95 @@
-# LrC FGA client — notes
+# The Lightroom Classic plug-in
 
 **RFC 2119 keywords. MUST and MUST NOT are absolute. SHOULD is a strong default a good argument may
 overrule. MAY is optional.**
 
-## PICK UP HERE — 2026-08-16
+**This is where the plug-in investigation got to. It is not an ADR and it creates no obligation.**
+The decisions that DID get made are ADR-23 and ADR-24 in `docs/architecture/DECISIONS.md`; where this
+file and an ADR disagree, **the ADR wins.**
 
-**THE BACKEND IS DONE. The two things left are a Svelte page and Lua.**
+---
 
-**The device link flow shipped 2026-08-16 as ADR-24** — `POST /api/v001/device/start`, `/poll`,
-`/approve` and `/deny`, with 27 tests and seven mutations. **A plug-in can obtain a credential the
-moment something exists to ask for one.** `GET /api/v001/me` now reports `clientType`, so the
-plug-in's diagnostic can confirm it holds `lrc15_plugin` rather than merely being authenticated.
+## PICK UP HERE
 
-**Two gaps, and neither is in the Worker:**
+**The backend is done. Two things are left, and neither is in the Worker.**
 
 | Gap | Where it lives |
 |---|---|
 | **The `/link` approval page** | Svelte. ADR-18 gives `/` to the app shell and `run_worker_first` does not list `/link` |
 | **The Lua client** — `/device/start`, `openUrlInBrowser`, the poll loop, `LrPasswords` storage | `docs/lrc-spike/plugin/` |
 
-**The page is not optional and it is not cosmetic.** Its confirmation step — show the `userCode`,
-make the person say it matches their Lightroom screen — **is the only defense against device-flow
-phishing**, which under ADR-01 is worse here than in most flows because a phished token can push a
-stranger's photos into volunteer queues irreversibly. The backend deliberately cannot substitute:
-nothing auto-approves, and approval is always a POST a person had to cause.
+**ADR-24 shipped the device link flow** — `POST /api/v001/device/start`, `/poll`, `/approve`,
+`/deny`. A plug-in can obtain a credential the moment something exists to ask for one.
+`GET /api/v001/me` reports `clientType`, so the plug-in can confirm it holds `lrc15_plugin`.
 
-### And the picker is still BLOCKED on one SDK fact, unchanged from 2026-08-15
+**The `/link` page is not cosmetic.** Its confirmation step — show the `userCode`, make the person
+say it matches their Lightroom screen — **is the only defense against device-flow phishing.** The
+backend deliberately cannot substitute: nothing auto-approves, and approval is always a POST a person
+had to cause.
 
-### What works, measured on Terry's machine
+### The picker is blocked on one SDK question
 
-| | |
-|---|---|
-| Batch add | Check three non-adjacent rows, click `Add -->`, all three move. Counts and staging correct |
-| Unchecking | Works |
-| Pruning | 364 candidates from 372, the 8 already-in groups removed |
-| Build cost | **744 views in 9–12 ms.** The risk that killed this design was never real |
-| Connectivity | `LrHttp` reaches the live Worker. 200 in 160 ms, 401 with JSON in 14 ms |
+**Does `checkbox.title` accept `LrView.bind`?** If it does not, the slot-based rendering design below
+is impossible and the picker needs rethinking. **Check before building.**
 
-### What is broken, and why it cannot be patched
+**What works today**, measured on your machine: batch add across non-adjacent rows, unchecking,
+pruning (364 candidates from 372, the 8 already-in groups removed), **744 views built in 9–12 ms**,
+and `LrHttp` reaching the live Worker.
 
-**`visible = false` hides a view but KEEPS ITS SPACE.** `API Reference/modules/LrView view
-properties.html` says so outright: *"TIP: An item still affects layout, even when it is hidden."*
+**What is broken:** `visible = false` hides a view but **keeps its space** — see the SDK section
+below. The filtered pane fills with white gaps and the design is unusable rather than merely ugly.
 
-So the left pane shows gaps where filtered rows were, and the right pane is three checkboxes spread
-down 372 rows of white. **Hiding is the only tool available**, because LrView builds its view tree
-once and bindings change values rather than structure — so a filtered list is always as tall as the
-unfiltered one.
+**The fix, designed and not built: a fixed window of about 25 rows plus paging.** Bind each row's
+`title` to a property rather than fixing it at build time, fill the slots from the filtered list, and
+page instead of scrolling. **Everything except rendering survives** — the selection model, batch add,
+pruning, staging, the report, and the add-only scoping.
 
-### The next step, designed and NOT built
+---
 
-**A fixed window of rows plus paging.** Build about 25 rows once, bind each row's `title` to a
-property rather than fixing it at build time, fill those slots from the filtered list, and move
-through the list with Prev/Next buttons instead of a scrollbar.
+## Why this exists
 
-**FIRST, VERIFY ONE THING: does `checkbox.title` accept `LrView.bind`?** If it does not, slot-based
-rendering is impossible and the design has to change again. **Do not build before checking** — four
-guesses were wrong on 2026-08-15 and each one cost Terry a reload.
+**Your words, and this is the north star for the whole project:**
 
-**Everything except rendering survives the rewrite**: the selection model, batch add, pruning,
-staging, the report, and the add-only scoping.
-
-### Also open
-
-- **Device auth: DECIDED 2026-08-15, partly built.** Terry approved all three.
-  **Reach is an ALLOW-LIST and it is BUILT** — `restrictPluginScope` refuses any route not named,
-  so an endpoint added later is closed to a plug-in token until somebody opens it deliberately.
-  **Expiry is a FIXED 90 days and it is BUILT** — not sliding, because a hard ceiling is easier to
-  reason about than one a weekly user resets forever.
-  **A revocation UI is DEFERRED**, and Terry is genuinely unsure it is wanted: *"I'm not even sure   DIRTY-WORDS-EXEMPT: quoting Terry
-  I care about revocation but defer for now for sure"*. **Treat it as an open question rather than
-  as queued work.** One escape hatch exists today: rotating `SESSION_KEY` invalidates every
-  credential of both kinds instantly, because the HMAC is checked before any database read.
-  **THE FLOW THAT ISSUES A PLUG-IN TOKEN IS NOW BUILT, 2026-08-16, and it is ADR-24.**
-  `POST /api/v001/device/start`, `/poll`, `/approve` and `/deny` all exist, with 20 tests and four
-  mutations. **What is still missing is the `/link` PAGE**, which is a Svelte route rather than a
-  Worker one — ADR-18 gives `/` to the app shell, and `run_worker_first` does not list `/link`.
-
-  **The page's confirmation step is the only defense against device-flow phishing**, so the backend
-  deliberately cannot substitute for it: no route auto-approves, and approval is always a POST a
-  person had to cause.
-- **THE OAUTH CALLBACK STRANDED THE DEVICE FLOW. Found and FIXED 2026-08-16.**
-  `GET /oauth/callback` used to end with `c.redirect(uiUrl(c.env, "ok"), 302)` — the app root. A
-  user who arrived at `/link?userCode=…` without a session, signed in with Flickr, and came back
-  through the callback **landed on the home page with the code gone.** The linking step had no way
-  to finish.
-
-  **`GET /oauth/login` now takes a `returnTo`**, validated by `src/oauth/return-to.ts` and carried
-  through the Flickr round trip **inside the ADR-08 login attempt Durable Object** — never in the
-  callback URL, because Flickr controls that query string.
-
-  **ADR-11 gained the rule**, since it is the same subject as never reflecting `Origin`: a login
-  MUST NOT redirect anywhere the request chose. Two independent checks, a path-not-URL return type,
-  and three mutations in `scripts/mutation-check.py` that all get caught.
-
-  **What this does NOT do: build the device flow.** `/device/start`, `/link` and `/device/poll`
-  still do not exist. This removed the blocker under them.
-- **The diagram's `e19` arrow head. CLOSED 2026-08-16.** Terry chose option 1: one head, plug-in to
-  Browser. The picture now matches steps 12 and 13 and matches the device flow, and the token
-  arrives on `e18` where it actually does. See `docs/architecture/DIAGRAM-NOTES.md`.
-- **Where randomness comes from. CLOSED 2026-08-16, and it is now ADR-23.** Terry pushed three
-  times for a client-generated nonce and each attempt is recorded there with its refutation.
-  **`LrUUID` is real** — undocumented, present, 1024 draws with no collisions — **and the decision
-  did not move**, because shape is not provenance and no use case here needs client-side
-  unpredictability. **ADR-23 names "`LrUUID` exists and looks correct" as the argument that MUST NOT
-  reopen it**, since that is exactly what was measured and exactly what lost.
-- **The legend line says the same thing twice** — "Pic already in 8 groups" and "Groups this pic is
-  already in are not listed". One of them goes.
-
-## Status: NOT a decision. Nothing is committed.
-
-**This file records where an investigation got to. It is not an ADR, it creates no obligation, and
-`docs/architecture/DECISIONS.md` does not reference it.** Terry's framing on 2026-08-14: *"I'm not
-committed to this path, but want to note where we got."*
-
-**A later session MUST NOT read this as approval to build.** **The technical blocker is gone and
-the decision is not made** — those are different things, and 2026-08-15 changed only the first.
-
-**Feasibility: PROVEN 2026-08-15.** The premise the whole design rested on was measured at runtime
-and came back confirmed. See "The load-bearing premise" below. **What remains is Terry's call on
-whether to build, and the design questions at the end of this file — authentication above all,
-which is a new credential class and would become an ADR.**
-
-Started 2026-08-14.
-
-## Why this came up
-
-**The project goal, stated by Terry on 2026-08-14 and previously written down nowhere:** *"Goal of
-this project is to make my life easier as someone who posts photos to Flickr and uses groups to help
-people discover my art."*
-
-His actual workflow: *"I do all my culling, editing, and posting to Flickr (using a built in plugin
-from Adobe) to publish my photos."*
-
-The proposal: *"if after I publish I could open up a dialog in LR and add the new photo to my FGA
-queues per pool/group, that it speeds up my workflow. No need to pop out of LR and use my browser to
-log into FGA and queue up group adds."*
+> Goal of this project is to make my life easier as someone who posts photos to Flickr and uses
+> groups to help people discover my art.
+>
+> I do all my culling, editing, and posting to Flickr (using a built in plugin from Adobe) to publish
+> my photos. If after I publish I could open up a dialog in LR and add the new photo to my FGA queues
+> per pool/group, that it speeds up my workflow. No need to pop out of LR and use my browser to log
+> into FGA and queue up group adds.
 
 **So the web UI is one client, not the product.** ADR-18's Svelte app was built before this goal was
-recorded. Work SHOULD be judged against the workflow rather than against the codebase.
+written down. **Judge work against the workflow, not against the codebase.**
 
-## Verdict so far: feasible, one premise short of proven
+### Two clients, both first-class, released in lockstep
 
-Lightroom Classic plug-ins are Lua. The SDK gives a plug-in everything an API client needs, and —
-critically — lets it read publish services **belonging to other plug-ins**.
+**Your decision. FGA has exactly two client classes and MUST treat both as first-class:** the Svelte
+app shell (ADR-18) and the Lightroom Classic plug-in. **Neither is a convenience wrapper around the
+other. They are two front doors to one queue.**
 
-### The chain
+- **A breaking API change MUST land with both clients updated**, or it does not land.
+- **A new capability SHOULD reach both**, and where it cannot, write the asymmetry down here.
+- ADR-16's zero-padded `/api/v001` path version is what buys room to break the contract deliberately.
+
+**Your framing on why this needed saying out loud:** *"very relevant for Terry-of-2031 who forgot 'oh
+shit right that LrC plug-in is fuggin amazing'."* **The failure mode is absence, not malice.** A
+session works on the web app because that is what is open in the editor, ships an API change that
+suits it, and nobody notices the Lua client for eight months.
+
+**The plug-in is arguably the MORE important of the two.** The web UI was built first; that is an
+accident of order, not a ranking.
+
+---
+
+## The load-bearing premise, CONFIRMED at runtime
+
+**A third-party plug-in CAN enumerate Adobe's Flickr publish service and read its published photos.**
+Measured against your real catalog, not reasoned. `com.flickrgroupaddr.spike` created no publish
+service and was handed Adobe's anyway.
 
 ```lua
 catalog:getPublishServices( nil )        -- nil = ALL services, ANY plug-in
-  service:getPluginId()                  -- match Adobe's Flickr service
+  service:getPluginId()                  -- com.adobe.lightroom.export.flickr
   service:getChildCollections()          -- LrPublishedCollection[]
     collection:getPublishedPhotos()      -- LrPublishedPhoto[]
       publishedPhoto:getRemoteId()       -- the Flickr photo ID
@@ -156,579 +97,284 @@ catalog:getPublishServices( nil )        -- nil = ALL services, ANY plug-in
       publishedPhoto:getPhoto()          -- back to the LrPhoto
 ```
 
-`photo:getContainedPublishedCollections()` walks the same graph backwards from a selection.
+`photo:getContainedPublishedCollections()` walks the same graph backwards from a selection. **Both
+MUST be called inside an `LrTasks` async task.**
 
-**`getPublishServices` MUST be called inside an `LrTasks` async task**, and so MUST
-`getContainedPublishedCollections`.
+**Two independent instruments agree.** The SDK returned remote id `42717931314`; reading the catalog
+directly as SQLite returned the same value from `AgRemotePhoto`. **834 published photos, 834 carrying
+a Flickr URL and an 8+ digit numeric id.** No exceptions, no nulls.
 
-### What the SDK 15.3 reference actually says
+**Raw evidence is archived at `docs/lrc-spike/`** — both Lua files and `RESULT-2026-08-15.txt`. **Read
+the raw file rather than any summary if the two ever disagree.**
 
-Read from `API Reference/modules/LrCatalog.html` in the downloaded SDK, **not from a web mirror** —
-the archived copies online are LR5-era.
+### `getRemoteId()` reads LOCAL records, which makes testing free
 
-> Retrieves the publish services defined by a particular plug-in, **or all publish services in this
-> catalog.** [...] `pluginId` (string) Unique identifier of a plug-in, **or nil to get all
-> services.**
+**It returns what Lightroom wrote into the catalog at publish time. It does not call Flickr.** So a
+catalog whose Flickr publish service is expired or never re-authorized still carries every ID, and
+**any test of this needs no Flickr credentials, no network and no upload.**
 
-First supported in SDK 3.0. Still current at 15.3.
+### The catalog hides plug-in identity, so read it at runtime
 
-### Adobe's own Flickr sample confirms two things
+**`AgLibraryPublishedCollection.creationId` is `com.adobe.ag.export.service.connection`** — a generic
+"this row is an export service connection" marker, **not a plug-in identity.** The real identifier
+lives elsewhere in the schema (`AgPhotoPropertySpec.sourcePlugin`, namespaced settings keys), so the
+SDK performs a mapping the database does not expose.
 
-The SDK ships `Sample Plugins/flickr.lrdevplugin`. It is the reference implementation of a Flickr
-publish service.
+**`service:getPluginId()` MUST be read at runtime and MUST NOT be predicted from the schema.**
 
-**The remote ID is the Flickr photo ID.** `FlickrExportServiceProvider.lua:1079`:
-
-```lua
--- Record this Flickr ID with the photo so we know to replace instead of upload.
-rendition:recordPublishedPhotoId( flickrPhotoId )
-```
-
-**The plug-in identifier is `com.adobe.lightroom.export.flickr`**, from that sample's `Info.lua`
-`LrToolkitIdentifier`. **A plug-in SHOULD verify this at runtime rather than hardcode it** — the
-sample and the shipped built-in service are closely related and have not been proven identical.
-
-**That caution earned its place on 2026-08-15, and the reason is worth reading before anyone
-matches on an identifier.** Terry's real catalog was read directly as SQLite, and the publish
-service's `AgLibraryPublishedCollection.creationId` is **`com.adobe.ag.export.service.connection`**
-— a generic "this row is an export service connection" marker, **not a plug-in identity at all.**
-
-`com.adobe.lightroom.export.flickr` IS in the catalog, in three other places:
-
-| Where | What it looks like |
-|---|---|
-| `AgPhotoPropertySpec.sourcePlugin` | the identifier, plainly |
-| `AgLibraryPublishedCollectionContent.content` | settings keys namespaced `["com.adobe.lightroom.export.flickr_addToPhotoset"]` |
-| `Adobe_variablesTable.name` | `AgSdkUpgradeFunctionSucceeded_com.adobe.lightroom.export.flickr` |
-
-**So the identifier is right and the obvious column is wrong.** The catalog stores plug-in identity
-indirectly, which means the SDK performs a mapping this file cannot see. **`service:getPluginId()`
-MUST therefore be read at runtime and MUST NOT be predicted from the schema.**
-
-**The sample declares `LrSdkVersion = 3.0`, from roughly 2010, and Adobe has not modernized it. Read
-it for the mechanism, never as a style template.**
-
-### `getRemoteId()` reads LOCAL records, which makes testing cheap
-
-**It returns what Lightroom wrote into the catalog at publish time. It does not call Flickr.**
-
-So a catalog whose Flickr publish service is expired, disconnected or never re-authorized still
-carries every ID. **Any test of this needs no Flickr credentials, no network and no upload.**
-
-**Measured against real data on 2026-08-15, which upgrades this from inference to fact.** Adobe's
-sample code said the remote ID is the Flickr photo ID; Terry's catalog proves it, because the ID
-appears literally inside the URL stored beside it:
-
-```
-remoteId = '42717931314'
-url      = 'https://www.flickr.com/photos/146878425@N05/42717931314/in/set-72157693295162860'
-```
-
-**834 published photos, and 834 of 834 carry a Flickr URL and a numeric id of 8+ digits.** No
-exceptions, no nulls. The NSID is `146878425@N05`, the same value `vitest.config.ts` already stubs.
-
-### The client side
-
-```lua
-LrHttp.get( url, headers, timeout )
-LrHttp.post( url, postBody, headers, method, timeout, totalSize )
--- headers = { { field = 'Authorization', value = '...' } }
--- returns  body, headersTable    where headersTable.status is the HTTP status
-LrHttp.openUrlInBrowser( url )
-```
-
-HTTPS, custom request headers and a readable status code. `LrSocket` exists if a localhost callback
-is ever wanted. Pass `{ field = 'Content-Type', value = 'skip' }` to suppress Lightroom's automatic
-`Content-Type: text/plain`.
-
-### A plug-in CAN ask which Lightroom it is running in. `LrApplication`, since SDK 2.0
-
-**Two functions, both documented, both in `scripts/lrc-sdk-api.json` so the ADR-23 gate accepts
-them.**
-
-| Call | Returns |
-|---|---|
-| `LrApplication.versionString()` | A display string — *"the current version of the application as a user-displayable string (for instance, "2.0")"* |
-| `LrApplication.versionTable()` | **The parseable one.** `major`, `minor`, `revision`, plus `build_version` and a public-beta indicator |
-
-**Take `versionTable()` and never parse `versionString()`.** The reference is explicit that the
-table exists *"as a table that can be parsed"*, and a display string is Adobe's to reformat.
-
-**One trap the reference names.** `build_version` is a **string** and is only available from 8.3.0.
-Before that the build number was a 6- or 7-digit number, and in 8.3.0 it became a date as
-`YYYYMMDDHHmm`. **Anything treating it as an integer is wrong twice over.** Terry runs 15.5, so this
-is history rather than a live concern — recorded because a field that changed type once is a field
-somebody will assume about.
-
-**This does NOT make the SDK version knowable.** `LrApplication` reports the APPLICATION version,
-and `LRC-CLIENT-NOTES` already records that the SDK trails the app by two point releases. **The app
-version MUST NOT be used to derive the SDK version**, which is the same rule stated further down
-this file.
-
-#### RUN on Terry's machine 2026-08-16, and the reference is incomplete on one field
-
-```
-Lightroom Classic 15.5.0 build 202607291506-b8869fa7
-(supported ☑)
-Self-test: 5/5 passed
-```
-
-| Field | Measured |
-|---|---|
-| `major`, `minor`, `revision` | `15`, `5`, `0` — exactly as documented |
-| `build_version` | **`202607291506-b8869fa7`** |
-
-**The reference says `build_version` "represents the date of the build, in the form
-YYYYMMDDHHmm".** The real value is that date **plus a hyphen and an 8-character hash**. So the
-documented description is a prefix of the truth rather than the whole of it.
-
-**It is a string, it is not sortable as a number, and it is not purely a date.** Concatenate it and
-display it; never parse it and never compare it. `HostVersion.lua` does exactly that.
-
-**This is the same build Terry's rig notes already record**, which is two instruments agreeing
-rather than one being believed.
-
-#### Four LrView attributes, all VERIFIED by that render
-
-**Every one of these had been either withheld or wrong, and one dialog settled all four.**
-
-| Attribute | Verdict |
-|---|---|
-| `font = "<system/bold>"` on `static_text` | **Works.** The version line rendered bold |
-| `text_color = LrColor("green")` | **Works.** Named colors are real |
-| `height_in_lines = -1` with `width_in_chars` | **Works.** The detail paragraph wrapped |
-| `f:separator{ fill_horizontal = 1 }` | **Works** |
-
-**And the emoji substituted rather than failed.** `✅` (U+2705) rendered as `☑` — a monochrome
-box-check from a fallback font. **Legible, and not what was written.** Treat any glyph beyond ASCII
-as decoration whose exact shape is Lightroom's choice, and never let one carry meaning alone.
-
-**And it MUST NOT be used to derive `client_type` either — see ADR-24.**
-
-### The crypto surface, MEASURED at runtime 2026-08-16 — see ADR-23 for what it means
-
-**`docs/lrc-spike/plugin/EntropyProbe.lua` swept twelve namespaces and enumerated `_G` against
-Lightroom Classic 15.5.** The reference undersells the runtime in two places, which is the second
-time in one day that has happened here.
-
-| Namespace | What is really there |
-|---|---|
-| `LrDigest` | `SHA256`, `SHA384`, `SHA512`, `HMAC`, and deprecated `MD4`, `MD5`, `SHA1`. **`SHA384` is undocumented** — the reference names only SHA256 and SHA512 |   <!-- DIRTY-WORDS-EXEMPT: Adobe identifiers -->
-| `LrStringUtils` | 12 functions including **`encodeBase64` and `decodeBase64`** |
-| `LrPasswords` | `store` and `retrieve`, OS-backed and **scoped by plug-in ID** |
-| `LrUUID` | **PRESENT and undocumented.** One key, `generateUUID`. 1024 draws, 0 duplicates, all version-4 shape, 4.0 ms |
-| `LrMath` | `bitAnd`, `bitOr`, `bitXor`. **That is the entire namespace** |
-| `LrRandom`, `LrCrypto`, `LrSecurity`, `LrSecureRandom` | Absent |
-| Globals beginning `Lr` | **None.** Namespaces arrive only through `import()`, so the sweep covered the whole reachable surface |
-
-**`LrUUID` MUST NOT be used AT ALL. That is ADR-23 Rule 2, and it is litigated.** Not for
-credentials, not for correlation identifiers, not for temporary filenames, not for anything.
-
-**The reason is the missing API contract, not the cryptography.** Adobe does not document it, so
-there is no version guarantee, no behavior guarantee and no deprecation path — Adobe may remove it
-in a point release without breaking any promise, because no promise was made. **That argument is
-complete without mentioning entropy.** Secondarily it is a black box, so no honest claim about its
-output can be made either.
-
-**There is no cosmetic dependency on a namespace that throws on import.** `import("LrUUID")` raises
-when the namespace is gone, so a file importing it for a temp filename does not degrade — **it fails
-to load, and every menu item in it disappears.** The blast radius is set by the import, not by the
-importance of the use. An earlier draft of ADR-23 permitted trivial uses on exactly that mistaken
-reasoning, and Terry struck it.
-
-**Use `LrDigest.SHA256` over values already in hand.** Documented, contracted, and strictly better
-for uniqueness — a deterministic key survives a retry, which a random one cannot.
-
-**`LrSystemInfo` exposes `ipAddress`, `machineName`, `numCPUs` and `getRamUsage`.** Named here so
-nobody mistakes them for seed material. They are stable identifiers and observable state — the exact
-sources Netscape's 1995 SSL PRNG used before Goldberg and Wagner broke it.
-
-#### The probe reported a number it had not measured, and that is worth more than the finding
-
-**One line of its first run read `Largest of 4096 draws from math.random(0, 2^31-1): 0`.** That looks
-like a devastating result about Lightroom's generator. It was a bug in the probe.
-
-**Lua 5.1 reads both bounds with `luaL_checkint`, so the span `up - low + 1` is 2³¹ — which overflows
-a signed 32-bit int to negative.** Every draw came back negative, and the running `v > biggest`
-comparison never fired against an initial `0`.
-
-**A probe that reports a number it did not measure is worse than one that crashes, because the number
-gets believed.** This is the same rule the three-verdict wrapper exists to enforce, violated one level
-down inside a helper where the wrapper could not see it. The fix counts collisions instead, which
-measures the state space directly, cannot overflow, and is the same instrument the UUID stress uses.
-
-Menu registration, in `Info.lua`:
-
-```lua
-LrLibraryMenuItems = {
-  { title = "Add published photos to FGA queues...", file = "QueueToFga.lua" },
-}
-```
-
-## What the SDK cannot do
+### What the SDK cannot do
 
 **No post-publish hook exists for a third-party plug-in.** Nothing fires when Adobe's Flickr service
-finishes uploading.
-
-**Export filters do not solve it.** They run on the rendered file *before* upload, so no remote ID
+finishes uploading, and export filters run on the rendered file *before* upload, so no remote ID
 exists yet.
 
-**So the flow is: publish as normal, then invoke one menu item.** The better shape of that is a menu
-item that finds everything published since the plug-in last ran, which `getPublishedPhotos()` makes
-cheap, rather than one that requires a selection.
+**So the flow is: publish as normal, then invoke one menu item.** The better shape is a menu item
+that finds everything published since the plug-in last ran, which `getPublishedPhotos()` makes cheap,
+rather than one requiring a selection.
 
-## The load-bearing premise: CONFIRMED at runtime, 2026-08-15
+---
 
-**A third-party plug-in CAN enumerate Adobe's Flickr publish service and read its published
-photos.** Measured, not reasoned. `com.flickrgroupaddr.spike` created no publish service and was
-handed Adobe's anyway.
+## The design
 
-```
-VERDICT: CONFIRMED -- 1 service(s) returned to a plug-in that created none of them.
+### The plug-in talks ONLY to FGA. It makes no Flickr calls, ever
 
-[1] getPluginId() = com.adobe.lightroom.export.flickr
-     getName()     = Terry Flickr
-     child collections = 96
-     collection 2017-08-11: Canada - Alberta - Lake Louise -> 15 published photo(s)
-       [1] getRemoteId()  = 42717931314
-           getRemoteUrl() = https://www.flickr.com/photos/146878425@N05/42717931314/in/set-...
-```
+**It has no Flickr credentials and MUST NOT acquire any.** FGA already holds the Flickr token,
+AES-GCM encrypted in D1 under ADR-09.
 
-Lightroom Classic 15.5, against `C:\Photography\LR Catalog\TDO Lightroom Catalog.lrcat`.
+**The decisive reason is ADR-06's sweep, not tidiness.** The cron runs at 00:15 UTC with Lightroom
+closed, so a token living in a Lightroom catalog is invisible to the thing that needs it. **Adobe's
+plug-in talks to Flickr directly because Adobe has no server. FGA has one.**
 
-### Every link in the chain is now measured
+**A dashed plug-in-to-Flickr edge on the architecture diagram was considered and refused.** It reads
+cleaner and asserts the exact thing this design avoids. **A future session reading that diagram might
+implement it.**
 
-| Call | Result |
+### Authentication is Adobe's own frob pattern, aimed at FGA instead of Flickr
+
+Reading Adobe's sample settled the design. `FlickrAPI.openAuthUrl()` requests a frob, opens a browser
+carrying it, and exchanges the frob for a durable token afterwards. **That IS a device-code flow.**
+
+| Adobe → Flickr | FGA plug-in → FGA |
 |---|---|
-| `catalog:getPublishServices( nil )` | **1 service**, created by another plug-in |
-| `service:getPluginId()` | **`com.adobe.lightroom.export.flickr`** |
-| `service:getName()` | `Terry Flickr` |
-| `service:getChildCollections()` | **96** |
-| `collection:getPublishedPhotos()` | 15 and 12 on the two sampled collections |
-| `publishedPhoto:getRemoteId()` | `42717931314` — the Flickr photo id |
-| `publishedPhoto:getRemoteUrl()` | the full `flickr.com/photos/...` URL |
+| `flickr.auth.getFrob` | `POST /api/v001/device/start` |
+| `LrHttp.openUrlInBrowser( auth?frob=… )` | `LrHttp.openUrlInBrowser( /link?userCode=… )` |
+| User approves at flickr.com | User approves at flickrgroupaddr.com |
+| Exchange frob → `auth_token` | Poll → FGA plug-in token |
 
-**Two independent instruments agree.** `42717931314` is the same value the catalog's `AgRemotePhoto`
-table returned when read as SQLite. The SDK and the database tell the same story.
+**ADR-24 is the decision and `src/routes/device.ts` is the code.** Two things from the design work are
+worth keeping here because the ADR states the rule and not the reasoning:
 
-### `getPluginId()` returns the REAL identifier, and this settles the earlier worry
+**Two codes, not one, and the split is the whole security design.** `deviceCode` is the polling
+handle — 32 bytes, **never in a URL.** `userCode` is what a human reads and compares, and it is the
+only code `/link` may carry. **An early draft put the polling credential in the query string**, which
+would have exposed it to browser history, synced history, any extension with `tabs` permission, and
+TLS-inspecting proxies. RFC 8628 does not do this. **A parameter named `code` invites exactly that
+mistake, which is why it is named `deviceCode`.**
 
-**The SDK answers `com.adobe.lightroom.export.flickr`** — exactly what Adobe's sample predicted, and
-**not** the `com.adobe.ag.export.service.connection` that `AgLibraryPublishedCollection.creationId`
-holds. So the schema hides plug-in identity and the SDK exposes it.
+**`approve` and `deny` are separate routes because a refusal MUST NOT look like a failure** — the
+waiting plug-in is told `denied` rather than left to time out. That is ADR-01's habit on a new
+surface.
 
-**Matching on `com.adobe.lightroom.export.flickr` at runtime is therefore viable**, and the standing
-instruction to read it rather than predict it from the database is now proven correct rather than
-merely cautious.
+### The phishing weakness is real, and FGA's version is worse than most
 
-### What is still NOT measured
+**Every device flow has this hole.** An attacker starts a flow, sends the victim
+`flickrgroupaddr.com/link?userCode=…`, and the victim — already signed in — approves it. **PKCE does
+not close it**, because the attacker started the flow and holds the verifier.
 
-**Do not read a confirmed premise as a confirmed design.** These were never exercised:
+**The usual "the blast radius is small" consolation does not apply.** ADR-01 says a request that
+reached a moderator is terminal, so a phished token can push a stranger's photos into volunteer
+queues **and that cannot be taken back** — not by revoking the token, not by deleting the requests.
 
-- `publishedPhoto:getPhoto()`, back to the `LrPhoto`.
-- `photo:getContainedPublishedCollections()`, walking the graph backwards from a selection.
-- Anything that WRITES. The known restriction stands: **only the plug-in that defines a custom
-  metadata field may change it.** This design only reads, so it has not been tested against.
+**The confirmation step on `/link` is the mitigation that matters.** A victim who never started a
+flow has no code on screen to match, which is the moment the attack becomes visible. **Prefilling
+from the query string is fine. Auto-approving from it is not.**
 
-### The spike, and where the evidence is archived
+### Group selection: the full list with a filter box. No group sets
 
-**Working copy:** `C:\Photography\FgaSpike.lrdevplugin\`, version 0.3. **On local disk rather than
-`X:`, deliberately** — that share already breaks git ownership, Node file watching and Lightroom
-catalogs, and a plug-in loaded over SMB would have added a variable to the one measurement
-everything waited on.
+**You belong to 372 groups, and the count moved from 330 to 372 in one day, so it MUST NOT be
+cached.**
 
-**Archived copy, in this repository: `docs/lrc-spike/`.** Both Lua files, the raw unedited output as
-`RESULT-2026-08-15.txt`, and `probe-catalog.py` for reading a `.lrcat` directly. **It lived only in
-one folder on `C:` and in a session scratchpad until it was committed** — a measurement that took
-three versions and a Lightroom crash to obtain, one disk failure from gone.
+**Saved group sets were proposed and rejected**, in your words:
 
-**Read `RESULT-2026-08-15.txt` rather than any summary if the two ever disagree.**
+> The pass to assign all groups to sets would annoy me far more than a UX of picking which of the 372
+> groups to add a pic to. And each time I joined a new group, I'd resent having to tag it.
 
-**It SHOULD ship permanently as a diagnostic** rather than be thrown away, because Terry runs the
-latest GA Lightroom Classic and takes every Adobe regression on day one. Re-proving this chain after
-an update should cost ten seconds.
+**The rejection is about the ONGOING tax, not the one-time setup**, and that is the part a future
+session will miss. A taxonomy is never paid for once.
 
-## Four mechanics that cost real time, recorded so they cost none next time
+**The bar is a familiar model, not a novel one:** *"The massive wall of groups to pick from is exactly
+how the Flickr web UI works, except it's slow as fuck."* **Same UX and faster is reachable. Better UX
+is speculative.**
 
-**Never wrap a yielding SDK call in Lua's bare `pcall`.** Lightroom runs plug-in code as coroutines
-and catalog calls yield; Lua 5.1 cannot yield across a `pcall` boundary. Version 0.1 died with
-`Yielding is not allowed within a C or metamethod call` — **and reported it as `VERDICT: REFUTED`,
-nearly killing this design on a bug in its own error handling.** The SDK names the fix:
-`LrTasks.pcall`, which `API Reference/modules/LrTasks.html` describes as *"Simulates Lua's standard
-pcall(), but in a way that allows a call to LrTasks.yield() to occur inside it."*
+### The picker is TWO LISTS, and the right one is an ADD LIST
 
-**A measurement tool MUST distinguish "the answer is no" from "I broke".** 0.1 had two verdicts and
-so its own failure read as a finding. 0.2 has three, and an error is `INCONCLUSIVE`.
+| | Left | Right |
+|---|---|---|
+| Title | `Unselected groups` | `Selected groups` |
+| Sort | Case-insensitive ascending | Case-insensitive ascending |
+| The filter box | **Applies** | **MUST NOT apply** |
+| A click | Moves the row right | Moves the row left |
 
-**ALWAYS Remove then Add. Any change, every time.** Terry, 2026-08-16: *"always add/remove, it's
-just safer and won't get weirdness."* **MUST, and the argument that MUST NOT reopen it is "only a
-menu file changed, so a lighter reload is fine"** — that is exactly the reasoning that failed below.
-**The rule is cheap and the exception costs a debugging session.**
+**The filter MUST NOT touch the right list, and that is the whole reason for the redesign.** You drove
+the single-list spike, typed `canada`, and watched four selections vanish from view while the counter
+still read 4. **A list that shows what you have chosen cannot hide what you have chosen.**
 
-**Changing `Info.lua` needs it.** Disable and re-enable is NOT enough — the version number updated
-while the new menu item never appeared. Terry found this.
+**Single-row moves only. Range and multi-select are gone, and you chose that having tested both
+working:** *"I'm glad to lose range select and multi-select. Single row hopping at a time is more
+intuitive."* **A later session MUST NOT reintroduce shift-click as an improvement.**
 
-**And so does changing a `require`d MODULE. Found 2026-08-16, and the symptom is misleading.**
-Lightroom re-reads a menu-item file on every invocation and **caches a `require`d module**. So
-editing `HostVersionProbe.lua` and `HostVersion.lua` together, then re-running the menu item, picked
-up only the first.
+**FGA HAS NO REMOVAL CAPABILITY.** The only Flickr write in the entire codebase is
+`flickr.groups.pools.add`. Your decision: *"can only add groups, not remove. If a pic is in a group   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
+when the dialog comes up, we just prune it from the initial candidate list."*
 
-**The dialog then showed NEW LAYOUT DRIVEN BY OLD LOGIC** — the new banner shape, filled with the
-previous module's yellow and its lowercase text. **It reads as a bug in code that is correct on
-disk**, which sends you back to re-read source that is already right.
+**Add-only scoping deleted three real problems** a desired-state endpoint would have created: an etag
+to stop a stale read destroying a membership added while the dialog sat open; what a reconcile should
+do with a queued-but-unsent add; and **a remove-then-add cycle laundering away ADR-04's memory that a
+pair already reached a moderator** — exactly the harm ADR-01 exists to prevent.
 
-**This is new to this project.** Every earlier probe was one self-contained file, so re-running the
-menu item always sufficed. **`HostVersion.lua` is the first `require`d module here, and it changed
-the reload rules with nothing announcing that.**
+**The dialog is a STAGING AREA.** Nothing reaches Flickr until Save, so a click is free and a
+mis-click costs one more click. **That beats a per-row confirm**, which would put a modal in front of
+the one interaction the design exists to make fast.
 
-**Mitigation: a shared module carries a STAMP that the UI prints.** `HostVersion.MODULE_STAMP` is a
-date string, bumped whenever the file changes, and `HostVersionProbe.lua` displays it beside
-`TESTED_AGAINST_MAJOR`. **A stamp on screen disagreeing with the one in the editor is the fastest
-read on "Lightroom is running something else."** Same reasoning as the architecture diagram carrying
-its own date.
+### Feedback is preflight. Commitment is one batch submit
 
-**Register a menu item in BOTH `LrLibraryMenuItems` and `LrExportMenuItems`.** The first lands under
-Library > Plug-in Extras and exists only in the Library module; the second lands under File >
-Plug-in Extras and works everywhere.
+**Clicking a group fires a debounced `POST /api/v001/photos/:photoId/preflight`.** It commits nothing
+and costs one Flickr call regardless of group count.
 
-**The SDK ships a Lua 5.1 compiler** at `Lua Compiler/win/luac.exe` inside the archive. `luac -p`
-parse-checks a plug-in file without Lightroom. **Prove it can fail on deliberately broken input
-before trusting a clean pass.**
+**The submit button is a COMMITMENT BOUNDARY under ADR-01, not latency overhead.** It is the only
+checkpoint between a stray click and a volunteer's review queue.
 
-**IT IS IN THIS REPO, at `vendor/LrC_15.3_202604090947-8f3672ed.release_SDK.zip`.**
+**`POST /api/v001/requests/batch` exists and NO CLIENT CALLS IT YET.** `web/src/lib/submission.ts`
+still loops one POST per group. **That is deliberate order, not oversight** — the endpoint had to
+exist before either client could adopt it, and the plug-in is the client the batch shape was designed
+for.
 
-**An earlier version of this line said the opposite, and the real lesson is worse than a bad
-search.** `vendor/README.md` already documented all of it — the archive, its SHA2-256, the Lua
-compiler at `Lua Compiler/win/luac.exe`, the `luac -p` invocation, and even the rule to prove the
-checker can fail first. It was written earlier the same day.
+**Adopting it is NOT a drop-in transport swap.** Batch returns two statuses the single endpoint does
+not — `already_in_pool` and `already_queued` — and those need **new UI states and new sentences** in
+`web/src/lib/outcomes.ts`, which is ADR-01's promise as the words a user reads. **The work is
+user-facing copy, not plumbing.**
 
-**The session searched `C:\` six levels deep instead of reading it, and then wrote "no luac on this
-machine" into two files as a fact.** The filter matched `*Lightroom*SDK*` and `luac*.exe` against an
-archive named `LrC_...` holding the binary inside a zip, so neither pattern could ever have matched
-— a clean result meant *the filter was wrong*, not *the thing is absent*.
+### Any client MUST call preflight before submitting
 
-**`docs/ORIENTATION.md` listed `vendor/` under what NOT to read**, which is how a file holding the
-answer got routed around. That row is fixed. **Grep this repository's own docs before searching
-disks.** See [[justified-premises-go-unchecked]].
+**A faster queueing path raises the volume flowing into volunteer moderator queues.** Skipping
+ADR-20's preflight because a Lua dialog is awkward would quietly undercut the rule this project is
+organized around — and the server would still refuse, so the user sees confusing failures rather than
+a clean warning.
 
-`npm run lua` now **extracts `Lua Compiler/win/luac.exe` on demand** into a temp file and parse-checks
-every plug-in file for real. `vendor/` stays an archive and a 386 KB binary stays out of git.
+---
 
-**`scripts/lua-balance.py` keeps its block-balance pass as a FALLBACK**, for a machine without the
-archive, and it announces which instrument ran. A block-balance pass and a real parse are very
-different assurances; identical output would hide the swap.
+## SDK facts that cost real time
+
+### `LrView` builds its view tree ONCE, and `visible = false` keeps the space
+
+**The single most expensive SDK fact here**, because a whole picker design was built on the opposite
+assumption. The reference says it outright: *"TIP: An item still affects layout, even when it is
+hidden."*
+
+**Bindings change values, never structure.** So hiding is the only way to change what a list shows,
+and **a filtered list of 364 rows is always 364 rows tall.**
+
+**744 views build in 9–12 ms**, so the row count was never the risk. Rendering was.
+
+### `simple_list` selection
+
+- **`value` is an ARRAY even when `allows_multiple_selection` is false** — and it may also arrive as
+  a bare value. Read both shapes. Indexing a string with `[1]` returns nil, so a naive reader runs
+  `selected[nil] = true` and dies on the first click.
+- **Without `value_equal` the widget keeps a POSITIONAL selection**, which survives an `items`
+  rebind. The consequence is functional: the widget believes the highlighted row is already selected,
+  so clicking it fires no observer and the row is dead.
+- **A list whose contents change MUST supply `value_equal`** and clear the selection with a sentinel
+  matching no item.
+- **Rebinding `items` clears the widget's `value`**, so the plug-in MUST own the selected set:
+  `selected = (selected MINUS visible) UNION value`.
+- **No per-row widgets, no columns, no icons.** State goes in the title string.
+
+### Four Lua and SDK traps
+
+| Trap | What it does |
+|---|---|
+| **`\u{25CF}` is a Lua 5.3 escape** | Lightroom runs 5.1, where it is a **syntax error** and the whole file fails to load. Write raw UTF-8 bytes |
+| **Bare `pcall` cannot yield** | Catalog calls yield and Lua 5.1 cannot yield across `pcall`. Use **`LrTasks.pcall`** |
+| **`os.clock()` is CPU time** | An HTTP request is almost all waiting. Use `LrDate.currentTime()` for wall seconds |
+| **`string.find` defaults to PATTERN matching** | Group names contain `-`, `(`, `)`, `%` and `.`. Pass `plain = true` |
+
+**An unknown `LrView` attribute fails the whole dialog rather than rendering plain**, so guessing one
+costs a full load-and-test cycle. `wraps` is an edit-field property; on `static_text`,
+**`height_in_lines = -1` plus a width is the wrap instruction.**
+
+**Non-ASCII glyphs substitute silently.** `✅` rendered as a monochrome `☑` from a fallback font.
+**Never let a glyph carry meaning alone.**
+
+### Reloading a plug-in
+
+**ALWAYS Remove then Add. Any change, every time.** Your rule: *"always add/remove, it's just safer
+and won't get weirdness."* **The argument that MUST NOT reopen it is "only a menu file changed, so a
+lighter reload is fine"** — that is exactly the reasoning that failed.
+
+**Lightroom re-reads a menu-item file on every invocation and CACHES a `require`d module.** Editing a
+module and its caller together, then re-running the menu item, picks up only the caller — producing a
+**new layout driven by old logic**, which reads as a bug in code that is correct on disk.
+
+**Mitigation: a shared module carries a stamp the UI prints.** A stamp on screen disagreeing with the
+one in the editor is the fastest read on "Lightroom is running something else."
+
+**Register a menu item in BOTH `LrLibraryMenuItems` and `LrExportMenuItems`.** The first is Library
+module only; the second works everywhere.
+
+### The SDK ships a Lua compiler, and it is in this repo
+
+**`Lua Compiler/win/luac.exe` lives inside the SDK archive**, which is vendored at
+`vendor/LrC_15.3_202604090947-8f3672ed.release_SDK.zip`. `npm run lua` extracts it on demand and
+parse-checks every plug-in file for real.
+
+**A session once searched `C:\` six levels deep, found nothing, and wrote "no luac on this machine"
+into two files** — while `vendor/README.md` documented all of it. The filters were `*Lightroom*SDK*`
+and `luac*.exe` against an archive named `LrC_...` holding the binary inside a zip. **Neither pattern
+could ever have matched, so a clean result meant the filter was wrong, not the thing absent.**
 
 ### The SDK version and the Lightroom version are DIFFERENT NUMBERS
 
-**Measured 2026-08-15: Lightroom Classic is at 15.5 while the SDK is at 15.3.** Terry stated it
-after a proposal to track SDK freshness by watching Lightroom's public release notes — which would
-have reported "behind" on every application point release the SDK did not follow.
+**Lightroom Classic is ahead of the SDK, normally by two point releases.** `Info.lua`'s
+`LrSdkVersion` names the **SDK**.
 
-**This matters in three places:**
+**The live risk: a capability added in a newer application release is invisible to the vendored
+reference**, so this file can say "the SDK does not support X" when the running application does.
+**Remember that before concluding something is impossible.**
 
-| | |
+### The crypto surface
+
+**Measured by sweeping twelve namespaces against Lightroom Classic 15.5.**
+
+| Namespace | What is really there |
 |---|---|
-| `Info.lua` | `LrSdkVersion` and `LrSdkMinimumVersion` name the **SDK**, so 15.3 is correct even while Terry runs 15.5 |
-| Freshness checking | See `vendor/README.md`. The shortcut is a false-positive generator and is rejected |
-| Reading the reference | The API shapes come from the **15.3 archive**, which may lag what 15.5 actually accepts |
+| `LrDigest` | `SHA256`, `SHA384`, `SHA512`, `HMAC`. **`SHA384` is undocumented** <!-- DIRTY-WORDS-EXEMPT: Adobe identifiers --> |
+| `LrStringUtils` | `encodeBase64` and `decodeBase64`, among 12 functions |
+| `LrPasswords` | `store` and `retrieve`, OS-backed and **scoped by plug-in ID** |
+| `LrMath` | `bitAnd`, `bitOr`, `bitXor`. **That is the entire namespace** |
+| `LrRandom`, `LrCrypto`, `LrSecurity`, `LrSecureRandom` | **Absent** |
 
-**The third row is the live risk.** A capability added in 15.4 or 15.5 is invisible to the vendored
-reference, so this file can say "the SDK does not support X" when the running application does.
-**Nothing here has hit that yet**, and it is worth remembering before concluding something is
-impossible.
+**`LrSystemInfo` exposes `ipAddress`, `machineName`, `numCPUs` and `getRamUsage`.** Named here so
+nobody mistakes them for seed material — they are stable identifiers and observable state, the exact
+sources Netscape's 1995 SSL PRNG used before Goldberg and Wagner broke it.
 
-### 744 checkbox views build in 12 ms, measured 2026-08-15
+**`LrUUID` is present and UNDOCUMENTED. ADR-23 refuses it entirely** — not for credentials, not for
+correlation ids, not for temp filenames. **The reason is the missing API contract, not the
+cryptography:** Adobe may remove it in a point release without breaking any promise, and
+`import("LrUUID")` raises when a namespace is gone, so **a file importing it for something trivial
+does not degrade — it fails to load and every menu item in it disappears.**
 
-**That was the one real risk in the checkbox design and it is not a risk.**
+**ADR-23 names "`LrUUID` exists and looks correct" as the argument that MUST NOT reopen it**, because
+that is exactly what was measured and exactly what lost.
 
-`LrView` builds its view tree ONCE — bindings change values, never structure — so a list whose
-contents change cannot add or remove rows. Every group therefore needs a row in **both** panes up
-front, with `visible` deciding what is on screen. For 372 groups that is **744 views**, and the fear
-was that constructing them would make the dialog slow to open.
-
-**It does not.** The dialog times its own construction and reported `Built 744 rows in 12 ms` on
-Terry's machine. So `visible`-toggling is a viable pattern here, and a future list does not need to
-fear the row count.
-
-**The dialog measures itself rather than relying on impressions**, which is the same habit as the
-connectivity probe reporting elapsed milliseconds. "It felt fine" and "12 ms" are different kinds of
-evidence, and only one survives a disagreement.
-
-### The Lightroom crash: one, on the FIRST run, none since
-
-**Terry, 2026-08-15:** *"that first ever plugin we ran and LrC crashed? happy to report there have   DIRTY-WORDS-EXEMPT: quoting Terry
-been no more LrC crashes. I hope it wasn't our plugin, but just data for you"*
-
-**Recorded because a negative result is worth as much as a positive one**, and because "it crashed
-once early on" is exactly the kind of thing that gets remembered vaguely and feared forever.
-
-| | |
-|---|---|
-| Crashes | **One**, on the first plug-in run |
-| Since | **Zero**, across roughly eight loads and versions 0.1 through 0.8 |
-
-**The obvious suspect is the bare `pcall`, and the record ARGUES AGAINST it.** That defect is
-written up above, and it did not crash anything: 0.1 caught `Yielding is not allowed within a C or
-metamethod call` and reported `VERDICT: REFUTED`. **A caught error with a message is not a crash.**
-
-So attributing the crash to a bug that demonstrably failed a different way would be tidy and wrong —
-and worse, it would tell a future session the cause is known and fixed, so stop looking.
-
-**The honest state: one unexplained crash, and no recurrence.** Terry's own framing was *"I hope it
-wasn't our plugin"*, and nothing here can confirm or clear it. Reproducing it deliberately would
-cost a catalog risk to buy a footnote, so nobody is going to.
-
-**The useful half is the clean record since.** Whatever it was, it has not recurred across every
-spike this project has shipped — so a future session hitting a crash should treat it as NEW rather
-than as a known flaky plug-in.
-
-### `simple_list` selection, settled from the reference on 2026-08-15
-
-**Two facts, and between them they explain every selection oddity this spike hit.**
-
-> `value` : (table) The current control value; **an array** of the values corresponding to each
-> selected list item, if any.
->
-> `value_equal` : A function called to compare the control value to the value of each item in turn,
-> to determine selection. **If no item returns true, no item is selected in the list.**
-
-**`value` is an ARRAY even when `allows_multiple_selection` is false.** Writing a bare string is a
-type error the widget ignores silently — it does not misbehave, it does nothing, which is far harder
-to diagnose.
-
-**Without `value_equal`, the widget keeps a POSITIONAL selection**, and that survives an `items`
-rebind. Observed directly: after a row moved out of the left list, whatever slid into its index was
-highlighted; a row returning to the list landed at that index and was highlighted in turn. On the
-right list the highlight passed to whatever took slot 1.
-
-**The consequence is functional rather than cosmetic.** The widget believed the highlighted row was
-already selected, so clicking it produced no selection change, **no observer call, and a dead row**.
-A user had to click elsewhere first.
-
-**So a list whose contents change under it MUST supply `value_equal`** and clear the selection with
-a sentinel that matches no item. `TransferPicker.lua` does both.
-
-**This cost two of Terry's load-and-test cycles**, and the reference that answers it was already in
-`vendor/`. See [[verify-package-apis-from-node-modules]].
-
-### `visible = false` KEEPS THE SPACE, and the reference warns about it
-
-**The single most expensive SDK fact of 2026-08-15**, because a whole picker design was built on the
-opposite assumption.
-
-> `visible` — True to show the view, if the parent view is also visible, or false to hide the view
-> and its children. **TIP: An item still affects layout, even when it is hidden.**
-
-That TIP sits one sentence after the description I did read. **Three separate defects that day came
-from stopping too early in a reference that was already open** — this, `simple_list.value` being an
-array, and `value_equal` existing at all.
-
-**Why it matters more than a cosmetic glitch.** `LrView` builds its view tree ONCE; bindings change
-values, never structure. So hiding is the only way to change what a list shows — and if hiding
-leaves a hole, **a filtered list of 364 rows is always 364 rows tall**. The pane fills with white
-gaps and the design is unusable rather than merely ugly.
-
-**The pattern that works inside the constraint** is a fixed window of rows whose `title` is bound
-rather than fixed, filled from the filtered list, with paging instead of scrolling. See "PICK UP
-HERE" at the top of this file.
-
-### Four SDK traps, all found by READING on 2026-08-15
-
-**Reading was the only QA available** — no Lightroom to run, no `luac` to parse-check. It found four
-real defects in code written the same evening, three of which would have cost a full load-and-test
-cycle each. **Budget a careful re-read of any Lua before handing it over**, because the feedback loop
-through Lightroom is minutes long and the person paying for it is Terry.
-
-| Trap | What it would have done |
-|---|---|
-| **`\u{25CF}` is a Lua 5.3 escape** | Lightroom runs 5.1, where it is a **syntax error**. The whole file fails to load, not just the glyph |
-| **`simple_list.value` may be a scalar** | With `allows_multiple_selection = false`. `("abc")[1]` is nil, so the observer runs `selected[nil] = true` and **dies on the first click** |
-| **`os.clock()` is CPU time** | An HTTP request is almost all waiting, so a 15-second timeout would report a few milliseconds. Use `LrDate.currentTime()` for fractional wall seconds |
-| **An unguarded `io.open`** | A read-only desktop or a locked file would throw and take the HTTP result with it. The measurement MUST outlive the convenience of saving it |
-
-**And one thing deliberately NOT done.** `font = "<system/bold>"` on the picker's two headings is
-almost certainly valid `LrView` — and *almost certainly* is recall, with no SDK on this machine to
-check against. **An unknown attribute fails the whole dialog rather than rendering plain**, so being
-wrong costs a full cycle to learn something cosmetic. It is out. Add it once the reference is on
-hand.
-
-**CLOSED 2026-08-16: `<system/bold>` IS documented**, in `LrView control view properties`. The
-reference is on hand, which is exactly the condition that note set, and `HostVersionProbe.lua` uses
-it.
-
-**The same check caught a real one in the same file.** `wraps = true` on a `static_text` would have
-failed the whole dialog: **`wraps` is an EDIT FIELD property.** `LrView text properties` — the page
-`static_text` actually draws from — lists only `height_in_lines`, `width_in_chars` and
-`width_in_digits`, and says outright *"If height_in_lines is set to -1, and width or width_in_digits
-or width_in_chars is specified, text wraps."* **So `-1` IS the wrap instruction**, and the attribute
-that looks like it does the job belongs to a different widget.
-
-**That is the cost asymmetry the original note described, arriving both ways at once:** one
-attribute was safe and had been withheld, another looked safe and was not. **Reading the reference
-settled both in a minute.**
-
-### Loading spike 0.6
-
-The plug-in lives at `C:\Photography\FgaSpike.lrdevplugin`, mirrored into
-`docs/lrc-spike/plugin/` so it is under version control.
-
-**`Info.lua` changed, so this needs Remove then Add** — see the rule above. Four menu items appear
-under both File > Plug-in Extras and Library > Plug-in Extras:
-
-| Item | What it does |
-|---|---|
-| Dump publish services | The original premise probe. Unchanged |
-| Group picker probe — one list | **0.4, kept as the control.** The design Terry rejected |
-| Group picker — TWO LISTS | **0.5.** The redesign. Synthetic data, no network |
-| Connectivity probe | **0.6.** Two real calls to flickrgroupaddr.com, no credentials |
-
-**Only the connectivity probe touches the network**, and it sends nothing but a `User-Agent`. The
-two pickers generate their groups locally.
-
-**If the spike ships, it SHOULD ship permanently as a diagnostic menu item** rather than be thrown
-away. Terry always runs the latest GA Lightroom Classic, so the plug-in gets every Adobe regression
-on day one, and re-proving the chain after an update should cost seconds.
-
-## Versions
-
-| | |
-|---|---|
-| Terry's Lightroom Classic | **15.5**, build `202607291506-b8869fa7`, current GA |
-| Newest published SDK | **v15.3, April 2026** |
-| Also offered under App Version 2026 | v15.2 Feb 2026, v15.1 Dec 2025, v15.0 Oct 2025 |
-| Target | `LrSdkVersion = 15.3` |
-
-**The SDK trails the app by two point releases, and that is normal.** The app version MUST NOT be
-used to derive the SDK version.
-
-Download path: **Adobe Developer Console → APIs and services → Downloads → search "Lightroom" →
-View downloads.** It requires Terry's Adobe login, so it cannot be checked unattended. The archive
-is `LrC_15.3_202604090947-8f3672ed.release_SDK.zip`, 8,756,604 bytes.
-
-**Backed up 2026-08-15 to `vendor/` on the NAS**, because the only copy lived in `~/Downloads` and
-nothing unattended can replace it. **The zip is gitignored and MUST stay so — it is Adobe's to
-license and this repository is public.** `vendor/README.md` carries the checksum and the reasoning.
+---
 
 ## The rig
 
-Lightroom Classic is installed at `C:\Program Files\Adobe\Adobe Lightroom Classic`. **Terry does not
-edit on this laptop**, but he put his real catalog here on 2026-08-15 specifically to unblock this
-work, and Lightroom Classic 15.5 upgraded it to the current catalog format.
+**Your real catalog is at `C:\Photography\LR Catalog\TDO Lightroom Catalog.lrcat`**, 1.8 GB, and
+Lightroom opens it by default. **You do not edit on this laptop** — it is here to unblock this work.
 
-| Catalog | State 2026-08-15 |
-|---|---|
-| **`C:\Photography\LR Catalog\TDO Lightroom Catalog.lrcat`** | **PRESENT, 1,801.8 MB. The real one, and LrC opens it by default** |
-| `C:\Travel\LR Catalog\Full Catalog\TDO Lightroom Catalog.lrcat` | Missing |
-| `C:\Travel\Lightroom Catalog\Current\TDO Lightroom Catalog.lrcat` | Missing |
-| `C:\Temp\LRCat-Test\LRCat-Test.lrcat` | Present, 2 MB. Not useful — no publish service |
-| `C:\Users\TDO-XPS15-2024\Pictures\Lightroom\Lightroom Catalog.lrcat` | Present, 1.7 MB. Same |
-
-The recent-catalog list lives in
-`%APPDATA%\Adobe\Lightroom\Preferences\Lightroom Classic CC 7 Preferences.agprefs`.
-
-### A `.lrcat` reads as ordinary SQLite, and it can be read SAFELY without a copy
-
-**Confirmed 2026-08-15 on the 1.8 GB catalog.** Open it with `mode=ro` **and** `immutable=1`:
+**A `.lrcat` reads as ordinary SQLite, safely, without copying it:**
 
 ```python
 uri = "file:" + urllib.parse.quote(path.as_posix()) + "?mode=ro&immutable=1"
@@ -736,789 +382,56 @@ sqlite3.connect(uri, uri=True)
 ```
 
 **`immutable=1` is the load-bearing half.** It tells SQLite the file cannot change, so it takes no
-locks and creates no `-wal`, `-shm` or journal sidecar. Nothing is written and the original cannot
-be touched — which is what makes reading a 182,576-image catalog acceptable without first copying
-1.8 GB.
+locks and creates no `-wal`, `-shm` or journal sidecar. **Lightroom MUST be closed first, and that
+MUST be checked rather than assumed**, because `immutable=1` is a promise the caller makes.
 
-**Lightroom MUST be closed first, and that MUST be checked rather than assumed**, because
-`immutable=1` is a promise the caller makes. `Get-Process -Name Lightroom*` answers it.
+Tables worth knowing: `AgLibraryPublishedCollection`, `AgLibraryPublishedCollectionImage`,
+`AgRemotePhoto` (`remoteId`, `url`, `photo`), `AgPhotoPropertySpec.sourcePlugin`, `Adobe_images`.
 
-The tables worth knowing: `AgLibraryPublishedCollection` (services and collections),
-`AgLibraryPublishedCollectionImage`, `AgRemotePhoto` (`remoteId`, `url`, `photo`),
-`AgPhotoPropertySpec.sourcePlugin`, and `Adobe_images` for scale.
+**A catalog MUST be on a local writable volume. `X:` is a NAS share**, so a catalog MUST be copied off
+it before opening. Photos MAY stay on the NAS; the `.lrcat` may not.
 
-**A catalog MUST be on a local writable volume.** Adobe's error names the condition: *"Lightroom
-cannot launch with this catalog. It is either on a network volume or on a volume on which Lightroom
-cannot save changes."* **`X:` is a NAS share, so a catalog MUST be copied off it before opening.**
-Photos MAY stay on the NAS; the `.lrcat` may not.
-
-**A newer Lightroom offers to upgrade an older catalog.** That writes a new file and leaves the
-original intact.
-
-## The UI toolkit, read from the SDK reference on 2026-08-15
-
-**25 widget constructors. No table, no tree, no multi-column list, nothing virtualized, no built-in
-filter. Every dialog is modal except `presentFloatingDialog`.**
-
-| Category | Widgets |
-|---|---|
-| Layout | `row`, `column`, `group_box`, `scrolled_view`, `tab_view`, `tab_view_item`, `separator`, `spacer`, `view` |
-| Input | `edit_field`, `password_field`, `checkbox`, `radio_button`, `popup_menu`, `combo_box`, `simple_list`, `slider`, `color_well`, `push_button` |
-| Display | `static_text`, `picture`, `catalog_photo` |
-
-**`simple_list` is the one that decides the picker**, and it is better than it first looks:
-
-> `value` : an array of the values corresponding to **each selected list item**
-> `items` : table of items, each with a localizable `title` and a `value`
-> `allows_multiple_selection` : True if the list supports selection of multiple items at one time
-> `height` : default 150, will not be allowed smaller than 80
-
-So a scrolling, flat, **multi-select** list of title/value pairs with bindable `items`. No columns,
-no per-row widgets, no icons.
-
-**`combo_box` is NOT a searchable object picker.** The reference calls it "an editable text field
-and a pop-up menu of predefined **text** values". Typing filters nothing. **The web UI's
-type-ahead-and-chips picker does not port.**
-
-**`catalog_photo` renders a real thumbnail from the catalog**, so a dialog can show the photos it is
-about to queue.
-
-**Supporting machinery, all confirmed present:** `LrDialogs.presentModalDialog` takes a full
-`LrView` hierarchy, `LrProgressScope` gives a cancelable progress bar, `LrBinding` and
-`LrObservableTable` give reactive property tables, `LrPrefs.prefsForPlugin` persists settings, and
-`LrPasswords.store` / `retrieve` is encrypted storage keyed to the plug-in ID.
-
-## Design settled 2026-08-15
-
-### TWO CLIENTS, BOTH FIRST-CLASS, RELEASED IN LOCKSTEP
-
-**Terry's decision, 2026-08-15. FGA has exactly two client classes and MUST treat both as
-first-class:**
-
-| Client | Surface |
-|---|---|
-| **Browser** | The Svelte app shell, ADR-18, served from the same Worker |
-| **Lightroom Classic plug-in** | Lua, talks only to `/api/v001/*` |
-
-**Neither is a secondary client, and neither MAY be allowed to rot.** The plug-in is not a
-convenience wrapper around the "real" web product, and the web app is not a fallback for people
-without Lightroom. **They are two front doors to one queue.**
-
-**They MUST be released in lockstep.** An API change that serves the browser and breaks the plug-in
-is a broken release, not a plug-in problem to fix later. In practice that means:
-
-- **A breaking API change MUST land with both clients updated**, or it does not land.
-- **A new capability SHOULD reach both**, and where it cannot, the asymmetry gets written down here
-  rather than discovered.
-- **The plug-in version and the API's `/api/v001` contract move together.** ADR-16's zero-padded
-  path version is what buys room to break the contract deliberately if it ever comes to that.
-
-**Why this is worth stating rather than assuming.** Terry's framing: *"very relevant for
-Terry-of-2031 who forgot 'oh shit right that LrC plug-in is fuggin amazing'."* **The failure mode is
-not malice, it is absence.** A future session works on the web app because that is what is open in
-the editor, ships an API change that suits it, and nobody notices the Lua client for eight months —
-by which time the plug-in is broken, undiagnosed, and looks abandoned rather than neglected.
-
-**And per [[fga-goal-is-terrys-lightroom-workflow]] the plug-in is arguably the MORE important of
-the two**, because the stated goal is queueing adds without leaving Lightroom. The web UI was built
-first; that is an accident of order, not a ranking.
-
-### The architecture diagram SHOWS the client, as of 2026-08-15
-
-**Terry overruled a deferral, deliberately, and the record matters more than the outcome.**
-
-**The argument against drawing it was the read-replica lesson.** D1 was once drawn as primary plus
-replica so a consistency failure had somewhere to live; when read replication left the architecture,
-the tile went with it, and the recorded conclusion was that **depicting something the system does
-not have is worse than silence** — a reader in five years designs around it. By that argument a
-first-class LrC client on the canvas tells Terry-of-2031 it shipped, and if it never does, the
-diagram lies.
-
-**Terry's counter, and it is a fair one: the diagram is his artifact and its job is to remind him
-what this project IS.** He is not at risk of forgetting whether the plug-in exists; he is at risk of
-forgetting that it was ever the point. **So the tile is a deliberate choice rather than an
-oversight, and that is written here so nobody "corrects" it later.**
-
-**If the plug-in is ever abandoned, the tile comes out** — same rule that removed the replica.
-
-**What was drawn:**
-
-- The `users` actor became **`Browser client`**, keeping its geometry exactly — `e12` and `e13`
-  attach to it and are asserted dead level, so moving it would have broken two assertions for a
-  relabel.
-- **Lightroom Classic is an OUTER card containing an inner `FGA plug-in` tile**, mirroring how the
-  Flickr card contains the Flickr API tile. Terry's reasoning: *"want to show all we're changing is
-  a plug-in within LrC."* The card is `lrcapp`, the plug-in is `lrc`.
-- **A `Catalog` tile sits inside the same card**, holding "Published photo IDs". **The SDK is
-  deliberately NOT drawn** — Terry raised it and called it possibly "below the radar horizon of this
-  diagram", which is right. **The catalog is a store, the SDK is a library**, and this diagram's own
-  rule is to say what a thing holds rather than what it does. Same reason the canvas shows D1 and
-  not a D1 client.
-- Both clients connect to the API Worker. **Only the browser connects to the app shell**, since the
-  plug-in fetches no HTML.
-
-  **CORRECTED 2026-08-16: the DNS half of that sentence is now WRONG, and it was the diagram
-  telling a reader something false.** It read *"only the browser connects to the app shell and to
-  DNS"*. It was true when written — before ADR-24, the plug-in made no network call of its own.
-
-  **The plug-in is a network client BEFORE it is a browser launcher**, and that ordering is forced
-  rather than chosen. It calls `POST /api/v001/device/start` first, so it must resolve
-  `flickrgroupaddr.com` itself. **It cannot delegate that call to the browser**, because
-  `LrHttp.openUrlInBrowser` is fire-and-forget: the response would land in a browser tab and the
-  plug-in would never see the `deviceCode` it has to poll with.
-
-  **So the canvas needs a plug-in ↔ DNS edge**, and the old note would have argued against drawing
-  one.
-
-  **This is the THIRD instance of one defect class in a day**, all of them the picture implying the
-  BROWSER does something the PLUG-IN does. The `e19` arrow head was the first — it said the token
-  came back through the browser when the plug-in polls for it. **Terry found this one by walking the
-  journey aloud**, which is the only instrument that has ever caught this class.
-- **Auth is drawn as THREE HOPS, decided 2026-08-15.** Terry challenged an earlier line reading "the
-  plug-in gets no edge to Flickr", correctly — that left the canvas silent on how a plug-in ever
-  gets a credential. **The resolution is that Flickr appears in the plug-in's journey, but the
-  arrow starts at the browser, not at the plug-in:**
-
-  | Edge | Meaning |
-  |---|---|
-  | Plug-in → API Worker | Its only HTTP edge. **Corrected 2026-08-16 from "its only NETWORK edge"** — it also resolves DNS, so the canvas needs a plug-in ↔ DNS edge |
-  | **Plug-in → Browser client** | `LrHttp.openUrlInBrowser`. **A launch, not a request** — label it so |
-  | Browser client → Flickr | Already on the canvas as `e11` |
-
-  **The one-hop shortcut — a dashed plug-in-to-Flickr edge — was considered and refused.** It reads
-  cleaner and asserts the exact thing the design is built to avoid: that Lua holds Flickr
-  credentials. **A future session reading that diagram might implement it.** Adobe's plug-in really
-  does call `flickr.auth.getFrob` over HTTP, because Adobe has no server; FGA has one, so the frob
-  equivalent is `POST /api/v001/device/start` and the plug-in never speaks to Flickr at all.
-- The User Journey key gains the device-link steps, and **`scripts/build-diagram.py` requires the
-  journey row count to equal the badge count**, so both move together.
-
-**Expect the build to fight the change, correctly.** A new tile becomes an obstacle for every
-straight edge, `e12` and `e13` currently attach to `users` and are asserted dead level, and the
-badge-to-edge map and badge overlap checks all key off those positions.
-
-### The plug-in talks ONLY to FGA. It makes no Flickr calls, ever.
-
-**It has no Flickr credentials and MUST NOT acquire any.** FGA already holds the user's Flickr token,
-AES-GCM encrypted in D1 under ADR-09, and that is the credential that does the work.
-
-**The decisive reason is ADR-06's sweep**, not tidiness. The cron runs at 00:15 UTC with Lightroom
-closed, so a token living in a Lightroom catalog is invisible to the thing that needs it. Adobe's
-plug-in talks to Flickr directly because it has no server; ours has one.
-
-**The photo id costs nothing.** `getRemoteId()` is a local catalog read — no network, no
-credentials, already measured.
-
-### Authentication: the frob pattern, aimed at FGA instead of Flickr
-
-**Adobe's own Flickr plug-in already ships this shape**, and reading its source settled the
-question. `FlickrAPI.openAuthUrl()` requests a frob, opens a browser at Flickr's auth URL carrying
-it, and exchanges the frob for a durable `auth_token` afterwards.
-
-**That IS a device-code flow.** So the design is Adobe's, with FGA one hop over:
-
-| Adobe → Flickr | FGA plug-in → FGA |
-|---|---|
-| `flickr.auth.getFrob` | `POST /api/v001/device/start` → code |
-| `LrHttp.openUrlInBrowser( auth?frob=… )` | `LrHttp.openUrlInBrowser( /link?code=… )` |
-| user approves at flickr.com | user approves at flickrgroupaddr.com, signing in with Flickr if needed |
-| exchange frob → `auth_token` | poll → FGA plug-in token |
-
-**The existing Flickr OAuth does the identity leg unchanged** — ADR-08's Durable Object, ADR-07's
-"the Flickr account is the identity". The plug-in never sees a Flickr credential.
-
-**Storage is a preference, not a requirement.** `LrPasswords` is encrypted and costs two lines;
-`LrPrefs` is what Adobe uses and would be defensible, since the stored value is an FGA token scoped
-to one product and revocable server-side. **An earlier draft of this file claimed `LrPasswords` was
-necessary on security grounds. It is not, and that claim was made before reading Adobe's source.**
-
-**This still becomes an ADR** — it is a new credential class with its own revocation story, and
-ADR-10's cookie assumptions do not cover it.
-
-#### The contracts. BUILT 2026-08-16, and now ADR-24 — read that first.
-
-**The endpoints below exist.** This section keeps the reasoning that produced them; ADR-24 is the
-decision, and `src/routes/device.ts` is the code. **Where the two disagree, ADR-24 wins.**
-
-**Four endpoints, not three.** `approve` and `deny` are separate routes because a refusal MUST NOT
-look like a failure — the waiting plug-in is told `denied` rather than left to time out, which is
-ADR-01's habit pointed at a different surface.
-
-**`start` and `poll` are unauthenticated**, and are mounted outside `/api/v001/*`'s blanket
-`requireSession` by registering `deviceRoutes` before `apiRoutes` in `src/index.ts`. **`approve` and
-`deny` require a BROWSER session**, which stops a stolen plug-in token minting a fresh one.
-
-| | |
-|---|---|
-| `POST /api/v001/device/start` | No auth. Returns `{ deviceCode, userCode, expiresAt, pollAfter }` |
-| `GET /link?userCode=…` | The browser page. **Session cookie required**, so ADR-10 does the identity work |
-| `POST /api/v001/device/poll` | Body `{ deviceCode }`. Returns `pending`, `denied`, `expired`, or `{ token }` |
-
-**Two codes, not one, and the split is the whole security design.**
-
-- **`deviceCode` is the polling handle** — 32 bytes from `crypto.getRandomValues`, base64url,
-  minted by the Worker under ADR-23. **It appears in a response body and a request body, and NEVER
-  in a URL.**
-- **`userCode` is what a human reads** — short, unambiguous, and **displayed in Lightroom**. It is
-  the thing the person compares against the browser page, and it is the only code the `/link` URL
-  may carry.
-
-##### CORRECTED 2026-08-16: the earlier draft put the polling credential in the URL
-
-**This section contradicted itself in nine lines.** It called `code` the polling handle that the
-plug-in *"holds and never shows"*, and the flow above it had the plug-in call
-`LrHttp.openUrlInBrowser( /link?code=… )`. **The URL wins that argument.** The credential that
-collects the token was therefore visible in browser history, in history synced to the user's other
-devices, to any extension holding `tabs` permission, in a TLS-inspecting proxy's logs, and on screen.
-
-**RFC 8628 does not do this, and the split already existed here.** The standard puts the low-entropy
-`user_code` in front of the human and keeps the high-entropy `device_code` out of every URL. This
-design already minted both values. It routed the wrong one into the query string.
-
-**`code` was renamed to `deviceCode` deliberately.** A parameter named `code` reads as an identifier
-and invites exactly the mistake that was made. The name now states what it is, and a reviewer seeing
-`deviceCode` in a query string has an obvious reason to stop.
-
-**State lives in a Durable Object, one per flow**, exactly like ADR-08's OAuth Request Token. Same
-argument: a short-lived single-writer object with an alarm that deletes itself beats a D1 row that
-needs sweeping, and the polling is naturally serialized by the single writer.
-
-#### The phishing weakness is REAL, and FGA's version of it is worse than most
-
-**Every device flow has this hole.** An attacker starts a flow on their own machine, sends the
-victim `flickrgroupaddr.com/link?code=…`, and the victim — already signed in — approves it. The
-attacker's plug-in then polls and collects a token for the victim's account.
-
-**PKCE does NOT close it.** The attacker started the flow, so the attacker holds the verifier. PKCE
-protects against an intercepted code, which is a different attack.
-
-**And the usual "the blast radius is small" consolation does not apply here.** ADR-01 says a request
-that reached a moderator is terminal. So a phished token can push a stranger's photos into volunteer
-review queues, and **that effect cannot be taken back** — not by revoking the token, not by deleting
-the requests. **The irreversibility is the reason this needs more care than a typical device flow,
-not less.**
-
-**Three mitigations, and the first is the one that matters:**
-
-1. **The `/link` page MUST display the `userCode` and require the person to confirm it matches what
-   Lightroom is showing.** A victim who never started a flow has no code on screen to match, which
-   is the moment the attack becomes visible. Prefilling from the query string is fine for
-   convenience; **auto-approving from it is not.**
-2. **The page MUST say plainly what it grants** — that a Lightroom plug-in will be able to queue
-   group adds as them — rather than "authorize this device".
-3. **Short TTL and a rate limit.** Ten minutes, and `pollAfter` tells the plug-in how long to wait.
-   A plug-in that ignores it should be throttled server-side rather than trusted.
-
-#### Three things a future session MUST settle before writing code
-
-- **What the token authorizes.** It is not a session. It SHOULD reach the queueing and preflight
-  endpoints and nothing else — no account settings, no revocation of other tokens, no Flickr
-  credential access.
-- **Revocation, and where the user sees it.** A credential a user cannot list is a credential they
-  cannot revoke. There is no UI for this today.
-- **Whether the token expires.** Adobe's `auth_token` does not. A non-expiring credential on a
-  laptop is a real exposure, and [[threat-model-the-thief-not-the-owner]] applies: the question is
-  not what Terry knows, it is who else ends up holding the catalog.
-
-**Terry decides all three.** Nothing here is built.
-
-### Spike 0.6, `ConnectivityProbe.lua`: can the plug-in reach FGA at all?
-
-**Every design in this file rests on `LrHttp` reaching flickrgroupaddr.com over TLS and handing back
-a readable status code, and that is written down from the SDK reference rather than watched.** It is
-the same shape as the publish-service premise, which came back confirmed **only because somebody ran
-it**.
-
-**The Worker is live.** `GET https://flickrgroupaddr.com/health` answered `200 {"status":"ok"}` from
-this machine on 2026-08-15, so the probe has something real to talk to.
-
-It calls two endpoints and sends no credentials:
-
-| Call | Expected |
-|---|---|
-| `GET /health` | 200, public. If this fails nothing else in the report means anything |
-| `GET /api/v001/me` | **Expected to FAIL** — the plug-in holds no session |
-
-**The failing call is the more valuable one.** A client that works on the happy path and produces an
-unreadable mess on the sad path is not usable, and the sad path is where a real user lives — expired
-session, no network, a hotel captive portal. A well-behaved API answers 401 with JSON rather than an
-HTML login page, and this reports which one Lightroom actually receives.
-
-#### RESULT: everything passed, measured 2026-08-15 on spike 0.7
+### Connectivity is measured, and the two numbers matter
 
 ```
-PUBLIC    -> GET /health          status 200   160 ms   {"status":"ok"}
-NO AUTH   -> GET /api/v001/me     status 401    14 ms   {"error":"not_authenticated"}
+GET /health          200   160 ms   {"status":"ok"}
+GET /api/v001/me     401    14 ms   {"error":"not_authenticated"}
 ```
 
-Both replies carried `content-type: application/json` and a `cf-ray`, so the requests genuinely
-reached Cloudflare rather than something in between. The report also wrote to the desktop, so the
-guarded `io.open` path works.
+**160 ms then 14 ms on the same connection.** The first call pays TLS setup and a cold Worker.
+**So the group list fetch should be the FIRST call** — pay the cold cost while the dialog is still
+opening.
 
-**Four assumptions become facts:**
+**A refused call is legible**: 401 with a JSON body, not an HTML login page.
 
-| Was assumed | Now measured |
-|---|---|
-| `LrHttp` can reach flickrgroupaddr.com over TLS | It does |
-| `headersTable.status` is readable | It is — 200 and 401 both came through |
-| A refused call is legible | **401 with a JSON body**, not an HTML login page |
-| The elapsed figure is real | 160 ms then 14 ms, which `os.clock()` could never have shown |
+**Two `LrHttp` details a naive client gets wrong.** A transport failure returns a nil body and puts
+the reason in `headersTable.error`. And **there is no documented default timeout** — a hung request
+inside a modal is indistinguishable from a frozen Lightroom, so pass one explicitly.
 
-**The two numbers matter more than the pass.**
+### The one Lightroom crash
 
-**160 ms then 14 ms, an 11x difference on the same connection.** The first call pays TLS setup and a
-cold Worker; the second is warm. So a plug-in that makes several calls in a row is fast after the
-first, and **the group list fetch should be the first call rather than a later one** — pay the cold
-cost while the user is still opening the dialog.
+**One, on the very first plug-in run. None since**, across roughly eight loads and versions 0.1
+through 0.8. **The obvious suspect — the bare `pcall` — is argued against by the record**, because
+that defect caught its error and reported a verdict rather than crashing.
 
-**14 ms for the 401 says the refusal is cheap.** `requireSession` rejects before touching D1, which
-is the design working: a caller with no credential never reaches the database.
+**The honest state is one unexplained crash and no recurrence**, so a future session hitting a crash
+should treat it as NEW rather than as a known flaky plug-in.
 
-**Caveat: this tested the DEPLOYED Worker**, which predates the session-client-type work. The bearer
-header path is not live yet, so `/api/v001/me` refused for want of a cookie rather than after
-examining a header.
-
-**Two `LrHttp` details the probe handles and a naive client would not:**
-
-- **A transport failure returns a nil body and puts the reason in `headersTable.error`**, so "no
-  status" covers both a refused connection and a served 500 unless both are handled.
-- **There is no documented default timeout.** A hung request inside a modal is indistinguishable
-  from a frozen Lightroom, so the probe passes 15 seconds explicitly.
-
-It writes its report to `fga-connectivity.txt` on the desktop as well as showing it, because a modal
-cannot be copy-pasted and this output is evidence that belongs in this file.
-
-### The picker's data path, audited 2026-08-15: one gap and one arithmetic problem
-
-**`GET /api/v001/groups` already serves the left list.** It returns exactly what a picker needs —
-`id`, `name`, `photos`, `members`, `poolModerated`, `inviteOnly` — after deliberately dropping the
-979 KB of descriptions and rules the raw Flickr reply carries. **No new endpoint is needed for the
-group list**, which was not obvious until it was checked.
-
-**But nothing serves the RIGHT list.** The two-list picker opens pre-populated with the groups the
-photo is already in, and there is no endpoint that answers "which groups is this photo in".
-
-**The obvious workaround does not fit, and the arithmetic is the reason.** `POST
-/photos/:photoId/preflight` caps `groupIds` at **200**. Terry belongs to **372** groups. So
-pre-population by preflight is **two round trips** — and the cap buys nothing upstream, because
-preflight makes **one** `getAllContexts` call no matter how many groups it is asked about.
-`getAllContexts` is per-photo, not per-group.
-
-**BUILT 2026-08-15: `GET /api/v001/photos/:photoId/groups`.** One `getAllContexts` call, returning
-the pools the photo is in as `{ id, title }`. Terry approved it and named the reason better than
-this note originally did: *"we made SURE we don't keep the user's long term flickr creds in the
-plugin, which would have let us query flickr API directly. I'm good proxying that through our API as
-a middleman."* **The proxy is a consequence of the credential design, not overhead.**
-
-**The title comes free.** Flickr sends each pool's title in the same reply, so naming a group costs
-no second call. `getPhotoPoolsDetailed` keeps it; `getPhotoPools` is now a thin wrapper returning
-ids only, because four callers depend on that shape and ADR-05's authoritative check is one of them.
-
-**`MAX_PHOTO_POOLS` is 500**, and it is a sanity ceiling rather than a model of Flickr's rule —
-Flickr's per-photo limits vary by account type and are not reliably documented. ADR-17 requires a
-stated bound, not a correct guess at somebody else's.
-
-**Null stays UNKNOWN.** A failed `getAllContexts` answers 502, never an empty list. Reporting empty
-would tell the picker the photo is in no groups, and the user would queue adds for groups it is
-already in — straight into ADR-01, because a duplicate add can reach a moderator.
-
-- It is the question the picker actually asks on open. Preflight answers a different one — *what
-  would happen if I submitted these* — and that is the right call at commit time, not at open time.
-- The reply is naturally small. A photo is in a handful of groups, not hundreds, so **ADR-17 is
-  satisfied by the upstream shape rather than by a cap** — but the ceiling MUST still be stated
-  rather than assumed, per ADR-17's second kind of list.
-- It leaves preflight alone. Raising its 200 cap to `MAX_USER_GROUPS` (5000) would work and is
-  worse: it grows the response for every caller to serve one caller's opening screen.
-
-**Not built, and it needs Terry.** It is a new endpoint, so it is a new row in the traceability
-matrix and wants a test naming the ADR it serves.
-
-### Feedback is preflight. Commitment is one batch submit.
-
-**Clicking a group fires a debounced `POST /api/v001/photos/:photoId/preflight`** and marks the chip
-`seen by a moderator` / `already in` / `already queued`. **It commits nothing**, costs one Flickr
-call regardless of group count, and is ADR-20 doing exactly the job it was built for.
-
-**An explicit button then submits the whole selection in one call.**
-
-**That button is a COMMITMENT BOUNDARY under ADR-01, not latency overhead.** It is the moment the
-person says *yes, I mean it*, and it is the only checkpoint between a stray click and a volunteer's
-review queue.
-
-### The batch submit endpoint — BUILT 2026-08-15
-
-**`POST /api/v001/requests/batch` exists.** Body is `{ photoId, groupIds[],
-acknowledgedModeration?[] }`, capped at 200 groups like ADR-20's preflight. It answers `202` with a
-per-group array in the order asked, using the same four statuses preflight returns.
-
-**`acknowledgedModeration` is a LIST, not a flag.** A blanket boolean would let one click
-acknowledge warnings the user never saw, which is exactly what ADR-20 exists to prevent.
-
-**It does NOT attempt at batch scale**, and the immediate path is narrower than first built: the
-caller must have **asked for exactly one group**, not merely ended up with one eligible after
-filtering. Keying off the eligible count meant a forty-group batch with thirty-nine already queued
-would attempt — so identical requests behaved differently depending on state the caller cannot see.
-**Predictable beats marginally faster**, and one eligible group is one Flickr call either way.
-
-**NO CLIENT CALLS IT YET, and that is worth saying out loud.** `web/src/lib/submission.ts` still
-loops one `POST /api/v001/requests` per group — see its `for (const groupId of groupIds)`. So the
-endpoint that exists to turn forty round trips into one is, today, dead code with tests.
-
-**That is a deliberate order rather than an oversight.** The endpoint had to exist before either
-client could adopt it, and the Lightroom plug-in is the client the batch shape was designed for.
-
-**IT IS NOT A DROP-IN TRANSPORT SWAP, checked 2026-08-15.** An earlier line here called the change
-small. It is not, and the reason is worth stating before somebody starts it at the end of an
-evening.
-
-| Endpoint | Statuses a caller must render |
-|---|---|
-| `POST /requests` | `queued`, `resolved`, `needs_acknowledgement` |
-| `POST /requests/batch` | those three **plus `already_in_pool` and `already_queued`** |
-
-`web/src/lib/submission.ts` models exactly the first three in its `ItemState` union, and `toState`
-switches over them exhaustively. The two extra statuses need **new UI states and new sentences**,
-and those sentences live in `web/src/lib/outcomes.ts` — which `CLAUDE.md` names as *"ADR-01's
-promise, as the sentences a user reads"*.
-
-**So the work is user-facing ADR-01 copy, not plumbing.** It also has to keep ADR-20's per-group
-acknowledgement intact, because the browser is where a person actually reads the moderation warning.
-**Twelve seconds of latency is not worth rushing that**, and the single-POST path is correct today —
-merely slow.
-
-**The section below is the design it was built from, kept because the reasoning still governs
-changes to it.**
-
-### The design, as argued before it was built
-
-**`POST /api/v001/requests` takes one `photoId` and one `groupId`.** Forty groups is forty POSTs —
-`web/src/lib/submission.ts` measures that at roughly twelve seconds. A one-round-trip client needs a
-batch endpoint, and it needs one guard rail.
-
-**It MUST NOT inherit ADR-03's immediate-attempt behavior at batch scale.** That path attempts
-straight away when a request is alone in its queue, which is right for one photo into one group.
-Applied to forty, a single Worker invocation makes forty sequential `groups.pools.add` calls on one
-user's token — `submission.ts` calls that "the same discourtesy wearing a performance costume".
-**Enqueue, return, and let the nightly sweep do the work.** The one exception worth keeping: a batch
-of exactly one group whose queue is empty may take the existing immediate path.
-
-**Atomic in D1, NOT atomic in outcome.** `db.batch()` should put the inserts in one transaction. The
-result is still per-group: queue the clean ones, refuse and report anything needing acknowledgement,
-same four statuses ADR-20's preflight already returns. **Rejecting all forty because three carry a
-warning would hold thirty-seven good ones hostage**, and the partial result is the safe direction
-anyway — nothing reaches a moderator unanswered.
-
-**`resolveRequest`'s existing pairing MUST survive any batch path** — the request update and the
-`moderated_pairs` insert go in one `db.batch()` so a request cannot be marked resolved without the
-record that a person saw it.
-
-### The carve-out that breaks "everything is deferred"
-
-**ADR-03 lets the API attempt immediately when a request is the sole unresolved one in its queue.**
-Three lines in `src/routes/api.ts`.
-
-**That single permission is why no client may treat submission as deferred**, and it is not obvious
-from the outside — the product looks like a queue that drains at midnight. **Any design reasoning
-"nothing happens until the sweep, so this is reversible" is wrong because of those three lines.**
-
-### Group selection: DECIDED 2026-08-15. The full list, with a filter box. No group sets.
-
-**Terry belongs to 372 groups** — see `docs/FLICKR.md`, and the count moved from 330 to 372 in one
-day, so it **MUST NOT** be cached.
-
-**Saved group sets were proposed and REJECTED**, in his words:
-
-> The pass to assign all groups to sets would annoy me far more than a UX of picking which of the
-> 372 groups to add a pic to. And each time I joined a new group, I'd resent having to tag it.
-
-**The rejection is about the ONGOING tax, not the one-time setup**, and that is the part a future
-session will miss. A taxonomy is not paid for once — every new group joined is a fresh decision
-about where it belongs, forever, for a person who joined 42 groups in a single day.
-
-**And the wall is a familiar model, not a novel one.** *"The massive wall of groups to pick from is
-exactly how the Flickr web UI works, except it's slow as fuck."* **So the bar is the same UX and
-faster, which is reachable — rather than a better UX, which is speculative.**
-
-### What the picker must do
-
-| Requirement | |
-|---|---|
-| Scroll the full list | `simple_list` scrolls natively |
-| Filter box | `edit_field` bound to a filter string |
-| Match rule | **Case-insensitive plain substring against the group NAME.** Typing `canada` shows only groups with `canada` anywhere in the title |
-| Multi-select | `simple_list` with `allows_multiple_selection`, `value` returns an array |
-
-**`string.find` MUST be called with `plain = true`.** Lua's default is PATTERN matching, so a group
-name or a search term containing `-`, `(`, `)`, `%` or `.` would either match wrongly or throw.
-Group names contain all of those. `name:lower():find(needle:lower(), 1, true)`.
-
-**Lowercase the names ONCE, not per keystroke.** 372 `:lower()` calls on every character typed is
-waste that a precomputed shadow list removes.
-
-### Filtering is REALTIME, and `immediate = true` is what makes it so
-
-**Terry's requirement, 2026-08-15: *"filtering should be realtime, so each keypress causes a new
-substring search to fire and limit/expand the list."*** No debounce, no Enter to apply.
-
-**The `edit_field` property that delivers it is `immediate`**, documented as *"True to validate the
-value as the user is typing."* **Without it the binding updates only on commit** — Enter or moving
-focus away — so a user would type `canada`, watch nothing happen, and conclude the box is broken.
-**It fails as a no-op rather than an error, which is why it is written down here.**
-
-`placeholder_string` is also available for the hint text, though on Windows the placeholder clears
-when the field takes focus rather than when text is entered.
-
-**The search cost is nothing; the rebind is the thing to watch.** 372 precomputed-lowercase plain
-`find` calls per keystroke is microseconds of Lua. Rebuilding the `items` table and pushing it
-through the binding on every character is the part that could feel sluggish, and it is the part to
-measure.
-
-**Do NOT confuse this with the preflight debounce. They are different controls on different
-events.**
-
-| | Fires on | Cost | Debounce |
-|---|---|---|---|
-| Filter | Every keystroke in the search box | Local, microseconds | **None. Realtime** |
-| Preflight | A change to the SELECTED set | A network round trip | **Yes** |
-
-**Typing in the filter box MUST NOT trigger preflight** — filtering changes what is visible, never
-what is chosen.
-
-### The selection model, and why the widget MUST NOT own it
-
-**Filtering rebinds `items`, and the plug-in MUST keep its own selected set rather than trusting
-`value` to survive that.** When the filter narrows, groups selected but no longer visible must stay
-selected; when it widens, they must come back.
-
-**So `value` is an input, never the source of truth**, and the update is a merge rather than a
-replace:
-
-```
-selected = (selected MINUS currentlyVisible) UNION value
-```
-
-**Whether rebinding `items` actually clears `value` is UNMEASURED** — see below. The merge model is
-correct either way, which is why it is the design regardless of the answer.
-
-### `simple_list` has no per-row widgets, so state goes in the TITLE
-
-**Items are `{ title, value }` and nothing else.** No badges, no icons, no columns. So "this pool is
-moderated" and ADR-20's "already seen by a moderator" have to be rendered into the title text:
-
-```
-Canada Landscapes — moderated, already seen
-```
-
-**Which means `items` rebinds when preflight returns, not only when the filter changes** — a second
-reason the selection model must survive a rebind.
-
-### MEASURED 2026-08-15. Both questions answered, both favorably
-
-**Terry ran `PickerProbe.lua` against a synthetic 372-group list in Lightroom Classic 15.5.** The
-probe generates its own groups, makes no network call and touches no catalog, so this measures the
-widget rather than the workflow.
-
-| Question | Answer |
-|---|---|
-| Does rebinding `simple_list.items` clear the selection? | **The WIDGET's, yes. The plug-in's, no** |
-| How does a 372-item list look and perform? | Renders cleanly, scrollbar behaves, filtering felt instant |
-| Does `height` accept a large value? | **Yes, 420 works.** The reference only ever promised a minimum of 80 |
-| `allows_multiple_selection` | Works, and gives OS-NATIVE semantics — **shift-click spans and ctrl-click discontiguous both work** |
-
-**The merge model is confirmed end to end, and it earned its place exactly as designed.** With four
-groups selected, typing `canada` narrowed the list to 16 and every highlight vanished — because none
-of the four matched. **The counter still read `selected 4`.** Clearing the filter brought all four
-back highlighted.
-
-**So the widget DOES drop `value` on rebind, and it does not matter**, because
-`selected = (selected MINUS visible) UNION value` never trusted it. **The design was written to be
-correct either way, and that is why the answer changed nothing.**
-
-**Shift-click is a bigger finding than it looks.** Forty groups selected one click at a time is the
-2021 UI's problem restated. A span select turns that into two clicks, and it came free from the
-platform widget rather than needing anything built.
-
-### The UX gap the probe exposed, which is a DESIGN question rather than a defect
-
-**While `canada` was typed, four groups were selected and INVISIBLE.** The counter said so; the list
-offered no way to review or deselect them without clearing the filter first.
-
-**On a 372-group wall, with a habit of typing to narrow, that is how somebody submits a group they
-forgot they picked** — and under ADR-01 a submission that reaches a moderator cannot be pulled back.
-
-**A "show selected only" toggle answers it**, and costs almost nothing: it is a different `items`
-filter over the same list, and the merge model already keeps the truth outside the widget.
-**Undecided; recorded so the next session does not rediscover it.**
-
-### Both open questions: MEASURED 2026-08-15, by Terry driving the spike
-
-**Rebinding `simple_list.items` DOES clear the widget's `value`, and the merge model absorbs it.**
-Terry filtered to `canada`, watched the highlighting disappear, cleared the filter, and the four
-selections came back — *"If I clear the filter box, they come back."* **So the model was right and
-the screen was wrong**, which is precisely why the two-list redesign above replaced it. A correct
-model the user cannot see is not a working picker.
-
-**A 372-item `simple_list` renders and scrolls fine at `height=420`.** No lag, no truncation. The
-reference states a minimum of 80 and names no maximum, and 420 is comfortably inside whatever the
-real ceiling is.
-
-**Shift-click span select and ctrl-click multi-select both work natively**, confirmed by screenshot
-at 14 rows and at a scattered selection. **They are being dropped anyway** — see the two-list
-section below, where Terry chose single-row moves deliberately after seeing both work.
-
-### The picker is TWO LISTS, decided by Terry 2026-08-15 after driving the spike
-
-**Terry replaced the single filtered list with a side-by-side transfer picker**, in his words:
-*"Left side is alphabetical (case insensitive) sorting of groups with the filtering applied titled
-'Unselected groups'. Right side is 'selected groups'. As we click rows on either side, the group
-moves to the other side."*
-
-| | Left | Right |
-|---|---|---|
-| Title | `Unselected groups` | `Selected groups` |
-| Holds | Every group the photo is NOT in and has not been picked for | Every group the photo WILL be in |
-| Sort | Case-insensitive ascending | Case-insensitive ascending |
-| The filter box | **Applies** | **MUST NOT apply** |
-| A click | Moves the row right | Moves the row left |
-
-**The filter MUST NOT touch the right list, and that is the whole point of the redesign.** Terry
-drove the single-list spike, typed `canada`, and watched four selections vanish from view — the
-model held them correctly and the screen said otherwise. **A list that shows what you have chosen
-cannot be allowed to hide what you have chosen.**
-
-**Single-row moves only. Range select and multi-select are GONE, and Terry chose that**, having
-tested both working: *"I'm glad to lose range select and multi-select. Single row hopping at a time
-is more intuitive."* **A later session MUST NOT reintroduce shift-click as an improvement.** It also
-removes an unmeasured risk — whether `simple_list` fires its observer once per commit or once per
-intermediate change during a shift-drag, which would have decided whether span-move worked at all.
-
-**Three counts, and each names what it counts:**
-
-| List | Shows |
-|---|---|
-| Left | `Groups displayed: N` and `Groups hidden by filter: N` |
-| Right | `Number of groups currently selected: N` |
-
-#### Built as spike 0.5, `TransferPicker.lua`, 2026-08-15
-
-**`PickerProbe.lua` (0.4) stays registered on purpose.** It is the control. Comparing the two side
-by side is how the redesign gets judged, and deleting the thing you measure against is how a spike
-stops being evidence.
-
-**The dialog is a STAGING AREA, and that is the answer to the removal risk below.** Nothing reaches
-Flickr until the user clicks Save. So a click is free, a mis-click costs one more click, and the
-dangerous action needs a deliberate commit. **This is better than a per-row confirm**, which would
-put a modal in front of the one interaction the whole design exists to make fast.
-
-**Three implementation facts a later session will need:**
-
-- **A move rebinds both lists, which clears `value`, which fires the observer again.** Without a
-  guard that second firing reads as a click on nothing. `TransferPicker.lua` carries a `moving` flag
-  around every rebuild, and it MUST wrap every one.
-- **`\u{25CF}` is a Lua 5.3 escape and Lightroom runs 5.1**, where it is a SYNTAX ERROR rather than
-  a bad glyph — the whole file fails to load. The marker is written as raw UTF-8 bytes,
-  `"\226\151\143 "`.
-- **`simple_list.value` may be a TABLE or a bare id, and the reference does not settle which.** With
-  `allows_multiple_selection = true` it is clearly an array; with it false, the widget may hand back
-  the selected value itself. **Indexing a string with `[1]` returns nil**, so a naive reader would
-  run `selected[nil] = true` and die on the FIRST click. `TransferPicker.lua` reads both shapes.
-  **Which one Lightroom actually sends is still unmeasured** — the code no longer cares, which is
-  the point, but the answer is worth writing down when the spike runs.
-- **This machine has no `luac`**, so `scripts/lua-balance.py` stands in. It is a block-balance check
-  and **NOT a parser**; it catches an unclosed or over-closed block, which is the error that has
-  actually bitten. It was validated in both directions — against the three files Lightroom already
-  loads, and against deliberately broken fixtures.
-
-**Five things only Terry can answer, by using it:**
-
-1. Does `simple_list` with `allows_multiple_selection = false` fire its observer on **every** click,
-   including re-clicking a row that just came back from the other side?
-2. Does the `moving` guard hold, or does one click produce a double move?
-3. Does a move feel instant at 372 groups? Each one re-sorts and rebinds both lists.
-4. Are the `\u{25CF}` and `+` markers readable, or does the distinction need another treatment?
-5. Do two 330-wide lists plus the stat lines fit his screen?
-
-#### SUPERSEDED 2026-08-15: the right list is an ADD LIST, and FGA cannot remove
-
-**FGA HAS NO REMOVAL CAPABILITY. The only Flickr write in the entire codebase is
-`flickr.groups.pools.add`.** Terry asked whether a removal endpoint existed after seeing the picker
-stage removals; it does not, and `/api/v001/requests/:publicId/withdraw` only cancels a queued
-request before it is sent.
-
-**His decision:** *"I am going to stop complicating my life -- can only add groups, not remove. If a   DIRTY-WORDS-EXEMPT: quoting Terry
-pic is in a group when the dialog comes up, we just prune it from the initial candidate list."*
-
-So the groups a photo already belongs to are **pruned from the candidate list and never shown**, and
-the right pane holds this session's additions only. He also considered a desired-state endpoint --
-*"here is target state of groups for this pic"* -- and scoping to add-only deleted three real
-problems it would have created:
-
-- An **etag** to stop a stale read destroying a membership added while the dialog sat open.
-- The question of what a reconcile should do with a **queued-but-unsent** add.
-- The risk of a **remove-then-add cycle laundering away ADR-04's memory** that a pair already
-  reached a moderator, which is exactly the harm ADR-01 exists to prevent.
-
-**`GET /api/v001/photos/:photoId/groups` is still needed. Pruning is now the reason it exists.**
-
-**The section below is the superseded membership design**, kept because its reasoning about telling
-two kinds of row apart still governs any future removal feature.
-
-#### The superseded design: the right list as MEMBERSHIP
-
-**Terry, same session:** *"I may use the plugin to add/remove groups from pics that already have
-been added to some groups. In that case the groups the pic is ALREADY in should be pre-populated on
-the list to the right."*
-
-**So the right list opens pre-populated from Flickr**, via `flickr.photos.getAllContexts` — a call
-FGA already makes, so this needs no new endpoint. Two kinds of row live there and **they MUST be
-told apart**:
-
-| Row | Means | Clicking it |
-|---|---|---|
-| Already at Flickr | The photo is in this group now | **Removes it at Flickr** — a real `flickr.groups.pools.remove` |
-| Added this session | Queued, nothing sent yet | Un-picks it, costs nothing |
-
-**`simple_list` gives no per-row styling** — it takes plain strings, so color and badges are not
-available. **The marker MUST therefore live inside the string** (`●` for already-in, `+` for newly
-added, or equivalent). Hand-building rows from `LrView` primitives would allow real color and costs
-the built-in scrolling; that trade has not been made.
-
-**Removing an already-in group is the dangerous click on this dialog, and it is ADR-01 adjacent.**
-If the photo sits in a moderated group because a volunteer approved it out of a queue, a removal
-throws that approval away — and re-adding puts the photo back in front of a human. **A stray click
-MUST NOT be able to do that.** Removals of already-in rows SHOULD be staged and applied on commit,
-or gated behind a confirm. **This is not settled and needs Terry.**
-
-### ADR-01 gets MORE load-bearing, not less
-
-**A faster queueing path raises the volume flowing into volunteer moderator queues.**
-
-**Any client MUST call ADR-20's preflight and surface the "this already reached a moderator" warning
-before it submits.** Skipping it because a Lua dialog is awkward would quietly undercut the rule this
-project is organized around. The server would still refuse, so the user would see confusing failures
-rather than a clean warning.
+---
 
 ## Considered and rejected
 
 | Option | Why not |
 |---|---|
-| **Lightroom Services** cloud API | Addresses the Lightroom **cloud** library, not a Classic catalog. Also gated behind *"Requires Adobe review"* |
-| **Lightroom API - Firefly Services** | Same wrong target. `Create project` is disabled for Terry's account |
+| **Lightroom Services** cloud API | Addresses the Lightroom **cloud** library, not a Classic catalog. Also gated behind Adobe review |
+| **Lightroom API — Firefly Services** | Same wrong target |
 | An export filter to catch the publish | Filters run on the rendered file **before** upload, so no remote ID exists yet |
 | Calling Flickr from the plug-in to find the photo | Needs its own Flickr auth, and the catalog already knows the answer |
-| **Per-click submission with a Cloudflare Queue, and rescind by clicking again** | **Refused 2026-08-15, and this one is worth reading before re-proposing it.** Under ADR-01 an add that reaches a moderator resolves at that instant and can NEVER be pulled back — Flickr offers no call to remove a photo from a moderation queue, which is why `withdrawRequest` conditions on `state = 'pending'`. A rescind can lose that race, and the user would be told "cancelled" while a volunteer is looking at their photo. It also strands ADR-04, ADR-05, ADR-20 and `idx_requests_one_pending_per_pair`, all of which need a read BEFORE the user is told anything |
-| A Cloudflare Queue in front of the D1 insert, for latency | **The `requests` table already IS the queue** — `state='pending'`, ordered by `id`, drained by ADR-06's cron. A second queue only makes the INSERT async, and that insert carries every safety constraint. `env.QUEUE.send()` is a network call too, so it trades a write for a write. **ADR-06's promotion bar applies: measure a real limit first.** None of its three conditions holds |
-| A pasted long-lived token, or `LrSocket` on a localhost callback | Both workable, both beaten by the frob pattern above. A paste means generating and copying a secret by hand; a socket means a listener, a firewall prompt and a second redirect target |
+| **Per-click submission with a queue, rescind by clicking again** | **Read this before re-proposing it.** Under ADR-01 an add that reaches a moderator resolves at that instant and can NEVER be pulled back — Flickr offers no call to remove a photo from a moderation queue. A rescind can lose that race, and the user would be told "cancelled" while a volunteer is looking at their photo |
+| A Cloudflare Queue in front of the D1 insert | **The `requests` table already IS the queue.** A second queue only makes the INSERT async, and that insert carries every safety constraint. ADR-06's promotion bar applies: measure a real limit first |
+| A pasted long-lived token, or `LrSocket` on a localhost callback | Both workable, both beaten by the frob pattern. A paste means copying a secret by hand; a socket means a listener, a firewall prompt and a second redirect target |
+| Saved group sets | The ongoing tax. See the picker section |
 
-**Neither cloud API can see a Classic catalog on local disk**, which is where every record this
-design needs actually lives. The plug-in path is not merely easier; it is the only one that reaches
-the IDs.
-
-## Sources
-
-The SDK archive is authoritative and is the only source that should be quoted for API shapes.
-Everything else here was measured on this machine on 2026-08-14, except where marked.
-
-**Unverified, and worth one look:** a search summary claimed the 15.x line included SDK fixes to
-photo-collection methods, which is exactly the area this design leans on. That came from a search
-result rather than from Adobe. Read the real release notes before trusting or dismissing it.
+**Neither cloud API can see a Classic catalog on local disk**, which is where every record this design
+needs actually lives. **The plug-in path is not merely easier; it is the only one that reaches the
+IDs.**
