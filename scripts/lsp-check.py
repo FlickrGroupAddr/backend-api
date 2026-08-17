@@ -114,10 +114,13 @@ def check(enabled: set[str] | None, ts: tuple[int, int] | None) -> list[str]:
 
     problems: list[str] = []
 
-    ok, detail = verdict("pyright-lsp", enabled, "pyright-langserver")
-    print(f"  {'pyright-lsp':<16} {'ok  ' if ok else 'FAIL'}  {detail}")
-    if not ok:
-        problems.append(f"pyright-lsp: {detail}")
+    # **Unconditionally required: every language this project actually uses.**
+    for plugin, binary in (("pyright-lsp", "pyright-langserver"),
+                           ("lua-lsp", "lua-language-server")):
+        ok, detail = verdict(plugin, enabled, binary)
+        print(f"  {plugin:<16} {'ok  ' if ok else 'FAIL'}  {detail}")
+        if not ok:
+            problems.append(f"{plugin}: {detail}")
 
     if ts is None:
         print(f"  {'typescript-lsp':<16} ----  TypeScript version unknown; not enforced")

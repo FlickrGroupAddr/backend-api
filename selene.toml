@@ -1,0 +1,33 @@
+# selene, the Lua linter for this project's Lightroom Classic plug-in.
+#
+#     selene docs/lrc-spike/plugin        # via `npm run lua:lint`
+#
+# `lrc.toml` is the standard library, and it says why `import` is the only global
+# it has to declare.
+#
+# **Every exclusion below was measured, and the count is what selene reported on
+# this plug-in.** Same method as `ruff.toml` and `biome.jsonc`: run everything,
+# keep what reports defects, drop what reports taste, and record the evidence here
+# rather than a verdict.
+
+std = "lrc"
+
+[lints]
+# **`mixed_table` is OFF, and it is the one exclusion that is really about the
+# SDK rather than about taste.** It reported 17 hits. A LrView layout is a table
+# carrying named options AND positional children at once --
+# `f:row { spacing = 4, f:static_text {...}, f:push_button {...} }` -- which is
+# the documented way to build every dialog Adobe ships. **Flagging the idiom the
+# framework requires is a checker arguing with the platform.**
+mixed_table = "allow"
+
+# **`multiple_statements` is OFF.** 5 hits, all `local a, b = ...` style lines in
+# the probe. Pure layout, no defect.
+multiple_statements = "allow"
+
+# **`global_usage` is OFF for one real reason.** Its single hit is
+# `for key, value in pairs(_G)` inside `EntropyProbe.lua`, whose entire job is to
+# enumerate the globals a Lightroom plug-in can actually see. **Reading `_G` IS
+# the measurement there**, and the finding it produced is recorded in
+# `docs/LRC-CLIENT-NOTES.md`.
+global_usage = "allow"

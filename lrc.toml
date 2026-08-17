@@ -1,0 +1,32 @@
+# The selene standard library for a Lightroom Classic plug-in.
+#
+# **Standing order, Terry, 2026-08-17: every language in a project gets an LSP and
+# a best-of-breed linter, XOR his written override.** Lua's linter is `selene`;
+# its language server is `lua-language-server` via the `lua-lsp` plugin.
+#
+# ## `import` IS THE ONLY GLOBAL, and that was measured rather than assumed
+#
+# The expectation going in was that this file would have to translate all 56 SDK
+# namespaces out of `scripts/lrc-sdk-modules.json`. **It does not.** Running selene
+# against `docs/lrc-spike/plugin` on the bare `lua51` base produced 37 errors and
+# every single one was `` `import` is not defined ``.
+#
+# **The reason is how the SDK is actually reached.** A plug-in writes
+# `local LrTasks = import "LrTasks"`, so every `Lr*` name is a LOCAL variable that
+# selene already tracks. Only the loader itself is global.
+#
+# **So the 56-namespace index stays where it belongs.** `scripts/lua-imports.py`
+# already checks that every imported namespace and every `Namespace.member` call
+# exists in the pinned SDK -- a check selene cannot do, because selene does not
+# know what Adobe ships. **The two tools do different jobs and neither replaces
+# the other.**
+
+[selene]
+base = "lua51"
+name = "lrc"
+
+# Adobe's module loader. It takes one string and returns the namespace table.
+# `any` rather than a specific return type: selene's std format describes call
+# signatures, and the returned table's shape is what `lua-imports.py` verifies.
+[import]
+args = [{ type = "string" }]

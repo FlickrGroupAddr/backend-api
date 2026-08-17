@@ -73,8 +73,11 @@ local LrDate = import("LrDate")
 local GROUP_COUNT = 372
 local ALREADY_IN_COUNT = 8
 
---[[ U+25CF as raw UTF-8 bytes. `\u{...}` is Lua 5.3 and Lightroom runs 5.1. ]]
-local MARK_AT_FLICKR = "\226\151\143 "
+--[[ Only ONE marker is needed here, unlike TransferPicker.lua, which shows both
+     and carries a legend. Every right-pane row in this variant is a pending ADD
+     -- see the comment beside `rightRows` -- so the "already at Flickr" mark this
+     file used to declare was dead from the day it was copied across.
+     selene found it 2026-08-17, the first time a Lua linter ran on this project. ]]
 local MARK_QUEUED = "+ "
 
 local WORDS = {
@@ -194,8 +197,12 @@ local function run()
 				props[keyLeftVisible(g.id)] = showLeft
 				props[keyRightVisible(g.id)] = isSelected
 
+				-- selene: allow(empty_if)
+				--[[ The empty branch is the POINT: a selected row counts neither as
+				     shown nor as hidden, because the left pane is the only filtered
+				     one. Inverting the condition to satisfy the linter would bury
+				     that fact inside a negation. ]]
 				if isSelected then
-					-- Not counted either way: the left pane is the only filtered one.
 				elseif showLeft then
 					shown = shown + 1
 				else
