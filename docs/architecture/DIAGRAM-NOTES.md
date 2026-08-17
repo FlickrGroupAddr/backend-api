@@ -54,12 +54,12 @@ making the mesh a mesh.
 
 **Say the scope on the canvas** — a subtitle or a legend row — before this diagram goes anywhere.
 
-### The plug-in is missing its most important arrow
+### The plug-in's arrow to `/api/v001/*` EXISTS as of 2026-08-17
 
-**There is no edge from the plug-in to `/api/v001/*`.** `PLUGIN_ALLOWED` in
-`src/middleware/session.ts` grants it seven routes there, one being
-`POST /api/v001/requests/batch` — **the reason the plug-in exists.** The canvas currently shows the
-plug-in getting a credential and never spending it.
+**This section used to say the canvas showed the plug-in getting a credential and never spending
+it.** `e13` now runs plug-in to `/api/v001/*` and carries step 32, *"Plugin performs FGA app
+operations against /api/v001/*"*. `PLUGIN_ALLOWED` in `src/middleware/session.ts` grants it seven
+routes there, one being `POST /api/v001/requests/batch` -- the reason the plug-in exists.
 
 ---
 
@@ -207,6 +207,52 @@ than trusting the ratio.**
 That structural rhyme is what finally made the right column read — your words when it landed were
 *"bottom aligning the cloudflare and Flickr boxes is what I needed"*.
 
+### Line style and badge placement mean something. Decided 2026-08-17
+
+**Solid means SYNCHRONOUS DATA TRANSFER. Dotted means ASYNC TRIGGER.** Your definition, and it is
+better than what the Legend prints. The Legend says *"Request / response"* and *"Scheduled trigger"*,
+which are two examples rather than the rule -- a solid arrow on this canvas also covers a Worker
+reading its own storage and a Worker reading Secrets, and neither is a request/response pair.
+
+**Badge placement is a language, and a reader learns it once:**
+
+| Where the badge sits | What it means | Examples |
+|---|---|---|
+| A tile's **top-left** corner | The first action on that thing | 1, 4, 14 |
+| A tile's **top-right** corner | The last action on that thing | 31, 28, 20 |
+| Alone on a run | A one-way action | 2, 11, 27, 29, 32 |
+| Paired on one run | A round trip, request then response | 3/5, 8/9, 12/13, 29/30 |
+
+**Three badge sizes, for three situations, and this is NOT drift.** 24 du is the default. 21 du is for
+the three tight channels where a 24 would touch a border -- badges 2, 7, 11, 14 and 20 all sit
+between two vertical lines under 30 du apart. 30 du is badge 16 and 17 alone, because an isolated
+badge on a bare line with no surrounding detail reads smaller than the same badge on a color fill.
+
+### The sweep tiles get no visual cue either. CONSIDERED AND REJECTED
+
+**`Nightly Event`, `Nightly Retry Logic` and the lower arrows on `App Secrets Store` and `SQL
+Database` belong to the nightly sweep, not to the auth flow.** They carry no badges and never will --
+Auth Data Flow ends at step 32. A reader following the numbers reaches them and has to work out for
+themselves that this is a different story.
+
+**Rejected, your call, and the reason is better than the cue would have been:** *"it's the reason the
+project exists -- the 'cool, try to work all queues until a group says stop it, that user is at the
+max for today'. 2031 Terry will remember THAT much."*
+
+**So the absence of badges IS the signal.** Everything numbered is the auth dance; everything
+unnumbered is the thing the auth dance exists to enable. A cue would only restate what the reader
+already knows about their own product.
+
+### A repeating arrow gets no special line style. CONSIDERED AND REJECTED
+
+**`/auth/device-link/poll` fires every few seconds for as long as a person takes, while every other
+arrow on the canvas fires once.** A dashed or doubled treatment on that one run would say so without
+prose.
+
+**Rejected, your call: step 29 says "Plugin POLLS", and that verb already carries it.** A new line
+style costs a Legend entry, and the Legend is the one place a reader has to learn something before
+the picture works. **Spending an entry to restate a verb is a bad trade.**
+
 ### When two clients reach one node, SPLIT THE NODE
 
 **Your call, and the sharpest design lesson on this canvas.** The browser and the plug-in both talked
@@ -314,8 +360,6 @@ others. On 2026-08-15 the build passed every assertion over a diagram you called
 
 **None of this blocks anything. It is written down so it is not rediscovered.**
 
-- **The User Journey panel is stale against the picture.** It still runs browser-first and calls step
-  10 a browser call. **The picture and the panel disagree**, which is the contradiction class above.
 - **No Lightroom Classic logo.** Cloudflare and Flickr both carry their marks. **The trap: Lightroom
   Classic and Lightroom (CC) have different icons**, and this diagram means Classic specifically —
   the whole `getPublishServices(nil)` mechanism is Classic-only.
@@ -334,39 +378,59 @@ others. On 2026-08-15 the build passed every assertion over a diagram you called
 
 ---
 
-## The next change: a two-panel User Journey, plug-in first
+## What was actually built, 2026-08-17: ONE panel, 32 steps
 
-**Your direction: split login/auth from publish, and draw the auth panel in full.** Your reasoning
-decides the level of detail — *"Terry of 2031 will appreciate us being pedantic af today. Hold his   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
+**The plan in this section was a two-panel journey with `A1`/`B1` prefixes and roughly 27 steps.
+What shipped is one panel called Auth Data Flow, plug-in first, numbered 1 to 32 with no prefixes.**
+Terry's framing when it started: *"Terry of 2031 will appreciate us being pedantic af today. Hold his   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
 hand."*
 
-**Why rewrite it:** today's journey runs browser-first and the plug-in appears at steps 12 and 13 as
-an afterthought. Per `docs/LRC-CLIENT-NOTES.md` the plug-in is arguably the more important client —
-the goal is queueing adds without leaving Lightroom. **The journey should open with the user
-clicking "Authorize with FGA".**
+**The publish panel was never drawn**, so the letter-prefix question never had to be answered. If a
+second panel is ever added, that decision reopens.
 
-**The auth panel drafts to 18 steps and mostly draws SHIPPED behavior.** ADR-24 built the device flow
-— `start`, `poll`, `approve` and `deny` all exist. What remains unbuilt is **a page and a Lua
-client**, not a design: the `LrHttp.openUrlInBrowser` call on the Lua side, and the `/link`
-confirmation page, which ADR-18 puts in Svelte rather than the Worker.
+**The auth flow grew rather than shrank, and every added step came from a question Terry asked:**
 
-**That page is the only defense against device-flow phishing.** ADR-24 makes the confirmation a page
-requirement precisely because no backend route can substitute: nothing auto-approves, and approval is
-always a POST a person had to cause.
+| Step | Exists because |
+|---|---|
+| 4 and 5 | He split the old step 3, which fused a request, an object write and a response into one line |
+| 9 | He demanded the walkthrough assume a fresh Windows install, zero cookies, zero DNS cache |
+| 20 | He asked whether the Durable Object is deleted or merely times out |
+| 30 | He noticed the panel jumped from polling to saving with nothing saying the token arrived |
 
-**Three constraints bind the design, and each has already caught something:**
+**Two defects in the DRAWING were found the same way**, neither by any check: the canvas showed one
+Durable Object while `wrangler.jsonc` declares two, and `e3` pointed at the OAuth object while the
+suite asserted it carried the DEVICE-LINK handshake. That assertion had been passing while describing
+something false.
 
-- **Every journey step needs a badge, and every badge needs a real edge.** The build fails when the
-  row count and the badge count disagree, so the step list and the arrows are one decision.
-- **Two panels each numbering from 1 means two badges reading "3".** Letter prefixes — `A1`, `B1` —
-  solve it with no new color rule and no legend row. **Not yet decided.**
-- **"Publish to Flickr as normal" has no edge**, because FGA does not participate. It is context
-  above the publish panel, not a numbered step.
+**Naming settled along the way.** `/link` became `/auth/device-link/enter-user-code`, because its
+siblings are verbs and "form" names a widget that ages badly. `OAuth Request Token` became
+`Flickr OAuth State`, because the object holds the token secret and the return path too. And OAuth's
+two token/secret pairs stopped sharing one name -- `Request Token`/`Request Secret` versus
+`Access Token`/`Access Secret` -- which a reader would otherwise have taken for one value returned
+twice.
 
-**The plug-in needs its own DNS edge, and it now has one.** It is a network client before it is a
-browser launcher: it calls `POST /api/v001/device/start` first and must resolve `flickrgroupaddr.com`
-itself. It cannot delegate that to the browser, because `LrHttp.openUrlInBrowser` is fire-and-forget
-and the `deviceCode` would land in a tab the plug-in cannot read.
+### Still true from the old plan, and still binding
 
-**The publish panel drafts to 9 steps**, from the catalog read through preflight and
-`POST /api/v001/requests/batch` to the 00:15 UTC sweep calling `groups.pools.add`.
+- **Every step badge needs a real edge**, and the build compares the row count against the badge
+  count. The step list and the arrows are one decision.
+- **"Publish to Flickr as normal" has no edge**, because FGA does not participate. If a publish panel
+  is ever drawn, that is context above it rather than a numbered step.
+- **The plug-in needs its own DNS edge and has one.** It is a network client before it is a browser
+  launcher: it calls `POST /api/v001/device/start` first and must resolve `flickrgroupaddr.com`
+  itself. It cannot delegate that to the browser, because `LrHttp.openUrlInBrowser` is
+  fire-and-forget and the `deviceCode` would land in a tab the plug-in cannot read.
+- **The confirmation page is the only defense against device-flow phishing.** ADR-24 makes it a page
+  requirement because no backend route can substitute: nothing auto-approves, and approval is always
+  a POST a person had to cause.
+
+### State at the end of that pass
+
+**`CHECKS_ENABLED` is FALSE and two sheets are deleted.** The build writes only `11x17`; the
+`8.5x14` and `16x9` sheets return when the suite goes back on. **Turning it back on is not flipping
+the flag** -- the layout moved on every axis, so several assertions now describe a design that no
+longer exists and MUST be rewritten rather than satisfied. The `lrcat`/`lrc`/`users` axis check is
+the known one: it asserts a shared WIDTH of 130, and `users` is now 183 wide while the axis it
+actually needs is still 121.5.
+
+**The route labels are STILL a proposal**, per the section at the top of this file. Terry, the same
+day: *"let's not catch the code up just yet. Diagram is future state."*
