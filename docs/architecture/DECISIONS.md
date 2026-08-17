@@ -987,6 +987,13 @@ to ignore rate limits. Two ordering properties carry the defense: a throttled po
 window forward, and **throttling MUST come after the `deviceCode` check** — reversed, anybody who read
 a `userCode` off a screen could hold the real plug-in in permanent `slow_down`.
 
+**The poll loop is due to become a HELD request — DECIDED 2026-08-17, NOT BUILT.** `poll` will hold
+the connection open until approval, denial or a 25-second deadline, cutting a 40-second link from
+about 8 requests to 2 and removing the five-second gap between the click and Lightroom reacting.
+**Nothing in this ADR changes**: `pending` stays a real answer, `pollAfter` still ships, and the
+2-second floor still applies. **The design, the rules it MUST obey, and the rejected push-socket
+options are in `docs/architecture/LONG-POLL-NOTES.md`**, which becomes ADR-26 when the code lands.
+
 ### The phishing weakness is REAL, and FGA's version is worse than most
 
 **Every device flow has this hole**, and **PKCE does not close it** — the attacker started the flow,

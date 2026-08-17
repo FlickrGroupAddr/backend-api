@@ -463,7 +463,8 @@ their architecture.** Precedent is the weakest argument available here.
 |---|---|
 | `docs/ORIENTATION.md` | **A cold or compacted session starts here.** A router, not a summary — and it says what NOT to read |
 | `docs/architecture/DECISIONS.md` | The rules that bite. Read before changing behavior |
-| `docs/architecture/KEY-ROTATION-NOTES.md` | Crypto blast radius, the timestamped keyring, opaque sessions. **Decided 2026-08-15, not built.** Becomes ADR-22 when the code lands |
+| `docs/architecture/KEY-ROTATION-NOTES.md` | Crypto blast radius, the timestamped keyring, opaque sessions. **Decided 2026-08-15, not built.** Takes the next free ADR number when the code lands — **it is no longer ADR-22**, which the schema decision took |
+| `docs/architecture/LONG-POLL-NOTES.md` | The device-link poll becomes a held request, and why no push socket exists. **Decided 2026-08-17, not built.** Becomes ADR-26 when the code lands |
 | `docs/FLICKR.md` | What the API actually does. Several rows contradict Flickr's docs |
 | `docs/SETUP.md` | Bring-up, and four traps that cost real time |
 | `docs/architecture/*.drawio` | Generated, and gospel. Do not edit |
