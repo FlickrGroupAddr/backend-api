@@ -472,6 +472,46 @@ their architecture.** Precedent is the weakest argument available here.
 | `web/src/**/*.svelte` | Markup and wiring only. Nothing here is typechecked — see below |
 | `web/src/lib/outcomes.ts` | **ADR-01's promise, as the sentences a user reads.** Still-open copy |
 
+## Language tooling compliance, against the global standing order
+
+**Terry, 2026-08-17: every language in a project MUST have a language server AND a
+best-of-breed linter at best-practice pedantry, XOR a written override in this file put
+there by Terry and only Terry.** The full order and the method are in `~/.claude/CLAUDE.md`.
+**Claude MUST NOT write an override**, and MUST report a gap rather than proceeding past it.
+
+Tracked file counts as of 2026-08-17.
+
+| Language | Files | Linter | LSP | State |
+|---|---|---|---|---|
+| TypeScript | 50 | `biome`, 8 rules past `recommended` | **pending** | Version-gated to TS 7.1; `npm run lsp` turns red on its own |
+| Python | 13 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
+| **Lua** | **9** | `lua-balance.py` + `lua-imports.py` | **NONE** | **NOT COMPLIANT** — see below |
+| **Svelte** | **4** | none — Biome cannot read the template | none | **NOT COMPLIANT** — blocked by the same TS 7 pin, ADR-13 |
+| **SQL** | **6** | none | none | **NOT COMPLIANT** — migrations only |
+| CSS / HTML | 1 each | `biome` covers CSS | — | One file each |
+
+### Lua is the clearest gap, and both halves exist
+
+**Surveyed 2026-08-17, and the survey is recorded because "there wasn't one" needs
+evidence:**
+
+| Candidate | Verdict |
+|---|---|
+| `LuaLS.lua-language-server` | **On winget at 3.18.2.** One command. Pairs with the marketplace's `lua-lsp` plugin |
+| `selene`, crates.io 0.31.0 | **The linter.** Rust-based, so `cargo` — already on this box — installs it. 135,940 downloads, updated 2026-05-21 |
+| `luacheck` | The real one is a LuaRocks package and needs a Lua runtime plus luarocks |
+| **npm `luacheck`** | **AN IMPOSTOR. MUST NOT be installed.** Version 0.1.2, "luacheck bindings for Node.JS", from `za-creature/node-luacheck`. **Third name-collision trap found today** — see the ruff one in `~/.claude/CLAUDE.md` |
+
+**What this project already has is not nothing, and that matters to the decision.**
+`scripts/lua-balance.py` runs the REAL Lua 5.1 compiler out of the vendored SDK, and
+`scripts/lua-imports.py` refuses any SDK namespace or member the pinned archive does not
+document. **That is stronger than a generic linter for the one failure that has actually
+bitten here.** What is missing is the language server and a general-purpose linter.
+
+**`selene` needs a standard-library definition for the Lightroom globals** — `import`,
+`LrTasks` and the rest — or it reports every SDK call as undefined. That is a real setup
+cost and it is the honest reason this is a decision rather than a one-liner.
+
 ### The UI has a typechecking hole, and it is architectural
 
 **`svelte-check` peers on TypeScript `^5 || ^6`, and ADR-13 pins 7.0.2.** So nothing typechecks the
