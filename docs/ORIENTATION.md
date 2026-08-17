@@ -40,7 +40,7 @@ cheap.
 | Then read | For |
 |---|---|
 | `CLAUDE.md`, "The diagram is generated, and it is gospel" | The loop's traps, and why `#U` cannot load loopback |
-| `docs/architecture/DIAGRAM-NOTES.md` | The canvas itself, before changing it. **Its "What is pinned to what" table is the map that makes a layout change tractable** |
+| `docs/architecture/DIAGRAM-NOTES.md` | **What the picture CLAIMS about the system, how it prints, and the draw.io traps.** It holds no coordinates on purpose — the build prints those |
 
 **Two rules that cost real time to learn, both on 2026-08-16:**
 
@@ -53,8 +53,11 @@ cheap.
 
 **`scripts/build-diagram.py` refuses to write a diagram that fails any assertion**, and prints every
 check as it goes — so the run is the list. **The suite asserts RELATIONSHIPS rather than
-coordinates**, and `DIAGRAM-NOTES.md`'s "What is pinned to what" table is where those relationships
-are written down.
+coordinates**, and its own output is therefore the relationship map: every shared edge, column, level
+run and gap, derived from the artifact. **Run the build before a layout change.**
+
+**`CHECKS_ENABLED` in that script turns them all off for a design pass**, and it MUST NOT be removed
+— see `CLAUDE.md`. The build shouts a banner on every run while they are off.
 
 ## What NOT to read, and why
 

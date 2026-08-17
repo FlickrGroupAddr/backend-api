@@ -1,886 +1,293 @@
-# The architecture diagram: printing it, and changing it
+# The architecture diagram
 
 **RFC 2119 keywords. MUST and MUST NOT are absolute. SHOULD is a strong default a good argument may
 overrule. MAY is optional.**
 
 **The diagram is generated.** `scripts/build-diagram.py` writes
-`FlickrGroupAddr-Architecture-<date>.drawio`, and a hand edit is lost on the next build. This file
-records what the generator does not say about itself: how the artifact prints, and how a layout
-change is actually made.
+`FlickrGroupAddr-Architecture-<date>.drawio`, and a hand edit is lost on the next build. **Edit the
+generator.**
 
-**`CLAUDE.md` carries the render loop and the traps a Claude session hits.** This file is about the
-artifact. Where they overlap, `CLAUDE.md` wins for procedure and this one for facts about output.
+**This file holds the things the generator cannot tell you: what the picture claims about the
+system, how to print it, and the draw.io behaviors that will waste your afternoon.** It holds no
+coordinates — the build prints those, and any written here would be a lie within the week.
 
-## THIS DIAGRAM IS SCOPED TO THE LIGHTROOM CLASSIC JOURNEY
+---
 
-**Terry, 2026-08-16: *"For this diagram I'm pretending we have no web client and that rescues
-this."*** He is right that it rescues it, and the reason is structural rather than convenient.
+## READ THIS FIRST IF YOU ARE ABOUT TO BELIEVE THE DIAGRAM
 
-**Two first-class clients cannot both be drawn as line-of-flow on one canvas.** Their flows
-interleave — the plug-in starts a device link, the browser authorizes it, the plug-in resumes — so
-neither one sequence nor two independent sequences describes the pair. Every attempt produced
-crossings, because the real relationship is a mesh.
+### The route labels are a PROPOSAL. The code does not serve these paths
 
-**Scoping to the plug-in demotes the browser from a CLIENT to a STEP**, and a step only needs the
-routes its own flow touches. That deleted the browser's arrow to `/api/v001/*`, which was the edge
-making the mesh a mesh.
-
-**THE WEB UI GENUINELY EXISTS — see ADR-18, a Svelte app shell on the same origin.** A reader who
-takes this canvas as the whole system will conclude there is no browser client. **Say so on the
-canvas**, in a subtitle or the legend, before this diagram goes anywhere.
-
-### What that scoping bought, in one table
-
-Five route tiles, five straight horizontals, no crossings and no routed edges:
-
-**Stated as a rhythm rather than as five numbers**, because the absolute lines have moved twice since
-this table was written and the rhythm never has. `python scripts/build-diagram.py` prints the
-current values.
-
-| Order, top to bottom | Route | Caller | Gap to the previous |
-|---|---|---|---|
-| 1 | `/auth/device-link/start` | plug-in | — |
-| 2 | `/auth/device-link/poll` | plug-in | **42** |
-| 3 | `/api/v001/*` | plug-in | **42** |
-| — | *the DNS band, 60 tall* | *separates the two callers* | **11** |
-| 4 | `/auth/device-link/approve` | browser | **11 below the band** |
-| 5 | `/auth/flickr/*` | browser | **42** |
-
-**The plug-in tile is 120 tall for exactly one reason: so its three exits land on `0.15`, `0.5` and
-`0.85`.** That evenness was not aimed at. It falls out of a 120-tall tile whose three targets sit 42
-apart, and it is a good check that the geometry is right.
-
-**The User Journey panel is now STALE against the picture.** It still describes a browser-first
-ordering and calls step 10 `flickrgroupaddr.com/api/v001/*` as a browser call. **The picture and the
-panel disagree**, which is the defect class this file warns about, and it is the last one open.
-
-## THE ROUTE LABELS ARE A PROPOSAL. THE CODE DOES NOT HAVE THESE PATHS
-
-**As of 2026-08-16 the diagram is AHEAD of the implementation**, and a reader who takes the Worker's
-route tiles as fact will be wrong about every one of them.
+**As of 2026-08-16 the diagram is ahead of the implementation.**
 
 | The diagram says | `src/` actually serves |
 |---|---|
 | `/auth/device-link/start` | `POST /api/v001/device/start` |
 | `/auth/device-link/approve` | `POST /api/v001/device/approve` |
 | `/auth/flickr/*` | `/oauth/login`, `/oauth/callback`, `/oauth/logout` |
-| `/api/v001/*` | correct, and the only accurate one |
+| `/api/v001/*` | Correct, and the only accurate one |
 
-**Terry proposed the rename; nothing has been renamed.** He wanted the two credential flows to look
-related, and `/device` read as a *"WTF generator"* — his words — because it names a standard
-(RFC 8628 device authorization) rather than the thing it does here.
+You proposed the rename because the two credential flows should look related, and `/device` reads as
+a *"WTF generator"* — it names a standard (RFC 8628 device authorization) rather than the thing it
+does here. **Nothing has been renamed.**
 
-**So this is a picture-contradicts-the-code defect DELIBERATELY INTRODUCED**, which is a different
-animal from the accidental kind the checks were built for. It is fine while it is a proposal being
-looked at. **It becomes a trap the moment anyone forgets.** Either the code moves to match, or the
-diagram moves back — and whichever happens, delete this section in the same commit.
+**Either the code moves to match or the diagram moves back. Whichever happens, delete this section
+in the same commit.**
 
-**Also still missing, and NOT caused by the rename: an arrow from the plug-in to `/api/v001/*`.**
-`PLUGIN_ALLOWED` in `src/middleware/session.ts` grants the plug-in seven routes there, one of them
+### The canvas is scoped to the Lightroom Classic journey, and the web UI is real
+
+**ADR-18 is a Svelte app shell on the same origin. A reader who takes this canvas as the whole system
+will conclude there is no browser client.**
+
+**The scoping is structural, not laziness.** Two first-class clients cannot both be drawn as
+line-of-flow on one page: their flows interleave — the plug-in starts a device link, the browser
+authorizes it, the plug-in resumes — so neither one sequence nor two independent sequences describes
+the pair. Every attempt produced crossings, because the real relationship is a mesh.
+
+**Scoping to the plug-in demotes the browser from a CLIENT to a STEP**, and a step only needs the
+routes its own flow touches. That deleted the browser's arrow to `/api/v001/*`, which was the edge
+making the mesh a mesh.
+
+**Say the scope on the canvas** — a subtitle or a legend row — before this diagram goes anywhere.
+
+### The plug-in is missing its most important arrow
+
+**There is no edge from the plug-in to `/api/v001/*`.** `PLUGIN_ALLOWED` in
+`src/middleware/session.ts` grants it seven routes there, one being
 `POST /api/v001/requests/batch` — **the reason the plug-in exists.** The canvas currently shows the
-plug-in obtaining a credential and never spending it.
+plug-in getting a credential and never spending it.
 
-## Printing
+---
 
-### The canvas is 100 units per inch, and that is why the page is 1700x1100
+## Printing it
 
-drawio's coordinate space is **100 units to the inch**. Letter is `850x1100`, A4 is `827x1169`, and
-17x11 landscape is exactly **`1700x1100`**. A font size converts straight to points: `fontSize=14`
-is 0.14 in, which is **10.1 pt**.
+**This is the part you will come back for.**
 
-### Body text took TWO corrections, and the second one is the record worth keeping
+```
+Page          1700 x 1100 drawing units = 17 x 11 inches
+Margins       30 units a side = 0.30 in, all four
+Content       1640 x 1040 of INK, which is exactly the printable area
+Export at     100%.  NEVER "Fit to Page"
+```
 
-| Body text | 2026-08-14 | 2026-08-15 | **2026-08-16** |
-|---|---|---|---|
-| Tile text | `fontSize=11` — 7.9 pt | `fontSize=17` — 12.2 pt | **`fontSize=14` — 10.1 pt** |
-| Tile headings | — | `fontSize=19` — 13.7 pt | **`fontSize=15` — 10.8 pt** |
-| Journey panel | `font-size:14px` — 10.1 pt | `font-size:16px` — 11.5 pt | **`font-size:13px` — 9.4 pt** |
-| Step badges | `fontSize=22` — 15.8 pt | `fontSize=26` — 18.7 pt | **`fontSize=20` — 14.4 pt** |
-| Page title | — | `fontSize=40` — 28.8 pt | **`fontSize=28` — 20.2 pt** |
+**Fit to Page is the likeliest way this print goes wrong**, and it has nothing to do with margins.
+The content fits the printable area exactly, so any fit pass shrinks it and puts white space back on
+all four sides. Adobe Reader defaults to it. **Say "actual size, 100%" at the counter.**
 
-**7.9 pt is footnote size**, and it made the first 8.5x11 print unreadable. Terry called it an
-eyechart, and the fix was type rather than page size.
+### Why 0.30 in and not 0.25 in
 
-**Then 12.2 pt overshot.** Terry, 2026-08-16: *"the current text across the diagram is kind of   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
-comically huge. I appreciate you dialing it up but we overshot some. This will be on an 11x17 in
-piece of paper in front of me and I have 20/20."*
+Every printer grips the sheet at its edge and cannot put ink there. That strip is physical, not a
+setting. **Sheet-fed laser engines carry 4–5 mm (0.157–0.197 in), and some specify 6 mm (0.236 in) on
+the trailing edge. A sheet-fed engine is also allowed about 1 mm of image-placement drift.**
 
-**So the target is ABOUT 10 pt for tile body on 11x17, and that number is now measured from two
-misses in opposite directions rather than guessed.** A future session moving type SHOULD treat
-10.1 pt as the calibrated center and justify a departure from it.
+`0.25 in` is `6.35 mm`. It clears the stated border and **does not clear the border plus the drift.**
+`0.30 in` absorbs both and costs `0.1 in` out of a 17 in sheet.
 
-### TWO TRAPS a type change walks straight into
+### Margins are measured in INK, not in boxes, and the difference is large
 
-**Inline HTML `font-size:` beats the shape's `fontSize`.** The 2026-08-15 pass changed only one of
-them and left 39 spans at the old size inside tiles declaring the new one — one tile read as an
-eyechart beside its neighbors and nothing in the style attributes explained why. **Change both, in
-one pass.** `scripts/build-diagram.py` is rewritten by a regex over both forms for exactly this
-reason.
-
-**Shrinking type leaves every hand-sized box too roomy, and a box that is too large passes every
-other geometric assertion in the file.** The slack check is the one that catches it: the 2026-08-16
-pass left `justification` at 64px of slack, `key` at 47 and `journey` at 207 against a 45px ceiling,
-and all three had to be re-tightened. **`CHAR_W` MUST carry every size the file uses** or
-`text_height` raises `KeyError`.
-
-### The coordinates MUST NOT be scaled to chase a pixel count
-
-**A 300 DPI 11x17 PNG is 5100x3300, and the way to get it is to export this page at 300%** — not to
-rewrite the canvas as `5100x3300`.
-
-| | Inches | Pixels at 300 DPI |
-|---|---|---|
-| Full page | 17 x 11 | **5100 x 3300** |
-| Live area, quarter-inch margins | 16.5 x 10.5 | **4950 x 3150** |
-
-Scaling the numbers would make drawio report a **51x33 inch page**, and it would silently invalidate
-every absolute threshold in the generator — the badge band `NEAR_MIN, NEAR_MAX = 24.0, 32.0`, the
-text estimator's `CHAR_W`, every hand-set box height. **None of them would fail. They would stop
-meaning anything**, which is worse.
-
-**For PDF none of this applies.** PDF export is vector and therefore resolution-independent.
-
-### Margins are a quarter inch, because that is a hardware fact
-
-Every printer grips the sheet at its edge and cannot put ink there. That strip is the minimum
-margin, and it is physical rather than a setting.
-
-| Printer class | Sides and top | Bottom |
-|---|---|---|
-| Laser | ~0.16 in (4 mm) | same |
-| Inkjet, plain paper | ~0.12 in (3 mm) | **often 0.5 in** |
-
-The bottom edge is the outlier: an inkjet releases the trailing edge of the sheet before it finishes
-printing, so it reserves extra room. A laser pulls the sheet through a fuser and stays symmetric.
-
-**0.25 in clears every laser device and the sides and top of every inkjet.** Terry prints on an
-enterprise color laser at FedEx Office, which is the safe case.
-
-### The page size matters most when it is exactly right
-
-**Measured 2026-08-16 from the ARTIFACT, not the template**, because the question is what would
-actually print:
+**A geometry is not what the reader sees.** Three corrections separate them, and the generator now
+applies all three:
 
 | | |
 |---|---|
-| Page | `1700 x 1100` — 17 x 11 inches |
-| Printable area, **0.30 in** margins | **`1640 x 1040`** |
-| Content bounds | x 30 to 1670, y **16.35 to 1046.35** |
-| Content size | **`1640 x 1030`** |
-| Scale | **100.0%** — width binds exactly, height has 10 to spare |
+| A stroke straddles its path | Half of `strokeWidth` paints **outside** the box |
+| A text box is taller than its letters | **13.65 units** for the page title alone |
+| A routed edge lives in `<mxPoint>` | It is in no tile's `<mxGeometry>` |
 
-**The content is CENTERED horizontally and is NOT centered vertically.** x 30 to 1670 leaves 30 a
-side, which is exactly the margin. y 16.35 to 1046.35 leaves 16.35 above against 53.65 below **as
-boxes** — and that is the wrong way to read the top, for the reason below.
+**The page title's cap top sits ON the top margin**, which is what you asked for and what the build
+asserts. Its *box* therefore starts above the margin, and that is correct rather than a violation.
 
-### THE TOP MARGIN IS MEASURED IN INK, and ink is 13.65 below the box
+**All four margins are equal and exact.** The build names the cell that owns each edge, so a failure
+says which shape to move.
 
-**Terry's requirement, 2026-08-16: the top pixel of the title sits ON the 0.30 in margin.** A text
-box is taller than the letters inside it, so putting the *box* on `y=30` would push the visible top
-of the drawing to `y=43.65` and throw away 0.14 in of a sheet that has none to spare.
+### Other page facts
 
-The chain, for `title` at `fontSize=28` in a 48-tall box with `verticalAlign=middle`:
+- **100 drawing units = 1 inch.** A font size converts straight to points: `fontSize=14` is 0.14 in,
+  which is **10.1 pt**.
+- **Body type is 10.1 pt, and that number is calibrated rather than chosen.** 7.9 pt made the first
+  print an eyechart; 12.2 pt was *"comically huge"*. Ten is the center between two misses in opposite
+  directions. **Justify any departure from it.**
+- **For a raster export, scale the EXPORT — never the coordinates.** 300 DPI on 11x17 is 5100x3300,
+  which you get by exporting this page at 300%. Rewriting the canvas to those numbers would make
+  draw.io report a 51x33 inch page and would silently invalidate every absolute threshold in the
+  generator. PDF is vector, so none of this applies to it.
 
-| Step | | |
-|---|---|---|
-| Line box top | `(48 - 28*1.2) / 2` | **7.200** |
-| Ascent top | plus half-leading, `(33.6 - 1.117*28) / 2` | **1.162** |
-| Baseline | plus the ascender, `0.905 * 28` | **25.340** |
-| **Cap top** | minus the cap height, `0.716 * 28` | **13.654 below the box** |
+---
 
-**The ratios are Arial's, and Helvetica maps to Arial on this box.** Verified two ways: Chrome's
-canvas `TextMetrics` agreed, and the render put the title-to-date glyph gap at ~32.8 against this
-model's 32.96.
+## What the picture CLAIMS, which is what breaking it would cost
 
-**Chrome ROUNDS `TextMetrics` to integers** as a fingerprinting mitigation, so reading them back
-gives 13.5 rather than 13.654. Layout uses the real values. **The render measurement is what settles
-it, and it favors the unrounded model.**
+**These are assertions about the system. Break one and the diagram becomes false, not just ugly.**
 
-**`ink_top()` in the generator computes this, and `title ink sits ON the top margin` asserts it.**
-Proven in both directions on 2026-08-16 — moving the title 1 unit made it fail with
-`31.00 against 30`.
-
-### The margin is 0.30 in, not 0.25 in, and the reason is a specific printer
-
-**Terry prints this on an 11x17 color laser at a FedEx Office counter.** He asked whether 0.25 in was
-safe and it very nearly is — sheet-fed laser engines carry an unprintable border of **4 mm to 5 mm
-(0.157 in to 0.197 in)**, and some specify **6 mm (0.236 in)** on the trailing edge. `0.25 in` is
-`6.35 mm`, so it clears the stated border and **does not clear the stated border plus the ~1 mm of
-image-placement drift** a sheet-fed engine is allowed. **0.30 in absorbs both**, and it costs
-`0.1 in` out of a 17 in sheet.
-
-**Export WITHOUT "Fit to Page", and say so at the counter.** The content fits `1640 x 1040` exactly
-at 100%, so any fit-to-page pass shrinks it and puts the white space back on all four sides. That is
-the likeliest way this print goes wrong, and it has nothing to do with the margin.
-
-**The horizontal landed in two moves on 2026-08-16, both from Terry looking at a render.** First
-`+20` in x, which closed a 5-against-45 split at the old 0.25 in margin. Then, for the 0.30 in
-target, the right column gave up 10 of width and the whole canvas moved `+5` — **16.5 in of content
-became 16.4 in, and 25/25 became 30/30.**
-
-**The vertical is mid-change.** Terry is stretching the canvas down the page rather than centering
-it, so the y margins are reported on every build and **deliberately not asserted yet** — an
-assertion that fails on every run is one nobody reads. **Turn it into a check in the same commit
-that settles the vertical.**
-
-**So export WITHOUT "Fit to Page".** That option is now the wrong choice: it would shrink a drawing
-that already fits.
-
-**This reverses the instruction that stood from 2026-08-14 to 2026-08-16**, when the content was
-`1770 x 1303` — 4% over in width and 18% over in height — and Fit to Page was the only way to get a
-single sheet. **A future session finding an old note that says otherwise is reading history.**
-
-**Three changes closed that gap, and none of them was a rescale:** the step badges came off (`n7`
-hung to y=1327, 227 units below the page), the Cloudflare frame lost 140 units of height, and the
-right column narrowed from 350 to 330 — the last 20 units of width. It gave up another 10 the same
-evening, to **320**, to buy the 0.30 in margin.
-
-**THE MARGIN NOW BINDS, and that is the cost of fitting exactly.** At 1640 of 1640 there is zero
-slack in width. A driver asked to fit a mismatched page would scale a percent or two and absorb a
-small overflow; there is nothing left to absorb. **Anything that widens the canvas breaks the 1:1
-fit immediately**, and the two outer columns — `lrcapp` at x=30 and `journey`/`key` ending at
-x=1670 — are what pin it.
-
-**Vertical headroom is 20 units, or 0.2 inch, for the whole sheet.** The lowest ink is not a tile:
-it is **`e11`'s routed run**, the Browser-to-Flickr-API arrow. Next above it is `cfframe`. **So the
-run has 45 units of clearance it does not need**, and raising it by about 30 would free that much at
-no visual cost. Not done, because nothing needs the room yet.
-
-**`check_page_fit()` in the generator DOES see that run**, since 2026-08-16. It used to match
-`<mxGeometry>` with a regex while a waypoint is an `<mxPoint>`, so it measured to y=1005 and
-under-reported the content height by 45. It now collects every `<mxPoint>` into `waypoints` and
-compares against the printable area rather than the full sheet. **Its output is the real figure.**
-
-## Changing the layout
-
-### The generator refuses to write when a check fails, and that sets a trap
-
-**This is correct behavior and it bites every helper script.** While the build is red, the `.drawio`
-on disk is the last **green** layout. Anything that parses the artifact to answer a question about
-the current layout gets a correct answer to a stale question.
-
-That happened: a helper reported that Cron and the Retry Worker "share NO band" while the working
-grid overlapped them by 95 px. **A tool that inspects the layout MUST read
-`scripts/build-diagram.py`, not the `.drawio`.** Every geometry and style attribute in the template
-is a literal, so a regex over the source is exact.
-
-### RECOMMENDED, not built: make the grid a data table inside the generator
-
-**Today the tile rectangles live as literals inside the XML template**, scattered through ~1,400
-lines. A layout change means editing many `<mxGeometry x=... y=... width=... height=.../>` strings
-by hand and then re-deriving every edge anchor and badge position that depended on them.
-
-**The 2026-08-15 relayout was done with an external toolchain that simulated the better design:** a
-`GRID` dict of `id -> (x, y, w, h)`, checked against the generator's own invariants **on paper**
-before the generator was touched, then applied mechanically. That caught a page overflow and four
-tile collisions before a single line of the generator changed.
-
-**A future session SHOULD promote `GRID` into `build-diagram.py` itself** and interpolate the
-geometry from it. The payoff is that a layout change becomes one edit to one table, and the
-invariants can be checked before the XML is built rather than after.
-
-**It was NOT done on 2026-08-15 deliberately.** Checking in the external grid would have created a
-second source of truth for the same coordinates, and two copies that must be re-applied by hand
-drift. This project's rule is that the diagram is generated and gospel; a half-refactor breaks that
-rule in a way the whole toolchain exists to prevent. **Do it properly or leave it alone.**
-
-### `exitPerimeter=0` is REQUIRED for any attachment point off a bounding-box edge
-
-**RFC 2119 sense.** An `exitX`/`exitY` or `entryX`/`entryY` pair that names a point on a rounded
-corner, or anywhere inside the bounding box, **MUST** carry `exitPerimeter=0` / `entryPerimeter=0`
-on the same edge. Without it draw.io silently relocates the endpoint.
-
-**The default is `1`, and it does not mean what the name suggests.** draw.io takes the fixed point,
-draws a ray from the shape's center through it, and returns where that ray crosses the **bounding
-rectangle** — `mxRectanglePerimeter`. That function knows nothing about `arcSize`, and nothing about
-the artwork inside a `shape=image` tile. **The fraction you wrote is used only as a direction.**
-
-**Measured 2026-08-16**, and it cost three rounds of "that still is not touching". **These x values
-predate the +20 shift** that centered the canvas later the same day, so add 20 to compare them
-against the artifact:
-
-| | |
+| Pinned | Because |
 |---|---|
-| Asked for | `(156.31, 437.31)` — 45° on `lrc`'s bottom-right arc, `r=12.6` |
-| draw.io drew | `(160, 440.25)` — the box's right edge, just above the corner |
-| Visible result | An arrowhead floating in white space **outside** the rounded outline |
+| The OAuth Durable Object stack sits **outside** the Edge PoP box | A Worker runs at the nearest PoP; a Durable Object lives in exactly one location |
+| `d1` sits **outside** it too | D1 has one primary, and every query crosses to it |
+| DNS, the Worker, Secrets, Cron and Retry sit **inside** | All anycast or edge-resident |
+| The plug-in has **no arrow to Flickr** | It never calls Flickr. It reads Adobe's publish records out of the catalog |
 
-**The failure is quiet in the worst way: the endpoint is CLOSE.** It lands a few units off, which
-reads as a rendering imprecision rather than as a style attribute doing something. Two earlier
-attempts moved the fraction instead of fixing the cause, and both looked like partial progress.
+**Two nested boxes on the left, two nested boxes on the right, and both pairs share both baselines.**
+That structural rhyme is what finally made the right column read — your words when it landed were
+*"bottom aligning the cloudflare and Flickr boxes is what I needed"*.
 
-**An image tile makes it worse, because the artwork's own corners are invisible to the geometry.**
-`users` is a 130x104 box holding a `viewBox="0 0 640 512"` glyph whose monitor has a 64-unit corner
-radius. Scaled, that is `r=13.0`, so the box's top-right corner sits **13 units of empty space** away
-from anything drawn. **Compute the artwork's radius from its own `viewBox`**, never from the tile.
+### When two clients reach one node, SPLIT THE NODE
 
-```
-# 45 degrees on a corner of radius r, bottom-right:
-#   cx, cy = x + w - r, y + h - r
-#   px, py = cx + r/sqrt(2), cy + r/sqrt(2)
-# then express px, py as fractions of the box, and set exitPerimeter=0
-```
+**Your call, and the sharpest design lesson on this canvas.** The browser and the plug-in both talked
+to the device-link surface. Drawn as one tile, the browser's arrow had to cross the DNS tile and both
+of its arrows, and every fix on the table was bad — an orthogonal detour, a re-layout that spent a
+horizontal run, or leaving the loop visibly open.
 
-**`arcSize` is a PERCENTAGE, not a radius.** draw.io computes `r = min(w, h) * arcSize / 100`, so the
-same `arcSize=12` gives a different radius on every tile. On this canvas it ranges from **4.32**
-(`dns`, 120x36) to **32.88** (`api`, 300x274).
+**The routes were never shared.** `start` and `poll` are the plug-in's and are unauthenticated;
+`approve` and `deny` are browser-only and carry `requireBrowserSession`. **So the surface splits
+cleanly by route and each half sits where its caller already points.** Two straight arrows, zero
+crossings, zero routed edges.
 
-#### The symptom SIZE varies, and a small one is not a small bug
+**The general form: a node that two callers reach by DISJOINT sub-surfaces is two nodes.** Ask
+whether the callers actually share endpoints before spending layout to make one box reachable from
+two directions.
 
-**`entryPerimeter=1` sometimes returns the corner unchanged, which hides the same defect behind a
-1-unit gap instead of a 4-unit one.** The projection lands wherever the center-to-point ray crosses
-the bounding rectangle. When a tile's half-extents happen to tie at the corner — `dns` is 120x36,
-and its corner sits at exactly `(60, 18)` from center — the ray exits through the corner itself, so
-the returned point is the box corner and the ONLY error is the arc inset.
-
-**So a gap of one unit and a gap of four units are the same bug.** Do not read a small gap as
-"close enough"; read it as a tile whose proportions happened to be forgiving.
-
-#### TWO rounded corners facing each other need a different formula
-
-45° is correct when one end is a corner and the other is not. **When both ends are corner arcs, the
-shortest bridge is the line between the two arc CENTERS**, and each endpoint sits its own radius
-along that unit vector. Used by `e14` (`api` to `d1`) and `e15` (`retry` to `d1`).
-
-```
-# nearest point pair between two rounded corners:
-#   c1, c2 = the two arc centers
-#   u      = (c2 - c1) / |c2 - c1|
-#   p1     = c1 + r1 * u        # leaves the first arc
-#   p2     = c2 - r2 * u        # enters the second
-```
-
-**45° is the special case of this where the corners are diagonally opposed** — `e15`'s unit vector
-came out `(0.70711, -0.70711)` on its own, which is a useful check that the arithmetic is right.
-
-#### Resizing a tile DRAGS every arrow attached to it
-
-**`exitY` and `entryY` are fractions of the box, so changing a tile's height moves every endpoint on
-it.** This is not a corner problem and it has bitten repeatedly:
-
-| Change | Broke | Fix |
-|---|---|---|
-| `api` grew 244 to 274 | `e3`, `e9`, `e14` | Recompute each `exitY` to pin its absolute `y` |
-| `flickrapi` grew 380 to 398 | `e9`, `e10` | Same, for `entryY` |
-| `users` shrank 112 to 104 | `e22`, `e13` | Same |
-| `d1` narrowed 190 to 169 | `e14`, `e15` | Recompute the nearest-point pairs |
-
-**A horizontal run is the case that matters**, because a 2-unit drift reads as a mistake rather than
-as a change. **`e18` and `e3` SHARE A LINE** and carry the device-link handshake straight across the
-canvas as one; `e9` and `e10` land on `flickrapi` **324 apart**. The generator asserts both as
-equalities, which is why neither needs a number here.
-
-### Step badges: ON the line now, and the ring is what makes them work
-
-**Terry moved them onto the line on 2026-08-16.** They used to sit BESIDE their arrow, and that
-changes which constraint binds. Beside the line, the limit was the shortest visible run — `e4`,
-Worker Secrets to the API Worker, at 30 units. **On the line, run length stops mattering entirely**
-and the limit becomes the spacing between two parallel arrows.
-
-**The tightest pair is the browser's two channels**: `e22` to `/oauth` and `e13` to `/api`, **42
-units apart**. Two badges centered on those lines touch at diameter 42.
-
-| | |
-|---|---|
-| Diameter | **34** |
-| `fontSize` | **17** — 12.2 pt |
-| Fill | `#003087` |
-| Text | `#FFFFFF`, bold |
-| Stroke | `#FFFFFF`, **3 units**, matching the arrows' own `strokeWidth=3` |
-| Badge-to-badge gap on the tightest pair | 8 |
-
-**Sized against a TWO-DIGIT number, because that is the hard case.** `10` measures about 19 units
-inside a 34 circle, leaving ~7 clear on each side. The journey is heading for 18 steps, still two
-digits.
-
-#### THE WHITE RING IS LOAD-BEARING, and the fill is not
+### The step badges need their white ring, and the fill is decoration
 
 **Measured, WCAG relative luminance:**
 
 | Pair | Ratio |
 |---|---|
-| White text on `#003087` | 11.85 : 1 |
-| `#003087` vs the white page | 11.85 : 1 |
-| White ring vs the `#1A1A1A` arrow | **17.4 : 1** |
-| `#003087` vs the `#1A1A1A` arrow | **1.47 : 1** |
+| White ring against the `#1A1A1A` arrow | **17.4 : 1** |
+| `#003087` against that same arrow | **1.47 : 1** |
 
-**That last row is the finding.** Navy against a black line is 1.47, below even the 3:1 floor for
-large text. **Remove the ring and the badge merges into the arrow it sits on.** The fill's only job
-is to hold the digit; the ring is what separates the badge from the line.
+**Remove the ring and the badge merges into the line it sits on.** 1.47 is below even the 3:1 floor
+for large text. The fill's only job is to hold the digit.
 
-**Two alternatives were computed and rejected.** White fill with navy text and ring fails twice: the
-fill against the white page is 1:1, so the badge dissolves into the background, and a navy ring
-against a black arrow is that same weak 1.47. Cloudflare orange `#F6821F` reaches only **2.58:1**
-against the page, and it already belongs to three tiles.
+Two alternatives were computed and rejected: white fill dissolves into the page at 1:1, and
+Cloudflare orange reaches only 2.58:1 against the page while already belonging to three tiles.
 
-**`#003087` now collides with the Lightroom mark.** The rule is 90 RGB units minimum between the
-badge fill and any tile fill; `#003087` against the mark's ground `#001E36` is **83**. They never sit
-near each other, but `MIN_COLOR_DISTANCE` will fire the moment the checks come back. **Shift the
-badge navy, darken the mark, or exempt the pair — but decide it rather than discovering it.**
+---
 
-### A BOX-TO-BOX GAP IS NOT VISIBLE WHITESPACE, and `LOGO_GAP_MIN/MAX` is now stale
+## draw.io behaviors that will bite you again
 
-**`LOGO_GAP_MIN, LOGO_GAP_MAX = 6.0, 8.0` in the generator describes a gap that is now 2.95**, and
-Terry approved the 2.95. **The constant is wrong, not the layout.** Retune it when the checks come
-back; do not "fix" the layout to satisfy it.
+### `exitPerimeter=0` is REQUIRED for any attachment point off a bounding-box edge
 
-**Three terms sit between the Flickr dots and the cap of the word "Flickr", and the check measures
-only one of them:**
+**RFC 2119 sense.** Without it, draw.io takes your `exitX`/`exitY` as a **direction**, casts a ray
+from the shape's center through it, and returns where that ray crosses the **bounding rectangle**.
+It knows nothing about `arcSize` and nothing about artwork inside an image tile.
 
-| Term | Size today | Where it comes from |
-|---|---|---|
-| Padding inside the mark's own box | ~4.9 | `viewBox="68 167 376 178"` is the dots' bounding box **plus 10 units** |
-| Box-to-box gap | 2.95 | `flickrtitle.y` minus `flickrlogo` bottom — **the only term asserted** |
-| Leading above the cap | ~8 | A 32-tall cell, `fontSize=20`, `verticalAlign=middle` |
+**The failure is quiet because the endpoint lands CLOSE** — a few units off reads as rendering
+imprecision rather than as a style attribute misbehaving.
 
-**So the assertion is measuring the middle row of three.** That is survivable while nothing resizes,
-and it broke the moment something did.
+**A one-unit gap and a four-unit gap are the same bug.** When a tile's half-extents happen to tie at
+the corner, the ray exits through the corner itself and the only error left is the arc inset. Do not
+read a small gap as close enough; read it as a tile whose proportions were forgiving.
 
-**The mark shrank from `h=107` to `h=88.05` on 2026-08-16**, and its `viewBox` padding shrank with it
-— same nominal gap, less actual white. **The band would have PASSED the version Terry rejected and
-FAILED the one he liked.** A check that inverts under a resize is worse than no check, because it
-argues confidently for the wrong answer.
+**`arcSize` is a PERCENTAGE, not a radius.** `r = min(w, h) * arcSize / 100`, so the same `arcSize`
+gives a different radius on every tile.
 
-**The correction was 4 units. That is 0.04 inch, about a millimeter on the printed sheet.**
-Proximity grouping is a threshold rather than a gradient: the eye asks whether the word belongs to
-the mark above or the tile below, and the answer flips from *maybe* to *obviously* inside a 2-unit
-window. **No arithmetic in this file models that**, which is the same lesson as the appearance row
-in the defect table below — and the reason Terry looks at every render.
+**For an image tile, compute the artwork's radius from its own `viewBox`, never from the tile.**
 
-**If this check is rebuilt, measure the artwork's ink**, not its box: derive the mark's real bottom
-from the `viewBox` and the artwork's own extents, then add the label's leading. Otherwise leave it
-reported rather than asserted.
+### `exitY` and `entryY` are FRACTIONS, so resizing a tile drags every arrow on it
 
-### AN XML COMMENT MUST NOT CONTAIN TWO CONSECUTIVE HYPHENS
+**This is the single most repeated defect on this canvas.** Change a tile's height and every endpoint
+attached to it slides, including runs that are supposed to be dead level. A two-unit drift on a
+horizontal reads as sloppiness, and nothing in the diff explains it.
 
-**This repository's prose uses `--` as an em dash everywhere, and an SVG is XML.** The first version
-of `logos/lightroom-classic-mark.svg` carried four of them inside its trailing comment.
+**Recompute each fraction against the new dimension to pin the absolute position.** The build's level
+and plumb checks catch this immediately — which is worth remembering, because a design pass with the
+checks off will hand you a fresh crop of them.
 
-**The failure was silent in every direction.** The file was malformed, `embed()` base64'd the bytes
-without looking at them, drawio drew nothing at all, and the build reported success. **Nothing
-anywhere checks that an embedded logo is well-formed.**
+### An XML comment MUST NOT contain two consecutive hyphens
 
-**Decode the payload and parse it** when a logo does not appear:
+**This repository's prose uses `--` as an em dash, and an SVG is XML.** A logo file once carried four
+of them in a trailing comment. **The failure was silent in every direction**: the file was malformed,
+the build base64'd the bytes without looking, draw.io drew nothing, and the run reported success.
+
+**When a logo does not appear, decode the payload and parse it.**
 
 ```
 ET.fromstring(base64.b64decode(payload))   # names the line and column immediately
 ```
 
-Three logos parsed and one did not, which took the diagnosis from minutes to seconds.
+---
 
-### WHAT IS PINNED TO WHAT, which is the map that makes a layout change tractable
+## The checks, and their limits
 
-**Stated as RELATIONSHIPS rather than coordinates, deliberately.** Every number on this canvas moved
-at least twice on 2026-08-16. The relationships did not. **A coordinate written down here would be a
-lie within the hour; a relationship tells the next session which lever it is actually pulling.**
+`python scripts/build-diagram.py` builds and validates in one step and **refuses to write a diagram
+that fails**. Every check prints as it goes, so the run is the list.
 
-**Semantic. These are claims about the system, and breaking one makes the picture false:**
+**They assert RELATIONSHIPS, not coordinates** — *"this edge is level"*, never *"this edge is at
+y=388"*. Absolute lines on this canvas have moved on every axis; the requirements never did. That
+choice is why the suite survived a redesign that moved every number on the page.
 
-| Pinned | Because |
-|---|---|
-| The OAuth Durable Object stack sits OUTSIDE `netb` | A Worker runs at the nearest PoP; a Durable Object lives in exactly one location |
-| `d1` sits outside `netb` | D1 has one primary, and every query crosses to it |
-| `dns`, `api`, `secrets`, `cron`, `retry` sit INSIDE `netb` | All anycast or edge-resident |
-| The plug-in has no arrow to Flickr | It never calls Flickr. It reads Adobe's records out of the catalog |
+**`CHECKS_ENABLED` in the generator turns them all off for a design pass, and it is a permanent
+lever.** See `CLAUDE.md` — it MUST NOT be removed, and turning the checks back on means re-reading
+them against the new layout, not flipping the flag.
 
-**Load-bearing horizontals. A two-unit drift reads as a mistake rather than a change:**
-
-| Run | Carries |
-|---|---|
-| `e18` and `e3` share one `y` | The device-link handshake, plug-in to `/device` to the Durable Object, as ONE line across the canvas |
-| `e9` and `e10` land on `flickrapi`'s left edge | Every Worker-to-Flickr call |
-| `e22` and `e13` land on the Worker's route tiles | The browser's two channels |
-| `e10` and `e6` share one `y` | **The Cron trigger's horizontal leg and the Retry-to-Flickr call are ONE line through the Worker.** Both sit on `retry`'s vertical midpoint, so `exitY` and `entryY` are both `0.5` — but that is a coincidence of the current geometry, not the rule. **The ABSOLUTE line is the constraint.** When `retry` moved down 18.3 earlier the same day, `0.5` took the line with it and had to become `0.343590` before the two were re-aligned |
-
-**Shared edges and columns. Break one and the eye sees raggedness before it sees why:**
-
-| These share | |
-|---|---|
-| `cfframe` and `lrcapp` | Top edge |
-| `cflogo` and `netb` | Left edge |
-| `flickr` and `justification` | Left edge and width |
-| `flickrlogo`, `flickrtitle`, `flickrapi` | Left edge and width, and the mark's top inset equals its side inset |
-| `dns` and `cron` | Left edge, width and height |
-| `oauthdo` and `d1` | Left edge and width |
-| `lrcat`, `lrc` and `users` | Width, and the `x=115` centerline that keeps `e19` and `e20` vertical |
-| `cfframe` and the `flickr` card | **BOTTOM edge.** The two outer boxes share a baseline |
-| `netb` and `flickrapi` | **BOTTOM edge.** The two inner boxes share a baseline |
-
-**Those last two are a structural rhyme rather than a coincidence**, and it is what finally made the
-right column read: two nested boxes on the left, two nested boxes on the right, both pairs sharing
-both baselines. Terry's words when it landed — *"bottom aligning the cloudflare and Flickr boxes is
-what I needed"*.
-
-**The page. Content spans exactly the printable width, so there is ZERO slack:** `lrcapp`'s left
-edge and the `journey`/`key` right edge are what hold the 1:1 fit. **Anything that widens either
-breaks it.**
-
-### Coordinated moves: use a CHECKED SCRIPT, not a run of hand edits
-
-**Three moves on 2026-08-16 touched 8, 12 and 26 geometries at once.** Each was applied by a
-throwaway script that holds a list of `(label, exact anchor, replacement)` and **raises unless every
-anchor matches exactly once.**
-
-```python
-n = text.count(old)
-if n != 1:
-    raise SystemExit(f"ANCHOR {label}: found {n} times, want 1")
-```
-
-**A half-applied coordinated move is the expensive failure here**, because the diagram still renders
-and the damage is a few tiles out of alignment somewhere off-screen. **An all-or-nothing script
-converts that into a loud stop.**
-
-**Slack is FUNGIBLE across the canvas, which is the move worth remembering.** Terry's insight:
-narrowing the Flickr column by 34 freed 34 units that walked left through a chain of pinned
-relationships — the Cloudflare frame grew, the PoP box grew, the Durable Object stack moved to stay
-outside it, and the PoP's contents re-centered. **The DNS arrows ended up with 38.75 of clearance
-from a starting point of 13.5**, and nothing was shrunk to get it.
-
-### Evenly spacing N gaps inside a fixed box: set the adjustable ones EQUAL
-
-**`flickrapi` carries three gaps that must match** — above "OAuth Endpoints", between
-`oauth/access_token` and "API Functions", and below `groups.pools.add`. Terry: *"those are three
-sets of padding and not using the same size for all three is off"*. They were 93 / 30 / 99.
-
-**They share one budget, which is the whole trick.** The tile is a fixed height, the text and
-headings consume a fixed amount of it, and whatever remains divides among the gaps. **So the third
-gap is not free — it is the remainder.**
-
-**Two of the three are `margin-top` on a heading `div` and have identical structure**, a text line
-above and a heading below. **Setting those two equal makes their rendered gaps equal by
-construction**, which reduces the problem to one variable. Then tune that single value until the
-remainder matches. `72px` on both landed all three within about one unit.
-
-**MEASURE THIS ONE OFF THE RENDER, not off `text_height`.** The estimator was about 24 units wrong
-on this tile, which is roughly a fifth of a gap. Two rounds of look-and-adjust beat any amount of
-arithmetic here — the first guess of 104 gave 164/130, and half the difference corrected it.
-
-### `text_height` counted a table's ROW NUMBER TWICE, and it nearly bought 25 units of height
-
-**Found 2026-08-16, and only by looking at a render.** Narrowing `journey` from 330 to 320 made the
-estimator report the text 32 units taller, which reads as exactly what you would expect from a
-narrower column. **It was wrong. The render still broke into 26 lines, the same 26 as before** — the
-narrowing moved where lines broke and did not change how many there were.
-
-**The bug is a two-column table measured as one string.** `text_lines` splits on `<tr>` and strips
-`</div>`, `</tr>` and `</table>` — but not `</td>`. So a row arrives as one chunk, the tags strip to
-`1DNS query, resolved at the nearest PoP`, and **the row number is glued to the first word.** The
-`width:22px` on that same cell was then also subtracted as an indent, so **the number paid twice**:
-once as a column, once as characters.
-
-**The fix drops a fixed-width cell's own text before measuring**, since that text lives in its own
-column:
-
-```python
-chunk = re.sub(r"<td[^>]*width:\s*\d+px[^>]*>.*?</td>", "", chunk)
-```
-
-**The proof it is right: the corrected estimator reports `453` at width 320, which is the identical
-figure it reported at width 330.** That matches the render exactly.
-
-**The lesson generalizes past this tile.** The estimator's docstring says undercounting is the
-dangerous direction, and that is true — but **overcounting is not free**, because it silently buys
-a box more height than it needs and the check reports `ok` the whole time. A too-large box passes.
-**Only the render can tell you which way the error went.**
-
-### When two clients reach one node, SPLIT THE NODE rather than routing around it
-
-**2026-08-16, and it is the sharpest design lesson of the session.** The browser and the Lightroom
-plug-in both talk to the device-link surface. Drawn as one tile, the browser's arrow had to cross
-the DNS tile and both of its arrows, so every option on the table was bad: an orthogonal detour, a
-re-layout that spent a horizontal run, or leaving the loop visibly open.
-
-**Terry's fix was to stop drawing one node.** The routes were never shared — `start` and `poll` are
-the plug-in's and are unauthenticated, `approve` and `deny` are browser-only and carry
-`requireBrowserSession`. **So the surface splits cleanly by ROUTE, and each half sits where its
-caller already points.** `start` keeps the plug-in's straight sweep; `approve` joins the browser's
-stack. Two straight arrows, zero crossings, zero routed edges.
-
-**The generalizable form: a node that two callers reach by DISJOINT sub-surfaces is two nodes.**
-Ask whether the callers actually share endpoints before spending layout to make one box reachable
-from two directions. Here the code had already answered — the allow-lists are disjoint — and the
-answer was quoted back in conversation an hour before anyone acted on it.
-
-**A tile may stand for an exact path or for a namespace, and the label must say which.** The four
-route tiles now do: a bare path means one route, a trailing `*` means a prefix. Plurality follows —
-`API endpoint` against `API endpoints`.
-
-### Park an edge on a floating `sourcePoint` while its anchor is out of reach
-
-**A tile sometimes has to move before the shape its arrow comes from can reach the new line.** On
-2026-08-16 `/api/v001/*` moved up, putting its arrow **18 units above the Browser glyph's top edge**.
-No fraction of that shape reaches a line above its own top; `exitY` would have to go negative.
-
-**Do not bend it, and do not delete it.** Drop `source` and the whole `exit*` set, and give the
-geometry an explicit point:
-
-```xml
-<mxGeometry x="0.55" relative="1" as="geometry">
-  <mxPoint x="186.25" y="472" as="sourcePoint" />
-</mxGeometry>
-```
-
-**The arrow stays dead horizontal and visibly unfinished**, which is the honest state while a
-multi-step move is in flight. Reattaching later is one edit: restore `source` and `exitX`/`exitY`.
-
-**Pick the floating `x` to match where the eventual anchor's edge will be**, so the reattachment
-moves the endpoint as little as possible.
-
-**Two things go quiet while an edge floats.** `scripts/badge-positions.py` skips it, because it
-needs both ends attached to tiles. And any badge riding it is orphaned until the rescue lands.
-
-### `scripts/badge-positions.py` answers where a badge goes
-
-```
-python scripts/badge-positions.py            # every straight edge
-python scripts/badge-positions.py e20 e4     # just these
-```
-
-**It reads the ARTIFACT and prints paste-ready `mxGeometry`** — on the line, and beside it on either
-side — plus each run's length and what fraction of it a badge would cover. It reimplements
-`mxRectanglePerimeter`, so its endpoints are what draw.io actually draws rather than what the
-fractions suggest.
-
-**It exists because recall placed a badge wrongly twice**, 30 units out and then 3.2, both times with
-correct arithmetic on a stale coordinate. **A check would have caught neither**, because a check
-would read the coordinate from the same place the mistake did.
-
-**Its first survey settled a question that was going to be an arbitrary style call.** A badge sits ON
-its line where it covers under about half the run, and BESIDE it above that. Four runs fail the test
-— which is a fact about the geometry, not a preference.
-
-### Three classes of defect, and only one of them has checks
+### Three classes of defect, and only one has checks
 
 | Class | Example | Caught by |
 |---|---|---|
-| Geometry | Two tiles overlap; an arrow crosses a tile | The generator, reliably |
+| Geometry | Two tiles overlap; an arrow crosses a tile | The build, reliably |
 | **Appearance** | 7.9 pt type; four arrows out of one tile; a third of the page empty | **Nothing. Render it and look** |
 | **Contradiction** | An arrow says the Catalog opens the browser; the User Journey says the plug-in does | **Nothing. Read the picture as a sentence** |
 
-**The checks are a ratchet, not a designer.** Each one exists because a specific defect got past the
-others, so they prevent the return of known problems and are blind to new ones. On 2026-08-15 the
-build passed all fifteen assertion blocks over a diagram Terry called horrific.
+**The checks are a ratchet, not a designer.** Each exists because a specific defect got past the
+others. On 2026-08-15 the build passed every assertion over a diagram you called horrific.
 
-## The assertions are BACK ON, and they were rewritten rather than switched on
+---
 
-**Re-armed 2026-08-16, at the end of the overhaul.** They were off for one working
-day. **Switching the old set back on would have been useless** — nearly every assertion named a
-coordinate the overhaul moved, so they would have failed en masse and told nobody anything.
+## Open
 
-**So the suite asserts RELATIONSHIPS, and a number appears only where the number itself is the
-rule.** "This edge is level", never "this edge is at y=388" — that absolute line moved four times in
-one day and the requirement never did. The map they are written from is the pinned-relationship
-table below.
+**None of this blocks anything. It is written down so it is not rediscovered.**
 
-**Two things it fixed on its first run, both bugs in the checks rather than the layout:**
+- **The User Journey panel is stale against the picture.** It still runs browser-first and calls step
+  10 a browser call. **The picture and the panel disagree**, which is the contradiction class above.
+- **No Lightroom Classic logo.** Cloudflare and Flickr both carry their marks. **The trap: Lightroom
+  Classic and Lightroom (CC) have different icons**, and this diagram means Classic specifically —
+  the whole `getPublishServices(nil)` mechanism is Classic-only.
+- **The PDF export has never been inspected**, and you have said it looks different from the draw.io
+  render.
+- **Dead space bottom-right inside the Cloudflare frame**, right of the Retry Worker and below D1. It
+  shrank with the 2026-08-16 relayout but did not close.
+- **The Nightly Event tile is cramped** — four wrapped lines in a small box.
+- **`text_height` measures three tiles out of thirteen.** Every other tile is hand-sized, which is
+  why a type change once burst a box while the build reported clean. **Extending it to every text
+  tile is the highest-value check still missing.**
+- **The visible-run check does not measure a ROUTED edge**, only a straight one. It reports
+  `routed, measured by eye`, so it is an honest hole rather than a false pass.
+- **No contradiction check exists.** Comparing an edge's endpoints against the journey step that
+  cites it is mechanical, and nobody has written it.
 
-- The old `attach_point` used the raw `exitX`/`exitY` fraction, so **it was measuring points draw.io
-  does not draw.** The suite now reimplements `mxRectanglePerimeter` and honors `exitPerimeter=0`,
-  with a self-test.
-- `check_page_fit` could not see a routed waypoint, and now includes them and **fails the build**
-  rather than reporting. It reported before because the content genuinely exceeded the page; it fits
-  exactly now, so a failure is real.
+---
 
-**And one real defect, which is the point:** a notional badge overlapped the DNS tile by 6 units. The
-gutter between DNS and the Worker is 28.2 and a badge is 34, so **no position on those two lines
-clears both** — the badges moved to the 55-unit band between the Browser and the Cloudflare frame.
+## The next change: a two-panel User Journey, plug-in first
 
-### Two traps this suite is written to avoid
+**Your direction: split login/auth from publish, and draw the auth panel in full.** Your reasoning
+decides the level of detail — *"Terry of 2031 will appreciate us being pedantic af today. Hold his   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
+hand."*
 
-**An unsatisfiable assertion is worse than none.** The first draft demanded the DNS tile fit
-*between* the two route groups; it is 60 tall and the separation is 46. It would have failed forever
-and taught everyone to skip the output. It now asserts what is actually claimed — that DNS reads as
-sitting between them — by testing its center.
+**Why rewrite it:** today's journey runs browser-first and the plug-in appears at steps 12 and 13 as
+an afterthought. Per `docs/LRC-CLIENT-NOTES.md` the plug-in is arguably the more important client —
+the goal is queueing adds without leaving Lightroom. **The journey should open with the user
+clicking "Authorize with FGA".**
 
-**Containers are not obstacles and not tiles.** `api`, `lrcapp`, `cfframe`, `netb` and the Flickr
-card all hold things that edges legitimately terminate on and badges legitimately sit inside.
-Listing one reports a collision for every child doing its job correctly.
+**The auth panel drafts to 18 steps and mostly draws SHIPPED behavior.** ADR-24 built the device flow
+— `start`, `poll`, `approve` and `deny` all exist. What remains unbuilt is **a page and a Lua
+client**, not a design: the `LrHttp.openUrlInBrowser` call on the Lua side, and the `/link`
+confirmation page, which ADR-18 puts in Svelte rather than the Worker.
 
-### Why turning them OFF was right, and worth remembering next time
+**That page is the only defense against device-flow phishing.** ADR-24 makes the confirmation a page
+requirement precisely because no backend route can substitute: nothing auto-approves, and approval is
+always a POST a person had to cause.
 
-**They were disabled for one working day**, and the reasoning generalizes to any design pass over a
-checked artifact. Nearly every assertion was pinned to a coordinate the overhaul was about to move,
-so they fired on every intermediate state. **A check that fires on every run is a check nobody
-reads**, and its noise would have buried the one firing for a real reason.
+**Three constraints bind the design, and each has already caught something:**
 
-**The right shape was one flag, not a thousand commented lines** — a partly uncommented block looks
-restored while leaving holes — plus a banner on every build so the state could not go unnoticed.
+- **Every journey step needs a badge, and every badge needs a real edge.** The build fails when the
+  row count and the badge count disagree, so the step list and the arrows are one decision.
+- **Two panels each numbering from 1 means two badges reading "3".** Letter prefixes — `A1`, `B1` —
+  solve it with no new color rule and no legend row. **Not yet decided.**
+- **"Publish to Flickr as normal" has no edge**, because FGA does not participate. It is context
+  above the publish panel, not a numbered step.
 
-**And they came back REWRITTEN.** That is the part to copy. A suite switched back on after a
-redesign is asserting the old design; the work is not flipping the flag, it is deciding what is now
-true and saying only that.
-
-## Open, as of 2026-08-16
-
-**None of these blocks anything. They are written down so they are not rediscovered.**
-
-- **`text_height` measures three tiles out of thirteen** — `justification`, `key` and `journey`.
-  Every other tile is hand-sized, which is why raising the body type from 7.9 pt to 12.2 pt burst
-  the Nightly Retry Worker's box while the build reported clean. **Extending it to every text tile
-  is the highest-value check still missing.**
-- **The visible-run check does not MEASURE a routed edge.** `segments` sets its `routed` flag from
-  `"orthogonalEdgeStyle" in style`, and `MIN_VISIBLE_BROKEN_RUN` skips any edge carrying it —
-  reporting `routed, measured by eye`. **So the check that closed the `e6` defect below would pass
-  on a 5-unit orthogonal stub exactly as it passes on today's 202.** The label is honest about
-  deferring to the eye, which is why this is a hole rather than a lie. **Closing it means deriving
-  the L legs from the exit and entry sides**, which is the same perimeter arithmetic
-  `perimeter_point` already does.
-- **The Nightly Event Trigger tile is cramped** — four wrapped lines in a small box.
-- **Dead space bottom-right inside the Cloudflare frame**, **269.6 wide by 221.6 tall**, measured
-  from the artifact on 2026-08-16 after the +20 shift. It runs right of the Nightly Retry Logic
-  Worker (`retry` ends x=779.4) and below the SQL Database (`d1` ends y=779.75), out to `cfframe` at
-  x=1049, y=1001.35. It shrank with the 2026-08-16 relayout but did not close. **The figures here
-  were wrong before this measurement** — they read `265 x 265` from an older layout, which is why
-  they are now derived rather than remembered.
-- **The BOTTOM margin is not settled, and it is not going to be settled by centering.** The top is
-  done: the whole canvas moved **-3.65 in y** on 2026-08-16 so the title's cap top lands on `y=30`,
-  and `title ink sits ON the top margin` asserts it. The bottom ink is `e11`'s routed run, which now
-  leaves **52.15** against the top's 30. **Terry's direction is to STRETCH the content down the
-  page, not to center it**, so the fix is a redistribution rather than another translate — and
-  `CLAUDE.md` refuses a coordinate rescale, which would stretch boxes without stretching the text
-  inside them. **The y bounds are reported on every build and deliberately not asserted until this
-  lands.**
-- **No logo for Lightroom Classic.** Cloudflare and Flickr both carry their marks; the Lightroom
-  card carries only text. Adobe ships an "Lr" mark and Wikimedia Commons hosts Adobe product icons,
-  which is where the other two came from. **The trap is that Lightroom Classic and Lightroom (CC)
-  have DIFFERENT icons**, and this diagram means Classic specifically — the whole
-  `getPublishServices(nil)` cross-plugin mechanism is Classic-only.
-- **The PDF export has never been inspected.** Terry: *"the PDF looks some different from the drawio   DIRTY-WORDS-EXEMPT: quoting Terry
-  render"*. The `Read` tool opens PDFs natively via its `pages` parameter, so the only missing step
-  is producing the file.
-- **A contradiction check does not exist.** Three defects in one session were the drawing asserting
-  something `DECISIONS.md` or the User Journey denies. Comparing an edge's endpoints against the
-  step text that cites it is mechanical and nobody has written it.
-
-## Closed on 2026-08-16
-
-- **The dotted "Scheduled trigger" legend row now has a VISIBLE LINE to point at.** It was the
-  sharpest example on this page of an assertion passing over a defect: `e6` carried
-  `dashed=1;dashPattern=1 4`, the `LINE_STYLE` check reported `dotted ok`, and the render showed a
-  bare arrowhead. `cron` ended at x=420 and `retry` began at x=430 — a **10-unit gap**, one tenth of
-  an inch, which the arrowhead consumed entirely.
-
-  **The geometry was boxed in, which is why this was not a one-line fix.** A single 10-unit corridor
-  at x≈425 separated the columns, `netb` spanned 245..760, and the right column's left edge was
-  pinned by the *flush* and *one column* checks. **A straight horizontal `e6` could never be longer
-  than 10 units**, so `MUST_BE_HORIZONTAL` and a visible dotted line were in direct conflict.
-
-  **The legend row won, because horizontality is meaningless on a line nobody can see.** `e6` left
-  `MUST_BE_HORIZONTAL` and became an orthogonal route: it exits `cron`'s bottom at (372.2, 779.75),
-  drops to `retry`'s mid-height and enters its left edge at (479.4, 874.65) — legs of **94.9 and
-  107.2**, about **202 units** of visible run.
-
-  **The replacement check is the part that mattered.** `MIN_VISIBLE_BROKEN_RUN = 60.0` demands that
-  any edge whose declared style is broken carry a run a reader can see. Deleting the old check
-  without it is how a ratchet loses a tooth. **It still does not measure a routed edge** — see the
-  open item above.
-- **`check_page_fit()` can see a routed waypoint.** Its old regex matched `<mxGeometry>` while
-  `e11`'s run along the page bottom is a pair of `<mxPoint>` elements, so it measured the content 45
-  units short and scaled against the full sheet rather than the printable area. It now collects
-  every `<mxPoint>` into `waypoints`, subtracts `MARGIN = 25.0` on each side, and **fails the
-  build**. It reported before only because the content genuinely exceeded the page.
-
-- **THE DIAGRAM FITS AN 11x17 SHEET AT 100%, for the first time.** See the printing section. It had
-  been 4% over in width and 18% over in height.
-- **Every arrow lands on drawn pixels rather than on a bounding box.** `exitPerimeter=0` /
-  `entryPerimeter=0`, plus the corner arithmetic above. Six edges: `e1`, `e21`, `e11`, `e14`, `e15`,
-  and the `dns` ends of the first two.
-- **The left column was rebuilt.** The Lightroom card widened leftward to 180 so its arrows are not
-  cramped against its own border while the 30-unit gap to the Cloudflare frame held; the Browser
-  glyph matches the plug-in tile's width and shares its centerline, which made `e19` vertical for
-  free; the Catalog tile lost a line and rose; and DNS sits where its two diagonals make equal
-  angles, which is also the midpoint between the plug-in's bottom and the glyph's top.
-- **The Catalog tile says what it holds.** "Local SQLite / Published photo IDs" became "Flickr photo
-  IDs". The plug-in reads Adobe's Flickr publish service records out of the catalog and never calls
-  Flickr, so the ids are the fact worth naming. See `docs/LRC-CLIENT-NOTES.md`.
-- **The Cloudflare mark is no longer 0.12% squashed.** Its box now uses the artwork's own
-  `viewBox="0 0 101.4 33.5"` ratio of 3.0268657 rather than the 3.023256 it happened to sit in.
-  **The 1% distortion assertion passed that happily**, which is the reminder that a band is not a
-  measurement.
-- **`e19` is ONE HEAD. Terry chose it**, from the three options this section used to list. The
-  picture now matches journey steps 12 and 13 and matches the device flow: `LrHttp.openUrlInBrowser`
-  is fire-and-forget, and the token arrives on `e18`, which is already double-headed.
-- **Body type overshot and came back to 10.1 pt.** See the printing section above.
-- **The date sat a blank line below the title.** Both cells are `verticalAlign=middle`, so the gap
-  was arithmetic rather than a stray line: centers 46px apart against 29px of type. The date box
-  moved from y=72 to y=56, which also bought clearance above the Cloudflare frame — that had been
-  **2px**.
-
-## The next change: a TWO-PANEL User Journey, plug-in first
-
-**Terry's direction, 2026-08-16: two panels split between login/auth and publish, with the auth
-panel drawn in full.** His reasoning, and it decides the level of detail: *"Terry of 2031 will   <!-- DIRTY-WORDS-EXEMPT: quoting Terry -->
-appreciate us being pedantic af today. Hold his hand."*
-
-**Why the journey is being rewritten at all:** today's runs browser-first and the plug-in appears at
-steps 12 and 13 as an afterthought. Per `docs/LRC-CLIENT-NOTES.md`, **the plug-in is arguably the
-more important of the two clients** — the stated goal is queueing adds without leaving Lightroom.
-The journey should open with the user clicking **Authorize with FGA**.
-
-**The drafted auth panel is 18 steps and 17 distinct badges** (step A11 rides A10's arrow). The full
-list, with the edge each step needs and whether the code exists, was drafted in the 2026-08-16
-session and **is NOT yet in the generator.** Its shape:
-
-| Steps | What they cover | Built? |
-|---|---|---|
-| A1–A2 | `POST /api/v001/device/start`, the `DeviceLinkAttempt` Durable Object | **Yes**, 2026-08-16 |
-| A3 | `LrHttp.openUrlInBrowser` — **the Lua side, which does not exist** | **No** |
-| A4 | DNS | **Yes** |
-
-**THE PLUG-IN NEEDS ITS OWN DNS EDGE. DRAWN 2026-08-16 as `e21`**, plug-in bottom-right corner to
-the DNS tile's top-left. `e1` was re-cornered the same way, browser top-right to DNS bottom-left, so
-the two converge on the tile instead of crossing the channel. **`e21` carries no badge**, because
-the plug-in's DNS query is not a step in the current thirteen-step journey and the build requires
-the row count and the badge count to agree. It gets one when the two-panel rewrite lands.
-
-Found 2026-08-16 while
-Terry walked the journey aloud. **The plug-in is a network client before it is a browser launcher**:
-it calls `POST /api/v001/device/start` first and must therefore resolve `flickrgroupaddr.com`
+**The plug-in needs its own DNS edge, and it now has one.** It is a network client before it is a
+browser launcher: it calls `POST /api/v001/device/start` first and must resolve `flickrgroupaddr.com`
 itself. It cannot delegate that to the browser, because `LrHttp.openUrlInBrowser` is fire-and-forget
 and the `deviceCode` would land in a tab the plug-in cannot read.
 
-**`docs/LRC-CLIENT-NOTES.md` recorded the opposite** — *"only the browser connects to the app shell
-and to DNS"* — which was true before ADR-24 and is corrected there now. **A note that argues against
-drawing a real edge is worse than a missing edge**, because it makes the omission look deliberate.
-| A5 | `GET /link` — **a Svelte route, not a Worker one** | **No** |
-| A6 | Redirect to `GET /oauth/login`, carrying `returnTo` | **Yes**, 2026-08-16 |
-| A7–A16 | The whole Flickr OAuth leg | **Yes** |
-| A17 | `userCode` confirmation, then `POST /api/v001/device/approve` | **API yes, page no** |
-| A18 | `POST /api/v001/device/poll`, and the token it mints | **Yes**, 2026-08-16 |
-
-**So the auth panel is now mostly a picture of things that EXIST**, which changes the honesty
-calculation the panel was drawn under. **What remains unbuilt is a page and a Lua client**, not a
-design.
-
-**The remaining gaps are on the two ends, not in the middle.** A3 is the plug-in, and A5/A17 are the
-`/link` page — ADR-18 gives `/` to the app shell and `run_worker_first` does not list `/link`, so it
-is Svelte's. **Its confirmation step is the only defense against device-flow phishing**, and ADR-24
-makes that a page requirement precisely because no backend route can substitute for it: nothing
-auto-approves, and approval is always a POST a person had to cause.
-
-**Three constraints that bind the design, and each has already caught something:**
-
-- **Every journey step needs a badge, and every badge needs a real edge.** `build-diagram.py` fails
-  the build when the row count and the badge count disagree, so the step list and the arrows are one
-  decision rather than two.
-- **Two panels each numbering from 1 means two badges reading "3".** Letter prefixes — `A1`, `B1` —
-  solve it with no new color rule and no legend row. Two badge colors also work, at the cost of a
-  rule a reader has to learn. **Not yet decided.**
-- **"Publish to Flickr as normal" has no edge on the canvas**, because FGA does not participate. It
-  belongs as context above the publish panel rather than as a numbered step.
-
 **The publish panel drafts to 9 steps**, from the catalog read through preflight and
 `POST /api/v001/requests/batch` to the 00:15 UTC sweep calling `groups.pools.add`.
-
-**A17 WAS BLOCKED BY A REAL BUG. FIXED 2026-08-16, so the diagram no longer has to flag it.**
-`src/routes/oauth.ts` used to end the callback unconditionally at `UI_ORIGIN?login=ok`, stranding
-any flow that began somewhere else. It now carries a validated `returnTo` through the Flickr round
-trip in the ADR-08 login attempt. **See ADR-11**, which gained the open-redirect rule in the same
-change, and which has three mutations defending it.
-
-**And the device flow itself was BUILT later the same day, as ADR-24.** `start`, `poll`, `approve`
-and `deny` all exist, with 25 tests and six mutations. **The panel therefore draws mostly shipped
-behavior rather than a decided design**, and the honesty question it was raising has mostly gone
-away. **If the device flow is ever abandoned, the panel comes out**, same rule that removed the
-read replica.

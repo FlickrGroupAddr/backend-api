@@ -49,8 +49,13 @@ past everything already there, so a firing check is usually right.
 
 **The checks assert RELATIONSHIPS, not coordinates.** *"This edge is level"*, never *"this edge is at
 `y=388`"* — that absolute line moved four times on 2026-08-16 and the requirement never did. A number
-appears only where the number itself is the rule. They are written from the pinned-relationship table
-in `docs/architecture/DIAGRAM-NOTES.md`; **read that table before a layout change.**
+appears only where the number itself is the rule.
+
+**THE BUILD'S OWN OUTPUT IS THE RELATIONSHIP MAP.** It prints every shared edge, column, level run,
+plumb run and gap on each run, derived from the artifact. **Run it before a layout change rather than
+reading a table.** `docs/architecture/DIAGRAM-NOTES.md` holds only what the build cannot say — what
+the picture CLAIMS about the system, and breaking one of those makes the diagram false rather than
+ugly.
 
 ### `CHECKS_ENABLED` is a PERMANENT LEVER, and Claude MUST NOT remove it
 
