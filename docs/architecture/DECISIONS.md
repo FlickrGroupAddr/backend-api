@@ -5,6 +5,16 @@ overrule. MAY is optional.**
 
 **The code is the specification. This file holds only what the code cannot say: why.**
 
+**AN ADR IS SOMETHING THIS PROJECT WILL DO. A path not taken is a row in "Considered and
+rejected".** Terry, 2026-08-17: *"an ADR should be something we WILL do (in general), not something
+we considered and declared not worth it."* **The test is whether the section commands anything.**
+ADR-21 does — the sourcemap ships — and the option it beat sits in the table pointing back at it.
+A rejected option promoted to an ADR would take a number, and **numbers here encode importance**, so
+it would claim standing over decisions that actually govern behavior.
+
+**A rejected row MAY carry a reopening bar.** One line settles most of them; a few were measured,
+and those keep their figures and their conditions beneath the table so nobody re-derives them.
+
 **Numbers run most-important-first.** ADR-01 governs everything below it, and importance descends
 from there. Read down, and stop when you have enough.
 
@@ -1106,6 +1116,50 @@ unsupported)` are complete sentences alone, and the color carries urgency indepe
 | `minify: "terser"` for the app shell | Measured 2026-08-15 and it LOST: 40.21 kB brotli against the default's 39.43 kB, and 17.5 s against 11.0 s. Vite 8's `oxc` minifier already wins |
 | `cssMinify: "lightningcss"` | Byte-identical output — same content hash. Nothing to gain |
 | Minifying the built HTML | Worth 302 raw bytes, 155 after brotli, and it needs a plugin. The bundle's JS and CSS are already minified by default |
+| Porting `scripts/build-diagram.py` to Rust | The whole build is 0.197 s, of which 0.070 s is starting Python. The ceiling on a rewrite is 0.18 s a run — about 5,000 builds to recover 15 minutes. Measured and closed 2026-08-17. **Speed alone MUST NOT reopen it** — see below |
+| Porting only the diagram check suite | It is 0.13 s of a 0.197 s run, so it is where the time is — and it encodes every defect the diagram has ever shipped. Highest value, least understood, smallest absolute gain |
+
+### The diagram-generator rewrite has a BAR, because it was fully litigated
+
+**Most rows above are one line because one line settled them. This one was measured**, so the
+figures and the reopening conditions live here rather than being re-derived by whoever next thinks
+Python looks slow.
+
+Seven runs each on 2026-08-17, median reported. The build writes all three sheets and runs every
+check.
+
+| | |
+|---|---|
+| **Full build** | **0.197 s** — min 0.146, max 0.250 |
+| Bare interpreter startup | 0.020 s |
+| Startup plus the imports it uses | 0.070 s, **35% of the run** |
+| The script's own work | 0.130 s |
+| Writing 96 kB across three sheets to `X:` | **6 ms** |
+| The same writes to local disk | 0.5 ms |
+
+**The SMB share is innocent, and that is worth recording on its own.** `X:` has broken git ownership,
+Node file watching and Lightroom catalogs, so it is the correct first suspect and it is not the cause
+here.
+
+**Reopening needs all three. Speed alone is explicitly not enough** — *a compiled language would be
+faster* is true, it is the argument that was raised and measured, and re-raising it re-litigates a
+closed question using the very evidence that closed it.
+
+1. **Re-measured on the machine of the day, and the full build exceeds 2 seconds** — roughly ten
+   times today's figure, which is where a delay becomes perceptible in the edit-render loop. The
+   table is a baseline, never a permanent fact.
+2. **The cost is NOT attributable to something cheaper to fix.** Three candidates come first every
+   time: the share, an accidentally quadratic check, and import time. The tile-versus-edge pass is
+   already all-pairs and costs 612 comparisons at 34 tiles and 18 edges — the content would have to
+   grow by an order of magnitude before that shape mattered.
+3. **A named design session where the latency actually cost time.** Not an impression, and not a
+   benchmark run for its own sake.
+
+**The same measurement refuted a claim inside a standing order, which is why it is kept.**
+`CHECKS_ENABLED` was defended partly on the suite spending *"wall-clock time per edit"*. The checks
+are worth about 0.13 s, so that half was deleted rather than softened. **The lever is unchanged and
+the standing order still holds** — a check that fires on every intermediate state is a check nobody
+reads, at 0.2 s exactly as at 20 s.
 
 ## Still open
 
