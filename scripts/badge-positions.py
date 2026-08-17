@@ -36,8 +36,10 @@ import pathlib
 import re
 import xml.etree.ElementTree as ET
 
+from diagram_sheets import arch_dir, authored_diagram
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ARCH = ROOT / "docs" / "architecture"
+ARCH = arch_dir(ROOT)
 
 # Matching the badges already on the canvas: 34 across, sitting 1.5 clear of a
 # 3-unit arrow when placed beside the line rather than on it.
@@ -53,10 +55,14 @@ ARROW_STROKE = 3.0
 
 
 def newest_diagram() -> pathlib.Path:
-    found = sorted(ARCH.glob("FlickrGroupAddr-Architecture-*.drawio"))
-    if not found:
-        raise SystemExit(f"No diagram found under {ARCH}")
-    return found[-1]
+    """The AUTHORED sheet, which is the only one whose coordinates are authored.
+
+    **This one matters more than the two previews.** The output of this script is
+    geometry Terry pastes back into `build-diagram.py`, and the other sheets hold
+    the same drawing translated. Reading one of those would hand back numbers
+    offset by tens of units, and they would look entirely plausible.
+    """
+    return authored_diagram(ROOT)
 
 
 def perimeter_point(bounds, pt):

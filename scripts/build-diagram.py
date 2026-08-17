@@ -31,15 +31,21 @@ attribution comment travels inside the SVG itself.
 import base64
 import pathlib
 
+from diagram_sheets import AUTHORED, SHEETS, sheet_path
+
 # Dates are versions on this project -- there is no v1/v2 numbering. The
 # filename and the title block MUST carry the same date, so both come from this
 # one constant. Bump it when the diagram's content changes, and git mv the
-# existing file to match before running.
+# existing files to match before running.
+#
+# **The date records when the CONTENT changed, and all three sheets carry the
+# same content.** They therefore carry the same date. Adding a sheet, or changing
+# a page size, is not a content change and MUST NOT bump this.
 DATE = "2026-08-16"
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SVG = ROOT / "docs" / "architecture" / "logos"
-OUT = ROOT / "docs" / "architecture" / f"FlickrGroupAddr-Architecture-{DATE}.drawio"
+OUT = sheet_path(ROOT, DATE, AUTHORED)
 
 
 def embed(name: str) -> str:
@@ -64,7 +70,31 @@ WORKSTATION = embed("workstation.svg")
 LRC_MARK = embed("lightroom-classic-mark.svg")
 
 # ---------------------------------------------------------------------------
-# PAGE SIZE: tabloid landscape, 11x17 inches.
+# THREE SHEETS, ONE DRAWING. The sheets themselves are in `diagram_sheets.py`.
+#
+# **The content is authored for tabloid, 11x17, and it fits that sheet exactly.**
+# The other two sheets carry the SAME drawing, moved -- never resized. Each one
+# gets a rigid translation so the ink sits centered on it, and legal additionally
+# gets a `pageScale`, which is draw.io's own mechanism for "print this drawing
+# smaller than one drawing unit per hundredth of an inch".
+#
+# **A TRANSLATION IS SAFE AND A RESCALE IS NOT, and that is the whole design.**
+# Moving every coordinate by one delta changes no distance, so every font size,
+# every hand-set box height, `CHAR_W`, the badge band and every threshold in the
+# check suite below survive it meaning exactly what they meant. Multiplying every
+# coordinate would leave all of them silently wrong -- see the paragraph on
+# rescaling further down, which has stood here since 2026-08-14.
+#
+# **8.5x14 CANNOT SHOW THIS DRAWING AT A READABLE SIZE, and the arithmetic is
+# not close.** Legal landscape has 7.9 in of printable height against tabloid's
+# 10.4, so the content lands at ~76% and the 10.1 pt body type becomes ~7.7 pt.
+# **Terry measured 7.9 pt himself and called that print an eyechart.** A perfect
+# reflow to legal's aspect would buy about 3% -- the sheet holds 62% of tabloid's
+# printable AREA, so the ceiling is sqrt(0.62) = 78.8%, still under his floor.
+# The build prints the resulting point size for every sheet on every run, so this
+# is a number on screen rather than a claim in a comment.
+#
+# PAGE SIZE, the tabloid reasoning this block was originally written for:
 #
 # **drawio uses 100 units per inch**, so tabloid landscape is 1700 x 1100 and
 # US Letter landscape is 1100 x 850.
@@ -83,10 +113,8 @@ LRC_MARK = embed("lightroom-classic-mark.svg")
 # in on screen keeps sharpening. **DPI is a raster setting**, and it matters only
 # for a PNG or JPG export.
 #
-# **What decides a PDF is the PAGE SIZE**, which is why these constants are in
-# hundredths of an inch and not in dots.
-PAGE_WIDTH = 1700  # 17 inches
-PAGE_HEIGHT = 1100  # 11 inches
+# **What decides a PDF is the PAGE SIZE**, which is why `Sheet.width` and
+# `Sheet.height` are in hundredths of an inch and not in dots.
 
 # **THE CONTENT FITS THIS PAGE 1:1, as of 2026-08-16, and it never did before.**
 #
@@ -134,7 +162,7 @@ PAGE_HEIGHT = 1100  # 11 inches
 
 TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
   <diagram id="fga-architecture" name="FlickrGroupAddr Architecture">
-    <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="{PAGE_WIDTH}" pageHeight="{PAGE_HEIGHT}" math="0" shadow="0">
+    <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="{AUTHORED.width}" pageHeight="{AUTHORED.height}" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -322,6 +350,12 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
 # used to live here was doing nothing, and it hid a dangling `{USERS}` reference
 # until the variable was deleted -- at which point the f-string failed loudly,
 # which is the better failure.
+#
+# **This writes the AUTHORED sheet only.** The other two are written at the very
+# end of this file, because each one needs the ink extents to center itself on
+# its page, and those extents are measured by the page-fit block in the check
+# suite. Deriving them here would mean a second implementation of the ink
+# measurement, and the two would drift.
 OUT.write_text(TEMPLATE, encoding="utf-8")
 print(f"Wrote {OUT}")
 print(f"  cloudflare payload : {len(CF)} chars")
@@ -360,10 +394,22 @@ print(f"  total file         : {OUT.stat().st_size} bytes")
 CHECKS_ENABLED = True
 
 if not CHECKS_ENABLED:
+    # **The other sheets are DELETED rather than left behind, and that is
+    # deliberate.** Each one is placed from ink extents the page-fit check
+    # measures, so with the suite off there is nothing to place them from. A
+    # stale sheet holding yesterday's content is indistinguishable from a current
+    # one; a missing sheet is not. The next full build writes them again.
+    _dropped = [p for s in SHEETS if s != AUTHORED
+                for p in [sheet_path(ROOT, DATE, s)] if p.exists()]
+    for _p in _dropped:
+        _p.unlink()
     print()
     print("  " + "=" * 68)
     print("  CHECKS ARE OFF. This diagram was written WITHOUT being validated.")
     print("  Set CHECKS_ENABLED = True and rewrite the suite before trusting it.")
+    print(f"  Only the {AUTHORED.slug} sheet was written.")
+    for _p in _dropped:
+        print(f"  Deleted stale sheet {_p.name}")
     print("  " + "=" * 68)
     raise SystemExit(0)
 
@@ -1234,7 +1280,7 @@ check("every label line starts with a capital", not _bad_case,
 # for a driver to absorb an overflow by scaling a percent or two.
 # ---------------------------------------------------------------------------
 
-MARGIN = 30.0
+MARGIN = AUTHORED.margin
 CAP_HEIGHT, ASCENDER, DESCENDER = 0.716, 0.905, 0.212
 
 
@@ -1315,21 +1361,22 @@ for _e in edges:
 
 _x0, _x0id = min(_ink_x); _x1, _x1id = max(_ink_x)
 _y0, _y0id = min(_ink_y); _y1, _y1id = max(_ink_y)
-_pw, _ph = PAGE_WIDTH - 2 * MARGIN, PAGE_HEIGHT - 2 * MARGIN
+_pw, _ph = AUTHORED.width - 2 * MARGIN, AUTHORED.height - 2 * MARGIN
+CONTENT_W, CONTENT_H = _x1 - _x0, _y1 - _y0
 
 print()
-note("Page fit, 11x17 with 0.30in margins, measured in INK:")
-note(f"    ink x {_x0:.2f} ({_x0id}) to {_x1:.2f} ({_x1id})   width  {_x1 - _x0:.2f}")
-note(f"    ink y {_y0:.2f} ({_y0id}) to {_y1:.2f} ({_y1id})   height {_y1 - _y0:.2f}")
+note(f"Page fit, {AUTHORED.slug} with 0.30in margins, measured in INK:")
+note(f"    ink x {_x0:.2f} ({_x0id}) to {_x1:.2f} ({_x1id})   width  {CONTENT_W:.2f}")
+note(f"    ink y {_y0:.2f} ({_y0id}) to {_y1:.2f} ({_y1id})   height {CONTENT_H:.2f}")
 note(f"    printable {_pw:.0f} x {_ph:.0f}")
-check("fits 1:1", _x1 - _x0 <= _pw + EPS and _y1 - _y0 <= _ph + EPS,
-      f"{min(_pw / (_x1 - _x0), _ph / (_y1 - _y0)) * 100:.1f}%")
+check("fits 1:1", CONTENT_W <= _pw + EPS and CONTENT_H <= _ph + EPS,
+      f"{min(_pw / CONTENT_W, _ph / CONTENT_H) * 100:.1f}%")
 
-for _side, _m, _who in (("left  ", _x0, _x0id), ("right ", PAGE_WIDTH - _x1, _x1id),
-                        ("top   ", _y0, _y0id), ("bottom", PAGE_HEIGHT - _y1, _y1id)):
+for _side, _m, _who in (("left  ", _x0, _x0id), ("right ", AUTHORED.width - _x1, _x1id),
+                        ("top   ", _y0, _y0id), ("bottom", AUTHORED.height - _y1, _y1id)):
     check(f"{_side} ink margin >= {MARGIN:.0f}", _m >= MARGIN - EPS, f"{_m:.2f}   set by {_who}")
-check("left and right ink margins equal", abs(_x0 - (PAGE_WIDTH - _x1)) <= EPS,
-      f"{_x0:.2f} / {PAGE_WIDTH - _x1:.2f}")
+check("left and right ink margins equal", abs(_x0 - (AUTHORED.width - _x1)) <= EPS,
+      f"{_x0:.2f} / {AUTHORED.width - _x1:.2f}")
 
 # **The title is the one element positioned to the margin by hand**, so it gets
 # its own assertion rather than relying on it happening to be the topmost thing.
@@ -1339,6 +1386,146 @@ check("title cap top sits ON the top margin", abs(_t_ink - MARGIN) <= EPS,
       f"{_t_ink:.2f} against {MARGIN:.0f}")
 check("the title IS the topmost ink", _y0id == "title", f"topmost is {_y0id}")
 note("    export WITHOUT 'Fit to Page' -- it would shrink a drawing that already fits")
+
+
+# ---------------------------------------------------------------------------
+# THE OTHER SHEETS. The same drawing, MOVED -- never resized.
+#
+# **This runs last because it needs the ink extents the block above measured.**
+# Deriving them here would be a second implementation of the ink measurement, and
+# two implementations of one measurement drift.
+#
+# **Each sheet gets one rigid translation and, where the drawing does not fit at
+# 1:1, a `pageScale`.** draw.io's page in drawing units is `pageWidth * pageScale`
+# by `pageHeight * pageScale`, so a pageScale above 1 is exactly "print this
+# drawing smaller than one unit per hundredth of an inch". It keeps the content
+# on ONE page in the editor instead of spilling across a 2x2 grid of them.
+#
+# **THE PAGESCALE FIGURE IS ASSERTED HERE AND HAS NOT BEEN CHECKED AGAINST A REAL
+# PRINT.** The mapping of `pageWidth`/`pageHeight` to a paper size is documented
+# and certain; how draw.io's export dialog treats `pageScale` is not, and this
+# build cannot see a printer. **The print scale is on screen every run** -- if a
+# dialog asks, that is the number to type.
+#
+# **A rigid move is checked, not assumed.** Every absolute point in the written
+# sheet MUST differ from the authored one by exactly the same delta, so a
+# translation that mangled an edge waypoint or missed a tile fails here rather
+# than in a print shop.
+# ---------------------------------------------------------------------------
+
+# **The body size is READ off the canvas, never remembered.** It is the most
+# common `fontSize` among the tiles, and 100 drawing units are 1 inch, so a size
+# converts to points by 0.72. DIAGRAM-NOTES.md records the calibration: 7.9 pt
+# was an eyechart, 12.2 pt was comically huge, and 10.1 pt is the center.
+_font_sizes = [int(_m.group(1)) for _c in cells if _c.get("vertex") == "1"
+               for _m in [re.search(r"fontSize=(\d+)", _c.get("style") or "")] if _m]
+BODY_UNITS = max(set(_font_sizes), key=_font_sizes.count)
+BODY_PT = BODY_UNITS * 0.72
+EYECHART_PT = 7.9
+
+
+def fmt(v: float) -> str:
+    """A coordinate as short text, so a moved sheet reads like the authored one."""
+    return f"{v:.4f}".rstrip("0").rstrip(".") or "0"
+
+
+def absolute_points(tree):
+    """Every element in the document whose x and y name an absolute canvas position.
+
+    **`relative="1"` means the number is a FRACTION, and it MUST NOT be moved.**
+    `e13` carries `x="0.55"`, which is how far along its own edge the label sits.
+    Adding 71.5 to that would put the label three-quarters of a canvas away.
+    **This is the same trap as `exitX`/`exitY`** -- draw.io writes fractions and
+    absolute units in identically named attributes, and both land close enough to
+    read as imprecision rather than as a bug. The first version of this function
+    raised on `e13` instead of skipping it, which is how the case was found.
+
+    **A label offset is the other pair that MUST NOT move.** `<mxPoint as="offset">`
+    is measured from its own edge. There are none today, and skipping it keeps
+    that true when one arrives.
+
+    **A geometry this function cannot classify raises instead of being moved.**
+    """
+    out = []
+    for g in tree.iter("mxGeometry"):
+        has = (g.get("x") is not None, g.get("y") is not None)
+        if g.get("relative") == "1":
+            continue
+        if all(has):
+            out.append(g)
+        elif any(has):
+            raise SystemExit("mxGeometry carries only one of x/y; translation is unsafe.")
+    for p in tree.iter("mxPoint"):
+        if p.get("as") == "offset":
+            continue
+        if p.get("x") is None or p.get("y") is None:
+            raise SystemExit(f"mxPoint as={p.get('as')!r} has no x/y; translation is unsafe.")
+        out.append(p)
+    return out
+
+
+def moved_sheet(xml: str, sheet, page_scale: float, dx: float, dy: float) -> str:
+    tree = ET.fromstring(xml)
+    model = tree.find(".//mxGraphModel")
+    model.set("pageWidth", fmt(sheet.width))
+    model.set("pageHeight", fmt(sheet.height))
+    model.set("pageScale", fmt(page_scale))
+    for el in absolute_points(tree):
+        el.set("x", fmt(float(el.get("x")) + dx))
+        el.set("y", fmt(float(el.get("y")) + dy))
+    return ET.tostring(tree, encoding="unicode") + "\n"
+
+
+print()
+note(f"Sheets. One drawing, {len(SHEETS)} pages, moved but never rescaled:")
+_authored_points = absolute_points(ET.fromstring(TEMPLATE))
+
+for _sheet in SHEETS:
+    _prw = _sheet.width - 2 * _sheet.margin
+    _prh = _sheet.height - 2 * _sheet.margin
+    _fit = min(_prw / CONTENT_W, _prh / CONTENT_H)
+    # A drawing that already fits prints at 1:1 and keeps its slack as gutter. One
+    # that does not gets the shrink expressed as pageScale, never as coordinates.
+    _pscale = 1.0 if _fit >= 1.0 - 1e-9 else 1.0 / _fit
+    _printed = min(1.0, _fit)
+    _effw, _effh = _sheet.width * _pscale, _sheet.height * _pscale
+    _dx = (_effw - CONTENT_W) / 2 - _x0
+    _dy = (_effh - CONTENT_H) / 2 - _y0
+
+    print()
+    note(f"  {_sheet.slug:8s} {_sheet.label}")
+    if _sheet == AUTHORED:
+        check("the authored sheet needs no move", abs(_dx) <= EPS and abs(_dy) <= EPS,
+              f"dx {_dx:.2f}, dy {_dy:.2f}")
+    else:
+        _path = sheet_path(ROOT, DATE, _sheet)
+        _path.write_text(moved_sheet(TEMPLATE, _sheet, _pscale, _dx, _dy), encoding="utf-8")
+        _written = absolute_points(ET.fromstring(_path.read_text(encoding="utf-8")))
+        _rigid = len(_written) == len(_authored_points) and all(
+            abs(float(_q.get("x")) - float(_p.get("x")) - _dx) <= 1e-3
+            and abs(float(_q.get("y")) - float(_p.get("y")) - _dy) <= 1e-3
+            for _p, _q in zip(_authored_points, _written))
+        note(f"    wrote {_path.name}")
+        check("is the authored drawing, rigidly moved", _rigid,
+              f"{len(_written)} points, dx {_dx:+.2f}, dy {_dy:+.2f}")
+
+    _vx0, _vx1, _vy0, _vy1 = _x0 + _dx, _x1 + _dx, _y0 + _dy, _y1 + _dy
+    check("ink centered on its page",
+          abs(_vx0 - (_effw - _vx1)) <= EPS and abs(_vy0 - (_effh - _vy1)) <= EPS,
+          f"x {_vx0:.2f}/{_effw - _vx1:.2f}   y {_vy0:.2f}/{_effh - _vy1:.2f}")
+    _least = min(_vx0, _effw - _vx1, _vy0, _effh - _vy1) * _printed
+    check(f"printed margins >= {_sheet.margin:.0f}", _least >= _sheet.margin - EPS,
+          f"{_least:.2f} at the tightest side")
+    check("the drawing sits on ONE page", CONTENT_W <= _effw + EPS and CONTENT_H <= _effh + EPS,
+          f"page {_effw:.1f} x {_effh:.1f} units, pageScale {_pscale:.4f}")
+
+    # **Not a check, because the verdict is Terry's.** The build states the size
+    # and names his own measured floor; it does not refuse to write a sheet he
+    # asked for. See the three-sheets block at the top of this file.
+    _pt = BODY_PT * _printed
+    _verdict = (f" -- BELOW the {EYECHART_PT} pt Terry called an eyechart"
+                if _pt < EYECHART_PT else "")
+    note(f"    prints at {_printed * 100:.1f}%, body type {_pt:.1f} pt{_verdict}")
 
 
 # ---------------------------------------------------------------------------

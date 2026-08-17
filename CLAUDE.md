@@ -39,6 +39,12 @@ MUST come from one source.** Bumping a date renames the file — use `git mv`.
 
 **Edit `scripts/build-diagram.py`, never the `.drawio`.** A hand edit is lost on the next build.
 
+**It is ONE drawing on three sheets** — `11x17`, `8.5x14` and `16x9`, named in
+`scripts/diagram_sheets.py`. The content is authored for tabloid; the other two are the same drawing
+**rigidly translated, never rescaled**, so every font size and every threshold in the check suite
+still means what it meant. **Anything that reads the diagram MUST call `authored_diagram()`** — four
+scripts globbed the filename by hand and `sorted(glob)[-1]` silently became the legal sheet.
+
 ```
 python scripts/build-diagram.py
 ```
@@ -450,6 +456,7 @@ their architecture.** Precedent is the weakest argument available here.
 | `src/oauth/signature.ts` | ADR-14's documented exception. Checked against RFC 5849's own vectors |
 | `migrations/` | The schema. Constraints carry the rules, not application code |
 | `scripts/build-diagram.py` | The diagram generator and its assertions |
+| `scripts/diagram_sheets.py` | **The sheet roster, and the one place that resolves a diagram path.** Underscored because it is imported, not run |
 | `web/src/lib/*.ts` | **Where the UI's real logic MUST live.** `tsc` checks these |
 | `web/src/**/*.svelte` | Markup and wiring only. Nothing here is typechecked — see below |
 | `web/src/lib/outcomes.ts` | **ADR-01's promise, as the sentences a user reads.** Still-open copy |

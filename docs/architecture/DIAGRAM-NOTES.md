@@ -4,8 +4,13 @@
 overrule. MAY is optional.**
 
 **The diagram is generated.** `scripts/build-diagram.py` writes
-`FlickrGroupAddr-Architecture-<date>.drawio`, and a hand edit is lost on the next build. **Edit the
-generator.**
+`FlickrGroupAddr-Architecture-<date>-<sheet>.drawio`, and a hand edit is lost on the next build.
+**Edit the generator.**
+
+**It is ONE drawing on three sheets** — `11x17`, `8.5x14` and `16x9`. The content is authored for
+tabloid and the other two carry the same picture moved, never resized, so they share one date.
+`scripts/diagram_sheets.py` is the roster. **Everything that reads the diagram wants the `11x17`
+sheet**, because it is the only one whose coordinates are the authored ones.
 
 **This file holds the things the generator cannot tell you: what the picture claims about the
 system, how to print it, and the draw.io behaviors that will waste your afternoon.** It holds no
@@ -60,7 +65,7 @@ plug-in getting a credential and never spending it.
 
 ## Printing it
 
-**This is the part you will come back for.**
+**This is the part you will come back for. Print the `11x17` sheet.**
 
 ```
 Page          1700 x 1100 drawing units = 17 x 11 inches
@@ -72,6 +77,31 @@ Export at     100%.  NEVER "Fit to Page"
 **Fit to Page is the likeliest way this print goes wrong**, and it has nothing to do with margins.
 The content fits the printable area exactly, so any fit pass shrinks it and puts white space back on
 all four sides. Adobe Reader defaults to it. **Say "actual size, 100%" at the counter.**
+
+### The other two sheets, and what each one costs
+
+**The build prints the resulting body point size for every sheet on every run.** Read it there rather
+than here — these numbers move the moment the content does.
+
+| Sheet | Prints at | Body type | Use it for |
+|---|---|---|---|
+| `11x17` | 100% | 10.1 pt | **The print.** The content fits this sheet exactly |
+| `16x9` | 100% | 10.1 pt | A 1920 x 1080 screen or a slide. Gutters at the sides, nothing shrinks |
+| `8.5x14` | 76% | **7.7 pt** | Legal landscape, and read the warning below first |
+
+**`8.5x14` REPRODUCES THE EYECHART, and the arithmetic is not close.** Legal landscape carries 7.9 in
+of printable height against tabloid's 10.4, so the drawing lands at 76% and the body type at
+**7.7 pt — below the 7.9 pt that made the first print unreadable.** Reflowing the layout to legal's
+aspect would not rescue it: the sheet holds 62% of tabloid's printable *area*, so the ceiling is
+`sqrt(0.62)` = 78.8%, or 7.96 pt. **Making legal readable means cutting content, not moving it.**
+
+**The `16x9` sheet is free**, because a screen has no unprintable border and no fixed size. It uses a
+20-unit gutter rather than 30, and that is exactly what buys an exact 1:1 fit at 1920 x 1080.
+
+**`pageScale` is how `8.5x14` says "print me at 76%".** draw.io's page in drawing units is
+`pageWidth * pageScale`, so a scale above 1 keeps the drawing on ONE page instead of spilling it
+across a 2x2 grid. **That figure is asserted by the build and has NOT been checked against a real
+print** — if an export dialog asks for a percentage, the build printed the number.
 
 ### Why 0.30 in and not 0.25 in
 

@@ -37,9 +37,12 @@ machine, and `X:` is an SMB share on a network with other hosts on it.
 import http.server
 import json
 import pathlib
+import urllib.parse
+
+from diagram_sheets import AUTHORED, SHEETS, arch_dir, authored_diagram, found_sheets
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ARCH = ROOT / "docs" / "architecture"
+ARCH = arch_dir(ROOT)
 
 HOST = "127.0.0.1"
 PORT = 8791
@@ -61,11 +64,14 @@ PAGE = """<!doctype html>
   #dot { width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; }
   #dot.stale { background: #F6821F; }
   #frame { width: 100%; height: calc(100% - 26px); border: 0; background: #FFFFFF; }
+  #sheets a { color: #9AA0A6; text-decoration: none; margin-right: 10px; }
+  #sheets a.on { color: #F6821F; font-weight: 700; }
 </style>
 </head>
 <body>
   <div id="bar">
     <div id="dot"></div>
+    <span id="sheets">%SHEETS%</span>
     <span id="name">Loading...</span>
     <span id="stamp"></span>
     <span id="count"></span>
@@ -75,13 +81,21 @@ PAGE = """<!doctype html>
 // Reload the iframe only when the file actually changed. Reloading on a timer
 // would restart the render every tick and make the page unreadable.
 const VIEWER = 'https://viewer.diagrams.net/?lightbox=1&nav=1#R';
+// Which sheet this tab is watching. The drawing is the same on all of them, so
+// this is here to prove a new sheet RENDERS, not to review the picture again.
+const SHEET = new URLSearchParams(location.search).get('sheet') || '';
+const Q = SHEET ? '?sheet=' + encodeURIComponent(SHEET) : '';
 let seen = null, builds = 0;
+
+for (const a of document.querySelectorAll('#sheets a')) {
+  if (a.dataset.slug === (SHEET || '%AUTHORED%')) { a.classList.add('on'); }
+}
 
 async function tick() {
   try {
-    const meta = await (await fetch('/mtime', {cache: 'no-store'})).json();
+    const meta = await (await fetch('/mtime' + Q, {cache: 'no-store'})).json();
     if (meta.mtime !== seen) {
-      const xml = await (await fetch('/diagram', {cache: 'no-store'})).text();
+      const xml = await (await fetch('/diagram' + Q, {cache: 'no-store'})).text();
       // A `#R` fragment carries the whole diagram, so the viewer fetches nothing
       // and no CDN sits between the build and the picture.
       document.getElementById('frame').src = VIEWER + encodeURIComponent(xml);
@@ -108,15 +122,34 @@ setInterval(tick, %POLL%);
 
 
 def newest_diagram() -> pathlib.Path:
-    """The dated .drawio with the latest date in its name.
+    """The AUTHORED sheet of the newest date -- the tabloid one.
 
-    Dates are versions on this project, so the newest name is the current file.
-    Sorting the names works because the dates are zero-padded ISO.
+    **This used to be `sorted(glob)[-1]`, and that broke the day the filenames
+    grew a sheet suffix.** ASCII sorts `-8.5x14` last, so the preview silently
+    showed the legal sheet: the same drawing, translated, with a page scale on
+    it. **That is not a prediction -- the running server was caught doing it on
+    2026-08-17**, and the picture looked almost right, which is the worst kind of
+    wrong for a review loop. `diagram_sheets.authored_diagram()` is the one place
+    that decision now lives.
     """
-    found = sorted(ARCH.glob("FlickrGroupAddr-Architecture-*.drawio"))
-    if not found:
-        raise SystemExit(f"No diagram found under {ARCH}")
-    return found[-1]
+    return authored_diagram(ROOT)
+
+
+def sheet_diagram(slug: str) -> pathlib.Path:
+    """The named sheet of the newest date, or the authored one when unnamed.
+
+    **The design loop still wants the authored sheet and nothing else**, so that
+    stays the default and the URL stays `http://127.0.0.1:8791/`. This exists to
+    answer one narrower question: does a newly written sheet parse and render at
+    all. The drawing on it is the same drawing.
+    """
+    if not slug:
+        return authored_diagram(ROOT)
+    newest = max(date for date, _, _ in found_sheets(ROOT))
+    for date, found, path in found_sheets(ROOT):
+        if date == newest and found == slug:
+            return path
+    raise KeyError(slug)
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -132,32 +165,57 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _requested(self) -> pathlib.Path:
+        route, _, query = self.path.partition("?")
+        slug = urllib.parse.parse_qs(query).get("sheet", [""])[0]
+        return sheet_diagram(slug)
+
     def do_GET(self):
         import datetime
 
-        if self.path.startswith("/mtime"):
-            target = newest_diagram()
-            stat = target.stat()
-            stamp = datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%H:%M:%S")
-            body = json.dumps({
-                "mtime": stat.st_mtime,
-                "name": target.name,
-                "stamp": stamp,
-            }).encode("utf-8")
-            self._send(body, "application/json")
-        elif self.path.startswith("/diagram"):
-            self._send(newest_diagram().read_bytes(), "application/xml")
-        elif self.path in ("/", "/index.html"):
-            page = PAGE.replace("%POLL%", str(POLL_MS))
-            self._send(page.encode("utf-8"), "text/html; charset=utf-8")
-        else:
-            self.send_error(404)
+        route = self.path.partition("?")[0]
+        try:
+            if route == "/mtime":
+                target = self._requested()
+                stat = target.stat()
+                stamp = datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%H:%M:%S")
+                body = json.dumps({
+                    "mtime": stat.st_mtime,
+                    "name": target.name,
+                    "stamp": stamp,
+                }).encode("utf-8")
+                self._send(body, "application/json")
+            elif route == "/diagram":
+                self._send(self._requested().read_bytes(), "application/xml")
+            elif route in ("/", "/index.html"):
+                links = " ".join(
+                    f'<a href="/?sheet={s.slug}" data-slug="{s.slug}">{s.slug}</a>'
+                    for s in SHEETS
+                )
+                page = (PAGE.replace("%POLL%", str(POLL_MS))
+                            .replace("%SHEETS%", links)
+                            .replace("%AUTHORED%", AUTHORED.slug))
+                self._send(page.encode("utf-8"), "text/html; charset=utf-8")
+            else:
+                self.send_error(404)
+        except KeyError as exc:
+            # A slug the build does not write. Say which, rather than falling back
+            # to the authored sheet and showing a picture nobody asked for.
+            self.send_error(404, f"No sheet named {exc.args[0]}")
 
     def log_message(self, fmt, *args):
         # The poll runs twice a second, so logging every request would bury the
         # one line that matters. Only a real diagram fetch gets printed.
-        if "/diagram" in (args[0] if args else ""):
-            print(f"  Served {newest_diagram().name}", flush=True)
+        #
+        # **`args[0]` is NOT always a string, and assuming it was crashed the
+        # connection.** `send_error` routes through `log_error`, which calls this
+        # with `("code %d, message %s", 404, "...")` -- an int first. The `in`
+        # test then raised TypeError inside the handler, so a mistyped URL closed
+        # the socket with no response at all. Found 2026-08-17 by asking for a
+        # sheet slug that does not exist; it had been reachable by any 404.
+        first = args[0] if args else ""
+        if isinstance(first, str) and "/diagram" in first:
+            print(f"  Served {first.split()[1] if ' ' in first else first}", flush=True)
 
 
 if __name__ == "__main__":

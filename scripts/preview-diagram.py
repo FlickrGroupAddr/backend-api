@@ -29,22 +29,22 @@ import pathlib
 import urllib.parse
 import zlib
 
+from diagram_sheets import arch_dir, authored_diagram
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ARCH = ROOT / "docs" / "architecture"
+ARCH = arch_dir(ROOT)
 
 VIEWER = "https://viewer.diagrams.net/?lightbox=1&nav=1#R"
 
 
 def newest_diagram() -> pathlib.Path:
-    """The dated .drawio with the latest date in its name.
+    """The AUTHORED sheet of the newest date -- the tabloid one.
 
-    Dates are versions on this project, so the newest name is the current file.
-    Sorting the names works because the dates are zero-padded ISO.
+    A `#R` URL carries the drawing itself, so this picks which drawing. The other
+    sheets hold the same picture moved onto another page, and previewing one of
+    those answers a question nobody asked.
     """
-    found = sorted(ARCH.glob("FlickrGroupAddr-Architecture-*.drawio"))
-    if not found:
-        raise SystemExit(f"No diagram found under {ARCH}")
-    return found[-1]
+    return authored_diagram(ROOT)
 
 
 def compress(xml: str) -> str:

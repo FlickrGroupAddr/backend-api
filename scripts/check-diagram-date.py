@@ -8,8 +8,15 @@ every session would turn it into "date of last session", which is not a version
 and destroys the scheme it pretends to serve. The hook reports; a human or Claude
 decides.
 
+**The diagram is one drawing on several SHEETS**, and they all carry one date --
+`diagram_sheets.SHEETS` is the roster. This check therefore expects one date
+across every sheet, not one file. Before the sheets existed it expected exactly
+one file and would have gone loud on every session once there were three.
+
 Volume tracks actionability:
   - filename date != in-file date  -> LOUD. That is drift, and it is a real bug.
+  - sheets carrying two dates      -> LOUD. A rename was missed halfway.
+  - a sheet missing, or unexpected -> LOUD. The build writes the whole set.
   - diagram older than today       -> quiet note. Only actionable if the diagram
                                       is edited this session.
   - diagram dated today            -> one confirming line, so silence is never
@@ -22,9 +29,9 @@ import pathlib
 import re
 import sys
 
+from diagram_sheets import SHEETS, found_sheets
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PATTERN = "FlickrGroupAddr-Architecture-*.drawio"
-DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
 def emit(context: str, system: str | None = None) -> None:
@@ -36,68 +43,85 @@ def emit(context: str, system: str | None = None) -> None:
 
 
 def main() -> None:
-    arch = ROOT / "docs" / "architecture"
-    files = sorted(arch.glob(PATTERN))
-    if not files:
+    rows = found_sheets(ROOT)
+    if not rows:
         # Silent: this hook is project-scoped, and a missing diagram is not this
         # check's business to complain about.
         sys.exit(0)
 
-    if len(files) > 1:
-        names = ", ".join(f.name for f in files)
-        emit(
-            f"Multiple architecture diagrams present: {names}. Dates are versions here, so "
-            f"there should normally be exactly one. Confirm which is current before editing.",
-            f"Architecture diagram: {len(files)} dated copies found, expected 1.",
-        )
-
-    diagram = files[0]
     today = datetime.date.today()
 
-    m = DATE_RE.search(diagram.name)
-    if not m:
-        emit(f"Architecture diagram {diagram.name} has no date in its filename; expected one.")
-    file_date = m.group(1)
-
-    text = diagram.read_text(encoding="utf-8", errors="replace")
-    cell = re.search(r'id="date"\s+value="([^"]*)"', text)
-    cell_date = cell.group(1) if cell else None
-
-    if cell_date is None:
+    # Loud: dates are versions here, so two dates across the sheets means a rename
+    # stopped halfway and half the set is a previous version of the drawing.
+    dates = sorted({date for date, _, _ in rows})
+    if len(dates) > 1:
+        listing = ", ".join(f"{slug} {date}" for date, slug, _ in rows)
         emit(
-            f"Architecture diagram {diagram.name} has no date cell to compare against the "
-            f"filename date {file_date}.",
-            "Architecture diagram: no date cell found.",
+            f"ARCHITECTURE DIAGRAM SHEETS CARRY {len(dates)} DIFFERENT DATES: {listing}. They are "
+            f"one drawing on several sheets and MUST share one date. A rename was missed. Fix "
+            f"before changing anything else in the diagram.",
+            f"Architecture diagram: sheets split across {len(dates)} dates.",
+        )
+    file_date = dates[0]
+
+    # Loud: the build writes the whole roster, so a gap means somebody deleted a
+    # sheet or the build stopped early with CHECKS_ENABLED off.
+    present = {slug for _, slug, _ in rows}
+    expected = {sheet.slug for sheet in SHEETS}
+    if present != expected:
+        missing = ", ".join(sorted(expected - present)) or "none"
+        extra = ", ".join(sorted(present - expected)) or "none"
+        emit(
+            f"ARCHITECTURE DIAGRAM SHEET SET IS WRONG for {file_date}. Missing: {missing}. "
+            f"Unexpected: {extra}. scripts/build-diagram.py writes every sheet in "
+            f"diagram_sheets.SHEETS, and it writes only the authored one when CHECKS_ENABLED is "
+            f"off. Rerun the build.",
+            f"Architecture diagram: {len(present)} of {len(expected)} sheets present.",
         )
 
-    # Loud: the two dates disagree. This is the failure the single DATE constant
-    # in build-diagram.py exists to prevent, so it means something bypassed it.
-    if cell_date != file_date:
-        emit(
-            f"ARCHITECTURE DIAGRAM DATE DRIFT. Filename says {file_date}, the slide's date cell "
-            f"says {cell_date}. They are generated from one DATE constant in "
-            f"scripts/build-diagram.py, so a mismatch means the file was hand-edited or a rename "
-            f"was missed. Fix before changing anything else in the diagram.",
-            f"Architecture diagram date drift: filename {file_date} vs slide {cell_date}.",
-        )
+    # Loud: a filename and its own slide disagree. This is the failure the single
+    # DATE constant in build-diagram.py exists to prevent, so it means something
+    # bypassed it -- a hand edit, or a rename without a rebuild.
+    for date, slug, path in rows:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        cell = re.search(r'id="date"\s+value="([^"]*)"', text)
+        if cell is None:
+            emit(
+                f"Architecture diagram sheet {path.name} has no date cell to compare against the "
+                f"filename date {date}.",
+                f"Architecture diagram: no date cell in the {slug} sheet.",
+            )
+        if cell.group(1) != date:
+            emit(
+                f"ARCHITECTURE DIAGRAM DATE DRIFT on the {slug} sheet. Filename says {date}, the "
+                f"slide's date cell says {cell.group(1)}. They are generated from one DATE "
+                f"constant in scripts/build-diagram.py, so a mismatch means the file was "
+                f"hand-edited or a rename was missed. Fix before changing anything else in the "
+                f"diagram.",
+                f"Architecture diagram date drift: {slug} filename {date} vs slide {cell.group(1)}.",
+            )
 
     try:
         age = (today - datetime.date.fromisoformat(file_date)).days
     except ValueError:
         emit(f"Architecture diagram date {file_date} is not a valid ISO date.")
 
+    sheets = ", ".join(slug for _, slug, _ in rows)
     if age == 0:
-        emit(f"Architecture diagram is dated today ({file_date}). No action needed.")
+        emit(
+            f"Architecture diagram is dated today ({file_date}), on {len(rows)} sheets "
+            f"({sheets}). No action needed."
+        )
 
     plural = "day" if age == 1 else "days"
     emit(
-        f"Architecture diagram is dated {file_date} ({age} {plural} ago); today is "
-        f"{today.isoformat()}. This is correct as long as the diagram has not changed since -- "
-        f"the date records when its CONTENT last changed, not the current date. "
-        f"IF THE DIAGRAM IS EDITED THIS SESSION: set DATE = \"{today.isoformat()}\" in "
-        f"scripts/build-diagram.py, git mv "
-        f"docs/architecture/FlickrGroupAddr-Architecture-{file_date}.drawio to the new date, "
-        f"then rerun the build so the filename and the slide stay in step."
+        f"Architecture diagram is dated {file_date} ({age} {plural} ago), on {len(rows)} sheets "
+        f"({sheets}); today is {today.isoformat()}. This is correct as long as the diagram has not "
+        f"changed since -- the date records when its CONTENT last changed, not the current date. "
+        f"Adding or resizing a SHEET is not a content change and MUST NOT bump it. "
+        f"IF THE DRAWING ITSELF IS EDITED THIS SESSION: set DATE = \"{today.isoformat()}\" in "
+        f"scripts/build-diagram.py, git mv ALL {len(rows)} sheets under docs/architecture/ to the "
+        f"new date, then rerun the build so every filename and the slide stay in step."
     )
 
 
