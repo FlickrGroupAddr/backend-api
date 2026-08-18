@@ -86,13 +86,21 @@ you are about to touch it.
 ## If you are picking up work, OPEN THE WORK LOG FIRST
 
 ```
-python scripts/worklog-server.py     # once, in the background
+python X:\Projects\claude-status\serve.py docs\work-status.json     # once, in the background
 ```
 
-**`http://127.0.0.1:8792/` is the shared view of `docs/WORK-LOG.md`**, and it repaints
-within 400 ms of any write to that file. **It reads the file directly, so it cannot
-drift from it** -- which is why it is the surface to trust when the panel and the log
-disagree.
+**`http://127.0.0.1:8792/` is the shared board over `docs/work-status.json`**, and it
+repaints within 400 ms of any write to that file. **It reads the file directly, so it
+cannot drift from it** -- which is why it is the surface to trust when the panel and the
+board disagree.
+
+**The TOOL and the DATA live in different repositories, on purpose.** The board server is
+`github.com/TerryOtt/claude-status`, cloned at `X:\Projects\claude-status`; the data is
+this project's `docs/work-status.json`. Terry, 2026-08-18: *"this should be its own
+repository on GH."*
+
+**`scripts/worklog*.py` are DELETED. `docs/WORK-LOG.md` is FROZEN**, kept for its history
+and its contract prose. Editing that markdown now reaches no reader.
 
 **Arm it at the start of a session**, for the same reason the diagram preview says so:
 started after two edits, it has already missed the thing it existed to show.
@@ -146,7 +154,7 @@ shape, probe the real runtime for runtime capability, and scan the CLI binary fo
 | What was decided, and why? | `docs/architecture/DECISIONS.md` |
 | What is decided but NOT built? | That file's **"Still open"** section |
 | What was rejected, and why? | That file's **"Considered and rejected"** table |
-| What is not a decision yet? | **`docs/WORK-LOG.md`**, and the live view of it is `python scripts/worklog-server.py` at `http://127.0.0.1:8792/`. — open items with no ADR, each row pointing at its detail rather than restating it. **It is the SINGLE SOURCE OF TRUTH and the harness task list is a rendering of it. Read its sync contract before touching either** |
+| What is not a decision yet? | **`docs/work-status.json`**, served as a board by `X:\Projects\claude-status\serve.py` at `http://127.0.0.1:8792/` — open items with no ADR, each carrying its own detail and audit trail. **It is the SINGLE SOURCE OF TRUTH.** `docs/WORK-LOG.md` is its frozen predecessor |
 | What does Flickr really do? | `docs/FLICKR.md` — several rows contradict Flickr's own docs |
 | How do I run it? | `docs/SETUP.md` |
 | Where did the Lightroom client get to? | `docs/LRC-CLIENT-NOTES.md` — **its "PICK UP HERE" section is the first thing to read** |

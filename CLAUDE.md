@@ -55,12 +55,30 @@ hat.
 **A heavyweight rebuild is ALWAYS acceptable** — delete every task, re-add from the file. Terry said
 so explicitly, and it is the right move whenever the cheap reconciliation is not obviously correct.
 
-**The contract, including what "synced" means exactly, lives at the top of `docs/WORK-LOG.md`.**
+### THE TOOL AND THE DATA SPLIT ON 2026-08-18. Read this before looking for the old scripts
 
-**`python scripts/worklog-server.py` serves that file live at `http://127.0.0.1:8792/`**, repainting
-within 400 ms of every write. **It reads the file rather than a copy of it, so it cannot diverge** --
-the panel is the only view that can, and `python scripts/worklog-sync-check.py` is what proves it has
-not. **Arm the server at the start of a session**, like the diagram preview.
+**The board is now `docs/work-status.json`, and the tool that serves it lives in another
+repository:** `github.com/TerryOtt/claude-status`, cloned at `X:\Projects\claude-status`.
+
+```
+python X:\Projects\claude-status\serve.py "X:\Projects\FlickrGroupAddr 2026-08\docs\work-status.json"
+```
+
+**Then open `http://127.0.0.1:8792/` and leave it open.** Seven swimlanes, `P0`-`P5` sorted top-down
+within each, and Terry DRAGS the edges he owns. **Arm it at the start of a session**, like the
+diagram preview.
+
+**`scripts/worklog*.py` are DELETED and MUST NOT be recreated here.** Terry, 2026-08-18: *"btw this
+should be its own repository on GH."* The tool is generic; the data belongs to the project. A second
+copy living in this repository is how the two drift.
+
+**`docs/WORK-LOG.md` is FROZEN, kept for its history and its contract prose.** The markdown tables
+in it are superseded by the JSON and MUST NOT be edited -- a change there now reaches no reader.
+
+**Why the format changed at all:** Terry, same day, *"'database' needs to be a JSON file, not md."*
+The markdown parser had grown two row regexes, a suspect-line detector for each, a renumbering pass
+and a column migration, **and every one of those existed only because the storage had no types.**
+It also lost a signoff silently on its first real use.
 
 ## Dates are versions
 
