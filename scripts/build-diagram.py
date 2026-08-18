@@ -2624,7 +2624,21 @@ check("every badge stack sits in ONE column", not _split,
 # common `fontSize` among the tiles, and 100 drawing units are 1 inch, so a size
 # converts to points by 0.72. DIAGRAM-NOTES.md records the calibration: 7.9 pt
 # was an eyechart, 12.2 pt was comically huge, and 10.1 pt is the center.
+#
+# **THE BADGES ARE EXCLUDED, and leaving them in made this report the BADGE size.**
+# A badge is a vertex carrying a `fontSize` like any tile, and there are 32 of them
+# against 25 text-bearing tiles -- so the 24 badges at `fontSize=12` outvoted the 8
+# tiles at 14, and the build printed the digit size on a step badge as the body
+# type. Measured 2026-08-18: 12 (25 votes) against the true 14 (8 votes).
+#
+# **It reported 8.6 pt on tabloid and 6.6 pt on legal**, against the 10.1 and 7.7
+# that DIAGRAM-NOTES records and that Terry calibrated by eye. **The eyechart
+# verdict on legal did not flip** -- 7.7 is already under the 7.9 floor -- so this
+# was a wrong NUMBER on screen rather than a wrong conclusion, which is exactly why
+# it survived: every sheet's verdict stayed correct while the figure beside it
+# drifted low.
 _font_sizes = [int(_m.group(1)) for _c in cells if _c.get("vertex") == "1"
+               and not re.fullmatch(r"n\d+", _c.get("id") or "")
                for _m in [re.search(r"fontSize=(\d+)", _c.get("style") or "")] if _m]
 BODY_UNITS = max(set(_font_sizes), key=_font_sizes.count)
 BODY_PT = BODY_UNITS * 0.72
