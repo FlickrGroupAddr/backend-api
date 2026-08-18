@@ -817,6 +817,34 @@ if abs(point_to_path((50.0, 150.0), _lroute) - 50.0) > 1e-9:
 if abs(path_length(_lroute) - 500.0) > 1e-9:
     raise SystemExit("SELF-TEST FAILED: path_length")
 
+# ---------------------------------------------------------------------------
+# EVERY COORDINATE IN THIS FILE IS ABSOLUTE, and that is a premise rather than a
+# guarantee. **`mxGeometry` on a cell whose `parent` is another CELL is measured
+# from that parent's origin**, not from the page.
+#
+# **So one nested cell would silently change the meaning of every number in the
+# suite below** -- levelness, columns, margins, badge placement, ink extents, the
+# sheet translation. None of them would error. They would all quietly measure in a
+# different coordinate space and keep printing `ok`.
+#
+# **draw.io's editor nests automatically** when a shape is dropped onto a container,
+# which is exactly how it would arrive: someone opens the generated file to try
+# something, drags a badge, and saves. The canvas is flat today -- all 67 vertices
+# parent to `"1"` -- and this is the assertion that keeps the other 277 honest.
+# ---------------------------------------------------------------------------
+
+_nested = sorted(
+    f"{cell_id(_c)} -> {_c.get('parent')}" for _c in cells
+    if _c.get("vertex") == "1" and _c.get("parent") not in (None, "1")
+)
+for _n in _nested:
+    note(f"    nested, so its geometry is RELATIVE: {_n}")
+
+print()
+note("Coordinate space:")
+check("every vertex is a direct child of the page", not _nested,
+      f"{sum(1 for _c in cells if _c.get('vertex') == '1')} vertices, all absolute")
+
 print()
 note("Attachment model:")
 check("perimeter_point self-test", True, "2/2")
