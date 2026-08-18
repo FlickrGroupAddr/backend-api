@@ -23,12 +23,26 @@
  *
  * The ALLOW-LIST is then a second, independent bound, and it is here because this
  * project takes ADR-17's line that no list is unbounded. It also makes adding a
- * destination a deliberate act: a future `/link` page has to be named here, which is one
+ * destination a deliberate act: the device-link page had to be named here, which is one
  * more place somebody has to think about where a login can deposit a user.
  */
 
-/** Every path a completed login may return to. **Adding one is a decision.** */
-const ALLOWED_RETURN_PATHS: ReadonlySet<string> = new Set(["/", "/link"]);
+/**
+ * Every path a completed login may return to. **Adding one is a decision.**
+ *
+ * **`/auth/device-link/enter-user-code` replaced a placeholder `/link` on
+ * 2026-08-18**, and the placeholder had been aimed at a page nobody ever built:
+ * `parse()` in `web/src/lib/router.ts` resolved `/link` to `notFound`, so the
+ * plug-in was sending people to a page that said there was no such page.
+ *
+ * **The real page is a Worker route**, because only the Worker can see the
+ * `HttpOnly` session cookie -- and the entire point of that destination is the
+ * redirect it performs when the cookie is absent.
+ */
+const ALLOWED_RETURN_PATHS: ReadonlySet<string> = new Set([
+	"/",
+	"/auth/device-link/enter-user-code",
+]);
 
 /**
  * The path and query to return to, or `null` when the caller supplied nothing usable.

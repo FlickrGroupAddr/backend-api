@@ -414,6 +414,149 @@ describe("ADR-24: polling is throttled server-side, not on trust", () => {
 	});
 });
 
+/**
+ * ADR-24. The confirmation page itself, which until 2026-08-18 did not exist.
+ *
+ * **`start` pointed the plug-in at `/link`, and `/link` was never built** --
+ * `parse()` in `web/src/lib/router.ts` resolves exactly `/`, `/queue` and `/admin`.
+ * So the flow ended by telling a person to visit a page that said there was no such
+ * page. These tests exist so that cannot come back quietly.
+ */
+describe("ADR-24: the confirmation page, and what it refuses", () => {
+	const PAGE = "/auth/device-link/enter-user-code";
+
+	async function get(init: RequestInit = {}) {
+		return await SELF.fetch(`${API}${PAGE}`, { redirect: "manual", ...init });
+	}
+
+	/**
+	 * **The whole reason this page belongs to the Worker.** The session cookie is
+	 * `HttpOnly`, so a static SPA page cannot tell whether you are signed in. Only
+	 * the server can, and it MUST answer with a redirect rather than a blank screen.
+	 */
+	it("redirects a signed-out visitor to the Flickr login, carrying returnTo", async () => {
+		const response = await get();
+		expect(response.status).toBe(302);
+
+		const location = new URL(response.headers.get("Location") ?? "");
+		expect(location.pathname).toBe("/auth/flickr/login");
+		expect(location.searchParams.get("returnTo")).toBe(PAGE);
+	});
+
+	/**
+	 * **`safeReturnPath` is an allow-list, so the redirect above is inert unless
+	 * this page is ON it.** Getting one of the two right and not the other sends a
+	 * person round the loop and dumps them on the app root, which is the exact
+	 * defect ADR-11 recorded on 2026-08-16.
+	 */
+	it("is an allowed login destination, or the redirect is a round trip to nowhere", async () => {
+		const token = await mintSession(env.DB, NSID, env.SESSION_KEY);
+		const response = await SELF.fetch(
+			`${API}/auth/flickr/login?returnTo=${encodeURIComponent(PAGE)}`,
+			{ redirect: "manual", headers: { Cookie: `${SESSION_COOKIE}=${token}` } },
+		);
+		// It reaches Flickr rather than bouncing, which means the path parsed and
+		// survived the allow-list.
+		expect(response.status).toBe(302);
+	});
+
+	it("serves the page to a signed-in browser", async () => {
+		const token = await mintSession(env.DB, NSID, env.SESSION_KEY);
+		const response = await get({
+			headers: { Cookie: `${SESSION_COOKIE}=${token}` },
+		});
+		expect(response.status).toBe(200);
+
+		const body = await response.text();
+		// **The confirmation wording IS the control.** ADR-24 exists because a device
+		// flow is phished by getting somebody to approve a code on the attacker's
+		// screen, so the page must ask whether it matches Lightroom.
+		expect(body).toMatch(/matches your Lightroom screen/i);
+		expect(body).toContain("/auth/device-link/approve");
+		expect(body).toContain("/auth/device-link/deny");
+	});
+
+	/**
+	 * **A plug-in MUST NOT be able to drive its own approval page.**
+	 * `presentedToken` falls back to `Authorization`, which is how the plug-in
+	 * authenticates everywhere else -- so this route reads the COOKIE and nothing
+	 * else. Without that, a plug-in could fetch the page it is supposed to be
+	 * waiting on a human to visit.
+	 */
+	it("IGNORES a bearer token, so a plug-in cannot open its own approval page", async () => {
+		const pluginToken = await mintSession(
+			env.DB,
+			NSID,
+			env.SESSION_KEY,
+			"lrc15_plugin",
+		);
+		const response = await get({
+			headers: { Authorization: `Bearer ${pluginToken}` },
+		});
+		// Redirected to log in, exactly as an anonymous visitor would be -- the
+		// header buys nothing at all.
+		expect(response.status).toBe(302);
+	});
+
+	it("refuses a plug-in token presented as a cookie", async () => {
+		const pluginToken = await mintSession(
+			env.DB,
+			NSID,
+			env.SESSION_KEY,
+			"lrc15_plugin",
+		);
+		const response = await get({
+			headers: { Cookie: `${SESSION_COOKIE}=${pluginToken}` },
+		});
+		expect(response.status).toBe(403);
+	});
+
+	/**
+	 * **Prefilled, never auto-submitted.** A link carrying somebody else's code is
+	 * the phishing attack; the page may fill the box, and only a person may press
+	 * the button.
+	 */
+	it("prefills the code from the query but does not approve it", async () => {
+		const reply = await start();
+		const token = await mintSession(env.DB, NSID, env.SESSION_KEY);
+		const response = await get({
+			headers: { Cookie: `${SESSION_COOKIE}=${token}` },
+		});
+		expect(response.status).toBe(200);
+
+		const withCode = await SELF.fetch(
+			`${API}${PAGE}?code=${encodeURIComponent(reply.userCode)}`,
+			{ headers: { Cookie: `${SESSION_COOKIE}=${token}` } },
+		);
+		expect(await withCode.text()).toContain(reply.userCode);
+
+		// The attempt is untouched. Loading a page approves nothing.
+		const polled = await post("/auth/device-link/poll", {
+			userCode: reply.userCode,
+			deviceCode: reply.deviceCode,
+		});
+		expect(await polled.json()).toMatchObject({ status: "pending" });
+	});
+
+	/**
+	 * **The page is where `start` actually sends people.** These two drifting apart
+	 * is the defect this whole describe block exists because of, and it drifted
+	 * silently for weeks.
+	 */
+	it("is the verificationUri that start hands the plug-in", async () => {
+		const reply = await start();
+		expect(new URL(reply.verificationUri).pathname).toBe(PAGE);
+	});
+
+	it("is no-store, because a signed-in copy of it is worth caching to nobody", async () => {
+		const token = await mintSession(env.DB, NSID, env.SESSION_KEY);
+		const response = await get({
+			headers: { Cookie: `${SESSION_COOKIE}=${token}` },
+		});
+		expect(response.headers.get("Cache-Control")).toContain("no-store");
+	});
+});
+
 describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 	it("refuses an unauthenticated approval", async () => {
 		const reply = await start();

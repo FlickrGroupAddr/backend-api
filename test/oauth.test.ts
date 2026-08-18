@@ -174,24 +174,43 @@ describe("ADR-11: returnTo can never leave our origin", () => {
 
 	it("accepts the paths a login is allowed to finish on", () => {
 		expect(safeReturnPath("/", ORIGIN)).toBe("/");
-		expect(safeReturnPath("/link", ORIGIN)).toBe("/link");
-		// The query survives, which is the whole point for the device flow.
-		expect(safeReturnPath("/link?userCode=ABC123", ORIGIN)).toBe(
-			"/link?userCode=ABC123",
+		expect(safeReturnPath("/auth/device-link/enter-user-code", ORIGIN)).toBe(
+			"/auth/device-link/enter-user-code",
 		);
+		// The query survives, which is the whole point for the device flow.
+		expect(
+			safeReturnPath(
+				"/auth/device-link/enter-user-code?userCode=ABC123",
+				ORIGIN,
+			),
+		).toBe("/auth/device-link/enter-user-code?userCode=ABC123");
 		// Absolute but same-origin resolves to its own path.
-		expect(safeReturnPath(`${ORIGIN}/link`, ORIGIN)).toBe("/link");
+		expect(
+			safeReturnPath(`${ORIGIN}/auth/device-link/enter-user-code`, ORIGIN),
+		).toBe("/auth/device-link/enter-user-code");
 	});
 
 	it.each([
 		["https://evil.com", "absolute off-site URL"],
-		["https://evil.com/link", "off-site URL wearing an allowed path"],
+		[
+			"https://evil.com/auth/device-link/enter-user-code",
+			"off-site URL wearing an allowed path",
+		],
 		["//evil.com", "protocol-relative"],
-		["//evil.com/link", "protocol-relative wearing an allowed path"],
+		[
+			"//evil.com/auth/device-link/enter-user-code",
+			"protocol-relative wearing an allowed path",
+		],
 		["/\\evil.com", "backslash, which WHATWG normalizes to a second slash"],
 		["\\\\evil.com", "double backslash"],
-		["http://flickrgroupaddr.com/link", "right host, WRONG SCHEME"],
-		["https://flickrgroupaddr.com.evil.com/link", "suffix-confusion host"],
+		[
+			"http://flickrgroupaddr.com/auth/device-link/enter-user-code",
+			"right host, WRONG SCHEME",
+		],
+		[
+			"https://flickrgroupaddr.com.evil.com/auth/device-link/enter-user-code",
+			"suffix-confusion host",
+		],
 	])("refuses %s -- %s", (candidate) => {
 		expect(safeReturnPath(candidate, ORIGIN)).toBeNull();
 	});
@@ -213,7 +232,11 @@ describe("ADR-11: returnTo can never leave our origin", () => {
 
 	it("returns a PATH, never anything carrying an origin", () => {
 		// Defense in depth by return type: even a wrong check above cannot emit a host.
-		for (const candidate of ["/", "/link", `${ORIGIN}/link`]) {
+		for (const candidate of [
+			"/",
+			"/auth/device-link/enter-user-code",
+			`${ORIGIN}/auth/device-link/enter-user-code`,
+		]) {
 			const got = safeReturnPath(candidate, ORIGIN);
 			expect(got).not.toBeNull();
 			expect(got?.startsWith("/")).toBe(true);
@@ -252,10 +275,10 @@ describe("ADR-11: the callback returns where the login STARTED", () => {
 		// the app root, so a user who signed in mid-link arrived home with the code
 		// gone and the flow had no way to finish.
 		const location = await login(
-			`?returnTo=${encodeURIComponent("/link?userCode=ABC123")}`,
+			`?returnTo=${encodeURIComponent("/auth/device-link/enter-user-code?userCode=ABC123")}`,
 		);
 		expect(location.origin).toBe("https://flickrgroupaddr.com");
-		expect(location.pathname).toBe("/link");
+		expect(location.pathname).toBe("/auth/device-link/enter-user-code");
 		expect(location.searchParams.get("userCode")).toBe("ABC123");
 		expect(location.searchParams.get("login")).toBe("ok");
 	});
@@ -273,7 +296,7 @@ describe("ADR-11: the callback returns where the login STARTED", () => {
 		// there, Flickr -- or anyone who could tamper with that redirect -- would be
 		// choosing where an authenticated user lands. It lives in the Durable Object.
 		await SELF.fetch(
-			`https://api.flickrgroupaddr.com/auth/flickr/login?returnTo=${encodeURIComponent("/link")}`,
+			`https://api.flickrgroupaddr.com/auth/flickr/login?returnTo=${encodeURIComponent("/auth/device-link/enter-user-code")}`,
 			{ redirect: "manual" },
 		);
 		const stub = env.OAUTH_LOGIN.get(
@@ -281,7 +304,7 @@ describe("ADR-11: the callback returns where the login STARTED", () => {
 		);
 		expect(await stub.consume("test-request-token")).toEqual({
 			requestTokenSecret: "test-request-token-secret",
-			returnPath: "/link",
+			returnPath: "/auth/device-link/enter-user-code",
 		});
 	});
 });

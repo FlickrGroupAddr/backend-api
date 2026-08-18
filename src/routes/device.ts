@@ -1,4 +1,7 @@
 import { Hono } from "hono";
+// JavaScript has no built-in HTML escape, and `hono/html` is already a dependency --
+// ADR-14. Every interpolation below is escaped by the tag.
+import { html } from "hono/html";
 import { z } from "zod";
 import {
 	codeHash,
@@ -12,7 +15,16 @@ import {
 	requireSession,
 	type SessionVariables,
 } from "../middleware/session.js";
-import { mintSession } from "../session.js";
+import { mintSession, readSessionCookie, verifySession } from "../session.js";
+
+/**
+ * **The one place this path is spelled**, because it appears in four: the route, the
+ * `returnTo` the login carries, the allow-list in `src/oauth/return-to.ts`, and the
+ * `verificationUri` handed to the plug-in. Three of those are strings in different
+ * files, and a rename that missed one would break the flow at a different step each
+ * time.
+ */
+const ENTER_USER_CODE_PATH = "/auth/device-link/enter-user-code";
 
 /**
  * The device link flow: how a Lightroom plug-in gets a credential without ever
@@ -149,9 +161,20 @@ deviceRoutes.post("/auth/device-link/start", async (c) => {
 		userCode,
 		expiresAt,
 		pollAfter: POLL_AFTER_SECONDS,
-		// Built from UI_ORIGIN rather than the request, so a plug-in cannot be
-		// pointed at somebody else's approval page by a crafted call.
-		verificationUri: new URL("/link", c.env.UI_ORIGIN).toString(),
+		// Built from our own config rather than the request, so a plug-in
+		// cannot be pointed at somebody else's approval page by a crafted
+		// call.
+		//
+		// **It pointed at `/link` on UI_ORIGIN until 2026-08-18, and that page
+		// did not exist.** `parse()` in `web/src/lib/router.ts` resolves
+		// exactly `/`, `/queue` and `/admin`; everything else is `notFound`.
+		// So the plug-in told people to visit a page that said there was no
+		// such page, and device linking could not complete. **The page is a
+		// Worker route now**, which is why the base moved with it.
+		verificationUri: new URL(
+			ENTER_USER_CODE_PATH,
+			c.env.API_BASE_URL,
+		).toString(),
 	});
 });
 
@@ -202,6 +225,159 @@ deviceRoutes.post("/auth/device-link/poll", async (c) => {
 	);
 
 	return c.json({ status: "approved", token });
+});
+
+/**
+ * ADR-24's confirmation page, as HTML.
+ *
+ * **The wording is the security control, not decoration.** A device flow is phished
+ * by getting somebody to approve a code that is on the ATTACKER'S screen, so the
+ * page's whole job is to make "does this match Lightroom" the question being
+ * answered. `src/lib/outcomes.ts` holds the same principle for the other surfaces.
+ *
+ * **ADR-01 is why this matters more here than in most flows.** A request that
+ * reached a moderator is terminal, so a phished token pushes a stranger's photos
+ * into volunteer queues and revoking it afterwards takes none of that back.
+ */
+function enterUserCodePage(prefill: string): ReturnType<typeof html> {
+	return html`<!doctype html><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Link Lightroom to FlickrGroupAddr</title>
+<style>
+body { font: 16px/1.5 system-ui, sans-serif; margin: 3rem auto; max-width: 32rem;
+       padding: 0 1rem; color: #172B4D; }
+h1 { font-size: 1.35rem; }
+input { font: 600 1.5rem/1 ui-monospace, Consolas, monospace; letter-spacing: .18em;
+        padding: .6rem .7rem; width: 100%; box-sizing: border-box; text-align: center;
+        text-transform: uppercase; border: 1px solid #DFE1E6; border-radius: 6px; }
+button { font: 600 1rem/1 system-ui, sans-serif; padding: .7rem 1.2rem;
+         border: 0; border-radius: 6px; cursor: pointer; }
+#approve { background: #216E4E; color: #fff; }
+#deny { background: transparent; color: #5E6C84; text-decoration: underline; }
+.row { display: flex; gap: .75rem; align-items: center; margin-top: 1.25rem; }
+.check { background: #FFF7D6; border: 1px solid #F5CD47; border-radius: 6px;
+         padding: .8rem 1rem; margin: 1.25rem 0; }
+#said { margin-top: 1.25rem; font-weight: 600; }
+</style>
+<h1>Link Lightroom to FlickrGroupAddr</h1>
+<p>Lightroom is showing a code. Type it here to finish linking.</p>
+<input id="code" value="${prefill}" autocomplete="off" autocapitalize="characters"
+       spellcheck="false" aria-label="User code from Lightroom">
+<div class="check">
+  <strong>Check the code matches your Lightroom screen.</strong>
+  Approving links whatever device is showing this code to your Flickr account. If a
+  code arrived by email or message, do not approve it.
+</div>
+<div class="row">
+  <button id="approve">Approve</button>
+  <button id="deny">Not mine &mdash; deny</button>
+</div>
+<p id="said"></p>
+<script>
+// **JSON, not a form post, and that is a CSRF defense.** A urlencoded form submit is
+// a simple request: no preflight, sent cross-origin with cookies. Requiring JSON
+// forces a preflight that ADR-11's CORS rule refuses.
+async function decide(path) {
+  const said = document.getElementById('said');
+  const userCode = document.getElementById('code').value.trim();
+  if (!userCode) { said.textContent = 'Enter the code Lightroom is showing.'; return; }
+  said.textContent = 'Working...';
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({userCode: userCode}),
+    });
+    const out = await res.json();
+    if (res.ok) {
+      said.textContent = out.status === 'denied'
+        ? 'Denied. Lightroom will stop waiting.'
+        : 'Linked. You can go back to Lightroom.';
+      return;
+    }
+    // **404 covers unknown, expired and already-used alike**, deliberately, so a
+    // signed-in person probing codes learns nothing about which ones are live. The
+    // wording here MUST stay equally uninformative.
+    said.textContent = res.status === 404
+      ? 'That code is not valid. Check Lightroom and try again.'
+      : 'Something went wrong. Try again.';
+  } catch (e) {
+    said.textContent = 'Could not reach the server. Try again.';
+  }
+}
+document.getElementById('approve').addEventListener(
+  'click', () => decide('/auth/device-link/approve'));
+document.getElementById('deny').addEventListener(
+  'click', () => decide('/auth/device-link/deny'));
+</script>`;
+}
+
+/**
+ * The page a person lands on, and the only route here that serves HTML.
+ *
+ * **It closes a live defect rather than adding a feature.** Until 2026-08-18 `start`
+ * handed the plug-in `new URL("/link", UI_ORIGIN)`, and `/link` did not exist --
+ * `parse()` in `web/src/lib/router.ts` resolves exactly `/`, `/queue` and `/admin`
+ * and calls everything else `notFound`. **So the plug-in told people to visit a page
+ * that said there was no such page, and device linking could not complete.**
+ *
+ * **Terry ruled the page belongs to the Worker**, and the reason is the redirect
+ * below: the session cookie is `HttpOnly`, so a static SPA page cannot see whether
+ * you are signed in. Only the server can, and journey step 9 requires it to answer
+ * with a redirect rather than a blank screen.
+ *
+ * ## Why this route cannot use `requireSession`
+ *
+ * **That middleware answers `401` with JSON**, which is right for an API and useless
+ * to a person in a browser. This checks the cookie itself and REDIRECTS to
+ * `/auth/flickr/login`, carrying `returnTo` so the callback comes back here. It is
+ * the one place in the codebase where an absent session is not an error.
+ *
+ * **A BEARER TOKEN IS DELIBERATELY NOT ACCEPTED.** `presentedToken` in the session
+ * middleware falls back to `Authorization`, which is how the plug-in authenticates.
+ * **A plug-in MUST NOT be able to drive its own approval page**, so this reads the
+ * cookie and nothing else -- `requireBrowserSession` says the same thing one layer
+ * up, and this route needs the rule before that layer would run.
+ *
+ * ## The form posts JSON, and that is a CSRF defense rather than a style choice
+ *
+ * **`approve` takes `application/json` and MUST keep taking only that.** A plain
+ * `<form method=post>` sends `application/x-www-form-urlencoded`, which browsers
+ * treat as a SIMPLE REQUEST -- no preflight, sent cross-origin with cookies
+ * attached. **Any website could then approve a device link on a signed-in user's
+ * behalf.** Requiring JSON forces a preflight that ADR-11's CORS rule refuses.
+ *
+ * So the page ships a small `fetch` rather than a form submit. That is the whole
+ * reason, and a future "simplification" back to a native form would hand away the
+ * protection silently.
+ */
+deviceRoutes.get("/auth/device-link/enter-user-code", async (c) => {
+	const cookie = readSessionCookie(c);
+	const session =
+		cookie === undefined
+			? null
+			: await verifySession(c.env.DB, cookie, c.env.SESSION_KEY);
+
+	if (session === null) {
+		// Journey step 9. **Built from our own config, never from the request**, so
+		// the destination cannot be chosen by whoever sent the person here.
+		const login = new URL("/auth/flickr/login", c.env.API_BASE_URL);
+		login.searchParams.set("returnTo", ENTER_USER_CODE_PATH);
+		return c.redirect(login.toString(), 302);
+	}
+
+	if (session.clientType !== "browser") {
+		// A plug-in token in a cookie should be impossible. Saying so out loud costs
+		// one branch and removes the need for anyone to reason about whether it is.
+		return c.text("This page needs a browser sign-in.", 403);
+	}
+
+	// **Prefilled, never auto-submitted.** ADR-24: the confirmation page is the only
+	// defense against device-flow phishing, so the person MUST see the code and
+	// press the button. A link that approved on load would be the attack.
+	const prefill = c.req.query("code") ?? "";
+
+	return c.html(enterUserCodePage(prefill));
 });
 
 /**
