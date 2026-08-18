@@ -22,7 +22,7 @@ import { mintSession } from "../session.js";
  * plug-in asks Flickr for a frob, opens a browser at Flickr's auth URL carrying
  * it, and trades the frob for a durable token afterwards. It talks to Flickr
  * directly **because Adobe has no server.** FGA has one, so the frob equivalent
- * is `POST /api/v001/device/start` and the plug-in makes zero Flickr calls.
+ * is `POST /auth/device-link/start` and the plug-in makes zero Flickr calls.
  *
  * ## Two codes, and neither can do the other's job
  *
@@ -65,10 +65,8 @@ export const deviceRoutes = new Hono<{
  * ADR-12's `no-store`, RESTATED HERE, and the restatement is the bug fix.
  *
  * **`apiRoutes` puts `Cache-Control: private, no-store` on `/api/v001/*`, and these
- * routes never see it.** Mounting `deviceRoutes` first is what keeps `start`
- * reachable without a session -- a handler that returns without calling `next()`
- * ends the chain, so every middleware registered later is skipped. **The same
- * ordering that bought the exemption silently took the cache rule with it.**
+ * routes never see it.** They no longer live under that prefix at all -- see the
+ * mount note in `src/index.ts` -- so nothing upstream applies it for them.
  *
  * That matters more here than on the rest of the API. **Every reply from these
  * four routes carries a bearer credential in its body** -- `deviceCode` from
@@ -78,8 +76,13 @@ export const deviceRoutes = new Hono<{
  * **Found by re-reading the file after it passed 24 tests**, and the header was
  * `null`. A skipped middleware leaves no trace: nothing errors, nothing warns,
  * and the only symptom is an absent header nobody asserted on.
+ *
+ * **The pattern MUST track the route prefix, and a literal rename cannot see a
+ * wildcard.** The 2026-08-18 move to `/auth/device-link/*` rewrote every exact
+ * path in this file and left this glob pointing at the old prefix, which would
+ * have dropped the header from all four replies while every test still passed.
  */
-deviceRoutes.use("/api/v001/device/*", async (c, next) => {
+deviceRoutes.use("/auth/device-link/*", async (c, next) => {
 	await next();
 	c.header("Cache-Control", "private, no-store");
 });
@@ -95,12 +98,12 @@ deviceRoutes.use("/api/v001/device/*", async (c, next) => {
  * `start` and `poll` are deliberately absent -- see the header comment.
  */
 deviceRoutes.use(
-	"/api/v001/device/approve",
+	"/auth/device-link/approve",
 	requireSession,
 	requireBrowserSession,
 );
 deviceRoutes.use(
-	"/api/v001/device/deny",
+	"/auth/device-link/deny",
 	requireSession,
 	requireBrowserSession,
 );
@@ -126,7 +129,7 @@ const decisionBody = z.object({
  * **The response is the ONLY time `deviceCode` exists in transit from us.** It is
  * hashed before storage, exactly as `src/session.ts` never stores a session id.
  */
-deviceRoutes.post("/api/v001/device/start", async (c) => {
+deviceRoutes.post("/auth/device-link/start", async (c) => {
 	// **No body is read at all.** A plug-in sending `{}`, sending nothing, or
 	// sending junk MUST behave identically -- there is nothing here to configure,
 	// so validating a body would only invent a way to fail. `LrHttp.post` always
@@ -158,7 +161,7 @@ deviceRoutes.post("/api/v001/device/start", async (c) => {
  * **`approved` is single-use.** The attempt is erased the moment a token is
  * collected, so a replay finds `expired`.
  */
-deviceRoutes.post("/api/v001/device/poll", async (c) => {
+deviceRoutes.post("/auth/device-link/poll", async (c) => {
 	const parsed = pollBody.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success) return c.json({ error: "invalid_body" }, 400);
 
@@ -215,7 +218,7 @@ deviceRoutes.post("/api/v001/device/poll", async (c) => {
  * not**, and no route here will do it -- approval is always a POST a person had
  * to cause.
  */
-deviceRoutes.post("/api/v001/device/approve", async (c) => {
+deviceRoutes.post("/auth/device-link/approve", async (c) => {
 	const parsed = decisionBody.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success) return c.json({ error: "invalid_body" }, 400);
 
@@ -241,7 +244,7 @@ deviceRoutes.post("/api/v001/device/approve", async (c) => {
  * instead of timing out. That is ADR-01's habit pointed at a different surface:
  * **a refusal MUST NOT look like a failure.**
  */
-deviceRoutes.post("/api/v001/device/deny", async (c) => {
+deviceRoutes.post("/auth/device-link/deny", async (c) => {
 	const parsed = decisionBody.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success) return c.json({ error: "invalid_body" }, 400);
 

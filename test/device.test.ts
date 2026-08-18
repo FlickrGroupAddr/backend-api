@@ -57,7 +57,7 @@ type StartReply = {
 };
 
 async function start(): Promise<StartReply> {
-	const response = await post("/api/v001/device/start", {});
+	const response = await post("/auth/device-link/start", {});
 	expect(response.status).toBe(200);
 	return (await response.json()) as StartReply;
 }
@@ -84,7 +84,7 @@ describe("ADR-24: starting a link needs no credential", () => {
 		// A crafted call MUST NOT be able to point a plug-in at somebody else's
 		// approval page.
 		const response = await SELF.fetch(
-			"https://flickrgroupaddr.com/api/v001/device/start",
+			"https://flickrgroupaddr.com/auth/device-link/start",
 			{ method: "POST", headers: { Origin: "https://evil.com" } },
 		);
 		const reply = (await response.json()) as StartReply;
@@ -108,11 +108,11 @@ describe("ADR-24: starting a link needs no credential", () => {
 	 * makes `start` unauthenticated also skipped the cache rule.
 	 */
 	it("marks credential-bearing replies no-store, which the mount order skipped", async () => {
-		const started = await post("/api/v001/device/start", {});
+		const started = await post("/auth/device-link/start", {});
 		expect(started.headers.get("Cache-Control")).toContain("no-store");
 
 		const reply = (await started.json()) as StartReply;
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -131,12 +131,12 @@ describe("ADR-24: the whole flow, and the token it mints", () => {
 	it("start, approve, poll -- and the token reaches the plug-in's allow-list", async () => {
 		const reply = await start();
 
-		const approved = await asBrowser("/api/v001/device/approve", {
+		const approved = await asBrowser("/auth/device-link/approve", {
 			userCode: reply.userCode,
 		});
 		expect(approved.status).toBe(200);
 
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -175,12 +175,12 @@ describe("ADR-24: the whole flow, and the token it mints", () => {
 	it("mints the token for the APPROVER, never for whoever started the flow", async () => {
 		const reply = await start();
 		await asBrowser(
-			"/api/v001/device/approve",
+			"/auth/device-link/approve",
 			{ userCode: reply.userCode },
 			OTHER,
 		);
 
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -194,8 +194,8 @@ describe("ADR-24: the whole flow, and the token it mints", () => {
 
 	it("gives the token a 90-day life, not a browser session's 30", async () => {
 		const reply = await start();
-		await asBrowser("/api/v001/device/approve", { userCode: reply.userCode });
-		await post("/api/v001/device/poll", {
+		await asBrowser("/auth/device-link/approve", { userCode: reply.userCode });
+		await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -212,7 +212,7 @@ describe("ADR-24: the whole flow, and the token it mints", () => {
 	it("mints NOTHING until the plug-in collects", async () => {
 		// An approved link nobody polls leaves no credential behind.
 		const reply = await start();
-		await asBrowser("/api/v001/device/approve", { userCode: reply.userCode });
+		await asBrowser("/auth/device-link/approve", { userCode: reply.userCode });
 
 		const count = await env.DB.prepare(
 			"SELECT COUNT(*) AS n FROM sessions WHERE client_type = 'lrc15_plugin'",
@@ -224,7 +224,7 @@ describe("ADR-24: the whole flow, and the token it mints", () => {
 describe("ADR-24: polling refuses everything it should", () => {
 	it("answers pending before anyone approves", async () => {
 		const reply = await start();
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -233,9 +233,9 @@ describe("ADR-24: polling refuses everything it should", () => {
 
 	it("is SINGLE USE -- a replayed poll finds nothing", async () => {
 		const reply = await start();
-		await asBrowser("/api/v001/device/approve", { userCode: reply.userCode });
+		await asBrowser("/auth/device-link/approve", { userCode: reply.userCode });
 
-		const first = await post("/api/v001/device/poll", {
+		const first = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -243,7 +243,7 @@ describe("ADR-24: polling refuses everything it should", () => {
 			status: "approved",
 		});
 
-		const replay = await post("/api/v001/device/poll", {
+		const replay = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -257,9 +257,9 @@ describe("ADR-24: polling refuses everything it should", () => {
 	 */
 	it("refuses a poll carrying the WRONG deviceCode", async () => {
 		const reply = await start();
-		await asBrowser("/api/v001/device/approve", { userCode: reply.userCode });
+		await asBrowser("/auth/device-link/approve", { userCode: reply.userCode });
 
-		const stolen = await post("/api/v001/device/poll", {
+		const stolen = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: "not-the-right-code",
 		});
@@ -269,14 +269,14 @@ describe("ADR-24: polling refuses everything it should", () => {
 	/** A wrong poll MUST NOT destroy an attempt still in flight. */
 	it("leaves the attempt intact after a wrong deviceCode", async () => {
 		const reply = await start();
-		await asBrowser("/api/v001/device/approve", { userCode: reply.userCode });
+		await asBrowser("/auth/device-link/approve", { userCode: reply.userCode });
 
-		await post("/api/v001/device/poll", {
+		await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: "not-the-right-code",
 		});
 
-		const real = await post("/api/v001/device/poll", {
+		const real = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -286,7 +286,7 @@ describe("ADR-24: polling refuses everything it should", () => {
 	});
 
 	it("answers expired for a code nobody ever started", async () => {
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: "ABCDEFGH",
 			deviceCode: "whatever",
 		});
@@ -296,12 +296,12 @@ describe("ADR-24: polling refuses everything it should", () => {
 	it("reports a denial as DENIED rather than letting it time out", async () => {
 		// ADR-01's habit on a different surface: a refusal MUST NOT look like a failure.
 		const reply = await start();
-		const denied = await asBrowser("/api/v001/device/deny", {
+		const denied = await asBrowser("/auth/device-link/deny", {
 			userCode: reply.userCode,
 		});
 		expect(denied.status).toBe(200);
 
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -309,14 +309,14 @@ describe("ADR-24: polling refuses everything it should", () => {
 	});
 
 	it("refuses a malformed body", async () => {
-		const response = await post("/api/v001/device/poll", { nope: true });
+		const response = await post("/auth/device-link/poll", { nope: true });
 		expect(response.status).toBe(400);
 	});
 });
 
 describe("ADR-24: polling is throttled server-side, not on trust", () => {
 	function poll(reply: StartReply, deviceCode = reply.deviceCode) {
-		return post("/api/v001/device/poll", {
+		return post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode,
 		});
@@ -417,7 +417,7 @@ describe("ADR-24: polling is throttled server-side, not on trust", () => {
 describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 	it("refuses an unauthenticated approval", async () => {
 		const reply = await start();
-		const response = await post("/api/v001/device/approve", {
+		const response = await post("/auth/device-link/approve", {
 			userCode: reply.userCode,
 		});
 		expect(response.status).toBe(401);
@@ -438,14 +438,14 @@ describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 		);
 
 		const response = await post(
-			"/api/v001/device/approve",
+			"/auth/device-link/approve",
 			{ userCode: reply.userCode },
 			{ headers: { Authorization: `Bearer ${pluginToken}` } },
 		);
 		expect(response.status).toBe(403);
 
 		// And the attempt is untouched: still pending, not approved.
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -461,7 +461,7 @@ describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 			"lrc15_plugin",
 		);
 		const response = await post(
-			"/api/v001/device/deny",
+			"/auth/device-link/deny",
 			{ userCode: reply.userCode },
 			{ headers: { Authorization: `Bearer ${pluginToken}` } },
 		);
@@ -479,21 +479,21 @@ describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 		const reply = await start();
 
 		expect(
-			(await asBrowser("/api/v001/device/deny", { userCode: reply.userCode }))
+			(await asBrowser("/auth/device-link/deny", { userCode: reply.userCode }))
 				.status,
 		).toBe(200);
 
 		// The approval is refused rather than silently ignored.
 		expect(
 			(
-				await asBrowser("/api/v001/device/approve", {
+				await asBrowser("/auth/device-link/approve", {
 					userCode: reply.userCode,
 				})
 			).status,
 		).toBe(404);
 
 		// And the plug-in still learns it was declined, not that it timed out.
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -503,10 +503,10 @@ describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 	it("lets a denial override an approval that has not been collected", async () => {
 		// The other order. Same requirement: the safe answer wins.
 		const reply = await start();
-		await asBrowser("/api/v001/device/approve", { userCode: reply.userCode });
-		await asBrowser("/api/v001/device/deny", { userCode: reply.userCode });
+		await asBrowser("/auth/device-link/approve", { userCode: reply.userCode });
+		await asBrowser("/auth/device-link/deny", { userCode: reply.userCode });
 
-		const polled = await post("/api/v001/device/poll", {
+		const polled = await post("/auth/device-link/poll", {
 			userCode: reply.userCode,
 			deviceCode: reply.deviceCode,
 		});
@@ -520,7 +520,7 @@ describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 	});
 
 	it("answers 404 for an unknown code, telling a prober nothing", async () => {
-		const response = await asBrowser("/api/v001/device/approve", {
+		const response = await asBrowser("/auth/device-link/approve", {
 			userCode: "ABCDEFGH",
 		});
 		expect(response.status).toBe(404);
@@ -534,7 +534,7 @@ describe("ADR-24: approval is browser-only, and that stops escalation", () => {
 			.slice(4)
 			.toLowerCase()}`;
 
-		const response = await asBrowser("/api/v001/device/approve", {
+		const response = await asBrowser("/auth/device-link/approve", {
 			userCode: typed,
 		});
 		expect(response.status).toBe(200);

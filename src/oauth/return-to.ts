@@ -2,7 +2,7 @@
  * Where the login sends the user afterwards. ADR-11.
  *
  * **A `returnTo` is an open redirect waiting to happen, and this is the whole file.**
- * Accept an arbitrary one and `flickrgroupaddr.com/oauth/login?returnTo=https://evil.com`
+ * Accept an arbitrary one and `flickrgroupaddr.com/auth/flickr/login?returnTo=https://evil.com`
  * lands a freshly authenticated user on somebody else's site, session cookie already
  * set. It is the same family as ADR-11's rule against reflecting `Origin`: **never send
  * a user somewhere an attacker chose.**

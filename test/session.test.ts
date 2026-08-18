@@ -34,7 +34,9 @@ async function addUser(nsid: string): Promise<void> {
 
 /** A full login against the stubbed Flickr. Returns its `Set-Cookie`. */
 async function loginSetCookie(): Promise<string> {
-	const login = await SELF.fetch(`${BASE}/oauth/login`, { redirect: "manual" });
+	const login = await SELF.fetch(`${BASE}/auth/flickr/login`, {
+		redirect: "manual",
+	});
 	expect(login.status).toBe(302);
 
 	const authorize = new URL(login.headers.get("Location") ?? "");
@@ -42,7 +44,7 @@ async function loginSetCookie(): Promise<string> {
 	expect(requestToken).not.toBeNull();
 
 	const callback = await SELF.fetch(
-		`${BASE}/oauth/callback?oauth_token=${requestToken}&oauth_verifier=test-verifier`,
+		`${BASE}/auth/flickr/callback?oauth_token=${requestToken}&oauth_verifier=test-verifier`,
 		{ redirect: "manual" },
 	);
 	return callback.headers.get("Set-Cookie") ?? "";
@@ -197,7 +199,7 @@ describe("revocation, which ADR-10 could not do", () => {
 		expect(token).not.toBe("");
 		expect(await verifySession(env.DB, token, env.SESSION_KEY)).not.toBeNull();
 
-		await SELF.fetch(`${BASE}/oauth/logout`, {
+		await SELF.fetch(`${BASE}/auth/flickr/logout`, {
 			method: "POST",
 			headers: { Cookie: `${SESSION_COOKIE}=${token}` },
 		});
@@ -234,7 +236,9 @@ describe("cookie attributes on a real login", () => {
 });
 
 it("clears with attributes that match, or the deletion is a no-op", async () => {
-	const cleared = await SELF.fetch(`${BASE}/oauth/logout`, { method: "POST" });
+	const cleared = await SELF.fetch(`${BASE}/auth/flickr/logout`, {
+		method: "POST",
+	});
 	const header = cleared.headers.get("Set-Cookie") ?? "";
 	expect(header).toMatch(new RegExp(SESSION_COOKIE));
 	expect(header).toMatch(/HttpOnly/i);

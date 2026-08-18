@@ -121,10 +121,10 @@ export const api = {
 		}),
 
 	/** POST, not GET. It changes state, and a link prefetcher MUST NOT log anyone out. */
-	logout: () => fetch("/oauth/logout", { method: "POST" }),
+	logout: () => fetch("/auth/flickr/logout", { method: "POST" }),
 };
 
 /** A full navigation, not a fetch -- the OAuth leg ends in a redirect chain. */
 export function beginLogin(): void {
-	window.location.href = "/oauth/login";
+	window.location.href = "/auth/flickr/login";
 }

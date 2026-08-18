@@ -20,23 +20,34 @@ coordinates — the build prints those, and any written here would be a lie with
 
 ## READ THIS FIRST IF YOU ARE ABOUT TO BELIEVE THE DIAGRAM
 
-### The route labels are a PROPOSAL. The code does not serve these paths
+### The route labels are REAL as of 2026-08-18. The code moved to match
 
-**As of 2026-08-16 the diagram is ahead of the implementation.**
+**The rename landed.** `src/` now serves `/auth/device-link/{start,poll,approve,deny}` and
+`/auth/flickr/{login,callback,logout}`, which is what the canvas has drawn since 2026-08-16. Terry
+proposed it because the two credential flows should look related, and `/device` reads as a *"WTF
+generator"* — it names a standard, RFC 8628 device authorization, rather than the thing it does
+here.
 
-| The diagram says | `src/` actually serves |
-|---|---|
-| `/auth/device-link/start` | `POST /api/v001/device/start` |
-| `/auth/device-link/approve` | `POST /api/v001/device/approve` |
-| `/auth/flickr/*` | `/oauth/login`, `/oauth/callback`, `/oauth/logout` |
-| `/api/v001/*` | Correct, and the only accurate one |
+**It removed a real fragility rather than only reading better.** The device routes used to sit under
+`/api/v001/*`, where `apiRoutes` registers a blanket `requireSession`. The ONLY thing keeping
+`start` reachable without a credential was mounting `deviceRoutes` first. **An exemption bought by
+registration order is invisible in the route it protects**, and this repository had already paid for
+that once — the same ordering silently took ADR-12's `no-store` header with it. The blanket rule now
+has no exceptions.
 
-You proposed the rename because the two credential flows should look related, and `/device` reads as
-a *"WTF generator"* — it names a standard (RFC 8628 device authorization) rather than the thing it
-does here. **Nothing has been renamed.**
+### ONE route label is still a proposal, and it is `enter-user-code`
 
-**Either the code moves to match or the diagram moves back. Whichever happens, delete this section
-in the same commit.**
+**The diagram draws `/auth/device-link/enter-user-code` INSIDE the Worker. The code serves that page
+from the Svelte app at `/link`.** `deviceRoutes` builds `verificationUri` as
+`new URL("/link", c.env.UI_ORIGIN)`, so the browser lands on the SPA and never touches a Worker
+route by that name.
+
+**Both readings are defensible and Terry holds the pen.** A Worker-served page would put the whole
+device-link flow behind one prefix; the SPA route keeps ADR-18's rule that `/` belongs to the app
+shell. **Nothing has been built either way**, and this section is the record that the picture and
+the code disagree here.
+
+**Delete this section in the same commit that settles it.**
 
 ### The canvas is scoped to the Lightroom Classic journey, and the web UI is real
 
@@ -537,7 +548,7 @@ twice.
 - **"Publish to Flickr as normal" has no edge**, because FGA does not participate. If a publish panel
   is ever drawn, that is context above it rather than a numbered step.
 - **The plug-in needs its own DNS edge and has one.** It is a network client before it is a browser
-  launcher: it calls `POST /api/v001/device/start` first and must resolve `flickrgroupaddr.com`
+  launcher: it calls `POST /auth/device-link/start` first and must resolve `flickrgroupaddr.com`
   itself. It cannot delegate that to the browser, because `LrHttp.openUrlInBrowser` is
   fire-and-forget and the `deviceCode` would land in a tab the plug-in cannot read.
 - **The confirmation page is the only defense against device-flow phishing.** ADR-24 makes it a page

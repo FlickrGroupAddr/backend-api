@@ -34,8 +34,8 @@ function uiUrl(env: Env, outcome: string, returnPath?: string): string {
 	return url.toString();
 }
 
-oauthRoutes.get("/oauth/login", async (c) => {
-	const callbackUrl = `${c.env.API_BASE_URL}/oauth/callback`;
+oauthRoutes.get("/auth/flickr/login", async (c) => {
+	const callbackUrl = `${c.env.API_BASE_URL}/auth/flickr/callback`;
 
 	// ADR-11. Validated HERE, at the edge, so nothing downstream handles a raw value.
 	// Null means "no usable destination", which uiUrl reads as the app root.
@@ -63,7 +63,7 @@ oauthRoutes.get("/oauth/login", async (c) => {
 
 /** Every failure redirects rather than renders: a browser navigation lands here, so the
  *  response is a page a person sees, not an API reply anything parses. */
-oauthRoutes.get("/oauth/callback", async (c) => {
+oauthRoutes.get("/auth/flickr/callback", async (c) => {
 	const requestToken = c.req.query("oauth_token");
 	const verifier = c.req.query("oauth_verifier");
 
@@ -125,7 +125,7 @@ oauthRoutes.get("/oauth/callback", async (c) => {
  * The Flickr token deliberately survives -- cutting FGA off entirely happens at
  * Flickr, which is both more thorough and outside our control.
  */
-oauthRoutes.post("/oauth/logout", async (c) => {
+oauthRoutes.post("/auth/flickr/logout", async (c) => {
 	const cookie = readSessionCookie(c);
 	if (cookie !== undefined) await revokeSession(c.env.DB, cookie);
 

@@ -18,7 +18,7 @@ file and an ADR disagree, **the ADR wins.**
 | **The `/link` approval page** | Svelte. ADR-18 gives `/` to the app shell and `run_worker_first` does not list `/link` |
 | **The Lua client** — `/device/start`, `openUrlInBrowser`, the poll loop, `LrPasswords` storage | `docs/lrc-spike/plugin/` |
 
-**ADR-24 shipped the device link flow** — `POST /api/v001/device/start`, `/poll`, `/approve`,
+**ADR-24 shipped the device link flow** — `POST /auth/device-link/start`, `/poll`, `/approve`,
 `/deny`. A plug-in can obtain a credential the moment something exists to ask for one.
 `GET /api/v001/me` reports `clientType`, so the plug-in can confirm it holds `lrc15_plugin`.
 
@@ -156,7 +156,7 @@ carrying it, and exchanges the frob for a durable token afterwards. **That IS a 
 
 | Adobe → Flickr | FGA plug-in → FGA |
 |---|---|
-| `flickr.auth.getFrob` | `POST /api/v001/device/start` |
+| `flickr.auth.getFrob` | `POST /auth/device-link/start` |
 | `LrHttp.openUrlInBrowser( auth?frob=… )` | `LrHttp.openUrlInBrowser( /link?userCode=… )` |
 | User approves at flickr.com | User approves at flickrgroupaddr.com |
 | Exchange frob → `auth_token` | Poll → FGA plug-in token |

@@ -340,8 +340,8 @@ MUTATIONS = [
         # another plug-in token, and a stolen laptop renews itself forever.
         "ADR-24: let a plug-in token approve a device link",
         "src/routes/device.ts",
-        '\t"/api/v001/device/approve",\n\trequireSession,\n\trequireBrowserSession,\n);',
-        '\t"/api/v001/device/approve",\n\trequireSession,\n);',
+        '\t"/auth/device-link/approve",\n\trequireSession,\n\trequireBrowserSession,\n);',
+        '\t"/auth/device-link/approve",\n\trequireSession,\n);',
     ),
     (
         # Hand the token to anyone holding the userCode -- which is read off a screen.

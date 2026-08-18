@@ -160,7 +160,7 @@ describe("the login attempt, ADR-08", () => {
 
 it("sends a login to Flickr carrying a request token", async () => {
 	const response = await SELF.fetch(
-		"https://api.flickrgroupaddr.com/oauth/login",
+		"https://api.flickrgroupaddr.com/auth/flickr/login",
 		{ redirect: "manual" },
 	);
 	expect(response.status).toBe(302);
@@ -226,13 +226,13 @@ describe("ADR-11: the callback returns where the login STARTED", () => {
 	/** Drives both legs. The outbound stub answers request_token and access_token. */
 	async function login(query: string): Promise<URL> {
 		const started = await SELF.fetch(
-			`https://api.flickrgroupaddr.com/oauth/login${query}`,
+			`https://api.flickrgroupaddr.com/auth/flickr/login${query}`,
 			{ redirect: "manual" },
 		);
 		expect(started.status).toBe(302);
 
 		const back = await SELF.fetch(
-			"https://api.flickrgroupaddr.com/oauth/callback" +
+			"https://api.flickrgroupaddr.com/auth/flickr/callback" +
 				"?oauth_token=test-request-token&oauth_verifier=test-verifier",
 			{ redirect: "manual" },
 		);
@@ -273,7 +273,7 @@ describe("ADR-11: the callback returns where the login STARTED", () => {
 		// there, Flickr -- or anyone who could tamper with that redirect -- would be
 		// choosing where an authenticated user lands. It lives in the Durable Object.
 		await SELF.fetch(
-			`https://api.flickrgroupaddr.com/oauth/login?returnTo=${encodeURIComponent("/link")}`,
+			`https://api.flickrgroupaddr.com/auth/flickr/login?returnTo=${encodeURIComponent("/link")}`,
 			{ redirect: "manual" },
 		);
 		const stub = env.OAUTH_LOGIN.get(

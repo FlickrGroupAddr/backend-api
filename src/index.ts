@@ -84,18 +84,25 @@ app.use("/api/v001/*", (c, next) =>
 );
 
 /**
- * **MOUNTED BEFORE `apiRoutes`, and the order is load-bearing.**
+ * **THE DEVICE-LINK ROUTES NO LONGER NEED A MOUNT-ORDER RESCUE, and that is the
+ * point of the 2026-08-18 rename.**
  *
- * `apiRoutes` registers `requireSession` on the blanket pattern `/api/v001/*`.
- * Hono merges every sub-app into one router and matches middleware by path, so a
- * device route registered after it would inherit that middleware -- and
- * `POST /api/v001/device/start` MUST be reachable with no credential at all,
- * because obtaining one is the entire point of the flow.
+ * They used to live at `/api/v001/device/*`, underneath `apiRoutes`' blanket
+ * `requireSession` on `/api/v001/*`. Hono merges every sub-app into one router and
+ * matches middleware by path, so the ONLY thing keeping
+ * `POST /api/v001/device/start` reachable without a credential was mounting this
+ * sub-app first. **An exemption bought by registration order is invisible in the
+ * route it protects**, and this repository has already paid for that once: the same
+ * ordering silently took ADR-12's `no-store` header with it.
  *
- * **Mounting first is what keeps the blanket rule blanket.** The alternative --
- * narrowing `requireSession`'s pattern to spell out every authenticated route --
- * would turn a deny-by-default rule into a list somebody has to remember to
- * extend, which is the polarity mistake `restrictPluginScope` exists to avoid.
+ * **They now live at `/auth/device-link/*`, which the architecture diagram has
+ * drawn all along**, outside `/api/v001/*` entirely. The blanket rule is now
+ * genuinely blanket with no exceptions, and `start` is reachable without a
+ * credential because of WHERE it is rather than WHEN it was registered.
+ *
+ * **Mounting first is therefore no longer load-bearing, and this line MUST NOT be
+ * reordered on the strength of that.** Nothing depends on it today; a future route
+ * added under `/api/v001/*` in this sub-app would depend on it again, silently.
  *
  * `approve` and `deny` register their own `requireSession` inside `deviceRoutes`,
  * so nothing here is unauthenticated by accident.
@@ -164,7 +171,7 @@ ${session}
 ${banner}
 <ul>
   <li><a href="/">The app</a></li>
-  <li><a href="/oauth/login">Log in with Flickr</a></li>
+  <li><a href="/auth/flickr/login">Log in with Flickr</a></li>
   <li><a href="/api/v001/groups">Your groups, with throttle and moderation info</a></li>
   <li><a href="/api/v001/queue">Your queue</a></li>
   <li><a href="/health">Health</a></li>

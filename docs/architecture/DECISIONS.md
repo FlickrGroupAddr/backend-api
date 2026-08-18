@@ -316,7 +316,7 @@ looks exactly like the fix.**
 
 ### The same rule, pointed at where a login LANDS. Added 2026-08-16
 
-**A completed login MUST NOT redirect anywhere the request chose.** `GET /oauth/login` accepts a
+**A completed login MUST NOT redirect anywhere the request chose.** `GET /auth/flickr/login` accepts a
 `returnTo`, and `src/oauth/return-to.ts` is the only thing allowed to interpret it.
 
 **Two checks, and the second is not redundant.**
@@ -340,14 +340,14 @@ attack or a stale link, and a 400 would punish the victim for the attacker's que
 
 #### The destination lives in the Durable Object, NOT in the callback URL
 
-**Flickr controls the query string of the redirect that comes back to `/oauth/callback`.** A
+**Flickr controls the query string of the redirect that comes back to `/auth/flickr/callback`.** A
 destination carried through that round trip is a value somebody else chose, which is this decision's
 whole subject. It rides in the ADR-08 login attempt instead, keyed by the request token, and never
 leaves our control.
 
 #### This closed a live defect, not a hypothetical one
 
-**Before 2026-08-16 `/oauth/callback` ended unconditionally at `uiUrl(env, "ok")` — the app root.**
+**Before 2026-08-16 `/auth/flickr/callback` ended unconditionally at `uiUrl(env, "ok")` — the app root.**
 Any flow that began somewhere else was stranded, and the device-link page most of all: a user who
 signed in mid-link arrived home with their code gone and **no way to finish linking.**
 
