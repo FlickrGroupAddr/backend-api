@@ -54,6 +54,27 @@ marked `completed` here and REMOVED from the panel in the same turn.**
 | **`blocked`** | `pending`, **subject prefixed `BLOCKED: `** | **NEITHER of us can move it**, because of something outside our control. Terry keeps it in view so he can push when he can |
 | `completed` | **ABSENT** | Landed. Row stays here with its date |
 
+### ONE ROW SHOULD BE `in_progress`, and more is allowed
+
+**Terry, 2026-08-18: *"My brain is exceedingly serial. I need exactly one active thing in front of
+me supplemented with a reliable written list. If you ask me to remember a queue of 2 items it's no
+bueno and things get dropped in a hurry."*** **SHOULD, in the RFC 2119 sense.**
+
+**He walked back the absolute himself, the same day, and the correction matters:** *"multi in
+progress isn't fatal if I have it written down and can context switch."*
+
+**So the risk is UNWRITTEN parallel work, not parallel work.** One active item is the right default
+and a second is a judgment call he is entitled to make. `scripts/worklog-sync-check.py` therefore
+prints a NOTE and does not fail -- **a check that fires on something legitimate is the check he
+learns to scroll past**, which is this project's own loudness rule pointed at itself.
+
+**Two consequences for how Claude works:**
+
+- **Never hand him a queue in prose.** *"Once X is done, also do Y and Z"* is three things in his
+  head and two are already gone. **Give him X.** The log holds Y and Z.
+- **When something new arrives mid-task, write it here and SAY that you wrote it.** Do not ask him
+  to hold it, and do not ask whether to switch unless it genuinely blocks the active item.
+
 **`blocked` is a strict definition and MUST NOT be used loosely.** Terry's own: it means outside
 forces beyond our control, not "waiting on a decision" and not "hard". **Anything either of us could
 pick up right now is `not_started`.** The panel carries no blocked status of its own, so the prefix

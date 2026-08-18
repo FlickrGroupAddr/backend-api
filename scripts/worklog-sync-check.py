@@ -134,6 +134,21 @@ def main() -> int:
             print(f"         task {task[0]:>2}  [{task[2]}] {task[1]}")
 
     print()
+    # **One active item is the DEFAULT, not a rule.** Terry's working memory is
+    # serial, so a single in-flight item suits him -- but he walked the absolute
+    # back himself: *"multi in progress isn't fatal if I have it written down and
+    # can context switch."* The risk is UNWRITTEN parallel work, and everything
+    # here is written down by construction.
+    #
+    # **So this reports and never fails.** A check that fires on something he
+    # legitimately chose is the check he learns to scroll past.
+    active = [r for r in rows if r[1] == "in_progress"]
+    if len(active) > 1:
+        print(f"    NOTE: {len(active)} items are in_progress. One at a time suits Terry better,")
+        print("          though he has said more is fine while it is all written down.")
+        for r in active:
+            print(f"            row {r[0]}  {r[2]}")
+
     bad_state = [r for r in rows if r[1] not in PANEL]
     for r in bad_state:
         print(f"    row {r[0]} has state {r[1]!r}, which is not a panel state. "
