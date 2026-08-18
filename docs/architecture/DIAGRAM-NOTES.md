@@ -389,6 +389,25 @@ picks the final row size. Terry bracketed it across three renders -- 12.1 left w
 12.3 pushed step 32 outside the border, **12.2 is right.** Do not re-tune it from the
 estimator alone.
 
+## SETTLED 2026-08-17: the derived sheets export oversized, and that is FINE
+
+**Terry's call, after seeing the numbers: *"I'm fine with that -- aspect ratio is right which is
+all that matters."*** He is correct, and it is provable rather than a hope.
+
+**A sheet that cannot hold the drawing at 1:1 carries a `pageScale`, and draw.io multiplies the
+exported page by it.** So `8.5x14` exports at 18.44 x 11.19 in rather than 14 x 8.5. Measured from
+a real export, and matching `pageWidth * pageScale` exactly.
+
+**`pageScale` multiplies BOTH dimensions, so the exported aspect equals the paper aspect by
+construction** -- 1.6478 against legal's 1.6471, a difference of 0.0007 from rounding in the
+export. **Fit to Page therefore scales uniformly: no distortion, no letterboxing, no cropping.**
+
+**This MUST NOT be "fixed".** The only ways to make the page legal-sized are to rescale the
+geometry -- the one thing this whole design refuses, because every font size and threshold would
+stop meaning what it means -- or to spill the drawing across a grid of pages. **Print `8.5x14` and
+`16x9` WITH Fit to Page. Print `11x17` at 100% without it.** The build prints the right recipe for
+each sheet on every run.
+
 ## Open
 
 **None of this blocks anything. It is written down so it is not rediscovered.**
