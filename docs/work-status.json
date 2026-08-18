@@ -22,7 +22,7 @@
     {
       "id": "implement-lrc-plug-as",
       "priority": "P1",
-      "state": "ready_for_claude",
+      "state": "needs_terry_action",
       "subject": "Implement the LrC plug-in as the diagram designs it",
       "detail": "**Terry, 2026-08-18, cleared hot for this session.** The Auth Data Flow panel is the specification: 32 steps, plug-in first, from `Authorize with FGA` through `POST /api/v001/*`. **The premise is CONFIRMED at runtime** -- a third-party plug-in can enumerate Adobe's Flickr publish service and read `getRemoteId()`, measured on LrC 15.5 against Terry's real catalog. See `docs/LRC-CLIENT-NOTES.md` and its *PICK UP HERE*, `lightroom-plugin-sdk-facts` and `lrc-plugin-dev-mechanics` in memory. **ADR-23 refuses `LrUUID` for credentials, ADR-24 makes the confirmation page a requirement, and ADR-25 governs the version gate.** The diagram's route names are still a PROPOSAL the code does not serve -- that has to be settled before or during this",
       "history": [
@@ -31,6 +31,25 @@
           "to": "ready_for_claude",
           "by": "terry",
           "from": "backlog"
+        },
+        {
+          "at": "2026-08-18T14:52:51-04:00",
+          "to": "in_progress",
+          "by": "claude",
+          "from": "ready_for_claude"
+        },
+        {
+          "at": "2026-08-18T15:06:37-04:00",
+          "to": "needs_terry_action",
+          "by": "claude",
+          "from": "in_progress"
+        }
+      ],
+      "comments": [
+        {
+          "at": "2026-08-18T15:06:37-04:00",
+          "by": "claude",
+          "text": "SDK QUESTION, and it needs Lightroom rather than a decision. docs/LRC-CLIENT-NOTES.md says to settle this before building the picker: does `checkbox.title` accept `LrView.bind`? **The vendored SDK reference cannot answer it.** `LrView.html` annotates bindability NOWHERE -- it carries no bind note for `checkbox.value` either, and that one is famously bindable -- so the absence of a note is not evidence. Only `LrWebViewFactory` annotates binding, and it is a different factory. **Checked the code too: `CheckboxPicker.lua` sets `title = g.name` as a fixed string at build time and binds only `value` and `visible`, so nothing here has ever bound a title on a checkbox.** The paging redesign -- a fixed window of ~25 rows whose titles are refilled -- rests entirely on this. **It is empirical and needs your machine.** I will write a probe that binds `checkbox.title` alongside a `static_text.title` control that MUST update, so a null result tells us the SDK refused rather than that the probe was broken. **Not blocking the plug-in**: the device-link client needs none of this, and I am building that now."
         }
       ]
     },
@@ -59,10 +78,17 @@
     {
       "id": "bring-jamstack-client-onto",
       "priority": "P2",
-      "state": "backlog",
+      "state": "ready_for_claude",
       "subject": "Bring the JAMstack client onto the same flow as the plug-in",
       "detail": "**Terry, 2026-08-18, cleared hot for this session.** The Svelte app of ADR-18 works the same way as the LrC plug-in client. **ADR-18 already says these are TWO first-class clients released in LOCKSTEP** -- an API change that serves one and breaks the other is a broken release, not a follow-up. **The canvas is currently scoped to the plug-in journey on purpose**, because two first-class clients drawn as line-of-flow made the drawing a mesh; see `DIAGRAM-NOTES.md`, *\"the canvas is scoped to the Lightroom Classic journey\"*. So this item has a diagram consequence to settle as well as code. Depends on the backend row above",
-      "history": []
+      "history": [
+        {
+          "at": "2026-08-18T14:55:06-04:00",
+          "to": "ready_for_claude",
+          "by": "terry",
+          "from": "backlog"
+        }
+      ]
     },
     {
       "id": "make-8-5x14-export",
@@ -94,7 +120,24 @@
       "state": "backlog",
       "subject": "Decide on argparse for the nine ~/.claude hooks",
       "detail": "The global standing order covers them, and Terry said it is **not retroactive** -- *\"I will grandfather where needed.\"* `fga-toolchain-check.py` was converted because it was already being worked. **Nine others still read `sys.argv`**: `claude-dirty-words-stop`, `diagrams-readonly-stop`, `git-push-stop`, `hook-health`, `lint-toolchain-check`, `nas-guard-probe`, `orientation-inject`, `rejected-hook-sites-tripwire`, `rust-toolchain-check`. **Converting nine hooks unasked is the \"blow up the world\" he warned against**, so this is his call: convert, grandfather, or leave until each is next touched. `~/.claude` has no gate to hang a checker on",
-      "history": []
+      "history": [],
+      "comments": [
+        {
+          "at": "2026-08-18T14:56:38-04:00",
+          "by": "terry",
+          "text": "would it change any of their dependencies eg regex vs AST?"
+        },
+        {
+          "at": "2026-08-18T14:57:37-04:00",
+          "by": "claude",
+          "text": "No. Answered by reading all nine rather than guessing: every one uses sys.argv for exactly ONE thing, a membership test for a single boolean flag -- `--self-test`, `--probe`, `--hook`, `--selftest`. No regex touches argv anywhere, no AST is involved, and argparse is stdlib. Zero dependency change. **What DOES change is behavior, and it is the reason to do it.** `'--self-test' in sys.argv` silently accepts an unknown flag: mistype it and the hook runs its HOOK path instead of erroring. argparse exits 2 and says so. That exact bug was live in fga-toolchain-check.py before its conversion. **Two things the read turned up:** nas-guard-probe.py spells it `--selftest` while the other eight use `--self-test`, which argparse would surface as the inconsistency it is. And the real RISK to check first -- these are invoked BY the harness, so if it ever passes an argument a strict parser rejects, a hook that fails open today would start exiting 2. Most read stdin JSON and take no args, but that MUST be verified per hook before converting."
+        },
+        {
+          "at": "2026-08-18T15:00:55-04:00",
+          "by": "terry",
+          "text": "yeah with no dep changes let's use argparse plz"
+        }
+      ]
     },
     {
       "id": "spike-trello-be-work",

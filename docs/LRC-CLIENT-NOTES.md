@@ -11,21 +11,39 @@ file and an ADR disagree, **the ADR wins.**
 
 ## PICK UP HERE
 
-**The backend is done. Two things are left, and neither is in the Worker.**
+**The backend is FINISHED as of 2026-08-18. One thing is left, and it is the Lua.**
 
 | Gap | Where it lives |
 |---|---|
-| **The `/link` approval page** | Svelte. ADR-18 gives `/` to the app shell and `run_worker_first` does not list `/link` |
-| **The Lua client** — `/device/start`, `openUrlInBrowser`, the poll loop, `LrPasswords` storage | `docs/lrc-spike/plugin/` |
+| **The Lua client** — `start`, `openUrlInBrowser`, the poll loop, `LrPasswords` storage | `docs/lrc-spike/plugin/` |
 
-**ADR-24 shipped the device link flow** — `POST /auth/device-link/start`, `/poll`, `/approve`,
-`/deny`. A plug-in can obtain a credential the moment something exists to ask for one.
-`GET /api/v001/me` reports `clientType`, so the plug-in can confirm it holds `lrc15_plugin`.
+**The approval page shipped**, in the Worker rather than in Svelte. An earlier version of this table
+said *"Svelte. ADR-18 gives `/` to the app shell"* and pointed at `/link` — **a page that was never
+built.** `parse()` in `web/src/lib/router.ts` resolves exactly `/`, `/queue` and `/admin`, so the
+plug-in's `verificationUri` sent people to a "no such page" screen and device linking could not
+complete. Nothing failed and every test passed.
 
-**The `/link` page is not cosmetic.** Its confirmation step — show the `userCode`, make the person
-say it matches their Lightroom screen — **is the only defense against device-flow phishing.** The
-backend deliberately cannot substitute: nothing auto-approves, and approval is always a POST a person
-had to cause.
+**Terry ruled it belongs to the Worker, and the reason is structural:** the session cookie is
+`HttpOnly`, so a static SPA page cannot tell whether you are signed in. Only the server can, and the
+page's first job is to redirect a signed-out visitor to `/auth/flickr/login`.
+
+**Every route the plug-in needs now exists and is named as the diagram draws it:**
+
+```
+POST /auth/device-link/start              no credential, returns deviceCode + userCode
+POST /auth/device-link/poll               deviceCode is the credential
+GET  /auth/device-link/enter-user-code    the page a person visits
+POST /auth/device-link/{approve,deny}     browser session only
+GET  /api/v001/me                         reports clientType, so the plug-in can confirm
+```
+
+**`verificationUri` in the `start` reply is the URL to open.** Do not build it in Lua — it comes
+from the server precisely so a plug-in cannot be pointed somewhere else.
+
+**The confirmation step is not cosmetic.** Showing the `userCode` and making the person say it
+matches their Lightroom screen **is the only defense against device-flow phishing.** The backend
+deliberately cannot substitute: nothing auto-approves, and approval is always a POST a person had to
+cause.
 
 ### The picker is blocked on one SDK question
 
