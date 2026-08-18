@@ -44,15 +44,34 @@ class Sheet(NamedTuple):
     width: float
     height: float
     margin: float
+    # **May the content be scaled UP to fill this sheet?** Off by default, and that
+    # default is load-bearing: tabloid's printable height is 1040 against 1030 of
+    # content, so a sheet allowed to fill would grow the AUTHORED drawing by 1%.
+    # Everything in the check suite is expressed in authored units, so the reference
+    # sheet MUST stay exactly 1:1.
+    #
+    # **A screen sheet is the opposite case.** draw.io maps one drawing unit to one
+    # pixel at 100%, so pixels are the only unit that matters there -- filling the
+    # page is how a 4K export comes out 4K without anybody typing a zoom percentage.
+    scale_up: bool = False
 
 
-# **MARGIN IS 30 ON PAPER AND 20 ON GLASS, and the difference is physical rather
+# **MARGIN IS 30 ON PAPER AND 40 ON GLASS, and the difference is physical rather
 # than a taste.** Every printer grips the sheet at its edge and cannot put ink
 # there; 0.30 in clears that border plus the placement drift a sheet-fed engine
 # is allowed. See DIAGRAM-NOTES.md, "Why 0.30 in and not 0.25 in". A monitor has
-# no such border, so the 20 is a gutter chosen by eye -- and it is what buys the
-# 16:9 sheet an exact 1:1 fit at 1920 x 1080, where 30 would have forced a 2%
-# shrink for no reason at all.
+# no such border, so the screen gutter is chosen by eye -- it was 20 at 1920 x 1080
+# and doubled with the sheet, which keeps the same proportion of the picture.
+#
+# **THE SCREEN SHEET IS 3840 x 2160, and it is measured in PIXELS rather than
+# inches.** Terry, 2026-08-18: *"make sure 16:9 diagram is native 4K/2160p at
+# 100%."* draw.io maps one drawing unit to one pixel at 100% zoom, so a 1920-unit
+# page could only reach 4K by somebody remembering to type 200% into an export
+# dialog. **A 3840-unit page is 4K at 100%, which is what native means here.**
+#
+# **The 100-units-per-inch convention does NOT apply to this sheet**, and reading
+# it as 38.4 x 21.6 inches of paper is a category error. It is a screen target;
+# the paper sheets above it are the ones measured in inches.
 #
 # **THE FIRST ENTRY IS THE AUTHORED SHEET, and the order here is the order the
 # build reports them in.** Tabloid is first because the content is laid out for
@@ -60,7 +79,7 @@ class Sheet(NamedTuple):
 SHEETS = (
     Sheet("11x17", "Tabloid landscape, 17 x 11 in", 1700, 1100, 30),
     Sheet("8.5x14", "Legal landscape, 14 x 8.5 in", 1400, 850, 30),
-    Sheet("16x9", "Monitor, 1920 x 1080", 1920, 1080, 20),
+    Sheet("16x9", "Monitor, 3840 x 2160 (4K) at 100%", 3840, 2160, 40, scale_up=True),
 )
 
 AUTHORED = SHEETS[0]

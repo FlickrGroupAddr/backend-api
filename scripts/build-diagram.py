@@ -2966,7 +2966,7 @@ def moved_sheet(xml: str, sheet: Sheet, page_scale: float,
 
 
 print()
-note(f"Sheets. One drawing, {len(SHEETS)} pages, each at its real paper size:")
+note(f"Sheets. One drawing, {len(SHEETS)} pages, each at its real size:")
 
 for _sheet in SHEETS:
     _prw = _sheet.width - 2 * _sheet.margin
@@ -2976,7 +2976,12 @@ for _sheet in SHEETS:
     # horizontal reflow cannot change the height, which is exactly why it cannot
     # change the type size either. `_target_w` is the content width that fills
     # the printable area at that scale.
-    _fit_h = min(1.0, _prh / CONTENT_H)
+    # **The cap is what stops a sheet growing the drawing**, and lifting it for
+    # every sheet would grow the AUTHORED one: tabloid's printable height is 1040
+    # against 1030 of content, so it would come out 1% larger and every threshold in
+    # the suite would be measuring a canvas that no longer matches its own units.
+    # **So filling is opt-in per sheet, and only the screen sheet takes it.**
+    _fit_h = _prh / CONTENT_H if _sheet.scale_up else min(1.0, _prh / CONTENT_H)
     _target_w = min(_prw / _fit_h, _prw) if _fit_h >= 1.0 else _prw / _fit_h
     # A sheet narrower than the content in proportion is WIDTH-bound. Nothing to
     # spread there -- widening would overflow -- so it falls back to a plain move.
@@ -2993,7 +2998,7 @@ for _sheet in SHEETS:
     # same proportions -- and the only thing that changes is the number the exported
     # PDF declares as its page size.
     _fit = min(_prw / _new_w, _prh / CONTENT_H)
-    _cscale = min(1.0, _fit)
+    _cscale = _fit if _sheet.scale_up else min(1.0, _fit)
     _pscale = 1.0
     _printed = _cscale
     _effw, _effh = _sheet.width, _sheet.height
@@ -3250,29 +3255,38 @@ for _sheet in SHEETS:
           f"{_least:.2f} at the tightest side")
     check("the drawing sits on ONE page",
           _new_w * _cscale <= _effw + EPS and _effh + EPS >= CONTENT_H * _cscale,
-          f"page {_effw:.0f} x {_effh:.0f} units = "
-          f"{_effw / 100:.2f} x {_effh / 100:.2f} in, pageScale {_pscale:.1f}")
+          f"page {_effw:.0f} x {_effh:.0f} units"
+          + (f" = {_effw / 100:.2f} x {_effh / 100:.2f} in" if not _sheet.scale_up else " (px)")
+          + f", pageScale {_pscale:.1f}")
 
-    # **Not a check, because the verdict is Terry's.** The build states the size
-    # and names his own measured floor; it does not refuse to write a sheet he
-    # asked for. See the three-sheets block at the top of this file.
-    _pt = BODY_PT * _printed
-    _verdict = (f" -- BELOW the {EYECHART_PT} pt Terry called an eyechart"
-                if _pt < EYECHART_PT else "")
-    note(f"    prints at {_printed * 100:.1f}%, body type {_pt:.1f} pt{_verdict}")
-    # **THE EXPORT RECIPE, per sheet, because it is NOT the same for all of them.**
-    # draw.io sizes an exported page as `pageWidth * pageScale`, measured 2026-08-17
-    # against a real export: the 8.5x14 sheet came out 18.44 x 11.19 in, which is
-    # exactly what its `pageScale` of 1.3165 asks for. **That is not a defect and it
-    # cannot be fixed in the file** -- a 16.4 in drawing does not fit on 14 in paper,
-    # so something has to scale it, and doing that in the geometry is the rescale
-    # this whole design refuses. The scaling belongs in the print dialog.
-    # **Every sheet now exports at its real paper size**, which is the whole point
-    # of scaling the geometry instead of `pageScale`. Terry, 2026-08-18, on the old
-    # behavior: the legal PDF came out 18.43 x 11.19 in and needed *Fit on page* --
-    # *"it's minor but feels stupid"*.
-    note(f"    EXPORT: page is {_sheet.width / 100:.2f} x {_sheet.height / 100:.2f} in, "
-         f"the real paper size. Print at 100%, no 'Fit to Page'.")
+    # **A SCREEN SHEET IS MEASURED IN PIXELS, and reporting it in inches is a
+    # category error.** draw.io maps one drawing unit to one pixel at 100% zoom, so
+    # 3840 units is 4K and calling it 38.4 inches of paper is meaningless -- nobody
+    # prints a 38-inch page, and a point size for it says nothing about legibility
+    # on glass.
+    #
+    # **`scale_up` is the predicate today because the screen sheet is the only one
+    # that fills.** Those are two different facts wearing one field, and the flat
+    # version is deliberate: a second case is what would earn a separate `pixels`
+    # flag, and there is not one yet.
+    if _sheet.scale_up:
+        note(f"    SCREEN: {_effw:.0f} x {_effh:.0f} px at 100% zoom. "
+             f"Content scaled {_cscale:.4g}x to fill it.")
+        note("    EXPORT: PNG at 100%. No zoom percentage to remember, which is the point.")
+    else:
+        # **Not a check, because the verdict is Terry's.** The build states the size
+        # and names his own measured floor; it does not refuse to write a sheet he
+        # asked for.
+        _pt = BODY_PT * _printed
+        _verdict = (f" -- BELOW the {EYECHART_PT} pt Terry called an eyechart"
+                    if _pt < EYECHART_PT else "")
+        note(f"    prints at {_printed * 100:.1f}%, body type {_pt:.1f} pt{_verdict}")
+        # **Every paper sheet now exports at its real size**, which is the whole
+        # point of scaling the geometry instead of `pageScale`. Terry, 2026-08-18,
+        # on the old behavior: the legal PDF came out 18.43 x 11.19 in and needed
+        # *Fit on page* -- *"it's minor but feels stupid"*.
+        note(f"    EXPORT: page is {_sheet.width / 100:.2f} x {_sheet.height / 100:.2f} in, "
+             f"the real paper size. Print at 100%, no 'Fit to Page'.")
 
     # **How much of the paper the drawing actually covers.** The two figures
     # answer different questions and both are worth having: the scale says how

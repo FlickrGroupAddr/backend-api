@@ -86,11 +86,11 @@ move the moment the content does.
 | Sheet | Prints at | Body type | Covers | Use it for |
 |---|---|---|---|---|
 | `11x17` | 100% | 10.1 pt | 100% | **The print.** The content fits this sheet exactly |
-| `16x9` | 100% | 10.1 pt | 100% | A 1920 x 1080 screen or a slide |
+| `16x9` | 100% | 20.2 px | 100% | **A 4K monitor.** 3840 x 2160 at 100% zoom — see below |
 | `8.5x14` | 100% | **7.7 pt** | 100% | Legal landscape, and read the warning below first |
 
 **Each wider sheet spreads its extra width evenly between the four columns**, so all three now fill
-their printable area completely. `16x9` gains 240 units across 3 gaps, `8.5x14` gains 124.
+their printable area completely. `16x9` gains 239.99 units across 3 gaps, `8.5x14` gains 124.04.
 `build-diagram.py` derives the columns from the artifact and re-derives them from each written sheet
 to prove no column changed width.
 
@@ -109,9 +109,27 @@ out at `sqrt(0.62)` = 78.8%, or 7.96 pt. **Making legal readable means cutting c
 the ratio of the two aspect ratios. Content 1.5769 against legal's 1.6962 gave 92.97% before the
 reflow.
 
+### The `16x9` sheet is measured in PIXELS, and 100 units per inch does not apply to it
+
+**Terry, 2026-08-18: *"make sure 16:9 diagram is native 4K/2160p at 100%."*** The page is 3840 x
+2160, and reading that as 38.4 x 21.6 inches of paper is a category error. **draw.io maps one
+drawing unit to one pixel at 100% zoom**, so pixels are the only unit this sheet has.
+
+**Native means nobody types a zoom percentage.** A 1920-unit page can reach 4K only if the person
+exporting it remembers to ask for 200%, and a forgotten export dialog is exactly the kind of step
+that goes wrong once and is never noticed. A 3840-unit page is 4K at 100%.
+
+**So this is the one sheet allowed to scale the content UP** — `Sheet.scale_up` in
+`scripts/diagram_sheets.py`, off everywhere else. The content is 1640 x 1040 of ink against a
+3760 x 2080 printable area, so the scale comes out **exactly 2.0000** and the 10.1 pt body type
+lands on 20.2 px. **That default is load-bearing:** tabloid's printable height is 1040 against
+1040 of content, and a sheet allowed to fill would still grow the AUTHORED drawing by any rounding
+the fit produced. The reference sheet MUST stay 1:1.
+
 ### One open question on the `16x9` spread, raised and not settled
 
-**The gaps there are 108.5, 110 and 110, while the Edge PoP's internal gaps stay at 28.2.** The
+**The gaps there are 98.5, 100 and 100 authored units — 197, 200 and 200 px on the glass — while
+the Edge PoP's internal gaps stay at 28.2.** The
 drawing reads as four islands rather than one diagram, and the Worker-to-Flickr arrows run a long
 way through empty space.
 
@@ -403,7 +421,7 @@ estimator alone.
 **Terry, 2026-08-18: the legal PDF came out 18.43 x 11.19 in, not 14 x 8.5.** The aspect was right
 and the size was not, so printing needed *Fit on page* -- *"it's minor but feels stupid"*.
 
-**The cause was arithmetic, and the shrink itself is unavoidable.** The content is 1764 x 1030 units
+**The cause was arithmetic, and the shrink itself is unavoidable.** The content is 1764 x 1040 units
 after the column spread and a legal page is 1400 x 850, so something has to scale. It used to be
 `pageScale`: draw.io sizes an exported page as `pageWidth * pageScale`, so a scale of 1.3165 bought
 a page big enough to hold the drawing and handed the shrink to the print dialog.
@@ -416,10 +434,16 @@ exported file declares.
 |---|---|---|
 | `11x17` | **17.00 x 11.00 in** | 1.0000 |
 | `8.5x14` | **14.00 x 8.50 in** | 0.7596 |
-| `16x9` | **19.20 x 10.80 in** | 1.0000 |
+| `16x9` | **3840 x 2160 px** | 2.0000 |
 
-**Print every sheet at 100%, with Fit to Page OFF.** That instruction is now the same for all three,
-which is the point.
+**Print every paper sheet at 100%, with Fit to Page OFF.** That instruction is now the same for
+both, which is the point. **`16x9` is glass rather than paper** — export it as PNG at 100% and it
+comes out 3840 x 2160.
+
+**The two paper sheets MUST NOT be allowed to scale up**, and `Sheet.scale_up` is what keeps them
+1:1 or smaller. Lifting the cap for the screen sheet is the whole change; lifting it everywhere
+would have grown the authored tabloid drawing, and every threshold in the check suite is expressed
+in authored units.
 
 ### The refusal to rescale still stands, and it was never about this
 
