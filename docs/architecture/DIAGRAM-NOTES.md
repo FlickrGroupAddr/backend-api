@@ -356,67 +356,36 @@ others. On 2026-08-15 the build passed every assertion over a diagram you called
 
 ---
 
-## NEXT SESSION STARTS HERE: re-arm the check suite
+## The suite is back on, and what it cost to get there
 
-**Terry, 2026-08-17, at the end of the restructure session:** *"we are going to fix all checks. My
-bet is they get largely ripped out and rewritten with the massive restructure."*
+**Done 2026-08-17.** Terry's bet was right -- twenty-three assertions failed against the
+restructured canvas, and most of them were the CHECK being wrong rather than the drawing.
+**The build's own output is the current relationship map; this section holds only what the
+build cannot say.**
 
-**His bet is almost certainly right, and the reason is recorded elsewhere in this file: a suite
-switched back on after a redesign asserts the OLD design.** The work is not flipping
-`CHECKS_ENABLED`. It is re-reading every assertion against the layout that now exists and rewriting
-the ones that have stopped being true.
+**The two failures worth remembering, because both had been PASSING while describing
+something false:**
 
-**What changed under them during that session**, so nobody has to diff it by eye:
+- **`e3`'s level-run assertion named the OAuth Durable Object** after the arrow had been
+  retargeted to `devicedo`. It went green for as long as the two objects sat on one line.
+- **Five badges, `n21` to `n25`, were on the canvas and in no placement table.** Every other
+  badge check printed `ok` throughout. A hand-written membership list stops covering new
+  members silently, so the roster is derived from the artifact now and compared to the tables.
 
-- **Every column moved.** All three column gaps went to 20 du, and columns 1 through 3 shifted left.
-- **The panel owns column 3 outright** at 347.5 wide, and the Legend moved to column 2.
-- **A second Durable Object stack exists** -- `devicedo` and its two cascades -- and `e3` was
-  retargeted to it from `oauthdo`.
-- **`e9` moved from y 534.5 to 640**, because it crossed the space the second stack needed.
-- **The browser glyph grew** from 130x104 to 183x146.4.
-- **Every route tile gained a badge**, and the browser group was reordered chronologically.
-- **The panel is 32 steps** where the suite's row-versus-badge note still describes a 13-row
-  browser-first journey.
+**The estimator was the expensive part, and it was out by 110 units on the Auth Data Flow
+panel.** Four terms were wrong at once: an average character width instead of real Arial
+advances, bold ignored entirely, the tile's padding hardcoded rather than read, and a line
+height rounded to an integer. It agrees with Chrome to about 3 units now.
 
-**The one failure already identified:** the `lrcat`/`lrc`/`users` axis check asserts a shared WIDTH
-of 130, and `users` is 183. **The requirement was never width** -- it is the shared center axis at
-121.5, which is what keeps `e19` and `e20` plumb, and that still holds.
-
-**Re-arming is also what will catch the drift nobody has looked for.** The checks were off for a
-full day of layout work, and this file's own rule says a green build is not evidence a diagram is
-good -- but a build with no checks at all is not evidence of anything.
+**THE LAST TENTH STILL BELONGS TO THE EYE.** Arial's `line-height: normal` measures 1.15 and
+mxGraph's own constant is 1.2; the rendered canvas sits between them, so no arithmetic here
+picks the final row size. Terry bracketed it across three renders -- 12.1 left white space,
+12.3 pushed step 32 outside the border, **12.2 is right.** Do not re-tune it from the
+estimator alone.
 
 ## Open
 
 **None of this blocks anything. It is written down so it is not rediscovered.**
-
-- **IN FLIGHT 2026-08-17: the Auth Data Flow panel's font size is not yet maximized.** `text_height`
-  now measures FRACTIONAL sizes, so a binary search is possible. Measured with `CHECKS_ENABLED` on:
-
-  | Row font | Text height | Slack against the 917 box |
-  |---|---|---|
-  | 12px | ~823 | **+94** |
-  | 13px | ~1015 | **-98** |
-  | 14px | ~1178 | -261 |
-
-  **The answer is between 12 and 13**, and the rule Terry set is *bottom padding at least equal to
-  top padding*. `spacingTop` on that tile is **8**, so the target is text height <= **909**. Binary
-  search between 12.0 and 13.0. The header div stays larger than the rows -- hold it at 16px while
-  the rows move.
-
-- **IN FLIGHT: `justification` wants more bottom padding.** It sits at the SLACK_MIN of 12, which is
-  the legal minimum rather than a design choice.
-
-- **IN FLIGHT: the Legend sits too low in its own gap.** Terry, 2026-08-17: it needs equal padding
-  above and below. It moved to column 2 under Project Justification this session and was never
-  re-centered in the space between `justification` and `flickr`.
-
-- **The `lrcat`/`lrc`/`users` axis check WILL fail when the suite comes back on.** It asserts a
-  shared WIDTH of 130, and `users` is now 183 wide. **The requirement was never the width** -- it is
-  the shared center AXIS at 121.5, which is what keeps `e19` and `e20` plumb, and that still holds.
-  Rewrite the assertion to check the axis.
-
-
 - **No Lightroom Classic logo.** Cloudflare and Flickr both carry their marks. **The trap: Lightroom
   Classic and Lightroom (CC) have different icons**, and this diagram means Classic specifically —
   the whole `getPublishServices(nil)` mechanism is Classic-only.
@@ -428,8 +397,10 @@ good -- but a build with no checks at all is not evidence of anything.
 - **`text_height` measures three tiles out of thirteen.** Every other tile is hand-sized, which is
   why a type change once burst a box while the build reported clean. **Extending it to every text
   tile is the highest-value check still missing.**
-- **The visible-run check does not measure a ROUTED edge**, only a straight one. It reports
-  `routed, measured by eye`, so it is an honest hole rather than a false pass.
+- **The visible-run check still does not measure a ROUTED edge**, only a straight one. It reports
+  `routed, measured by eye`, so it is an honest hole rather than a false pass. **The BADGE checks
+  no longer share it** -- they walk the full polyline through an edge's waypoints, and refuse a
+  badge on an auto-routed edge whose drawn shape the file does not carry.
 - **No contradiction check exists.** Comparing an edge's endpoints against the journey step that
   cites it is mechanical, and nobody has written it.
 
@@ -482,12 +453,8 @@ twice.
 
 ### State at the end of that pass
 
-**`CHECKS_ENABLED` is FALSE and two sheets are deleted.** The build writes only `11x17`; the
-`8.5x14` and `16x9` sheets return when the suite goes back on. **Turning it back on is not flipping
-the flag** -- the layout moved on every axis, so several assertions now describe a design that no
-longer exists and MUST be rewritten rather than satisfied. The `lrcat`/`lrc`/`users` axis check is
-the known one: it asserts a shared WIDTH of 130, and `users` is now 183 wide while the axis it
-actually needs is still 121.5.
+**The suite went back on the same day and all three sheets are written again.** What that cost,
+and the one number no arithmetic here can settle, is in *The suite is back on* above.
 
 **The route labels are STILL a proposal**, per the section at the top of this file. Terry, the same
 day: *"let's not catch the code up just yet. Diagram is future state."*

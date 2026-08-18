@@ -792,9 +792,9 @@ NOT_OBSTACLES = {
     "flickrlogo", "flickr", "flickrtitle",
     # Same reasoning: the Lightroom card holds the tiles edges terminate on.
     "lrcapp",
-    # Cascade cards behind the OAuth tile: decoration, and the edge legitimately
-    # terminates on the tile stacked in front of them.
-    "oauthdo_b1", "oauthdo_b2",
+    # Cascade cards behind each Durable Object tile: decoration, and the edge
+    # legitimately terminates on the tile stacked in front of them. Both stacks.
+    "oauthdo_b1", "oauthdo_b2", "devicedo_b1", "devicedo_b2",
 }
 # DERIVED, not listed. A hardcoded badge set silently stops covering the badges
 # added after it was written, and every new badge then reads as a box its own
@@ -1038,6 +1038,12 @@ check("all five equal", max(_vals) - min(_vals) < EPS, f"spread {max(_vals) - mi
 IN_EDGE_POP = {
     "dns": True, "cron": True, "api": True, "secrets": True, "retry": True,
     "oauthdo": False, "oauthdo_b1": False, "oauthdo_b2": False,
+    # **The SECOND Durable Object stack, and it was missing from this table.** The
+    # Device Link object and its two cascade cards were added on 2026-08-17 and this
+    # check never learned about them, so the one claim it exists to protect -- a
+    # Durable Object lives in exactly ONE location, outside the anycast PoP -- went
+    # unmade for the newer of the two stacks.
+    "devicedo": False, "devicedo_b1": False, "devicedo_b2": False,
     "d1": False,
 }
 
@@ -1081,8 +1087,18 @@ check("centered between the two Workers", abs(_above - _below) < EPS,
 # not -- and the threshold is DERIVED from coverage rather than chosen.
 # ---------------------------------------------------------------------------
 
-BADGE_ON_LINE = {"n2": "e21", "n3": "e18", "n5": "e18", "n6": "e19",
-                 "n7": "e1", "n8": "e25", "n9": "e25", "n26": "e25", "n27": "e23", "n29": "e24", "n30": "e24", "n32": "e13", "n10": "e22", "n15": "e22", "n16": "e11", "n17": "e11", "n18": "e11", "n19": "e22", "n12": "e9", "n13": "e9"}
+BADGE_ON_LINE = {
+    "n2":  "e21", "n3":  "e18", "n5":  "e18", "n6":  "e19", "n7":  "e1",
+    "n8":  "e25", "n9":  "e25", "n10": "e22", "n12": "e9",  "n13": "e9",
+    "n15": "e22", "n16": "e11", "n17": "e11", "n18": "e11", "n19": "e22",
+    # **n21 to n25 were on the canvas and in NO placement table**, so five badges
+    # were drawn and never checked. Found 2026-08-17 by counting the tables against
+    # the badges the artifact actually holds; every one measures 0.00 from its edge,
+    # so they were correct all along and simply unguarded. The coverage check below
+    # is what stops the next five.
+    "n21": "e9",  "n22": "e9",  "n23": "e14", "n24": "e14", "n25": "e22",
+    "n26": "e25", "n27": "e23", "n29": "e24", "n30": "e24", "n32": "e13",
+}
 # Empty for now. Kept because the beside placement is still the right answer for a
 # short run that a badge would otherwise swallow, and BESIDE_MIN/MAX carry its band.
 BADGE_BESIDE  = {"n11": "e4"}
@@ -1098,6 +1114,32 @@ COVERAGE_CEILING = 0.55
 
 print()
 note("Step badges:")
+
+# **EVERY badge MUST be claimed by exactly one placement table.** The three tables
+# are hand-written, and a hand-written membership list stops covering new members
+# the moment one is added -- silently, because the loops below simply never look at
+# a badge nobody listed.
+#
+# **That is not hypothetical here: `n21` through `n25` were drawn on the canvas and
+# appeared in none of the three.** Five badges, unchecked, while every other
+# assertion printed `ok`. This derives the roster from the artifact and compares it
+# to the tables, so the failure is a named badge rather than a silence.
+_placed = {**BADGE_ON_LINE, **BADGE_BESIDE, **BADGE_ON_TILE}
+_all_badges = {cell_id(c) for c in cells if re.fullmatch(r"n\d+", c.get("id") or "")}
+_unplaced = sorted(_all_badges - set(_placed), key=lambda n: int(n[1:]))
+_phantom = sorted(set(_placed) - _all_badges, key=lambda n: int(n[1:]))
+_double = sorted(
+    {b for b in BADGE_ON_LINE if b in BADGE_BESIDE or b in BADGE_ON_TILE}
+    | {b for b in BADGE_BESIDE if b in BADGE_ON_TILE}, key=lambda n: int(n[1:]))
+for _b in _unplaced:
+    note(f"    {_b} is on the canvas and in no placement table")
+for _b in _phantom:
+    note(f"    {_b} is in a placement table and not on the canvas")
+for _b in _double:
+    note(f"    {_b} is claimed by two placement tables")
+check("every badge has exactly one placement rule", not (_unplaced or _phantom or _double),
+      f"{len(_all_badges)} badges: {len(BADGE_ON_LINE)} on a line, "
+      f"{len(BADGE_BESIDE)} beside, {len(BADGE_ON_TILE)} on a tile")
 
 # **A badge check is only as honest as the path it measures against**, so the
 # edges the badges sit on MUST be ones this model draws exactly. Two shapes are:
@@ -1551,12 +1593,16 @@ print()
 note("User Journey:")
 check("rows are number-plus-text pairs", not _wrong,
       f"{len(_rows)} rows" + (f", WRONG in {_wrong}" if _wrong else ""))
-# **NOT asserted against the badge count.** The canvas is scoped to the Lightroom
-# journey while the panel still describes the browser-first ordering, so the two
-# disagree ON PURPOSE and it is recorded in DIAGRAM-NOTES. Restore the equality
-# when the panel is rewritten.
-note(f"    {len(BADGES)} badges on the canvas against {len(_rows)} journey rows"
-     f" -- KNOWN mismatch, see DIAGRAM-NOTES")
+# **ASSERTED AGAIN, because the mismatch it was downgraded for is over.** This was
+# reduced to a note while the canvas was scoped to the Lightroom journey and the
+# panel still described the browser-first ordering. The panel was rewritten to 32
+# plug-in-first steps and the canvas carries 32 badges, so the two agree -- and the
+# note went on printing "KNOWN mismatch" over two equal numbers.
+#
+# **A step and its badge are one decision.** A row with no badge names a hop the
+# drawing does not show, and a badge with no row is an arrow nobody explained.
+check("every journey row has a badge", len(BADGES) == len(_rows),
+      f"{len(BADGES)} badges against {len(_rows)} rows")
 
 
 # ---------------------------------------------------------------------------
