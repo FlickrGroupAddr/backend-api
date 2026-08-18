@@ -1141,6 +1141,81 @@ CENTERLINE_PAIRS = [
 # before editing it.**
 EXPECTED_CENTERLINE_ALIGNMENTS = 20
 
+# ---------------------------------------------------------------------------
+# TERRY'S OWN PLACEMENT RULES, from `docs/architecture/BADGE-PLACEMENT.md`.
+#
+# **He placed all 32 badges by hand against the centerlines and edges of other
+# tiles, and the `.drawio` records none of that.** In his words, 2026-08-17:
+# *"they're all relative to something, some are trying for consistent spacing or
+# fitting around conflicting elements."* A later session nudging one "to where it
+# looks right" would break a rule it could not see.
+#
+# **Three placements are deliberately absent here.** Badge 6 measures against the
+# widest part of an ARROWHEAD, and 23 with 24 fit around an arrow end and a frame
+# edge. Those references are artwork rather than rectangles, so no check can reach
+# them -- an honest gap, named in the document, rather than a formula invented to
+# make the table look complete.
+# ---------------------------------------------------------------------------
+
+# Two badges in the opposite top corners of one tile, inset equally.
+CORNER_PAIRS = [("n1", "n31", "lrc"), ("n4", "n28", "devicedo"), ("n14", "n20", "oauthdo")]
+CORNER_INSET = 20.0
+# A group on its line, evenly stepped, centered on a named tile's vertical axis.
+SPREAD_ABOUT = [
+    (["n3", "n5"], "dns"), (["n8", "n9", "n26"], "dns"),
+    (["n10", "n15", "n19", "n25"], "dns"), (["n29", "n30"], "dns"),
+    (["n12", "n13", "n21", "n22"], "oauthdo"), (["n16", "n17", "n18"], "retry"),
+]
+# A single badge sitting on a named tile's vertical axis.
+ON_AXIS_OF = {"n27": "dns", "n32": "dns"}
+# A badge centered between two named edges.
+BETWEEN_EDGES = [(["n2", "n7"], ("cfframe", left), ("netb", left))]
+
+# **Badges are also stacked VERTICALLY against each other**, which Terry named as a
+# relationship in its own right: *"or relative to something else: centerline of
+# another tile, or stacked vertically like the 3/5 and 29/30 pairs."*
+#
+# **DERIVED, with the count pinned**, for the reason the centerline check already
+# records: a derived list cannot notice its own shrinkage, so nudging a badge out of
+# a stack would silently drop the pair rather than fail. Six stacks today, and every
+# one sits inside a single column -- which is independently why the reflow keeps
+# them, since a column moves as one piece.
+_ALL_BADGES = sorted((_c for _c in boxes if re.fullmatch(r"n\d+", _c)),
+                     key=lambda _n: int(_n[1:]))
+BADGE_STACKS = [
+    sorted(_g, key=cy) for _g in
+    {round(cx(_n), 1): [_m for _m in _ALL_BADGES if abs(cx(_m) - cx(_n)) < EPS]
+     for _n in _ALL_BADGES}.values()
+    if len(_g) > 1
+]
+EXPECTED_BADGE_STACKS = 6
+
+print()
+note("Badge placement, per BADGE-PLACEMENT.md:")
+for _a, _b2, _tile in CORNER_PAIRS:
+    _li, _ri = cx(_a) - left(_tile), right(_tile) - cx(_b2)
+    check(f"{_a}/{_b2} in {_tile}'s top corners",
+          abs(_li - CORNER_INSET) < EPS and abs(_ri - CORNER_INSET) < EPS,
+          f"inset {_li:.1f} / {_ri:.1f}, want {CORNER_INSET:.0f} both")
+for _group, _tile in SPREAD_ABOUT:
+    _xs = sorted(cx(_g) for _g in _group)
+    _steps = [_xs[_i + 1] - _xs[_i] for _i in range(len(_xs) - 1)]
+    _mid = (_xs[0] + _xs[-1]) / 2
+    check(f"{'/'.join(_group)} spread about {_tile}",
+          abs(_mid - cx(_tile)) < EPS and (max(_steps) - min(_steps) < EPS if _steps else True),
+          f"midpoint {_mid:.1f} vs {cx(_tile):.1f}, step {_steps[0]:.1f}")
+for _badge, _tile in ON_AXIS_OF.items():
+    check(f"{_badge} on {_tile}'s axis", abs(cx(_badge) - cx(_tile)) < EPS,
+          f"{cx(_badge):.1f} vs {cx(_tile):.1f}")
+for _group, (_t1, _f1), (_t2, _f2) in BETWEEN_EDGES:
+    _mid = (_f1(_t1) + _f2(_t2)) / 2
+    check(f"{'/'.join(_group)} centered between {_t1} and {_t2}",
+          all(abs(cx(_g) - _mid) < EPS for _g in _group),
+          f"midpoint {_mid:.1f}, badges {', '.join(f'{cx(_g):.1f}' for _g in _group)}")
+check("badge stacks intact", len(BADGE_STACKS) == EXPECTED_BADGE_STACKS,
+      f"{len(BADGE_STACKS)} against {EXPECTED_BADGE_STACKS} expected: "
+      + "; ".join(" over ".join(_s) for _s in sorted(BADGE_STACKS, key=lambda s: cx(s[0]))))
+
 print()
 note("Step badges:")
 check("badge centerline alignments intact",
@@ -2162,6 +2237,18 @@ def column_of(x: float) -> int:
         return len(COLUMNS) - 1
     raise SystemExit(f"x={x:.2f} sits in a gap between columns; the reflow cannot place it.")
 
+
+
+# **A badge stack that straddled a column boundary would come apart the moment a
+# gap grew**, because a column moves as one piece and the halves would take
+# different deltas. All six sit inside one column today, which is what makes the
+# whole move-with-your-column rule safe for them.
+_split = [" over ".join(_s) for _s in BADGE_STACKS
+          if len({column_of(cx(_m)) for _m in _s}) > 1]
+for _s in _split:
+    note(f"    stack spans two columns: {_s}")
+check("every badge stack sits in ONE column", not _split,
+      f"{len(BADGE_STACKS)} stacks, so a widened gap cannot pull one apart")
 
 # **A badge on a cross-column arrow follows the ARROW, not a column.** `n3` and
 # `n10` sit on runs from the Browser into the Worker, so widening that gap makes
