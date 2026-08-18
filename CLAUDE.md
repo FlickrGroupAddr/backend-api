@@ -57,6 +57,11 @@ so explicitly, and it is the right move whenever the cheap reconciliation is not
 
 **The contract, including what "synced" means exactly, lives at the top of `docs/WORK-LOG.md`.**
 
+**`python scripts/worklog-server.py` serves that file live at `http://127.0.0.1:8792/`**, repainting
+within 400 ms of every write. **It reads the file rather than a copy of it, so it cannot diverge** --
+the panel is the only view that can, and `python scripts/worklog-sync-check.py` is what proves it has
+not. **Arm the server at the start of a session**, like the diagram preview.
+
 ## Dates are versions
 
 No `v1`, `v2`, `draft` or `final`. **Artifacts are dated, and the filename and any in-document date

@@ -18,6 +18,30 @@ load-bearing.
 panel and cannot open this file mid-conversation. Claude writes this file and cannot see the
 rendered panel. **Neither of us can notice a divergence, so neither of us will.**
 
+### THE WEB VIEW IS THE ONE TO OPEN, and it cannot diverge
+
+```
+python scripts/worklog-server.py     # once, in the background
+```
+
+**Then open `http://127.0.0.1:8792/` and leave it open.** Every write to this file
+repaints that tab within 400 ms -- no commit, no push, nothing to copy. A bar across the
+top carries the open counts, the file's write time and a **reload counter**, because a
+list that did not change and a server that stopped answering produce the identical
+screenshot.
+
+**It reads THIS FILE, so it cannot drift from it.** That is the whole reason it exists,
+in Terry's words: *"if we could get it to auto-refresh on every .md write that claude
+makes, do we have a better system?"* **Yes -- because the sync problem below only exists
+where there are two copies, and the web view is not a copy.**
+
+**It also has no size limit**, so the log is written for a reader rather than trimmed to
+fit somebody's five lines. `Hide landed` defaults to on and the toggle sticks per browser.
+
+**The harness panel is still synced, and it is now the convenience copy** -- it lives in
+the terminal Terry is already looking at, and its `activeForm` drives the spinner while
+Claude works. **Everything below governs that copy.**
+
 ### The two views are DELIBERATELY different, and that is the whole design
 
 | | This file | Terry's panel |
@@ -54,6 +78,21 @@ marked `completed` here and REMOVED from the panel in the same turn.**
 | **`blocked`** | `pending`, **subject prefixed `BLOCKED: `** | **NEITHER of us can move it**, because of something outside our control. Terry keeps it in view so he can push when he can |
 | `completed` | **ABSENT** | Landed. Row stays here with its date |
 
+### `in_progress` IS A ONE-WAY BIT FLIP
+
+**Standing order, Terry, 2026-08-18: *"once in progress always in progress -- that's a one way bit
+flip."*** RFC 2119 sense -- **MUST NOT is absolute.**
+
+**A row MUST NOT go back from `in_progress` to `not_started`.** The only move out of `in_progress`
+is `completed`, or `blocked` when something outside our control stops it.
+
+**Why, and it is not bookkeeping:** started work leaves residue -- a branch, a half-edited file, a
+decision already taken. **Marking it `not_started` claims a clean slate that does not exist**, and
+the next session believes it. Deprioritizing is not un-starting; the row simply moves down.
+
+**So a new top priority does NOT demote the item it interrupts.** Both stay `in_progress` and the
+order carries the priority, which is the case the rule below deliberately permits.
+
 ### ONE ROW SHOULD BE `in_progress`, and more is allowed
 
 **Terry, 2026-08-18: *"My brain is exceedingly serial. I need exactly one active thing in front of
@@ -89,10 +128,11 @@ asserts it.**
 
 | # | Status | Task subject | Where the detail is |
 |---|---|---|---|
-| 1 | `in_progress` | `Clean up toolchain output` | `~/.claude/hooks/fga-toolchain-check.py` renders two tiers with different row formats -- clean is `name  latest <ver>  installed <ver>`, behind is `name : verdict (version)` in a 21-char label column. Terry is redesigning the rows and wants both consistent. `--force-loud-output` renders the behind tier on a current machine |
-| 2 | `not_started` | `Settle the 8.5x14 page size` | `DIAGRAM-NOTES.md`, *"SETTLED 2026-08-17: the derived sheets export oversized"*. Legal prints at 76% and 7.7 pt, under the 7.9 pt floor Terry measured. Settled once as acceptable, so reopening it is his call |
-| 3 | `not_started` | `Convert Python sys.argv handling to argparse` | `~/.claude/hooks/fga-toolchain-check.py` hand-rolls membership tests for its three flags. There is no `--help`, and **an unknown flag is silently ignored** -- measured 2026-08-18, `--nonsense-flag` runs the human check and exits 3. Survey this repository's own `scripts/*.py` first |
-| 4 | `not_started` | `Rework horizontal space on the non-11x17 sheets` | `DIAGRAM-NOTES.md`, *"One open question on the `16x9` spread"*. The spread is even across three gaps, so the drawing reads as four islands. The alternative is weighting it toward the three text panels, which tolerate a wide gutter where the arrows do not |
+| 1 | `in_progress` | `Build the shared work-log web view` | **Top priority, nothing derails it.** Terry's call, 2026-08-18: the diagram preview already proves the pattern -- Claude writes a file, the browser tab redraws itself, and we both read the same artifact. Doing the same for this log removes the two-view sync problem rather than policing it, and lifts the ~5-line panel budget. Model it on `scripts/preview-server.py`. Needs a `hide landed` toggle, defaulting to ON. **NOT DONE until the current list renders in a browser tab we can both read** |
+| 2 | `in_progress` | `Clean up toolchain output` | `~/.claude/hooks/fga-toolchain-check.py` renders two tiers with different row formats -- clean is `name  latest <ver>  installed <ver>`, behind is `name : verdict (version)` in a 21-char label column. Terry is redesigning the rows and wants both consistent. `--force-loud-output` renders the behind tier on a current machine |
+| 3 | `not_started` | `Settle the 8.5x14 page size` | `DIAGRAM-NOTES.md`, *"SETTLED 2026-08-17: the derived sheets export oversized"*. Legal prints at 76% and 7.7 pt, under the 7.9 pt floor Terry measured. Settled once as acceptable, so reopening it is his call |
+| 4 | `not_started` | `Convert Python sys.argv handling to argparse` | `~/.claude/hooks/fga-toolchain-check.py` hand-rolls membership tests for its three flags. There is no `--help`, and **an unknown flag is silently ignored** -- measured 2026-08-18, `--nonsense-flag` runs the human check and exits 3. Survey this repository's own `scripts/*.py` first |
+| 5 | `not_started` | `Rework horizontal space on the non-11x17 sheets` | `DIAGRAM-NOTES.md`, *"One open question on the `16x9` spread"*. The spread is even across three gaps, so the drawing reads as four islands. The alternative is weighting it toward the three text panels, which tolerate a wide gutter where the arrows do not |
 
 ## Landed
 
