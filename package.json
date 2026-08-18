@@ -30,7 +30,7 @@
 		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run sql && npm run diagram && npm run test && npm run trace && npm run build:web"
 	},
 	"dependencies": {
-		"hono": "4.13.2",
+		"hono": "4.13.3",
 		"jose": "6.2.9",
 		"zod": "4.4.3"
 	},
