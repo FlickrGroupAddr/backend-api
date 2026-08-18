@@ -30,50 +30,66 @@ phrases. **The diagram build fails on a lowercase label.** Legitimately lowercas
 paths where case carries meaning, and the continuation of a wrapped sentence. A digit is a correct
 first character.
 
-## `docs/WORK-LOG.md` leads the task list, and they MUST NEVER diverge
+## The web board is the single source of truth
 
-**Standing order, Terry, 2026-08-18, verbatim: *"having our two views of outstanding work out of
-sync is worse than not having any lists at all."*** RFC 2119 sense — **MUST NOT is absolute.**
+**Standing order, Terry, 2026-08-18, verbatim: *"yeah bring CLAUDE current with web board; it's
+single source of truth now, our production feedback loop."*** RFC 2119 sense — **MUST and MUST NOT
+are absolute.**
 
-**`docs/WORK-LOG.md` is the single source of truth. The harness task list is a rendering of it.**
-
-| He says | Claude does |
-|---|---|
-| "Add to the task list" | **Write `docs/WORK-LOG.md` FIRST**, then sync the list to the file |
-| Anything that changes `docs/WORK-LOG.md` | **Re-sync the list in the SAME TURN** |
-| Starts a fresh session | **Rebuild the panel from the file** — the task list does not survive one |
-
-**The duty is entirely Claude's, and the reason is structural rather than a courtesy.** Terry sees
-the panel and cannot open the file mid-conversation. Claude writes the file and cannot see the
-panel. **A divergence is invisible to both of us**, so nobody will catch it and it will be believed.
-
-**Claude MUST verify by READING `~/.claude/tasks/<session-id>/<n>.json`** — one JSON file per task,
-session id being the most recently modified directory there. **A `TaskCreate` that returned success
-is not evidence the list matches the file**, which is this repository's oldest lesson wearing a new
-hat.
-
-**A heavyweight rebuild is ALWAYS acceptable** — delete every task, re-add from the file. Terry said
-so explicitly, and it is the right move whenever the cheap reconciliation is not obviously correct.
-
-### THE TOOL AND THE DATA SPLIT ON 2026-08-18. Read this before looking for the old scripts
-
-**The board is now `docs/work-status.json`, and the tool that serves it lives in another
-repository:** `github.com/TerryOtt/claude-status`, cloned at `X:\Projects\claude-status`.
+**The board is `X:\Projects\claude-status-data\flickrgroupaddr\board.json`, and it lives OUTSIDE
+this repository.** The tool that serves it is a second repository, `github.com/TerryOtt/claude-status`,
+cloned at `X:\Projects\claude-status`.
 
 ```
-python X:\Projects\claude-status\serve.py "X:\Projects\FlickrGroupAddr 2026-08\docs\work-status.json"
+python X:\Projects\claude-status\serve.py "X:\Projects\claude-status-data\flickrgroupaddr\board.json"
 ```
 
-**Then open `http://127.0.0.1:8792/` and leave it open.** Seven swimlanes, `P0`-`P5` sorted top-down
-within each, and Terry DRAGS the edges he owns. **Arm it at the start of a session**, like the
-diagram preview.
+**Then open `http://127.0.0.1:8801/` and leave it open.** The port comes from the board's own `port`
+field rather than from a flag, so one bookmark per project cannot open the wrong board. Seven
+swimlanes, `P0` through `P5` sorted top-down within each, and Terry DRAGS the edges he owns.
+
+**Arm it at the start of every session, together with a Monitor on the board file.** The server
+survives a Claude restart because it is its own process; a Monitor does not. **The Monitor's filter
+MUST cover the server dying as well as the cards moving** — a quiet healthy board and a dead server
+look identical, so it watches TCP 8801 as well as the JSON.
+
+### THE HARNESS TASK LIST IS RETIRED. Claude MUST NOT rebuild it
+
+**This section used to require mirroring the work file into the harness task list on every session.
+That requirement is GONE. Reinstating it would recreate the exact failure it was written to prevent.**
+
+**The original reasoning still holds, and it now points the other way.** Terry, 2026-08-18: *"having
+our two views of outstanding work out of sync is worse than not having any lists at all."* He reads
+the board in a browser and Claude reads the same file, so **there is one view and nothing to keep in
+sync.** A copy in the harness panel would be a second view that only Claude can see, drifting in
+silence — which is what the old rule spent five paragraphs trying to police.
+
+**So `TaskCreate`, `TaskUpdate` and `TaskList` MUST NOT track FGA work.** The harness prints a
+generic reminder to use them; that reminder does not know this board exists. **Ignore it.**
+
+**Claude writes to the board THROUGH THE LIBRARY, never by hand.** `status.py` owns `may_create`,
+the `nextTicket` counter and the creation history entry, and a hand edit to the JSON skips all
+three. `python X:\Projects\claude-status\status.py <board> --verify` replays every trail and is what
+catches a direct write.
+
+**Claude MUST NOT move a card to `completed`.** That edge carries no Claude actor in `rules.json`,
+because Claude marked its own work complete twice on 2026-08-18 and was wrong both times.
+
+### The data left this repository because this repository is PUBLIC
+
+**`docs/work-status.json` is DELETED, and MUST NOT be recreated here.**
+`github.com/FlickrGroupAddr/backend-api` is public, and 12 cards of board data sat in it across 5
+commits. **The tool is public on purpose. The data is not.**
+
+**Deleting the file does NOT remove those 5 commits.** The public history still carries them, and
+only a history rewrite would change that — **Terry's call, never Claude's.**
 
 **`scripts/worklog*.py` are DELETED and MUST NOT be recreated here.** Terry, 2026-08-18: *"btw this
 should be its own repository on GH."* The tool is generic; the data belongs to the project. A second
 copy living in this repository is how the two drift.
 
 **`docs/WORK-LOG.md` is FROZEN, kept for its history and its contract prose.** The markdown tables
-in it are superseded by the JSON and MUST NOT be edited -- a change there now reaches no reader.
+in it are superseded by the board and MUST NOT be edited -- a change there now reaches no reader.
 
 **Why the format changed at all:** Terry, same day, *"'database' needs to be a JSON file, not md."*
 The markdown parser had grown two row regexes, a suspect-line detector for each, a renumbering pass
@@ -254,7 +270,7 @@ npm run check
 
 **Fourteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
 `ruff`, **the argparse gate**, `pyright`, **the LSP gate**, the Lua parse check, `selene`, **the
-ADR-23 Rule 3 import gate**, `sqlfluff`, **the diagram staleness check**, 297 tests, the
+ADR-23 Rule 3 import gate**, `sqlfluff`, **the diagram staleness check**, 305 tests, the
 traceability gate, and the web build. **It MUST be clean before a commit.**
 
 **`scripts/argparse-check.py` refuses any hand-rolled command-line parsing.** Terry's global
@@ -364,16 +380,21 @@ produce. Same guard `scripts/build-diagram.py` puts on its collision detector.
 written. **Those are the surfaces this rule actually slips on most**, so its silence MUST NOT be
 read as full coverage.
 
-**This count has now been wrong THREE times, which is why the rule below is absolute rather than a
+**This count has now been wrong FOUR times, which is why the rule below is absolute rather than a
 reminder.** It was documented as 178, the suite rebuild took it to 156, and neither this file nor
 the README was updated. It then read 160 while the runner printed 201 — found 2026-08-14 while
 catching a cleared session up. **It then read 205 while the runner printed 239** — found 2026-08-15,
-during a documentation pass, by running the gate rather than by reading anything.
+during a documentation pass, by running the gate rather than by reading anything. **It then read
+297 while the runner printed 305** — found 2026-08-18, again by running the gate.
 
 **Quote the number the runner prints, never one read from a document, and that includes this line.**
 **The third miss is the informative one:** two sessions wrote the rule and then updated the count
 from a stale document anyway. A number in prose has no mechanism keeping it true, so **the honest
 options are to run `npm run check` before quoting it or to not quote it at all.**
+
+**The fourth miss says the rule is not enough on its own.** Four corrections have all been made BY
+RUNNING THE GATE, and none by anybody noticing the prose. **A number nothing can check drifts on a
+schedule set by how often somebody happens to look.**
 
 **Tests run inside real `workerd`** against real D1 and real Durable Objects. Outbound `fetch` is
 stubbed in `vitest.config.ts`, so **a test reaching the real Flickr fails loudly.**

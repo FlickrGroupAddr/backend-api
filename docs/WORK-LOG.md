@@ -1,11 +1,12 @@
-# Work log — FROZEN 2026-08-18. Superseded by `docs/work-status.json`
+# Work log — FROZEN 2026-08-18. Superseded by the web board
 
 > **⚠ THE TABLES BELOW ARE NO LONGER READ BY ANYTHING. Do not edit them.**
 >
-> **The board is `docs/work-status.json`**, served by
-> `X:\Projects\claude-status\serve.py` at `http://127.0.0.1:8792/`. Terry, 2026-08-18:
+> **The board is `X:\Projects\claude-status-data\flickrgroupaddr\board.json`**, served by
+> `X:\Projects\claude-status\serve.py` at `http://127.0.0.1:8801/`. Terry, 2026-08-18:
 > *"'database' needs to be a JSON file, not md."* The 12 items here were migrated with
-> `migrate_md.py`; nothing was lost.
+> `migrate_md.py`; nothing was lost. **The board file sits outside this repository
+> because this repository is PUBLIC.**
 >
 > **`scripts/worklog*.py` are deleted, and the tool now lives in its own repository** at
 > `github.com/TerryOtt/claude-status`. His call: *"this should be its own repository on GH."*
