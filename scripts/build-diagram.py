@@ -1382,6 +1382,26 @@ for a, b in _pairs:
     note(f"    {a} OVERLAPS {b}")
 check("badges clear of each other", not _pairs)
 
+# **DRAW.IO PAINTS IN DOCUMENT ORDER, and that is invisible to every check above.**
+# On 2026-08-16 three route tiles were inserted ahead of their container and simply
+# did not appear -- the build was fully green, because z-order is not a property of
+# any single cell. It lives only in the ORDERING of a list, so per-item assertions
+# cannot see it.
+#
+# **A badge is the most likely victim**, since it deliberately overlaps the thing it
+# labels. One inserted in the wrong place would be painted over and the numbering
+# would just be missing a step, with every geometric check still passing.
+_DOC_ORDER = {cell_id(_c): _i for _i, _c in enumerate(cells) if _c.get("id")}
+_painted_over = [
+    f"{_t} paints over {_n}" for _n in BADGES for _t in TILES
+    if _t in boxes and overlaps(_n, _t) and _DOC_ORDER[_t] > _DOC_ORDER[_n]
+]
+for _p in _painted_over:
+    note(f"    {_p}")
+check("no tile paints over a badge", not _painted_over,
+      f"badges occupy document positions "
+      f"{min(_DOC_ORDER[_b] for _b in BADGES)}-{max(_DOC_ORDER[_b] for _b in BADGES)}")
+
 
 # ---------------------------------------------------------------------------
 # The badges are a distinct visual language and MUST NOT be confusable with any
