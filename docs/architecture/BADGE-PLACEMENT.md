@@ -115,7 +115,12 @@ every geometric check ever written:
 | No tile paints over a badge | draw.io paints in DOCUMENT ORDER, which is invisible to per-item checks. It once hid three whole tiles |
 | Fill, white ring and number color, read from each badge | The color-distance rule compared a CONSTANT against the tiles and never checked a badge carried it |
 | Only the three intended diameters, and every badge circular | A fourth size arriving by copy-paste |
+| Each diameter carries its own font size — 21→11, 24→12, 30→15 | A badge resized after being copied, keeping the old digit |
 | No badge crosses an arrow it does not label | A badge across an unrelated line reads as a numbering error |
+
+**Underneath all of it sits one assertion the badges depend on completely**: every vertex is a
+direct child of the page. A cell nested inside another has RELATIVE geometry, so one nested badge
+would change the meaning of every coordinate in this file while every check kept passing.
 
 **And the journey and the canvas must name the same routes** -- every path a step names exists on
 the canvas, and every route tile is named by some step.
