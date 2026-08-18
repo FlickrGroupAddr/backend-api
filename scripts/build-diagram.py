@@ -165,6 +165,16 @@ LRC_MARK = embed("lightroom-classic-mark.svg")
 # percent or two. Anything that widens the canvas breaks the 1:1 fit immediately.
 # The page-fit block prints the figures on every build.
 
+# **The Auth Data Flow panel's row size, and it is ONE number rather than 64.**
+# Terry tunes this by eye against the render, so it was 64 identical literals on a
+# single line -- the shape `measuring-tools-need-a-render` warns about, where a
+# checker's configuration is duplicated and one copy silently stops matching.
+#
+# **It is FRACTIONAL on purpose.** `char_w` interpolates between its calibrated
+# integer sizes, so a tenth of a unit is measurable and the panel can be filled
+# much closer than a whole-point step allows.
+JOURNEY_ROW_PX = 12.2
+
 TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0.0">
   <diagram id="fga-architecture" name="FlickrGroupAddr Architecture">
     <mxGraphModel dx="1422" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="{AUTHORED.width}" pageHeight="{AUTHORED.height}" math="0" shadow="0">
@@ -274,15 +284,15 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="flickrlogo" value="" style="shape=image;html=1;imageAspect=1;aspect=fixed;image={FLICKR}" vertex="1" parent="1">
           <mxGeometry x="1090.5" y="443.75" width="186" height="88.05" as="geometry" />
         </mxCell>
-                <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
-          <mxGeometry x="1065.5" y="106.35" width="236" height="130" as="geometry" />
+                <mxCell id="justification" value="&lt;b&gt;Project Justification&lt;/b&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;Flickr caps how many photos a member may add to a group each day. Doing it by hand means coming back every day for weeks. FGA queues each request and keeps retrying until it lands.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1065.5" y="106.35" width="236" height="147.5" as="geometry" />
         </mxCell>
 
-        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px&quot;&gt;&#8212;&#8212;&#8212; Request / response&lt;br&gt;&#183; &#183; &#183; &#183; Scheduled trigger&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Why it is built this way:&lt;br&gt;docs/architecture/DECISIONS.md&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="1065.5" y="264.55" width="236" height="126" as="geometry" />
+        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px solid #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Request / response&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px dotted #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Scheduled trigger&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px;margin-top:13px&quot;&gt;Why it is built this way:&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px&quot;&gt;docs/architecture/DECISIONS.md&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1065.5" y="276.3" width="236" height="120" as="geometry" />
         </mxCell>
 
-        <mxCell id="journey" value="&lt;div style=&quot;font-size:16px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;Auth Data Flow&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;User clicks &lt;b&gt;Authorize with FGA&lt;/b&gt; button in LrC Plugin&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Plugin resolves DNS for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Plugin HTTPS POST to /auth/device-link/start&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server creates Durable Object identified by &lt;b&gt;User Code&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server responds w/ &lt;b&gt;User Code&lt;/b&gt; and &lt;b&gt;Device Code&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;LrC Plugin displays &lt;b&gt;User Code&lt;/b&gt; on screen and launches browser w/ URL: /auth/device-link/enter-user-code&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Browser resolves DNS for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Browser HTTPS GET: /auth/device-link/enter-user-code&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;/auth/device-link/enter-user-code returns HTTP redirect to /auth/flickr/login, due to absence of &lt;b&gt;FGA Session ID&lt;/b&gt; cookie in request headers&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Browser redirected, HTTPS GET: /auth/flickr/login&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server reads Flickr API creds from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;12&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server makes signed call to Flickr /oauth/request_token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;13&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Flickr responds w/ &lt;b&gt;Request Token&lt;/b&gt;, &lt;b&gt;Request Secret&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;14&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server creates Durable Object identified by &lt;b&gt;Request Token&lt;/b&gt;, holding &lt;b&gt;Request Secret&lt;/b&gt; and return path&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;15&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;/auth/flickr/login returns HTTP redirect to Flickr API /oauth/authorize, carrying &lt;b&gt;Request Token&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;16&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Browser redirected, HTTPS GET: Flickr API /oauth/authorize, carrying &lt;b&gt;Request Token&lt;/b&gt; in oauth_token URL query parameter&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;17&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;User grants FGA &lt;b&gt;write&lt;/b&gt; access on their entire Flickr account, w/ manual click in their browser&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;18&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Flickr API returns HTTP redirect to /auth/flickr/callback, carrying &lt;b&gt;Request Token&lt;/b&gt; and &lt;b&gt;Verifier&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;19&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Browser redirected, HTTPS GET: /auth/flickr/callback, carrying &lt;b&gt;Request Token&lt;/b&gt; and &lt;b&gt;Verifier&lt;/b&gt; in oauth_token and oauth_verifier URL query parameters&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;20&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server reads and deletes Durable Object, recovering &lt;b&gt;Request Secret&lt;/b&gt; and return path&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;21&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server calls Flickr /oauth/access_token, signed w/ &lt;b&gt;Request Secret&lt;/b&gt;, carrying &lt;b&gt;Verifier&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;22&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Flickr responds w/ &lt;b&gt;Access Token&lt;/b&gt;, &lt;b&gt;Access Secret&lt;/b&gt;, NSID and username&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;23&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server encrypts &lt;b&gt;Access Token&lt;/b&gt; and &lt;b&gt;Access Secret&lt;/b&gt; under &lt;b&gt;Token Key&lt;/b&gt;, writes user row to D1&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;24&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server creates &lt;b&gt;FGA Session ID&lt;/b&gt; and writes its &lt;span style=&quot;white-space:nowrap&quot;&gt;SHA2-256&lt;/span&gt; hash to D1&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;25&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;/auth/flickr/callback returns HTTP redirect to /auth/device-link/enter-user-code, setting host-only &lt;b&gt;FGA Session ID&lt;/b&gt; cookie for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;26&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Browser redirected w/ &lt;b&gt;FGA Session ID&lt;/b&gt; cookie, HTTPS GET: &lt;span style=&quot;white-space:nowrap&quot;&gt;/auth/device-link/enter-user-code&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;27&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;User reads &lt;b&gt;User Code&lt;/b&gt; from LrC Plugin and submits via browser form; browser HTTPS POST to &lt;span style=&quot;white-space:nowrap&quot;&gt;/auth/device-link/approve&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;28&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Server marks Durable Object approved, attaching user&#39;s Flickr NSID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;29&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Plugin polls /auth/device-link/poll w/ &lt;b&gt;Device Code&lt;/b&gt;, repeating since step 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;30&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Polling read returns &lt;b&gt;FGA Session ID&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;31&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Plugin saves session ID in LrC secure credential store&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:12.75px&quot;&gt;&lt;b&gt;32&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:12.75px&quot;&gt;Plugin performs FGA app operations against /api/v001/*&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=15;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+        <mxCell id="journey" value="&lt;div style=&quot;font-size:16px;border-bottom:2px solid #1A1A1A;display:inline-block;padding-bottom:3px&quot;&gt;&lt;b&gt;Auth Data Flow&lt;/b&gt;&lt;/div&gt;&lt;table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;margin-top:7px;border-collapse:collapse&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;User clicks &lt;b&gt;Authorize with FGA&lt;/b&gt; button in LrC Plugin&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Plugin resolves DNS for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Plugin HTTPS POST to /auth/device-link/start&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server creates Durable Object identified by &lt;b&gt;User Code&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server responds w/ &lt;b&gt;User Code&lt;/b&gt; and &lt;b&gt;Device Code&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;6&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;LrC Plugin displays &lt;b&gt;User Code&lt;/b&gt; on screen and launches browser w/ URL: /auth/device-link/enter-user-code&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;7&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Browser resolves DNS for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;8&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Browser HTTPS GET: /auth/device-link/enter-user-code&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:right;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;9&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;/auth/device-link/enter-user-code returns HTTP redirect to /auth/flickr/login, due to absence of &lt;b&gt;FGA Session ID&lt;/b&gt; cookie in request headers&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;10&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Browser redirected, HTTPS GET: /auth/flickr/login&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;11&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server reads Flickr API creds from Worker Secrets&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;12&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server makes signed call to Flickr /oauth/request_token&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;13&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Flickr responds w/ &lt;b&gt;Request Token&lt;/b&gt;, &lt;b&gt;Request Secret&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;14&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server creates Durable Object identified by &lt;b&gt;Request Token&lt;/b&gt;, holding &lt;b&gt;Request Secret&lt;/b&gt; and return path&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;15&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;/auth/flickr/login returns HTTP redirect to Flickr API /oauth/authorize, carrying &lt;b&gt;Request Token&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;16&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Browser redirected, HTTPS GET: Flickr API /oauth/authorize, carrying &lt;b&gt;Request Token&lt;/b&gt; in oauth_token URL query parameter&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;17&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;User grants FGA &lt;b&gt;write&lt;/b&gt; access on their entire Flickr account, w/ manual click in their browser&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;18&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Flickr API returns HTTP redirect to /auth/flickr/callback, carrying &lt;b&gt;Request Token&lt;/b&gt; and &lt;b&gt;Verifier&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;19&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Browser redirected, HTTPS GET: /auth/flickr/callback, carrying &lt;b&gt;Request Token&lt;/b&gt; and &lt;b&gt;Verifier&lt;/b&gt; in oauth_token and oauth_verifier URL query parameters&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;20&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server reads and deletes Durable Object, recovering &lt;b&gt;Request Secret&lt;/b&gt; and return path&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;21&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server calls Flickr /oauth/access_token, signed w/ &lt;b&gt;Request Secret&lt;/b&gt;, carrying &lt;b&gt;Verifier&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;22&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Flickr responds w/ &lt;b&gt;Access Token&lt;/b&gt;, &lt;b&gt;Access Secret&lt;/b&gt;, NSID and username&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;23&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server encrypts &lt;b&gt;Access Token&lt;/b&gt; and &lt;b&gt;Access Secret&lt;/b&gt; under &lt;b&gt;Token Key&lt;/b&gt;, writes user row to D1&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;24&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server creates &lt;b&gt;FGA Session ID&lt;/b&gt; and writes its &lt;span style=&quot;white-space:nowrap&quot;&gt;SHA2-256&lt;/span&gt; hash to D1&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;25&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;/auth/flickr/callback returns HTTP redirect to /auth/device-link/enter-user-code, setting host-only &lt;b&gt;FGA Session ID&lt;/b&gt; cookie for fga.com&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;26&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Browser redirected w/ &lt;b&gt;FGA Session ID&lt;/b&gt; cookie, HTTPS GET: &lt;span style=&quot;white-space:nowrap&quot;&gt;/auth/device-link/enter-user-code&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;27&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;User reads &lt;b&gt;User Code&lt;/b&gt; from LrC Plugin and submits via browser form; browser HTTPS POST to &lt;span style=&quot;white-space:nowrap&quot;&gt;/auth/device-link/approve&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;28&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Server marks Durable Object approved, attaching user&#39;s Flickr NSID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;29&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Plugin polls /auth/device-link/poll w/ &lt;b&gt;Device Code&lt;/b&gt;, repeating since step 6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;30&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Polling read returns &lt;b&gt;FGA Session ID&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;31&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Plugin saves session ID in LrC secure credential store&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:16px;text-align:left;padding-right:10px;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;&lt;b&gt;32&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;vertical-align:top;font-size:{JOURNEY_ROW_PX}px&quot;&gt;Plugin performs FGA app operations against /api/v001/*&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#003087;strokeWidth=2;fontSize=15;spacingLeft=12;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
           <mxGeometry x="1321.5" y="106.35" width="347.5" height="917.15" as="geometry" />
         </mxCell>
 
@@ -319,7 +329,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="e19" value="" style="rounded=0;html=1;endArrow=block;endFill=1;endSize=3;startSize=3;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lrc" target="users">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=block;endFill=1;startArrow=block;startFill=1;endSize=3;startSize=3;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.181149;exitDx=0;exitDy=0;entryX=0;entryY=0.500000;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="devicedo">
+        <mxCell id="e3" value="" style="rounded=0;html=1;endArrow=block;endFill=1;startArrow=block;startFill=1;endSize=3;startSize=3;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.208043;exitDx=0;exitDy=0;entryX=0;entryY=0.574230;entryDx=0;entryDy=0;" edge="1" parent="1" source="api" target="devicedo">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e4" value="" style="rounded=0;html=1;endArrow=block;endFill=1;startArrow=block;startFill=1;endSize=3;startSize=3;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="secrets" target="api">
@@ -346,8 +356,8 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
         <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;startArrow=block;startFill=1;endSize=3;startSize=3;strokeWidth=3;strokeColor=#1A1A1A;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=0.984615;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="flickrapi">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="121.5" y="1068.5" />
-              <mxPoint x="1183.5" y="1068.5" />
+              <mxPoint x="121.5" y="1053.5" />
+              <mxPoint x="1183.5" y="1053.5" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -357,7 +367,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="64.5" y="360.55" width="24" height="24" as="geometry" />
         </mxCell>
         <mxCell id="n2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=2.5;fontColor=#FFFFFF;fontSize=11;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="236" y="472.444" width="21" height="21" as="geometry" />
+          <mxGeometry x="236" y="471.7573" width="21" height="21" as="geometry" />
         </mxCell>
         <mxCell id="n6" value="6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="109.5" y="497" width="24" height="24" as="geometry" />
@@ -372,7 +382,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="391.7" y="358.55" width="24" height="24" as="geometry" />
         </mxCell>
         <mxCell id="n7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=2.5;fontColor=#FFFFFF;fontSize=11;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="236" y="523.3" width="21" height="21" as="geometry" />
+          <mxGeometry x="236" y="523.9887" width="21" height="21" as="geometry" />
         </mxCell>
         <mxCell id="n8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="286.7" y="546.7" width="24" height="24" as="geometry" />
@@ -399,13 +409,13 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="329.7" y="588.7" width="24" height="24" as="geometry" />
         </mxCell>
         <mxCell id="n16" value="16" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=15;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="534.9" y="1053.5" width="30" height="30"  as="geometry" />
+          <mxGeometry x="534.9" y="1038.5" width="30" height="30"  as="geometry" />
         </mxCell>
         <mxCell id="n17" value="17" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=15;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="610.9" y="1053.5" width="30" height="30" as="geometry" />
+          <mxGeometry x="610.9" y="1038.5" width="30" height="30" as="geometry" />
         </mxCell>
         <mxCell id="n18" value="18" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=15;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="686.9" y="1053.5" width="30" height="30" as="geometry" />
+          <mxGeometry x="686.9" y="1038.5" width="30" height="30" as="geometry" />
         </mxCell>
         <mxCell id="n19" value="19" style="ellipse;whiteSpace=wrap;html=1;fillColor=#003087;strokeColor=#FFFFFF;strokeWidth=3;fontColor=#FFFFFF;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="383.7" y="588.7" width="24" height="24" as="geometry" />
@@ -687,24 +697,82 @@ _ppt = perimeter_point(_pb, (50.0, -10.0))
 if abs(_ppt[0] - 50.0) > 1e-9 or abs(_ppt[1] - 0.0) > 1e-9:
     raise SystemExit(f"SELF-TEST FAILED: perimeter_point straight up -> {_ppt}")
 
+def waypoints_of(e: ET.Element) -> list[tuple[float, float]]:
+    """The bend points draw.io routes an edge through, in document order.
+
+    They live in `<Array as="points">` inside the edge's own `<mxGeometry>`.
+    An edge with no Array is a straight line and returns an empty list.
+    """
+    g = e.find("mxGeometry")
+    if g is None:
+        return []
+    return [(attr_f(p, "x"), attr_f(p, "y"))
+            for p in g.findall("./Array[@as='points']/mxPoint")]
+
+
 segments: dict[str, tuple] = {}
+# **THE FULL DRAWN PATH, not the chord between its ends.** A routed edge bends
+# through its waypoints, and measuring anything against the straight line from
+# first point to last describes a line draw.io never draws.
+#
+# **That hole was real and it hid three correctly placed badges.** `n16`, `n17`
+# and `n18` sit dead on `e11`'s horizontal leg at y=1068.5 -- offset 0.00 against
+# the path -- while the chord model reported them 205, 227 and 248 units off. A
+# check cannot report "the badge is nowhere near its line" about a badge centered
+# on it, so the model was wrong rather than the canvas.
+paths: dict[str, list[tuple[float, float]]] = {}
 for e in edges:
     style = e.get("style") or ""
     src, tgt = e.get("source"), e.get("target")
     if src not in boxes or tgt not in boxes:
         continue          # a floating edge, parked on an explicit sourcePoint
+    _p, _q = endpoint(src, style, "exit"), endpoint(tgt, style, "entry")
     segments[cell_id(e)] = (
-        src, tgt, endpoint(src, style, "exit"), endpoint(tgt, style, "entry"),
+        src, tgt, _p, _q,
         "orthogonalEdgeStyle" in style,
     )
+    paths[cell_id(e)] = [_p, *waypoints_of(e), _q]
+
+
+def point_to_segment(pt: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+    ax, ay, bx, by = a[0], a[1], b[0], b[1]
+    dx, dy = bx - ax, by - ay
+    if dx == 0 and dy == 0:
+        return math.hypot(pt[0] - ax, pt[1] - ay)
+    t = max(0.0, min(1.0, ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(pt[0] - (ax + t * dx), pt[1] - (ay + t * dy))
+
+
+def point_to_path(pt: tuple[float, float], path: list[tuple[float, float]]) -> float:
+    """Distance to the nearest leg of a polyline."""
+    return min(point_to_segment(pt, a, b) for a, b in itertools.pairwise(path))
+
+
+def path_length(path: list[tuple[float, float]]) -> float:
+    return sum(math.dist(a, b) for a, b in itertools.pairwise(path))
+
+# **Prove `point_to_path` can measure a BEND before trusting a zero from it.** A
+# straight-line-only implementation returns the chord distance and would report
+# 150 here; the L-route's own corner is 50 from the probe point. Validated in both
+# directions, because a distance function that always answers 0 passes every
+# "the badge is on its line" check ever written.
+_lroute = [(0.0, 0.0), (0.0, 200.0), (300.0, 200.0)]
+if abs(point_to_path((150.0, 200.0), _lroute)) > 1e-9:
+    raise SystemExit("SELF-TEST FAILED: point_to_path missed a point ON the bend leg")
+if abs(point_to_path((50.0, 150.0), _lroute) - 50.0) > 1e-9:
+    raise SystemExit("SELF-TEST FAILED: point_to_path off-path distance")
+if abs(path_length(_lroute) - 500.0) > 1e-9:
+    raise SystemExit("SELF-TEST FAILED: path_length")
 
 print()
 note("Attachment model:")
 check("perimeter_point self-test", True, "2/2")
+check("point_to_path self-test", True, "3/3")
 check("edges resolved", len(segments) > 0, f"{len(segments)} of {len(edges)}")
 _floating = [cell_id(e) for e in edges if cell_id(e) not in segments]
 if _floating:
     note(f"    floating (parked on a sourcePoint): {', '.join(_floating)}")
+
 
 
 # ---------------------------------------------------------------------------
@@ -809,7 +877,10 @@ MUST_BE_LEVEL = {
     "e13": "plug-in -> /api/v001/*",
     "e23": "browser -> /auth/device-link/approve",
     "e22": "browser -> /auth/flickr/*",
-    "e3":  "Worker -> OAuth Durable Object",
+    # **`e3` was retargeted to `devicedo` on 2026-08-17 and this label was not.**
+    # It read "OAuth Durable Object" while the arrow pointed at the Device Link one,
+    # so the suite described the wrong object in its own output.
+    "e3":  "Worker -> Device Link Durable Object",
     "e9":  "Worker -> Flickr API",
     "e10": "Nightly Retry -> Flickr API",
 }
@@ -862,7 +933,15 @@ SHARE_COLUMN = [   # left edge AND width
     (["apidevice", "apiplugin", "apirest", "apinew", "apioauth", "apilink"],
      "the Worker's route stack"),
 ]
-SHARE_WIDTH_AND_AXIS = [
+# **THE REQUIREMENT IS THE AXIS, AND IT NEVER WAS THE WIDTH.** This used to demand
+# a shared width as well, which held only while all three tiles happened to be 130
+# wide. The browser glyph grew to 183 on 2026-08-17 and the check failed while the
+# thing it exists to protect -- `e19` and `e20` hanging plumb down one spine at
+# x=121.5 -- was never disturbed.
+#
+# **A tile is free to be any width as long as its center stays on the spine**, so
+# asserting the width was asserting a coincidence of the old layout.
+SHARE_AXIS = [
     (["lrcat", "lrc", "users"], "the Lightroom spine keeps e19 and e20 plumb"),
 ]
 
@@ -882,11 +961,10 @@ for ids, why in SHARE_COLUMN:
     check("column " + "/".join(ids),
           max(ls) - min(ls) < EPS and max(ws) - min(ws) < EPS,
           f"x {ls[0]:.1f} w {ws[0]:.1f}   {why}")
-for ids, why in SHARE_WIDTH_AND_AXIS:
-    ws, axes = [width(i) for i in ids], [cx(i) for i in ids]
-    check("axis   " + "/".join(ids),
-          max(ws) - min(ws) < EPS and max(axes) - min(axes) < EPS,
-          f"w {ws[0]:.1f} axis {axes[0]:.1f}   {why}")
+for ids, why in SHARE_AXIS:
+    axes = [cx(i) for i in ids]
+    check("axis   " + "/".join(ids), max(axes) - min(axes) < EPS,
+          f"axis {axes[0]:.1f}   widths {', '.join(f'{width(i):.0f}' for i in ids)}   {why}")
 
 
 # ---------------------------------------------------------------------------
@@ -1018,24 +1096,43 @@ BESIDE_MIN, BESIDE_MAX = 10.0, 26.0     # center-to-line, for a 24-unit badge
 COVERAGE_CEILING = 0.55
 
 
-def point_to_segment(pt: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
-    ax, ay, bx, by = a[0], a[1], b[0], b[1]
-    dx, dy = bx - ax, by - ay
-    if dx == 0 and dy == 0:
-        return math.hypot(pt[0] - ax, pt[1] - ay)
-    t = max(0.0, min(1.0, ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / (dx * dx + dy * dy)))
-    return math.hypot(pt[0] - (ax + t * dx), pt[1] - (ay + t * dy))
-
-
 print()
 note("Step badges:")
+
+# **A badge check is only as honest as the path it measures against**, so the
+# edges the badges sit on MUST be ones this model draws exactly. Two shapes are:
+# a straight edge, and an edge routed through explicit waypoints whose every leg
+# is level or plumb. `e11` is the second kind and carries three badges.
+#
+# **The shape that is NOT exact is an `orthogonalEdgeStyle` edge with NO waypoints.**
+# draw.io computes the right-angled route itself, so the file holds two points and
+# the canvas shows an L -- `e6` is exactly that. Measuring a badge against its chord
+# would report a confident distance to a line no reader can see.
+#
+# It costs nothing today because no badge sits on `e6`. **Stated here rather than
+# globally so it fails the moment a badge is placed somewhere the model cannot
+# follow**, which is the only time the difference matters.
+_unmodeled = []
+for _b, _eid in {**BADGE_ON_LINE, **BADGE_BESIDE}.items():
+    if _eid not in segments or not segments[_eid][4]:
+        continue                      # absent, or straight and therefore exact
+    if len(paths[_eid]) == 2:
+        _unmodeled.append(f"{_b} sits on {_eid}, which draw.io auto-routes (no waypoints)")
+    elif any(abs(a[0] - b[0]) > EPS and abs(a[1] - b[1]) > EPS
+             for a, b in itertools.pairwise(paths[_eid])):
+        _unmodeled.append(f"{_b} sits on {_eid}, which has a leg that is neither level nor plumb")
+for _u in _unmodeled:
+    note(f"    {_u}")
+check("every badge's edge is exactly modeled", not _unmodeled,
+      f"{len(BADGE_ON_LINE) + len(BADGE_BESIDE)} badges on edges")
+
 for badge, eid in BADGE_ON_LINE.items():
     if badge not in boxes or eid not in segments:
         check(f"{badge} on {eid}", False, "missing")
         continue
-    _, _, p, q, _ = segments[eid]
-    d = point_to_segment((cx(badge), cy(badge)), p, q)
-    run = math.hypot(q[0] - p[0], q[1] - p[1])
+    path = paths[eid]
+    d = point_to_path((cx(badge), cy(badge)), path)
+    run = path_length(path)
     cover = width(badge) / run
     check(f"{badge:3} centered ON {eid}", d < EPS, f"offset {d:.2f}")
     check(f"{badge:3} run affords it", cover <= COVERAGE_CEILING,
@@ -1045,7 +1142,7 @@ for badge, eid in BADGE_BESIDE.items():
         check(f"{badge} beside {eid}", False, "missing")
         continue
     _, _, p, q, _ = segments[eid]
-    d = point_to_segment((cx(badge), cy(badge)), p, q)
+    d = point_to_path((cx(badge), cy(badge)), paths[eid])
     along = min(p[1], q[1]) <= cy(badge) <= max(p[1], q[1]) or \
             min(p[0], q[0]) <= cx(badge) <= max(p[0], q[0])
     check(f"{badge:3} beside {eid}", BESIDE_MIN <= d <= BESIDE_MAX and along,
@@ -1141,44 +1238,95 @@ for tile in ["dns", "secrets", "cron", "api", "retry", "oauthdo", "devicedo", "d
 # silently leaves every box sized under the old one wrong, and nothing fails.
 # ---------------------------------------------------------------------------
 
-CHAR_W = {40: 20.4, 28: 14.3, 26: 13.3, 20: 11.0, 19: 9.7, 18: 9.2,
-          17: 8.7, 16: 8.2, 15: 7.6, 14: 7.1, 13: 6.6, 12: 6.1, 11: 5.6, 10: 5.1}
-# 1.2x the font size, which is what a browser renders for line-height:normal.
-# The earlier hand-written table drifted between 1.29x and 1.42x, making every
-# estimate high -- a box with 90px of visible dead space reported a comfortable
-# 30px of slack and passed.
-LINE_H = {size: round(size * 1.2) for size in CHAR_W}
+ADVANCE_100 = {
+    ' ': 27.783, '!': 27.783, '"': 35.498, '#': 55.615, '$': 55.615, '%': 88.916, '&':
+    66.699, "'": 19.092, '(': 33.301, ')': 33.301, '*': 38.916, '+': 58.398, ',':
+    27.783, '-': 33.301, '.': 27.783, '/': 27.783, '0': 55.615, '1': 55.615, '2':
+    55.615, '3': 55.615, '4': 55.615, '5': 55.615, '6': 55.615, '7': 55.615, '8':
+    55.615, '9': 55.615, ':': 27.783, ';': 27.783, '<': 58.398, '=': 58.398, '>':
+    58.398, '?': 55.615, '@': 101.514, 'A': 66.699, 'B': 66.699, 'C': 72.217, 'D':
+    72.217, 'E': 66.699, 'F': 61.084, 'G': 77.783, 'H': 72.217, 'I': 27.783, 'J': 50,
+    'K': 66.699, 'L': 55.615, 'M': 83.301, 'N': 72.217, 'O': 77.783, 'P': 66.699, 'Q':
+    77.783, 'R': 72.217, 'S': 66.699, 'T': 61.084, 'U': 72.217, 'V': 66.699, 'W':
+    94.385, 'X': 66.699, 'Y': 66.699, 'Z': 61.084, '[': 27.783, '\\': 27.783, ']':
+    27.783, '^': 46.924, '_': 55.615, '`': 33.301, 'a': 55.615, 'b': 55.615, 'c': 50,
+    'd': 55.615, 'e': 55.615, 'f': 27.783, 'g': 55.615, 'h': 55.615, 'i': 22.217, 'j':
+    22.217, 'k': 50, 'l': 22.217, 'm': 83.301, 'n': 55.615, 'o': 55.615, 'p': 55.615,
+    'q': 55.615, 'r': 33.301, 's': 50, 't': 27.783, 'u': 55.615, 'v': 50, 'w': 72.217,
+    'x': 50, 'y': 50, 'z': 50, '{': 33.398, '|': 25.977, '}': 33.398, '~': 58.398,
+}
+# Anything outside the table -- an em dash, a middle dot, a non-ASCII glyph -- takes
+# the digit width. Every one of them on this canvas sits in a label short enough that
+# the fallback cannot decide a wrap.
+FALLBACK_ADVANCE = 55.615
 
 
-def char_w(size: float) -> float:
-    """Average character width, INTERPOLATED so a fractional font size is measurable.
+# Bold Arial, same measurement, same run. **Bold is not a uniform scale factor** --
+# `o` widens 55.615 -> 61.084 while `0` does not move at all -- so it needs its own
+# table rather than a multiplier.
+ADVANCE_100_BOLD = {
+    ' ': 27.783, '!': 33.301, '"': 47.412, '#': 55.615, '$': 55.615, '%': 88.916, '&':
+    72.217, "'": 23.779, '(': 33.301, ')': 33.301, '*': 38.916, '+': 58.398, ',':
+    27.783, '-': 33.301, '.': 27.783, '/': 27.783, '0': 55.615, '1': 55.615, '2':
+    55.615, '3': 55.615, '4': 55.615, '5': 55.615, '6': 55.615, '7': 55.615, '8':
+    55.615, '9': 55.615, ':': 33.301, ';': 33.301, '<': 58.398, '=': 58.398, '>':
+    58.398, '?': 61.084, '@': 97.51, 'A': 72.217, 'B': 72.217, 'C': 72.217, 'D': 72.217,
+    'E': 66.699, 'F': 61.084, 'G': 77.783, 'H': 72.217, 'I': 27.783, 'J': 55.615, 'K':
+    72.217, 'L': 61.084, 'M': 83.301, 'N': 72.217, 'O': 77.783, 'P': 66.699, 'Q':
+    77.783, 'R': 72.217, 'S': 66.699, 'T': 61.084, 'U': 72.217, 'V': 66.699, 'W':
+    94.385, 'X': 66.699, 'Y': 66.699, 'Z': 61.084, '[': 33.301, '\\': 27.783, ']':
+    33.301, '^': 58.398, '_': 55.615, '`': 33.301, 'a': 55.615, 'b': 61.084, 'c':
+    55.615, 'd': 61.084, 'e': 55.615, 'f': 33.301, 'g': 61.084, 'h': 61.084, 'i':
+    27.783, 'j': 27.783, 'k': 55.615, 'l': 27.783, 'm': 88.916, 'n': 61.084, 'o':
+    61.084, 'p': 61.084, 'q': 61.084, 'r': 38.916, 's': 55.615, 't': 33.301, 'u':
+    61.084, 'v': 55.615, 'w': 77.783, 'x': 55.615, 'y': 55.615, 'z': 50, '{': 38.916,
+    '|': 27.979, '}': 38.916, '~': 58.398,
+}
 
-    **The table is calibrated at integer sizes and the metric is near-linear between
-    them** -- 12px is 6.1 and 13px is 6.6, so 12.5px is 6.35 to within a rounding
-    error. Without this, `font-size:12.5px` matched no key and the estimator silently
-    kept measuring at the PREVIOUS chunk's size, which is the quiet-wrong-answer shape
-    this file keeps warning about.
+
+def advance(ch: str, bold: bool = False) -> float:
+    """One character's advance width at 100px."""
+    table = ADVANCE_100_BOLD if bold else ADVANCE_100
+    return table.get(ch, FALLBACK_ADVANCE)
+
+
+def text_w(s: str, size: float, bold: bool = False) -> float:
+    """Rendered width of a string, from REAL Arial advance widths.
+
+    **This replaced an average-character-width table, and the average was the last
+    big lie in this estimator.** `CHAR_W` charged about 0.508 em for every character,
+    so a word of narrow letters -- `list`, `title`, `illicit` -- measured far wider
+    than it draws. On the Auth Data Flow panel that invented three whole lines and
+    the build refused a panel the render fits comfortably.
+
+    **Advance widths scale linearly with font size**, so one table at 100px covers
+    every size including the fractional ones.
     """
-    if size in CHAR_W:
-        return CHAR_W[size]
-    keys = sorted(CHAR_W)
-    lo = max((k for k in keys if k <= size), default=keys[0])
-    hi = min((k for k in keys if k >= size), default=keys[-1])
-    if lo == hi:
-        return CHAR_W[lo]
-    return CHAR_W[lo] + (size - lo) / (hi - lo) * (CHAR_W[hi] - CHAR_W[lo])
+    return sum(advance(ch, bold) for ch in s) * size / 100.0
+
+
+# **Arial's `line-height: normal`, MEASURED rather than assumed.** This was 1.2 for
+# months, which is the CSS spec's rough guidance and not what any browser does with
+# Arial: (ascent 1854 + descent 434 + lineGap 67) / 2048 unitsPerEm = 1.1499.
+# Measured in headless Chrome 2026-08-17 at exactly 1.15.
+#
+# **The 0.05 looks negligible and is worth 3.5 lines on the Auth Data Flow panel.**
+# Across its 62 lines at 12.3px it invented 38 units of height, so the build kept
+# refusing row sizes the render had room for. Terry found it by looking at the white
+# space under step 32, after this estimator had already been corrected three times.
+LINE_HEIGHT = 1.15
 
 
 def line_h(size: float) -> float:
-    """1.2x the font size, matching the browser's line-height:normal."""
-    return round(size * 1.2)
+    """1.2x the font size, matching the browser's line-height:normal.
 
-
-def space_w(size: float) -> float:
-    return size * 0.28
-# A space is 0.28em against roughly 0.51em for the mixed-case average above.
-# Charging a full character per gap compounded into a whole phantom line.
-SPACE_W = {size: size * 0.28 for size in CHAR_W}
+    **NOT rounded, and the rounding was a real defect once sizes went fractional.**
+    An integer line height was harmless while every size was an integer. At
+    `font-size:12.2px` the true line box is 14.64 and `round()` charged 15 -- 0.36
+    per line, which is 21 units across the Auth Data Flow panel's 59 lines, all of
+    it invented.
+    """
+    return size * LINE_HEIGHT
 SLACK_MIN, SLACK_MAX = 12.0, 45.0
 
 
@@ -1199,8 +1347,43 @@ def text_lines(raw: str) -> list[str]:
     return parts
 
 
-def wrapped_lines(text: str, char_w: float, usable: float,
-                  space_w: float) -> int:
+def styled_chars(chunk: str) -> list[tuple[str, bool]]:
+    """Every visible character of a chunk, paired with whether it renders BOLD.
+
+    **Bold was the last unmodeled term, and it is worth about 50 units here.**
+    The Auth Data Flow rows are dense with `<b>` -- `Request Token`, `FGA Session
+    ID`, every step number -- and bold Arial is wider glyph for glyph: `o` goes
+    from 55.615 to 61.084 per 100px. Measuring the stripped text as regular
+    under-counted the panel by roughly three lines.
+
+    **Only `<b>` is tracked**, because that is the only weight this canvas uses. A
+    `font-weight:bold` inside a `style` attribute would need span matching and
+    would be silently missed -- so it is refused loudly rather than ignored.
+    """
+    if re.search(r"font-weight:\s*(bold|[6-9]00)", chunk):
+        raise SystemExit(
+            "text_height models <b> only, and this chunk sets font-weight in CSS: "
+            f"{chunk[:80]!r}")
+    out: list[tuple[str, bool]] = []
+    depth, i = 0, 0
+    while i < len(chunk):
+        if chunk[i] == "<":
+            j = chunk.find(">", i)
+            if j == -1:
+                break
+            tag = chunk[i + 1:j].strip().lower()
+            if re.fullmatch(r"b|strong", tag):
+                depth += 1
+            elif re.fullmatch(r"/b|/strong", tag):
+                depth = max(0, depth - 1)
+            i = j + 1
+            continue
+        out.append((chunk[i], depth > 0))
+        i += 1
+    return out
+
+
+def wrapped_lines(chars: list[tuple[str, bool]], size: float, usable: float) -> int:
     """Greedy word wrap, the way a browser actually breaks a line.
 
     Dividing total width by column width assumes text can break anywhere, and it
@@ -1208,27 +1391,70 @@ def wrapped_lines(text: str, char_w: float, usable: float,
     Undercounting lines is the dangerous direction, because a box then reports
     slack it does not have.
     """
+    words: list[list[tuple[str, bool]]] = []
+    current: list[tuple[str, bool]] = []
+    for ch, is_bold in chars:
+        if ch.isspace():
+            if current:
+                words.append(current)
+                current = []
+        else:
+            current.append((ch, is_bold))
+    if current:
+        words.append(current)
+
+    space = text_w(" ", size)
     line_w, lines = 0.0, 1
-    for word in text.split():
-        w = len(word) * char_w
-        if line_w and line_w + space_w + w > usable:
+    for word in words:
+        w = sum(advance(ch, is_bold) for ch, is_bold in word) * size / 100.0
+        if line_w and line_w + space + w > usable:
             lines += 1
             line_w = w
         else:
-            line_w += (space_w if line_w else 0.0) + w
+            line_w += (space if line_w else 0.0) + w
     return lines
 
 
-def text_height(cid: str, pad_left: float = 10.0, pad_right: float = 8.0) -> float:
+def spacing_of(cid: str) -> tuple[float, float, float]:
+    """The tile's own left, right and top insets, READ rather than assumed.
+
+    **draw.io applies a global `spacing` to all four sides and then adds the
+    directional ones**, and its default `spacing` is 2. This used to be hardcoded
+    at `pad_left=10, pad_right=8` for every tile, which modeled the Auth Data Flow
+    panel's text column 6 units wider than it renders -- worth four whole lines
+    across 32 rows, every one of them in the direction that reports slack the panel
+    does not have.
+    """
+    style = by_id[cid].get("style") or ""
+
+    def s(name: str, default: float) -> float:
+        m = re.search(rf"(?<![\w-]){name}=([\d.]+)", style)
+        return float(m.group(1)) if m else default
+
+    base = s("spacing", 2.0)
+    return base + s("spacingLeft", 0.0), base + s("spacingRight", 0.0), base + s("spacingTop", 0.0)
+
+
+def text_height(cid: str) -> float:
     raw = by_id[cid].get("value") or ""
     chunks = text_lines(raw)
     if len(chunks) < 2:
         raise SystemExit(f"Text estimator found no line breaks in '{cid}' -- it would measure blind.")
+    pad_left, pad_right, pad_top = spacing_of(cid)
     usable = width(cid) - pad_left - pad_right
-    size, total = 12, 8.0
+    size, total = 12, pad_top
     for chunk in chunks:
+        # **Spacing on a nested `<span>` does NOT raise the line box**, so it is
+        # stripped before these are counted. The Legend draws its two rule samples
+        # as empty inline-block spans carrying `border-bottom`, and charging those
+        # 2px per row grew the tile by 4 units of pure modeling artifact -- enough
+        # to overrun a column budget that is fixed to the unit.
+        #
+        # **A block-level tag's spacing is still counted**, which is what the journey
+        # header's own `border-bottom` and the table's `margin-top` rely on.
+        outside_spans = re.sub(r"<span[^>]*>", "", chunk)
         for prop in ("margin-top", "padding-bottom", "border-bottom"):
-            m_css = re.search(rf"{prop}:\s*(\d+)px", chunk)
+            m_css = re.search(rf"{prop}:\s*(\d+)px", outside_spans)
             if m_css:
                 total += int(m_css.group(1))
         m = re.search(r"font-size:([\d.]+)px", chunk)
@@ -1244,16 +1470,59 @@ def text_height(cid: str, pad_left: float = 10.0, pad_right: float = 8.0) -> flo
         # to 320 changed where 26 lines broke and did not change how many there
         # were, while this estimator reported two extra. It nearly bought the panel
         # 25 units of height it did not need.
+        #
+        # **AND THE CELL IT DROPS STILL TAKES ITS WIDTH OUT OF THE ROW.** Stripping
+        # it without charging for it measured every journey row against the FULL
+        # panel width, so the estimator modeled a column 26 units wider than the one
+        # the browser lays out -- `width:16px` plus `padding-right:10px`.
+        #
+        # **That error is invisible and it points the dangerous way.** It under-counts
+        # lines, so the panel reports slack it does not have: at `font-size:12.5px` it
+        # claimed 23 units spare while the render put steps 31 and 32 outside the box.
+        # Measured 2026-08-17 by looking at the picture, which is the only instrument
+        # that can see this.
+        m_cell = re.search(r"<td[^>]*?width:\s*(\d+)px[^>]*?>", chunk)
+        cell_indent = 0
+        if m_cell:
+            cell_indent = int(m_cell.group(1))
+            m_pad = re.search(r"padding-right:\s*(\d+)px", m_cell.group(0))
+            if m_pad:
+                cell_indent += int(m_pad.group(1))
         chunk = re.sub(r"<td[^>]*width:\s*\d+px[^>]*>.*?</td>", "", chunk)
         text = re.sub(r"<[^>]*>", "", chunk).replace("&nbsp;", " ").strip()
         if not text:
             total += line_h(size)
             continue
         m_ind = re.search(r"margin-left:\s*(\d+)px|width:\s*(\d+)px", chunk)
-        indent = int(next(g for g in m_ind.groups() if g)) if m_ind else 0
-        total += wrapped_lines(text, char_w(size), usable - indent, space_w(size)) * line_h(size)
+        indent = cell_indent + (int(next(g for g in m_ind.groups() if g)) if m_ind else 0)
+        total += wrapped_lines(styled_chars(chunk), size, usable - indent) * line_h(size)
     return total
 
+
+# ---------------------------------------------------------------------------
+# HOW ACCURATE THIS ESTIMATOR ACTUALLY IS, measured 2026-08-17 rather than hoped.
+#
+# **It was rebuilt from the ground up that day and it is worth stating the error
+# bar, because the old one was out by 110 units and nothing said so.** Four terms
+# were wrong at once: an average character width instead of real advances, bold
+# ignored, `pad_left`/`pad_right` hardcoded instead of read, and a line height
+# rounded to an integer.
+#
+#     panel           estimator     Chrome     delta
+#     journey            896         894        +2
+#     justification      128         131        -3
+#     key                 94          97        -3
+#
+# **Within about 3 units on a 900-unit panel. The remaining disagreement is the
+# LINE HEIGHT, and it is not resolvable from here.** Arial's `line-height: normal`
+# measures exactly 1.15 in Chrome, mxGraph's own `mxConstants.LINE_HEIGHT` is 1.2,
+# and the rendered canvas sits between them. **So the last unit belongs to the eye.**
+# Terry bracketed the Auth Data Flow row size by looking at three renders: 12.1
+# left white space, 12.3 pushed step 32 outside the border, 12.2 is right.
+#
+# **DO NOT re-tune `JOURNEY_ROW_PX` from this estimator alone.** It is close enough
+# to refuse a box that is genuinely too small and too coarse to pick the last tenth.
+# ---------------------------------------------------------------------------
 
 print()
 note("Boxed text fits its tile:")
@@ -1352,7 +1621,7 @@ for chunk in text_lines(by_id["flickrapi"].get("value") or ""):
     if m:
         _size = int(m.group(1))
     t = re.sub(r"<[^>]*>", "", chunk).strip()
-    if t and len(t) * CHAR_W[_size] > _usable:
+    if t and text_w(t, _size) > _usable:
         _wide.append(t)
 for t in _wide:
     note(f"    {t!r} too wide")
@@ -1658,6 +1927,13 @@ note("    export WITHOUT 'Fit to Page' -- it would shrink a drawing that already
 # The title box runs x 30 to 730 and the date box to 523, so both straddle the
 # Lightroom spine and the Cloudflare frame. Counting them merges the first gap
 # away -- measured 2026-08-17, the first derivation found three columns.
+#
+# **STEP BADGES ARE EXCLUDED FOR THE SAME REASON, and they are worse.** A badge on
+# a cross-column arrow rides the arrow rather than a column, so on a widened sheet
+# it legitimately lands in the gap BETWEEN two columns. Counted as content it then
+# invents a column that no tile belongs to -- 16x9 derived five -- or bridges a real
+# gap and reports it as having grown by the wrong amount. **A badge is an annotation
+# on an edge, never a member of a column.**
 # ---------------------------------------------------------------------------
 
 # Any positive threshold works, because a column's own tiles overlap: `cfframe`
@@ -1683,7 +1959,8 @@ def column_spans(tree: ET.Element) -> list[tuple[float, float]]:
         for c in tree.iter("mxCell")
         for g in [c.find("mxGeometry")]
         if c.get("vertex") == "1" and g is not None and g.get("x") is not None
-        and not (c.get("style") or "").startswith("text;"))
+        and not (c.get("style") or "").startswith("text;")
+        and not re.fullmatch(r"n\d+", c.get("id") or ""))
     merged = [list(spans[0])]
     for a, b in spans[1:]:
         if a > merged[-1][1] + COLUMN_GAP_MIN:
@@ -1839,11 +2116,20 @@ for _sheet in SHEETS:
 
     # A badge on a cross-column arrow rides the arrow, not a column. See the note
     # beside BADGE_EDGE -- and n14's edge lives inside one column, so it gets 0.
+    # **A badge keeps its FRACTION along its own arrow, and the midpoint is only
+    # the special case.** The two endpoints belong to different columns and move by
+    # different deltas, so the run gets longer and its slope changes. Shifting every
+    # badge by the MEAN of the two deltas silently assumes it sits at t=0.5 -- true
+    # for most of them here, and false for `n2`, which sits at t=0.60 on `e21` and
+    # came off its line by 0.63 on legal and 0.97 on 16x9.
     _badge_dx = {}
     for _b, _eid in BADGE_EDGE.items():
         if _b in boxes and _eid in segments:
             _p, _q = segments[_eid][2], segments[_eid][3]
-            _badge_dx[_b] = (_deltas[column_of(_p[0])] + _deltas[column_of(_q[0])]) / 2
+            _t = 0.5 if abs(_q[0] - _p[0]) < EPS else (cx(_b) - _p[0]) / (_q[0] - _p[0])
+            _t = max(0.0, min(1.0, _t))
+            _badge_dx[_b] = (_deltas[column_of(_p[0])] * (1 - _t)
+                             + _deltas[column_of(_q[0])] * _t)
 
     def _shift(cid: str | None, x: float, _dx0: float = _dx0,
                _deltas: list[float] = _deltas,
@@ -1899,12 +2185,14 @@ for _sheet in SHEETS:
         for _b, _eid in BADGE_EDGE.items():
             if _b not in boxes or _eid not in segments:
                 continue
-            _p, _q = segments[_eid][2], segments[_eid][3]
-            _sp = (_p[0] + _dx0 + _deltas[column_of(_p[0])], _p[1] + _dy)
-            _sq = (_q[0] + _dx0 + _deltas[column_of(_q[0])], _q[1] + _dy)
+            # **The WHOLE path moves, waypoints included**, which is what makes this
+            # comparable to the authored measurement above. Reading only the two
+            # endpoints would re-introduce the chord model on the moved sheets and
+            # report three routed badges as drifting by 200-odd units.
+            _sp = [(_x + _dx0 + _deltas[column_of(_x)], _y + _dy) for _x, _y in paths[_eid]]
             _bc = (cx(_b) + _dx0 + _badge_dx[_b], cy(_b) + _dy)
-            _off = point_to_segment(_bc, _sp, _sq)
-            _was = point_to_segment((cx(_b), cy(_b)), _p, _q)
+            _off = point_to_path(_bc, _sp)
+            _was = point_to_path((cx(_b), cy(_b)), paths[_eid])
             check(f"{_b:3} keeps its offset from {_eid}", abs(_off - _was) <= EPS,
                   f"{_was:.2f} -> {_off:.2f}")
 
