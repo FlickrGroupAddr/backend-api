@@ -416,9 +416,12 @@ each sheet on every run.
   the whole `getPublishServices(nil)` mechanism is Classic-only.
 - **The PDF export is CLEAN, inspected 2026-08-16**, and the reason it "looks some different" is a
   font substitution rather than a layout problem. See below.
-- **Dead space bottom-right inside the Cloudflare frame**, right of the Retry Worker and below D1. It
-  shrank with the 2026-08-16 relayout but did not close.
-- **The Nightly Event tile is cramped** — four wrapped lines in a small box.
+- **Dead space bottom-right inside the Cloudflare frame**, right of the Retry Worker and below D1.
+  It shrank with the 2026-08-16 relayout but did not close, and it is **241 x 202 units** — the
+  largest empty region on the page.
+- **Dead space down the LEFT column**, below the Browser glyph. `users` ends at y 687 and the
+  bottom rail sits at 1053, so roughly **366 units** of the narrowest column carry nothing.
+  Not previously listed here; seen in the render on 2026-08-18.
 - **The visible-run check still does not measure a ROUTED edge**, only a straight one. It reports
   `routed, measured by eye`, so it is an honest hole rather than a false pass. **The BADGE checks
   no longer share it** -- they walk the full polyline through an edge's waypoints, and refuse a
