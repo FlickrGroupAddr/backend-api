@@ -22,10 +22,17 @@
     {
       "id": "implement-lrc-plug-as",
       "priority": "P1",
-      "state": "backlog",
+      "state": "ready_for_claude",
       "subject": "Implement the LrC plug-in as the diagram designs it",
       "detail": "**Terry, 2026-08-18, cleared hot for this session.** The Auth Data Flow panel is the specification: 32 steps, plug-in first, from `Authorize with FGA` through `POST /api/v001/*`. **The premise is CONFIRMED at runtime** -- a third-party plug-in can enumerate Adobe's Flickr publish service and read `getRemoteId()`, measured on LrC 15.5 against Terry's real catalog. See `docs/LRC-CLIENT-NOTES.md` and its *PICK UP HERE*, `lightroom-plugin-sdk-facts` and `lrc-plugin-dev-mechanics` in memory. **ADR-23 refuses `LrUUID` for credentials, ADR-24 makes the confirmation page a requirement, and ADR-25 governs the version gate.** The diagram's route names are still a PROPOSAL the code does not serve -- that has to be settled before or during this",
-      "history": []
+      "history": [
+        {
+          "at": "2026-08-18T14:19:03-04:00",
+          "to": "ready_for_claude",
+          "by": "terry",
+          "from": "backlog"
+        }
+      ]
     },
     {
       "id": "build-backend-api-diagram",
@@ -101,7 +108,8 @@
         {
           "at": "2026-08-18 12:40 ET",
           "to": "completed",
-          "by": "terry"
+          "by": "terry",
+          "from": "ready_for_review"
         }
       ]
     }
