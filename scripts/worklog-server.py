@@ -31,6 +31,22 @@ to read. The tables are the part he wants.
 empty backlog and a broken regex look identical, and one of them is a lie. See the
 `#empty` banner below.
 
+## Two staleness edges, both measured 2026-08-18
+
+**A change to `docs/WORK-LOG.md` is live. A change to THIS FILE or to `worklog.py`
+needs a RESTART.** The server imports the parser once at startup, so editing the
+parser and watching the page is watching the old code. That cost a confusing minute:
+the fix was in, the parser returned the new answer at a prompt, and the page kept
+showing the old list.
+
+**And the page only re-fetches when the log's mtime CHANGES.** So after a restart it
+will happily keep showing what it already had until the file is next written. `touch`
+the log, or edit it, to force a repaint.
+
+**Both are the right trade for a review loop** -- polling the content on every tick
+would repaint over Terry's scroll position twice a second. They are written down
+because each one looks exactly like the server being broken.
+
 ## The browser rules this had to satisfy, inherited from `preview-server.py`
 
   * **Loopback is exempt from mixed-content blocking, and `127.0.0.1` is the

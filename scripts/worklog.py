@@ -76,14 +76,27 @@ class Landed(NamedTuple):
 
 
 def _region(text: str, heading: str) -> list[str]:
-    """The lines under `heading`, up to the next section heading."""
+    """The lines under `heading`, up to the next section heading.
+
+    **Headings are matched EXACTLY, not by prefix, and that was a real defect.**
+    The first version used `startswith`, so `## Open questions` -- an entirely
+    ordinary section to add later -- would have been read as the Open table and its
+    prose scanned for rows. **Found 2026-08-18 while trying to BREAK the parser on
+    purpose: renaming the heading to `## Open items (deliberately broken heading)`
+    changed nothing, because it still started with `## Open`.**
+
+    So the test that was meant to prove the empty-list banner fires instead found
+    the bug that would have stopped it firing. A prefix match is the wrong tool for
+    a heading, which is an exact string in a document somebody edits.
+    """
     out: list[str] = []
     inside = False
     for line in text.splitlines():
-        if line.startswith(heading):
+        stripped = line.strip()
+        if stripped == heading:
             inside = True
             continue
-        if inside and line.startswith(END_HEADINGS):
+        if inside and stripped in END_HEADINGS:
             break
         if inside:
             out.append(line)

@@ -128,11 +128,10 @@ asserts it.**
 
 | # | Status | Task subject | Where the detail is |
 |---|---|---|---|
-| 1 | `in_progress` | `Build the shared work-log web view` | **Top priority, nothing derails it.** Terry's call, 2026-08-18: the diagram preview already proves the pattern -- Claude writes a file, the browser tab redraws itself, and we both read the same artifact. Doing the same for this log removes the two-view sync problem rather than policing it, and lifts the ~5-line panel budget. Model it on `scripts/preview-server.py`. Needs a `hide landed` toggle, defaulting to ON. **NOT DONE until the current list renders in a browser tab we can both read** |
-| 2 | `in_progress` | `Clean up toolchain output` | `~/.claude/hooks/fga-toolchain-check.py` renders two tiers with different row formats -- clean is `name  latest <ver>  installed <ver>`, behind is `name : verdict (version)` in a 21-char label column. Terry is redesigning the rows and wants both consistent. `--force-loud-output` renders the behind tier on a current machine |
-| 3 | `not_started` | `Settle the 8.5x14 page size` | `DIAGRAM-NOTES.md`, *"SETTLED 2026-08-17: the derived sheets export oversized"*. Legal prints at 76% and 7.7 pt, under the 7.9 pt floor Terry measured. Settled once as acceptable, so reopening it is his call |
-| 4 | `not_started` | `Convert Python sys.argv handling to argparse` | `~/.claude/hooks/fga-toolchain-check.py` hand-rolls membership tests for its three flags. There is no `--help`, and **an unknown flag is silently ignored** -- measured 2026-08-18, `--nonsense-flag` runs the human check and exits 3. Survey this repository's own `scripts/*.py` first |
-| 5 | `not_started` | `Rework horizontal space on the non-11x17 sheets` | `DIAGRAM-NOTES.md`, *"One open question on the `16x9` spread"*. The spread is even across three gaps, so the drawing reads as four islands. The alternative is weighting it toward the three text panels, which tolerate a wide gutter where the arrows do not |
+| 1 | `in_progress` | `Clean up toolchain output` | `~/.claude/hooks/fga-toolchain-check.py` renders two tiers with different row formats -- clean is `name  latest <ver>  installed <ver>`, behind is `name : verdict (version)` in a 21-char label column. Terry is redesigning the rows and wants both consistent. `--force-loud-output` renders the behind tier on a current machine |
+| 2 | `not_started` | `Make the 8.5x14 export actually BE 8.5x14` | **Terry, 2026-08-18, restating the ask:** the PDF and PNG come out at the right ASPECT RATIO but not at legal size, so printing needs *Fit on page* and *"it's minor but feels stupid"*. **He wants the annoyance gone**, and is open to any route -- including a new drawing space that IS 8.5x14 with the geometry airlifted across and scaled down proportionally, since the drop is 11 in to 8.5 in of height. Today the sheet carries `pageScale` 1.3165, and draw.io sizes an exported page as `pageWidth * pageScale`, which is where the 18.43 x 11.19 in comes from. **The refusal to rescale geometry is a real constraint** -- every font size and every threshold in the check suite would stop meaning what it means -- so a solution has to keep the AUTHORED canvas at 11x17 and do any scaling on the way out. See `DIAGRAM-NOTES.md`, *"SETTLED 2026-08-17"*, which this supersedes |
+| 3 | `not_started` | `Convert Python sys.argv handling to argparse` | `~/.claude/hooks/fga-toolchain-check.py` hand-rolls membership tests for its three flags. There is no `--help`, and **an unknown flag is silently ignored** -- measured 2026-08-18, `--nonsense-flag` runs the human check and exits 3. Survey this repository's own `scripts/*.py` first |
+| 4 | `not_started` | `Rework horizontal space on the non-11x17 sheets` | `DIAGRAM-NOTES.md`, *"One open question on the `16x9` spread"*. The spread is even across three gaps, so the drawing reads as four islands. The alternative is weighting it toward the three text panels, which tolerate a wide gutter where the arrows do not |
 
 ## Landed
 
@@ -140,7 +139,7 @@ asserts it.**
 
 | Landed | Task subject | Note |
 |---|---|---|
-| — | — | Nothing yet under this contract |
+| 2026-08-18 | `Build the shared work-log web view` | `scripts/worklog-server.py` serves `docs/WORK-LOG.md` at `http://127.0.0.1:8792/`, repainting within 400 ms of every write. Parses the tables through `scripts/worklog.py`, shared with the sync checker so two readers cannot drift. `Hide landed` defaults on and sticks per browser. Verified in a live tab, including the empty-parse banner |
 
 ## Not an item yet, recorded so it is not rediscovered
 
