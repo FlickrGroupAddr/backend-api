@@ -558,6 +558,19 @@ print(f"  total file         : {OUT.stat().st_size} bytes")
 CHECKS_ENABLED = True
 
 if not CHECKS_ENABLED:
+    # **`--check` MUST NOT reach the unlink below, and this guard is the whole
+    # reason the mode is safe to put in the gate.** Terry flips `CHECKS_ENABLED`
+    # often -- it is his lever -- so without this, every gate run during a design
+    # pass would DELETE two sheets and exit 0, which is both destructive and a
+    # silent pass. A check that mutates the thing it is checking is not a check.
+    if CHECK_ONLY:
+        print()
+        print("  " + "=" * 68)
+        print("  CHECKS ARE OFF, so the committed sheets cannot be verified.")
+        print("  Nothing was written and nothing was deleted.")
+        print("  " + "=" * 68)
+        raise SystemExit(0)
+
     # **The other sheets are DELETED rather than left behind, and that is
     # deliberate.** Each one is placed from ink extents the page-fit check
     # measures, so with the suite off there is nothing to place them from. A
