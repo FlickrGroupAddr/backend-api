@@ -394,9 +394,11 @@ estimator alone.
 - **Dead space bottom-right inside the Cloudflare frame**, right of the Retry Worker and below D1. It
   shrank with the 2026-08-16 relayout but did not close.
 - **The Nightly Event tile is cramped** — four wrapped lines in a small box.
-- **`text_height` measures three tiles out of thirteen.** Every other tile is hand-sized, which is
-  why a type change once burst a box while the build reported clean. **Extending it to every text
-  tile is the highest-value check still missing.**
+- **`text_height` now measures every wrapped text tile** -- 19 of them, plus a header-clearance
+  check on the two containers, where it used to measure three. The roster is derived from the
+  artifact, so a new tile is covered the day it is drawn. **Only overflow fails**; a roomy tile is
+  usually sized by the arrows that must reach it, so the build names the tightest and loosest and
+  leaves the verdict to the eye.
 - **The visible-run check still does not measure a ROUTED edge**, only a straight one. It reports
   `routed, measured by eye`, so it is an honest hole rather than a false pass. **The BADGE checks
   no longer share it** -- they walk the full polyline through an edge's waypoints, and refuse a

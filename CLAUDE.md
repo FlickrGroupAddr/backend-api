@@ -101,10 +101,11 @@ stopped being true.
 **While it is off, Claude MUST say so when reporting a diagram change.** An unvalidated render and a
 validated one look identical in a screenshot.
 
-**Distrust the text estimator.** It models what a browser does to wrapped text, and five things it
-did not represent at all were found by looking at a render. **When a box looks wrong on screen, the
-screen is right.** Changing `CHAR_W` invalidates every hand-set box height, and nothing fails,
-because a box that is too large passes.
+**The text estimator now agrees with Chrome to about 3 units, and it STILL does not get the last
+word.** It was out by 110 on one panel until 2026-08-17, and every earlier version was wrong in a
+way that read as plausible. **When a box looks wrong on screen, the screen is right.** Changing
+`ADVANCE_100` or `LINE_HEIGHT` invalidates every hand-set box height, and nothing fails, because a
+box that is too large passes.
 
 ### RENDER IT AND LOOK, before saying anything about how it turned out
 
@@ -158,10 +159,17 @@ minutes. **Use it to hand him a durable link. Do not use it to iterate.**
 - **Inline HTML `font-size:` beats the shape's `fontSize`.** Raising every `fontSize=` in the styles
   left 39 spans at 10pt inside tiles that then declared 12.2pt. One tile read as an eyechart beside
   its neighbors and nothing in the style attributes explained why.
-- **`CHAR_W` MUST carry every size the file uses.** It stopped at 20 while the diagram used 26, 28
-  and 40, so `text_height` raised `KeyError` for some tiles and measured others against the wrong
-  width. **Only three tiles are height-checked at all** — `justification`, `key` and `journey`. The
-  rest are hand-sized, so a font change silently overflows them.
+- **The text estimator measures REAL Arial advance widths, and it was rebuilt on 2026-08-17
+  because it was out by 110 units.** `ADVANCE_100` and `ADVANCE_100_BOLD` replaced a single
+  average-width-per-size table; bold, the tile's own `spacing`, and an unrounded line height
+  were all missing terms. **`LINE_HEIGHT` is 1.15**, measured, not the 1.2 everyone writes.
+  It agrees with Chrome to about 3 units now — and the last tenth of a point still belongs to
+  the eye, which the code says beside the check.
+- **Every wrapped text tile is height-checked**, on a roster derived from the artifact rather
+  than listed, so a font change cannot silently overflow one and a new tile is covered the day
+  it is drawn. `justification`, `key` and `journey` additionally keep a tight slack band;
+  everything else only has to fit, because a roomy tile is usually sized by the arrows reaching
+  it.
 
 ### The defect class nothing checks: the picture contradicting the text
 

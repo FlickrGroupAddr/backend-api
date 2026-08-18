@@ -85,7 +85,7 @@ LRC_MARK = embed("lightroom-classic-mark.svg")
 #
 # **A TRANSLATION IS SAFE AND A RESCALE IS NOT, and that is the whole design.**
 # Moving every coordinate by one delta changes no distance, so every font size,
-# every hand-set box height, `CHAR_W`, the badge band and every threshold in the
+# every hand-set box height, the text metrics, the badge band and every threshold in the
 # check suite below survive it meaning exactly what they meant. Multiplying every
 # coordinate would leave all of them silently wrong -- see the paragraph on
 # rescaling further down, which has stood here since 2026-08-14.
@@ -157,7 +157,7 @@ LRC_MARK = embed("lightroom-classic-mark.svg")
 # **Scaling every coordinate to chase a page was always the wrong fix**, and it
 # still is. It changes no physical text size -- it moves the shrink out of the
 # export dialog and into the file -- while silently invalidating every absolute
-# threshold here: the badge band, `CHAR_W`, every hand-set box height. None of
+# threshold here: the badge band, the text metrics, every hand-set box height. None of
 # them would fail. They would stop meaning anything.
 #
 # **THE MARGIN NOW BINDS, which is the cost of fitting exactly.** At 1640 of 1640
@@ -1457,8 +1457,8 @@ def wrapped_lines(chars: list[tuple[str, bool]], size: float, usable: float) -> 
     return lines
 
 
-def spacing_of(cid: str) -> tuple[float, float, float]:
-    """The tile's own left, right and top insets, READ rather than assumed.
+def spacing_of(cid: str) -> tuple[float, float, float, float]:
+    """The tile's own left, right, top and bottom insets, READ rather than assumed.
 
     **draw.io applies a global `spacing` to all four sides and then adds the
     directional ones**, and its default `spacing` is 2. This used to be hardcoded
@@ -1474,17 +1474,29 @@ def spacing_of(cid: str) -> tuple[float, float, float]:
         return float(m.group(1)) if m else default
 
     base = s("spacing", 2.0)
-    return base + s("spacingLeft", 0.0), base + s("spacingRight", 0.0), base + s("spacingTop", 0.0)
+    return (base + s("spacingLeft", 0.0), base + s("spacingRight", 0.0),
+            base + s("spacingTop", 0.0), base + s("spacingBottom", 0.0))
 
 
-def text_height(cid: str) -> float:
+def text_block(cid: str) -> float:
+    """The stacked height of a tile's rendered lines, carrying NO padding.
+
+    **Split out from `text_height` so a MIDDLE-aligned tile can be measured too.**
+    A top-aligned tile consumes `spacingTop` plus this; a centered one consumes
+    this plus whatever the box leaves either side. Only 3 of the 25 text-bearing
+    cells on this canvas are top-aligned, so measuring only that shape left the
+    other 22 unchecked.
+    """
     raw = by_id[cid].get("value") or ""
     chunks = text_lines(raw)
-    if len(chunks) < 2:
-        raise SystemExit(f"Text estimator found no line breaks in '{cid}' -- it would measure blind.")
-    pad_left, pad_right, pad_top = spacing_of(cid)
+    # **A tile with ONE line is legitimate; a tile with NONE is a parse failure.**
+    # This used to refuse anything under two chunks, which is why the estimator
+    # could never be pointed at a route tile -- every one of them is a single line.
+    if not chunks or not re.sub(r"<[^>]*>", "", raw).replace("&nbsp;", " ").strip():
+        raise SystemExit(f"Text estimator parsed no text out of '{cid}' -- it would measure blind.")
+    pad_left, pad_right, _pad_top, _pad_bottom = spacing_of(cid)
     usable = width(cid) - pad_left - pad_right
-    size, total = 12, pad_top
+    size, total = 12, 0.0
     for chunk in chunks:
         # **Spacing on a nested `<span>` does NOT raise the line box**, so it is
         # stripped before these are counted. The Legend draws its two rule samples
@@ -1541,6 +1553,11 @@ def text_height(cid: str) -> float:
     return total
 
 
+def text_height(cid: str) -> float:
+    """What a TOP-aligned tile consumes: its top inset plus its text block."""
+    return spacing_of(cid)[2] + text_block(cid)
+
+
 # ---------------------------------------------------------------------------
 # HOW ACCURATE THIS ESTIMATOR ACTUALLY IS, measured 2026-08-17 rather than hoped.
 #
@@ -1568,16 +1585,82 @@ def text_height(cid: str) -> float:
 
 print()
 note("Boxed text fits its tile:")
-_slacks = {}
-for cid in ["justification", "key", "journey"]:
+
+# **THE ROSTER IS DERIVED, because a hand-written one measured 3 tiles out of 25.**
+# That was the estimator's real limitation for months -- not accuracy, COVERAGE.
+# `DIAGRAM-NOTES` called extending it "the highest-value check still missing", and
+# it only became worth doing once the estimator agreed with Chrome: pointing an
+# inaccurate model at 22 more boxes would have produced 22 arguments, not 22 checks.
+#
+# **The failure it exists to catch is on the record.** Raising body type from 7.9 pt
+# to 12.2 pt burst the Nightly Retry Worker's box while the build reported clean,
+# because nothing measured that tile.
+_TEXT_TILES = sorted(
+    cell_id(c) for c in cells
+    if c.get("vertex") == "1" and cell_id(c) in boxes
+    and "whiteSpace=wrap" in (c.get("style") or "")
+    and not re.fullmatch(r"n\d+", cell_id(c))
+    and re.sub(r"<[^>]*>", "", c.get("value") or "").replace("&nbsp;", " ").strip())
+
+# **A CONTAINER's height is set by its children, never by its own text**, so a slack
+# number for one is meaningless. What IS meaningful is that its header clears the
+# first thing inside it. Derived rather than listed, so a new container is covered.
+_CONTAINERS = {t for t in _TEXT_TILES
+               if any(o != t and o in boxes and contains(t, o) for o in _TEXT_TILES)}
+# The three panels are hand-tuned to a tight bottom margin and read side by side,
+# so they keep the band. Every other tile only has to FIT.
+_TIGHT = ["justification", "key", "journey"]
+
+_slacks, _overflow, _cramped = {}, [], []
+for cid in _TEXT_TILES:
+    if cid in _CONTAINERS:
+        continue
+    _, _, _pt, _pb = spacing_of(cid)
+    _block, _box = text_block(cid), height(cid)
+    _middle = "verticalAlign=top" not in (by_id[cid].get("style") or "")
+    # A centered tile spends its padding on both sides; a top-aligned one only above.
+    _need = _block + (_pt + _pb if _middle else _pt)
+    _slacks[cid] = _box - _need
+    if _need > _box + EPS:
+        _overflow.append(f"{cid} needs {_need:.0f} in a {_box:.0f} box")
+    elif _box - _need < 6.0:
+        _cramped.append(f"{cid} has {_box - _need:.0f} spare")
+
+for _o in _overflow:
+    note(f"    OVERFLOWS: {_o}")
+check("every text tile fits its box", not _overflow,
+      f"{len(_slacks)} tiles measured, {len(_CONTAINERS)} containers skipped")
+for _c in _cramped:
+    note(f"    tight: {_c}")
+# **Name the tile that owns the extreme**, because "everything fits" is not
+# actionable and "apidevice has 18 spare" is. The roomy end is NOT a defect: a tile
+# is often sized by the arrows that must reach it or by a sibling it matches, which
+# is why only overflow fails and the rest is reported for the eye.
+_tightest = min(_slacks, key=lambda k: _slacks[k])
+_loosest = max(_slacks, key=lambda k: _slacks[k])
+note(f"    tightest {_tightest} at {_slacks[_tightest]:.0f} spare, "
+     f"loosest {_loosest} at {_slacks[_loosest]:.0f}")
+
+for cid in _TIGHT:
     need, have = text_height(cid), height(cid)
-    slack = have - need
-    _slacks[cid] = slack
-    check(f"{cid:14} slack {slack:>5.0f}", SLACK_MIN <= slack <= SLACK_MAX,
+    check(f"{cid:14} slack {have - need:>5.0f}", SLACK_MIN <= have - need <= SLACK_MAX,
           f"box {have:.0f} text ~{need:.0f}")
 # Reported, not asserted. These are read side by side, so the eye compares their
 # bottom gaps and an outlier looks like a mistake even when each is legal.
-note(f"    spread across the three: {max(_slacks.values()) - min(_slacks.values()):.0f}px")
+_t = [_slacks[c] for c in _TIGHT]
+note(f"    spread across the three: {max(_t) - min(_t):.0f}px")
+
+# **A container's header MUST clear the first tile inside it.** `api` and `netb`
+# both caption themselves at the top and then hold children, so their text and
+# their contents compete for the same band and nothing else looks at it.
+for cid in sorted(_CONTAINERS):
+    _kids = [o for o in boxes if o != cid and o not in NOT_OBSTACLES and contains(cid, o)]
+    if not _kids:
+        continue
+    _first = min(top(k) for k in _kids)
+    _bottom = top(cid) + spacing_of(cid)[2] + text_block(cid)
+    check(f"{cid:14} header clears its contents", _bottom <= _first + EPS,
+          f"header ends {_bottom:.0f}, first child at {_first:.0f}")
 
 
 # ---------------------------------------------------------------------------
