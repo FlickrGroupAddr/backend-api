@@ -375,7 +375,7 @@ endpoint should, not because a decision asked for it.
 python scripts/mutation-check.py
 ```
 
-**It breaks the source in 45 specific ways and checks the suite screams at each.**
+**It breaks the source in 46 specific ways and checks the suite screams at each.**
 **This count drifts exactly like the test count above.** It read 25 while the harness ran 34,
 found 2026-08-15. Quote what the runner prints. Every mutation is
 a decision this project made against — retry a photo a moderator saw, drop `HttpOnly`, reflect the
