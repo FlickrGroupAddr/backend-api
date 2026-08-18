@@ -1207,9 +1207,19 @@ def check_placement(xc: Callable[[str], float], tag: str = "") -> None:
     def _r(cid: str) -> float: return xc(cid) + width(cid) / 2
     for _a, _b2, _tile in CORNER_PAIRS:
         _li, _ri = xc(_a) - _l(_tile), _r(_tile) - xc(_b2)
+        # **Terry's rule says "with padding from EDGES", plural**, and only the
+        # horizontal one was asserted. A corner badge could slide down inside its
+        # tile and nothing would notice. Measured 2026-08-17: all four gaps are
+        # exactly 8.00 on all three tiles, so the padding is one number in every
+        # direction and the check says so. **Y is read directly** because the reflow
+        # only ever translates horizontally.
+        _ta, _tb = top(_a) - top(_tile), top(_b2) - top(_tile)
+        _pad = CORNER_INSET - width(_a) / 2
         check(f"{_a}/{_b2} in {_tile}'s top corners{tag}",
-              abs(_li - CORNER_INSET) < EPS and abs(_ri - CORNER_INSET) < EPS,
-              f"inset {_li:.1f} / {_ri:.1f}, want {CORNER_INSET:.0f} both")
+              abs(_li - CORNER_INSET) < EPS and abs(_ri - CORNER_INSET) < EPS
+              and abs(_ta - _pad) < EPS and abs(_tb - _pad) < EPS,
+              f"side {_li - width(_a) / 2:.1f}/{_ri - width(_b2) / 2:.1f}, "
+              f"top {_ta:.1f}/{_tb:.1f}, want {_pad:.1f} all four")
     for _group, _tile in SPREAD_ABOUT:
         _xs = sorted(xc(_g) for _g in _group)
         _steps = [_xs[_i + 1] - _xs[_i] for _i in range(len(_xs) - 1)]

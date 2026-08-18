@@ -11,38 +11,42 @@ artifact actually carries beside each one.
 **Every figure below was measured from the generated diagram**, not copied from the request. Where a
 rule is exact, the measurement matches it to the unit.
 
-## The five shapes
+## The six shapes
 
-**Almost every badge follows one of five patterns.** Read the pattern first; the per-badge table
+**Almost every badge follows one of six patterns.** Read the pattern first; the per-badge table
 below only says which one applies.
 
 | Shape | Rule |
 |---|---|
-| **Corner pair** | Two badges sit in the opposite top corners of one tile, inset equally from its left and right edges |
+| **Corner pair** | Two badges sit in the opposite top corners of one tile, padded equally from the two sides AND the top |
 | **Spread about a center** | A group sits on its line, evenly stepped, with the group's midpoint on a named tile's vertical centerline |
 | **On a center** | A single badge sits on a named tile's vertical centerline |
 | **Between two edges** | A badge sits on its line, centered between two named edges |
 | **Stacked vertically** | Badges in different rows share one center x, so they line up down the page |
 | **Clearance** | A badge is positioned relative to a conflicting element it has to fit around — an arrowhead, a frame edge |
 
-**The corner inset is 20 units on every tile that uses it** — `lrc`, `devicedo` and `oauthdo` all
-measure exactly +20 from the left edge and -20 from the right. **That number is shared on purpose and
-MUST stay shared**; three corner pairs drifting apart would read as carelessness.
+**The corner padding is 8.00 units, in all four measurements, on all three tiles that use it** —
+`lrc`, `devicedo` and `oauthdo`. Left gap, right gap and both top gaps are the same number, which is
+what "padding from the edges" means. **That number is shared on purpose and MUST stay shared**;
+three corner pairs drifting apart would read as carelessness.
+
+**The build asserts all four gaps.** It used to assert only the horizontal pair, so a corner badge
+could slide down inside its tile and nothing would notice.
 
 ## The badges
 
 | Badges | Terry's rule | Measured |
 |---|---|---|
-| **1, 31** | Opposite top corners of the LrC Plugin tile, with padding from the edges | `lrc` spans 56.5 to 186.5. `n1` at +20.0, `n31` at -20.0 |
+| **1, 31** | Opposite top corners of the LrC Plugin tile, with padding from the edges | `lrc` spans 56.5 to 186.5. All four gaps 8.00 |
 | **2, 7** | On their line, centered between the left of the Cloudflare tile and the left of the Edge PoP tile | `cfframe` left 231.5, `netb` left 261.5, midpoint **246.5**. Both badges sit on 246.5 |
 | **3, 5** | On their line, spread equally about the center of the FGA DNS tile | Centers 333.7 and 403.7, midpoint **368.7** = `dns` center. Step 70.0 |
-| **4, 28** | Opposite top corners of the Device Link User Code tile, with padding from the edges | `devicedo` spans 832.3 to 1001.3. `n4` at +20.0, `n28` at -20.0 |
+| **4, 28** | Opposite top corners of the Device Link User Code tile, with padding from the edges | `devicedo` spans 832.3 to 1001.3. All four gaps 8.00 |
 | **6** | On its line, centered between the bottom of the LrC tile and the top of the widest part of the arrow below it | Center y 509.0. **The lower reference is the ARROWHEAD, not a tile**, so this one is not derivable from box geometry |
 | **8, 9, 26** | On their line, spread equally about the center of the FGA DNS tile | Centers 298.7, 368.7, 438.7, midpoint **368.7**. Step 70.0 |
 | **10, 15, 19, 25** | On their line, spread equally about the center of the FGA DNS tile | Centers 287.7 to 449.7, midpoint **368.7**. Step 54.0 |
 | **11** | Breathing room from its line, vertically centered between the FGA Worker tile and the App Secrets Store tile | `api` bottom 682.7, `secrets` top 710.9, midpoint **696.8**. `n11` center y is 696.8 |
 | **12, 13, 21, 22** | On their line, spread equally about the center of the Flickr OAuth State tile, within the span between the right of the Edge PoP and the right of the Cloudflare tile, with plenty of breathing room on both sides | Centers 829.8 to 1003.8, midpoint **916.8** = `oauthdo` center. Step 58.0 |
-| **14, 20** | Opposite top corners of the Flickr OAuth State tile, with padding from the edges | `oauthdo` spans 832.3 to 1001.3. `n14` at +20.0, `n20` at -20.0 |
+| **14, 20** | Opposite top corners of the Flickr OAuth State tile, with padding from the edges | `oauthdo` spans 832.3 to 1001.3. All four gaps 8.00 |
 | **16, 17, 18** | On their line, spread equally about the center of the Nightly Retry Logic tile | Centers 549.9, 625.9, 701.9, midpoint **625.9** = `retry` center. Step 76.0 |
 | **23, 24** | On their line, dodging overlap with the arrow ends and the right edge of the Edge PoP tile | Centers 789.0 and 814.1, straddling `netb`'s right edge at 804.1. **Fitted around a conflict** |
 | **27** | On its line, aligned with the center of the FGA DNS tile | 368.7, exactly `dns` center |
@@ -78,10 +82,12 @@ every rule above on the wider sheets, and it is not a coincidence: **each refere
 table is in the same column as the badges that point at it.** No rule reaches across a gap, so
 widening a gap cannot break one.
 
-**`scripts/build-diagram.py` defends the centerline rules on every sheet**, and pins the count so a
-badge cannot silently drift off one. It does **not** yet check the even-step spreads or the shared
-20-unit corner inset. **Those are the obvious next checks**, and every number they need is in the
-table above.
+**`scripts/build-diagram.py` defends EVERY rule in this file, on all three sheets.** The corner
+padding, the even-step spreads and their midpoints, the on-axis badges, the between-edges pair, the
+six vertical stacks, the centerline alignments and their pinned count. It also asserts that no badge
+crosses an arrow it does not label, and that the journey and the canvas name the same routes.
+
+**The three clearance placements are the only rules it cannot reach**, for the reason below.
 
 ## EVERY badge is relative to something. They differ in WHAT
 
