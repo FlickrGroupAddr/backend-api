@@ -1888,7 +1888,7 @@ _all_prefixes = [_p for _paths in _tile_paths.values() for _p in _paths]
 
 _step_paths = {}
 for _i, _row in enumerate(_rows, 1):
-    _tds = re.findall(r"<td[^>]*>(.*?)</td>", _row, re.S)
+    _tds = re.findall(r"<td[^>]*>(.*?)</td>", _row, re.DOTALL)
     _text = re.sub(r"<[^>]*>", " ", _tds[-1] if _tds else "")
     _step_paths[_i] = [_p for _p in re.findall(r"(?<![A-Za-z0-9_.\-])/[A-Za-z0-9_{},.*/-]+", _text)
                        if not _p.endswith("/")]
@@ -2691,6 +2691,7 @@ for _sheet in SHEETS:
                         _deltas: list[float] = _deltas) -> list[tuple[float, float]]:
             return [(_px + _dx0 + _deltas[column_of(_px)], _py) for _px, _py in paths[_eid]]
         def _moved_center(_n: str, _dx0: float = _dx0,
+                          _deltas: list[float] = _deltas,
                           _badge_dx: dict[str, float] = _badge_dx,
                           _badge_dy: dict[str, float] = _badge_dy) -> tuple[float, float]:
             return (cx(_n) + _dx0 + _badge_dx.get(_n, _deltas[column_of(cx(_n))]),
