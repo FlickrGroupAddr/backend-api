@@ -1110,7 +1110,11 @@ BADGE_BESIDE  = {"n11": "e4"}
 BADGE_ON_TILE = {"n1": "lrc", "n4": "devicedo", "n14": "oauthdo", "n20": "oauthdo", "n28": "devicedo", "n31": "lrc"}
 # Every badge that labels an EDGE, whichever way it is placed against it.
 BADGE_EDGE = {**BADGE_ON_LINE, **BADGE_BESIDE}
-BESIDE_MIN, BESIDE_MAX = 10.0, 26.0     # center-to-line, for a 24-unit badge
+# Center-to-line for the BESIDE placement. **`n11` is the only badge that uses it
+# and it is 21 across, not the 24 this comment claimed** -- so its 24.0 offset
+# leaves 13.5 between the badge's edge and the line, not 12. The band is Terry's
+# and is unchanged; only the note describing it was wrong.
+BESIDE_MIN, BESIDE_MAX = 10.0, 26.0
 COVERAGE_CEILING = 0.55
 
 
