@@ -1108,6 +1108,8 @@ BADGE_BESIDE  = {"n11": "e4"}
 # for it. Declared here so the overlap check exempts exactly this pair and keeps
 # reporting every other badge that lands on a tile.
 BADGE_ON_TILE = {"n1": "lrc", "n4": "devicedo", "n14": "oauthdo", "n20": "oauthdo", "n28": "devicedo", "n31": "lrc"}
+# Every badge that labels an EDGE, whichever way it is placed against it.
+BADGE_EDGE = {**BADGE_ON_LINE, **BADGE_BESIDE}
 BESIDE_MIN, BESIDE_MAX = 10.0, 26.0     # center-to-line, for a 24-unit badge
 COVERAGE_CEILING = 0.55
 
@@ -1829,6 +1831,137 @@ LOGO_ART = {
     "lrcmark": "lightroom-classic-mark.svg",
 }
 
+# ---------------------------------------------------------------------------
+# THE PICTURE AND THE TEXT MUST AGREE ON WHICH ROUTES EXIST.
+#
+# **`DIAGRAM-NOTES` has listed this as the missing check for weeks**, and the
+# reason it stayed missing is that the obvious version cries wolf. "The step's
+# named path MUST be owned by an endpoint of its badge's edge" looks right and
+# fails honestly on step 18, where Flickr redirects the browser to FGA's callback:
+# the path named belongs to neither end of the arrow the badge sits on.
+#
+# **So this asserts the two directions that ARE airtight**, and says nothing about
+# which arrow a step belongs to:
+#
+#   every route path the journey names MUST exist somewhere on the canvas
+#   every route tile on the canvas MUST be named by some journey step
+#
+# The first catches a step describing a route nobody drew. The second catches a
+# tile nobody explains. Between them they close the case that actually bit --
+# a drawing and a document disagreeing about what the system has.
+# ---------------------------------------------------------------------------
+
+
+def route_prefixes(label: str) -> list[str]:
+    """The route paths a tile claims, with a wildcard reduced to its prefix.
+
+    **A route is ABSOLUTE, and the lookbehind is what says so.** Without it the
+    Legend's `docs/architecture/DECISIONS.md` matched from its embedded slash and
+    the Legend was reported as a route tile nobody explains. Found on this check's
+    very first run, which is the argument for writing checks that can fail.
+
+    `/auth/flickr/*` claims everything under `/auth/flickr/`, and
+    `/auth/device-link/{approve,deny}` claims everything under
+    `/auth/device-link/`. Both are how this canvas writes a namespace, and a
+    literal comparison would miss every step that names a concrete child.
+    """
+    out = []
+    for path in re.findall(r"(?<![A-Za-z0-9_.\-])/[A-Za-z0-9_{},.*/-]+", label):
+        cut = min((path.index(_c) for _c in "*{" if _c in path), default=len(path))
+        out.append(path[:cut])
+    return out
+
+
+# **THE PROSE PANELS ARE NOT PART OF THE CANVAS FOR THIS CHECK**, and leaving them
+# in made one half of it VACUOUS. The Auth Data Flow panel quotes every route the
+# steps mention, so it owned every path, so no step could ever be an orphan --
+# the check passed identically whether the canvas drew those routes or not.
+#
+# **Caught by mutation, not by reading.** Renaming a step's route to one nothing
+# draws kept firing the OTHER direction, which looked like a pass until the two
+# were tested separately. An assertion that cannot fail is the thing this file
+# warns about most, and it was reintroduced here within an hour of saying so.
+PROSE_PANELS = {"journey", "key", "justification"}
+_tile_paths = {_cid: route_prefixes(re.sub(r"<[^>]*>", " ", by_id[_cid].get("value") or ""))
+               for _cid in boxes if _cid not in PROSE_PANELS}
+_all_prefixes = [_p for _paths in _tile_paths.values() for _p in _paths]
+
+_step_paths = {}
+for _i, _row in enumerate(_rows, 1):
+    _tds = re.findall(r"<td[^>]*>(.*?)</td>", _row, re.S)
+    _text = re.sub(r"<[^>]*>", " ", _tds[-1] if _tds else "")
+    _step_paths[_i] = [_p for _p in re.findall(r"(?<![A-Za-z0-9_.\-])/[A-Za-z0-9_{},.*/-]+", _text)
+                       if not _p.endswith("/")]
+
+# ---------------------------------------------------------------------------
+# A BADGE MUST CLEAR EVERY ARROW IT DOES NOT LABEL.
+#
+# **Written down on 2026-08-16 as a rule and never turned into code.** Terry named
+# it after an earlier canvas put a badge across a line it had nothing to do with,
+# which reads as a numbering error rather than as a collision.
+#
+# **The floor is ZERO, and that is deliberate rather than lazy.** The measured
+# tightest pair is `n31` against `e18` at 6.60, then 12.21 and 15.71, then a cluster
+# at 28.50 -- so any threshold between 1 and 6 would be a number invented to sit
+# under the current minimum, and the first legitimate design change would trip it.
+# **Overlap is the thing that is actually wrong**, because a badge's white ring is
+# what separates it from a black arrow, and an arrow crossing that ring destroys it.
+# The tightest pair is printed on every run so the eye can judge the rest.
+# ---------------------------------------------------------------------------
+
+
+def badge_arrow_gaps(bcenter: Callable[[str], tuple[float, float]],
+                     epath: Callable[[str], list[tuple[float, float]]],
+                     ) -> list[tuple[float, str, str]]:
+    """Clearance between every badge and every arrow it does NOT label."""
+    out = []
+    for _n in BADGES:
+        _c, _r = bcenter(_n), width(_n) / 2
+        for _eid in paths:
+            if BADGE_EDGE.get(_n) == _eid:
+                continue
+            _st = edge_by_id[_eid].get("style") or ""
+            _m = re.search(r"strokeWidth=([\d.]+)", _st)
+            out.append((point_to_path(_c, epath(_eid)) - _r - (float(_m.group(1)) / 2 if _m else 0.5),
+                        _n, _eid))
+    return sorted(out)
+
+
+def check_badge_clearance(bcenter: Callable[[str], tuple[float, float]],
+                          epath: Callable[[str], list[tuple[float, float]]],
+                          tag: str = "") -> None:
+    _gaps = badge_arrow_gaps(bcenter, epath)
+    _touching = [f"{_n} on {_e}" for _g, _n, _e in _gaps if _g <= 0]
+    for _t in _touching:
+        note(f"    badge crosses an arrow it does not label: {_t}")
+    _g0, _n0, _e0 = _gaps[0]
+    check(f"badges clear every arrow they do not label{tag}", not _touching,
+          f"{len(_gaps)} pairs, tightest {_n0} to {_e0} at {_g0:.2f}")
+
+
+print()
+note("Badges and the arrows they do not label:")
+check_badge_clearance(lambda _n: (cx(_n), cy(_n)), lambda _e: paths[_e])
+
+print()
+note("The journey and the canvas agree on the routes:")
+_orphan_steps = sorted(
+    (_i, _p) for _i, _paths in _step_paths.items() for _p in _paths
+    if not any(_p.startswith(_pre) for _pre in _all_prefixes))
+for _i, _p in _orphan_steps:
+    note(f"    step {_i} names {_p}, which no tile carries")
+check("every route the journey names is on the canvas", not _orphan_steps,
+      f"{sum(len(_v) for _v in _step_paths.values())} path mentions across {len(_rows)} steps")
+
+_named = {_p for _paths in _step_paths.values() for _p in _paths}
+_unexplained = sorted(
+    _cid for _cid, _paths in _tile_paths.items() if _paths and _cid not in NOT_OBSTACLES
+    and not any(_n.startswith(_pre) for _pre in _paths for _n in _named))
+for _cid in _unexplained:
+    note(f"    {_cid} carries a route no journey step names")
+check("every route tile is explained by a step", not _unexplained,
+      f"{sum(1 for _v in _tile_paths.values() if _v)} tiles carry routes")
+
 print()
 note("Logos:")
 for cid, art in LOGO_ART.items():
@@ -2271,12 +2404,6 @@ for _s in _split:
 check("every badge stack sits in ONE column", not _split,
       f"{len(BADGE_STACKS)} stacks, so a widened gap cannot pull one apart")
 
-# **A badge on a cross-column arrow follows the ARROW, not a column.** `n3` and
-# `n10` sit on runs from the Browser into the Worker, so widening that gap makes
-# their line longer. Shifting them by the mean of the two endpoints' deltas keeps
-# each badge at the same fraction along its own arrow. Shifting by its own
-# column's delta would leave it on the line and visibly drifted toward one end.
-BADGE_EDGE = {**BADGE_ON_LINE, **BADGE_BESIDE}
 
 
 # **The body size is READ off the canvas, never remembered.** It is the most
@@ -2549,6 +2676,26 @@ for _sheet in SHEETS:
         # prints are the reflowed ones -- so the rules were guaranteed exactly where
         # nobody looks and unguarded everywhere they do.
         check_placement(_moved_cx, tag=f" on {_sheet.slug}")
+
+        # **A widening gap ROTATES every cross-column arrow**, so a badge that
+        # cleared one on the authored canvas can be pushed against it here. The
+        # badge and the arrow's two ends take three different deltas.
+        #
+        # **These sheets can look CLEANER than the authored one, and that is not a
+        # contradiction.** `_badge_dy` re-solves a badge onto its own run, so a badge
+        # left sitting off its line upstream arrives here corrected -- proven by
+        # mutation, where sliding `n29` onto `e18` fails the authored checks at -13.50
+        # and passes here. **The authored sheet is where that class of mistake is
+        # caught**, which is why both are checked rather than only the printed ones.
+        def _moved_path(_eid: str, _dx0: float = _dx0,
+                        _deltas: list[float] = _deltas) -> list[tuple[float, float]]:
+            return [(_px + _dx0 + _deltas[column_of(_px)], _py) for _px, _py in paths[_eid]]
+        def _moved_center(_n: str, _dx0: float = _dx0,
+                          _badge_dx: dict[str, float] = _badge_dx,
+                          _badge_dy: dict[str, float] = _badge_dy) -> tuple[float, float]:
+            return (cx(_n) + _dx0 + _badge_dx.get(_n, _deltas[column_of(cx(_n))]),
+                    cy(_n) + _badge_dy.get(_n, 0.0))
+        check_badge_clearance(_moved_center, _moved_path, tag=f" on {_sheet.slug}")
 
         # **The badge collision rules were only ever checked on the AUTHORED sheet.**
         # A reflow moves badges and tiles by different deltas, so an overlap can be
