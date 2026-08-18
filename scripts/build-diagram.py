@@ -1112,8 +1112,42 @@ BESIDE_MIN, BESIDE_MAX = 10.0, 26.0     # center-to-line, for a 24-unit badge
 COVERAGE_CEILING = 0.55
 
 
+# **BADGES WERE PLACED ON THE CENTERLINES OF OTHER TILES.** Terry, 2026-08-17:
+# *"We did all of them based on centerlines of other tiles."* That is design intent
+# the geometry does not announce, so it is derived here and then defended on every
+# sheet -- five badges share a tile's center x, and a reflow that broke one would
+# look like sloppiness rather than like a rule being violated.
+#
+# **Every one of those reference tiles is in the badge's OWN column**, measured the
+# same day, which is exactly why moving a badge with its column is safe. If a badge
+# is ever aligned to a tile ACROSS a gap, this check fails on the wider sheets and
+# says so, rather than quietly drifting apart.
+ALIGN_TOL = 1.0
+CENTERLINE_PAIRS = [
+    (_b, _t)
+    for _b in sorted((c for c in boxes if re.fullmatch(r"n\d+", c)), key=lambda n: int(n[1:]))
+    for _t in sorted(boxes)
+    if not re.fullmatch(r"n\d+", _t) and abs(cx(_b) - cx(_t)) <= ALIGN_TOL
+]
+# **THE COUNT IS PINNED, and that is the difference between a check and a mirror.**
+# The pairs above are DERIVED from the authored sheet, so nudging a badge off a
+# centerline does not break the check -- it silently removes the pair, and the
+# survivors all still agree. **Measured by mutation 2026-08-17: moving `n17` three
+# units off the `secrets`/`api` centerline SURVIVED the whole suite.**
+#
+# A single pinned number closes it, the same way `EXPECTED_COLUMNS` does. Several
+# tiles legitimately share one center -- the Lightroom spine is five of them -- so
+# this counts PAIRS rather than badges. **If it fires, read the printed alignments
+# before editing it.**
+EXPECTED_CENTERLINE_ALIGNMENTS = 20
+
 print()
 note("Step badges:")
+check("badge centerline alignments intact",
+      len(CENTERLINE_PAIRS) == EXPECTED_CENTERLINE_ALIGNMENTS,
+      f"{len(CENTERLINE_PAIRS)} pairs against {EXPECTED_CENTERLINE_ALIGNMENTS} expected"
+      + ("" if len(CENTERLINE_PAIRS) == EXPECTED_CENTERLINE_ALIGNMENTS
+         else "   " + ", ".join(f"{_b}/{_t}" for _b, _t in CENTERLINE_PAIRS)))
 
 # **EVERY badge MUST be claimed by exactly one placement table.** The three tables
 # are hand-written, and a hand-written membership list stops covering new members
@@ -2136,6 +2170,7 @@ def column_of(x: float) -> int:
 # column's delta would leave it on the line and visibly drifted toward one end.
 BADGE_EDGE = {**BADGE_ON_LINE, **BADGE_BESIDE}
 
+
 # **The body size is READ off the canvas, never remembered.** It is the most
 # common `fontSize` among the tiles, and 100 drawing units are 1 inch, so a size
 # converts to points by 0.72. DIAGRAM-NOTES.md records the calibration: 7.9 pt
@@ -2187,12 +2222,31 @@ def absolute_points(tree: ET.Element) -> list[ET.Element]:
     return out
 
 
+def owned_points(tree: ET.Element) -> list[tuple[str | None, ET.Element]]:
+    """Every absolute point, paired with the id of the cell that owns it.
+
+    `absolute_points` alone cannot say WHOSE point it returned, which is fine for a
+    uniform translation and not fine once one cell is allowed to move differently.
+    """
+    owner = {}
+    for cell in tree.iter("mxCell"):
+        g = cell.find("mxGeometry")
+        if g is not None:
+            owner[id(g)] = cell.get("id")
+            for pt in g.iter("mxPoint"):
+                owner[id(pt)] = cell.get("id")
+    return [(owner.get(id(el)), el) for el in absolute_points(tree)]
+
+
 def moved_sheet(xml: str, sheet: Sheet, page_scale: float,
-                shift: Callable[[str | None, float], float], dy: float) -> str:
+                shift: Callable[[str | None, float], float],
+                yshift: Callable[[str | None], float]) -> str:
     """Write one sheet. `shift` maps a cell id and an x to that point's dx.
 
-    **Y takes one global delta and X does not**, because the reflow is purely
-    horizontal: the columns keep every internal distance and only the gaps grow.
+    **Y is ALMOST one global delta**, because the reflow is purely horizontal: the
+    columns keep every internal distance and only the gaps grow. The exception is a
+    badge on a SLANTED run, whose two ends move by different deltas and therefore
+    tilt the line under it -- `yshift` puts it back on the line it labels.
     """
     tree = ET.fromstring(xml)
     model = tree.find(".//mxGraphModel")
@@ -2211,13 +2265,12 @@ def moved_sheet(xml: str, sheet: Sheet, page_scale: float,
     for el in absolute_points(tree):
         x = attr_f(el, "x")
         el.set("x", fmt(x + shift(owner.get(id(el)), x)))
-        el.set("y", fmt(attr_f(el, "y") + dy))
+        el.set("y", fmt(attr_f(el, "y") + yshift(owner.get(id(el)))))
     return ET.tostring(tree, encoding="unicode") + "\n"
 
 
 print()
 note(f"Sheets. One drawing, {len(SHEETS)} pages, moved but never rescaled:")
-_authored_points = absolute_points(ET.fromstring(TEMPLATE))
 
 for _sheet in SHEETS:
     _prw = _sheet.width - 2 * _sheet.margin
@@ -2245,25 +2298,53 @@ for _sheet in SHEETS:
 
     # A badge on a cross-column arrow rides the arrow, not a column. See the note
     # beside BADGE_EDGE -- and n14's edge lives inside one column, so it gets 0.
-    # **A badge keeps its FRACTION along its own arrow, and the midpoint is only
-    # the special case.** The two endpoints belong to different columns and move by
-    # different deltas, so the run gets longer and its slope changes. Shifting every
-    # badge by the MEAN of the two deltas silently assumes it sits at t=0.5 -- true
-    # for most of them here, and false for `n2`, which sits at t=0.60 on `e21` and
-    # came off its line by 0.63 on legal and 0.97 on 16x9.
-    _badge_dx = {}
+    # **A BADGE MOVES WITH ITS OWN COLUMN, exactly like every tile.** It needed no
+    # special rule at all, and two earlier ones were both wrong: the mean of the two
+    # endpoint deltas (assumes the badge sits at the midpoint) and then the fraction
+    # along the run (keeps it ON the line and lets it drift AWAY from the tile it
+    # annotates -- `n2` sat 65.7 off `lrc` on 11x17 and 90.0 on legal, and Terry saw
+    # it as the badges not landing where the canonical sheet puts them).
+    #
+    # **Measured 2026-08-17: not one badge center sits in a gap.** Every one is
+    # inside a column, so `column_of` answers for a badge exactly as it does for a
+    # tile, and moving it with that column preserves its distance to every tile
+    # around it. The gaps are 18.5 to 20 units and a badge is 21 to 30, which is
+    # why none of them fits in one.
+    _badge_dx = {_b: _deltas[column_of(cx(_b))] for _b in BADGE_EDGE if _b in boxes}
+
+    # **Then its y is re-solved onto the moved run**, because a SLANTED edge changes
+    # slope when its two ends move by different deltas. Holding x to the column and
+    # solving y is what keeps `n2` and `n7` exactly centered on their lines instead
+    # of 2.5 units beside them. A level run solves to the same y it already had.
+    def _y_on_path(path: list[tuple[float, float]], x: float, near: float) -> float | None:
+        best = None
+        for _a, _b2 in itertools.pairwise(path):
+            if abs(_b2[0] - _a[0]) < 1e-9:
+                continue                      # a plumb leg fixes no single y
+            if min(_a[0], _b2[0]) - EPS <= x <= max(_a[0], _b2[0]) + EPS:
+                _y = _a[1] + (x - _a[0]) * (_b2[1] - _a[1]) / (_b2[0] - _a[0])
+                if best is None or abs(_y - near) < abs(best - near):
+                    best = _y
+        return best
+
+    _badge_dy = {}
     for _b, _eid in BADGE_EDGE.items():
-        if _b in boxes and _eid in segments:
-            _p, _q = segments[_eid][2], segments[_eid][3]
-            _t = 0.5 if abs(_q[0] - _p[0]) < EPS else (cx(_b) - _p[0]) / (_q[0] - _p[0])
-            _t = max(0.0, min(1.0, _t))
-            _badge_dx[_b] = (_deltas[column_of(_p[0])] * (1 - _t)
-                             + _deltas[column_of(_q[0])] * _t)
+        if _b not in boxes or _eid not in segments:
+            continue
+        _moved = [(_x + _dx0 + _deltas[column_of(_x)], _y) for _x, _y in paths[_eid]]
+        _want = _y_on_path(_moved, cx(_b) + _dx0 + _badge_dx[_b], cy(_b))
+        if _want is not None:
+            _badge_dy[_b] = _want - cy(_b)
 
     def _shift(cid: str | None, x: float, _dx0: float = _dx0,
                _deltas: list[float] = _deltas,
                _badge_dx: dict[str, float] = _badge_dx) -> float:
         return _dx0 + (_badge_dx[cid] if cid in _badge_dx else _deltas[column_of(x)])
+
+    def _yshift(cid: str | None, _dy: float = _dy,
+                _badge_dy: dict[str, float] = _badge_dy) -> float:
+        """One global delta, plus the nudge that keeps a badge on a tilted run."""
+        return _dy + _badge_dy.get(cid or "", 0.0)
 
     print()
     note(f"  {_sheet.slug:8s} {_sheet.label}")
@@ -2272,8 +2353,7 @@ for _sheet in SHEETS:
               and _extra <= EPS, f"dx {_dx0:.2f}, dy {_dy:.2f}, spread {_extra:.2f}")
     else:
         _path = sheet_path(ROOT, DATE, _sheet)
-        _path.write_text(moved_sheet(TEMPLATE, _sheet, _pscale, _shift, _dy), encoding="utf-8")
-        _written = absolute_points(ET.fromstring(_path.read_text(encoding="utf-8")))
+        _path.write_text(moved_sheet(TEMPLATE, _sheet, _pscale, _shift, _yshift), encoding="utf-8")
         note(f"    wrote {_path.name}")
         note(f"    spread {_extra:.2f} across {len(GAPS)} gaps, {_d:+.2f} each"
              f"   -> {'  '.join(f'{_g + _d:.2f}' for _g in GAPS)}")
@@ -2302,11 +2382,29 @@ for _sheet in SHEETS:
         # boundary and float noise sent some points to 9.489 and others to 9.490.
         # The geometry was correct the whole time. 16x9 passed, which made it
         # look like a layout fault rather than an arithmetic one.
-        _ys = [attr_f(_q, "y") - attr_f(_p, "y")
-               for _p, _q in zip(_authored_points, _written, strict=True)]
-        check("nothing moved vertically but the centering",
-              all(abs(_v - _dy) <= 1e-3 for _v in _ys),
-              f"{len(_written)} points, y all {_dy:+.4f}")
+        # **Every point takes the same y delta, EXCEPT a badge on a tilted run.**
+        # Holding a badge's x to its column changes where the run passes under it,
+        # so its y is re-solved onto the line. That is a deliberate, per-badge
+        # exception and it is asserted as one -- the check knows exactly which
+        # badges may deviate and by how much, so an accidental vertical shift
+        # anywhere else still fails.
+        _owner_a = owned_points(ET.fromstring(TEMPLATE))
+        _owner_w = owned_points(ET.fromstring(_path.read_text(encoding="utf-8")))
+        _strays = []
+        for (_oid, _p), (_, _q) in zip(_owner_a, _owner_w, strict=True):
+            _want = _dy + _badge_dy.get(_oid or "", 0.0)
+            if abs((attr_f(_q, "y") - attr_f(_p, "y")) - _want) > 1e-3:
+                _strays.append(_oid or "?")
+        # 0.01 rather than 0, because a level run solves to its own y with float
+        # noise in the last digit, and reporting 14 badges as "nudged by -0.00"
+        # would bury the two that genuinely moved.
+        _nudged = {_b: _v for _b, _v in _badge_dy.items() if abs(_v) > 0.01}
+        check("nothing moved vertically but the centering", not _strays,
+              f"{len(_owner_w)} points, y all {_dy:+.4f}"
+              + (f", plus {len(_nudged)} badge(s) re-solved onto a tilted run: "
+                 + ", ".join(f"{_b}{_v:+.2f}" for _b, _v in sorted(_nudged.items()))
+                 if _nudged else "")
+              + (f"   STRAY: {', '.join(_strays[:5])}" if _strays else ""))
 
         # **The badges are re-checked against the arrows they now sit on.** The
         # endpoints move with their own tiles, so the shifted run is exact --
@@ -2319,11 +2417,43 @@ for _sheet in SHEETS:
             # endpoints would re-introduce the chord model on the moved sheets and
             # report three routed badges as drifting by 200-odd units.
             _sp = [(_x + _dx0 + _deltas[column_of(_x)], _y + _dy) for _x, _y in paths[_eid]]
-            _bc = (cx(_b) + _dx0 + _badge_dx[_b], cy(_b) + _dy)
+            _bc = (cx(_b) + _dx0 + _badge_dx[_b], cy(_b) + _dy + _badge_dy.get(_b, 0.0))
             _off = point_to_path(_bc, _sp)
             _was = point_to_path((cx(_b), cy(_b)), paths[_eid])
             check(f"{_b:3} keeps its offset from {_eid}", abs(_off - _was) <= EPS,
                   f"{_was:.2f} -> {_off:.2f}")
+
+        # **The centerline alignments survive the reflow**, which is the design
+        # intent behind where the badges sit at all.
+        def _moved_cx(_c: str, _dx0: float = _dx0, _deltas: list[float] = _deltas,
+                      _badge_dx: dict[str, float] = _badge_dx) -> float:
+            return cx(_c) + _dx0 + (_badge_dx[_c] if _c in _badge_dx
+                                    else _deltas[column_of(cx(_c))])
+        _broke = [f"{_b}/{_t}" for _b, _t in CENTERLINE_PAIRS
+                  if abs(_moved_cx(_b) - _moved_cx(_t)) > ALIGN_TOL]
+        for _pair in _broke:
+            note(f"    centerline broken: {_pair}")
+        check("badge centerlines still share their tile's", not _broke,
+              f"{len(CENTERLINE_PAIRS)} alignments held")
+
+        # **The badge collision rules were only ever checked on the AUTHORED sheet.**
+        # A reflow moves badges and tiles by different deltas, so an overlap can be
+        # introduced on a wider sheet alone -- and nothing looked.
+        def _moved_box(_c: str) -> tuple[float, float, float, float]:
+            _x, _y, _w, _h = boxes[_c]
+            return (_moved_cx(_c) - _w / 2, _y, _w, _h)
+        def _hit(_a: str, _b2: str) -> bool:
+            ax, ay, aw, ah = _moved_box(_a)
+            bx, by, bw, bh = _moved_box(_b2)
+            return not (ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay)
+        _mt = [(_n, _t) for _n in BADGES for _t in TILES
+               if _t in boxes and _hit(_n, _t) and BADGE_ON_TILE.get(_n) != _t]
+        _mb = [(_a, _b2) for _i, _a in enumerate(BADGES) for _b2 in BADGES[_i + 1:]
+               if _hit(_a, _b2)]
+        for _n, _t in _mt:
+            note(f"    {_n} OVERLAPS {_t} on this sheet")
+        check("badges still clear every tile and each other", not (_mt or _mb),
+              f"{len(BADGES)} badges after the spread")
 
     _vx0, _vx1 = _x0 + _dx0, _x1 + _dx0 + _extra
     _vy0, _vy1 = _y0 + _dy, _y1 + _dy
@@ -2343,6 +2473,19 @@ for _sheet in SHEETS:
     _verdict = (f" -- BELOW the {EYECHART_PT} pt Terry called an eyechart"
                 if _pt < EYECHART_PT else "")
     note(f"    prints at {_printed * 100:.1f}%, body type {_pt:.1f} pt{_verdict}")
+    # **THE EXPORT RECIPE, per sheet, because it is NOT the same for all of them.**
+    # draw.io sizes an exported page as `pageWidth * pageScale`, measured 2026-08-17
+    # against a real export: the 8.5x14 sheet came out 18.44 x 11.19 in, which is
+    # exactly what its `pageScale` of 1.3165 asks for. **That is not a defect and it
+    # cannot be fixed in the file** -- a 16.4 in drawing does not fit on 14 in paper,
+    # so something has to scale it, and doing that in the geometry is the rescale
+    # this whole design refuses. The scaling belongs in the print dialog.
+    if _pscale > 1.0 + 1e-9:
+        note(f"    EXPORT: page comes out {_sheet.width * _pscale / 100:.2f} x"
+             f" {_sheet.height * _pscale / 100:.2f} in. Print it on"
+             f" {_sheet.width / 100:.2f} x {_sheet.height / 100:.2f} WITH 'Fit to Page'.")
+    else:
+        note("    EXPORT: page is already the paper size. Print at 100%, no 'Fit to Page'.")
 
     # **How much of the paper the drawing actually covers.** The two figures
     # answer different questions and both are worth having: the scale says how
