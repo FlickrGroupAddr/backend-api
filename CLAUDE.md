@@ -196,10 +196,20 @@ so is everything below that is not a route.
 npm run check
 ```
 
-**Twelve steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check, `ruff`,
-`pyright`, **the LSP gate**, the Lua parse check, `selene`, **the ADR-23 Rule 3 import gate**,
-`sqlfluff`, 297 tests, the traceability gate, and the web build. **It MUST be clean before a
-commit.**
+**Thirteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
+`ruff`, `pyright`, **the LSP gate**, the Lua parse check, `selene`, **the ADR-23 Rule 3 import
+gate**, `sqlfluff`, **the diagram staleness check**, 297 tests, the traceability gate, and the web
+build. **It MUST be clean before a commit.**
+
+**`npm run diagram` is `build-diagram.py --check`, and the `--check` is load-bearing.** It renders
+exactly what a build would produce, compares it to the committed sheets, and **writes nothing**. A
+plain build here would rewrite three files on every gate run, and with `CHECKS_ENABLED` off it
+would DELETE two sheets — which is why the build was never in the gate, and why a corrupted
+artifact reached a commit on 2026-08-17 under a fully green gate.
+
+**Verify this gate by redirecting to a real FILE, never to `/dev/null`.** `npm run check >
+/dev/null` exits 1 while the identical run to a file exits 0. It is `sqlfluff`, it reproduces with
+no wrapper, and it prints `All Finished!` either way — a green gate that reads as red.
 
 **This list was STALE for three days and nobody noticed** — it still said "290 tests" and named
 neither `ruff`, `pyright`, `selene`, `sqlfluff` nor the LSP gate, all added 2026-08-17. **A

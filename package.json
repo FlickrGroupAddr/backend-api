@@ -17,6 +17,7 @@
 		"lint:fix": "biome check --write .",
 		"test": "vitest run",
 		"test:watch": "vitest",
+		"diagram": "python scripts/build-diagram.py --check",
 		"trace": "python scripts/traceability.py --check",
 		"dirty-words": "python scripts/claude-dirty-words.py",
 		"lua": "python scripts/lua-balance.py docs/lrc-spike/plugin",
@@ -26,7 +27,7 @@
 		"types:py": "python -m pyright scripts/",
 		"lsp": "python scripts/lsp-check.py",
 		"lua:imports": "python scripts/lua-imports.py docs/lrc-spike/plugin",
-		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run sql && npm run test && npm run trace && npm run build:web"
+		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run sql && npm run diagram && npm run test && npm run trace && npm run build:web"
 	},
 	"dependencies": {
 		"hono": "4.13.2",

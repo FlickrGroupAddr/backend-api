@@ -33,6 +33,7 @@ import itertools
 import math
 import pathlib
 import re
+import sys
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 
@@ -51,6 +52,42 @@ DATE = "2026-08-17"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SVG = ROOT / "docs" / "architecture" / "logos"
 OUT = sheet_path(ROOT, DATE, AUTHORED)
+
+# ===========================================================================
+# `--check` VERIFIES THE COMMITTED SHEETS WITHOUT WRITING THEM.
+#
+# **A corrupted artifact reached a commit on 2026-08-17 under a fully green gate**,
+# because `npm run check` does not build the diagram. A mutation harness had patched
+# the generator, run it -- which WRITES all three sheets -- and restored only the
+# source, so a badge sat 6 units off center in the repository while every other check
+# passed against it.
+#
+# **The generator is the checker**, which is the pattern `scripts/traceability.py`
+# already uses here: render exactly what a real build would produce, compare it to
+# disk, and change nothing. No second implementation to drift.
+#
+# **It is SAFE to put in the gate precisely because it never writes.** A plain build
+# in the gate would rewrite three files on every run, and with `CHECKS_ENABLED` off
+# it would delete two sheets -- which is why the build was never in there.
+#
+# **Compare as TEXT, never as bytes.** `write_text` emits CRLF on this box and
+# `read_text` hands back LF, so the file on disk is 52,076 bytes against 51,788
+# characters. A byte compare would fail on every Windows checkout and teach
+# everybody to ignore the check -- the same trap `traceability.py` documents.
+# ===========================================================================
+CHECK_ONLY = "--check" in sys.argv
+_stale: list[str] = []
+
+
+def emit(path: pathlib.Path, text: str) -> None:
+    """Write a sheet, or under `--check` compare it to what is already there."""
+    if not CHECK_ONLY:
+        path.write_text(text, encoding="utf-8")
+        return
+    if not path.exists():
+        _stale.append(f"{path.name} is missing")
+    elif path.read_text(encoding="utf-8") != text:
+        _stale.append(f"{path.name} differs from a fresh build")
 
 
 def embed(name: str) -> str:
@@ -476,8 +513,8 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
 # its page, and those extents are measured by the page-fit block in the check
 # suite. Deriving them here would mean a second implementation of the ink
 # measurement, and the two would drift.
-OUT.write_text(TEMPLATE, encoding="utf-8")
-print(f"Wrote {OUT}")
+emit(OUT, TEMPLATE)
+print(f"{'Checked' if CHECK_ONLY else 'Wrote'} {OUT}")
 print(f"  cloudflare payload : {len(CF)} chars")
 print(f"  flickr payload     : {len(FLICKR)} chars")
 print(f"  total file         : {OUT.stat().st_size} bytes")
@@ -554,7 +591,10 @@ if not CHECKS_ENABLED:
 # Every check prints as it goes, so the run is the list.
 # ===========================================================================
 
-root = ET.parse(OUT).getroot()
+# **Parsed from the RENDER rather than from disk**, so `--check` validates what a
+# build would produce instead of whatever the repository happens to hold. In a
+# normal build the two are identical, because the file was just written from it.
+root = ET.fromstring(TEMPLATE)
 cells = root.findall(".//mxCell")
 by_id = {c.get("id"): c for c in cells}
 
@@ -2704,7 +2744,8 @@ for _sheet in SHEETS:
               and _extra <= EPS, f"dx {_dx0:.2f}, dy {_dy:.2f}, spread {_extra:.2f}")
     else:
         _path = sheet_path(ROOT, DATE, _sheet)
-        _path.write_text(moved_sheet(TEMPLATE, _sheet, _pscale, _shift, _yshift), encoding="utf-8")
+        _rendered = moved_sheet(TEMPLATE, _sheet, _pscale, _shift, _yshift)
+        emit(_path, _rendered)
         note(f"    wrote {_path.name}")
         note(f"    spread {_extra:.2f} across {len(GAPS)} gaps, {_d:+.2f} each"
              f"   -> {'  '.join(f'{_g + _d:.2f}' for _g in GAPS)}")
@@ -2713,7 +2754,7 @@ for _sheet in SHEETS:
         # widths and gaps are compared to the authored ones. Nothing here replays
         # the writer's arithmetic, so a mis-assigned tile shows up as a column
         # that changed width rather than as an assertion that agrees with itself.
-        _got = column_spans(ET.fromstring(_path.read_text(encoding="utf-8")))
+        _got = column_spans(ET.fromstring(_rendered))
         _wid_ok = len(_got) == len(COLUMNS) and all(
             abs((_g[1] - _g[0]) - (_c[1] - _c[0])) <= 1e-3
             for _g, _c in zip(_got, COLUMNS, strict=True))
@@ -2740,7 +2781,7 @@ for _sheet in SHEETS:
         # badges may deviate and by how much, so an accidental vertical shift
         # anywhere else still fails.
         _owner_a = owned_points(ET.fromstring(TEMPLATE))
-        _owner_w = owned_points(ET.fromstring(_path.read_text(encoding="utf-8")))
+        _owner_w = owned_points(ET.fromstring(_rendered))
         _strays = []
         for (_oid, _p), (_, _q) in zip(_owner_a, _owner_w, strict=True):
             _want = _dy + _badge_dy.get(_oid or "", 0.0)
@@ -2884,4 +2925,15 @@ for _sheet in SHEETS:
 print()
 if problems:
     raise SystemExit(f"Diagram check FAILED: {problems} problem(s). Fix the layout before committing.")
-print(f"  All checks pass. {len(boxes)} tiles, {len(edges)} edges, {len(BADGES)} badges.")
+
+# **A STALE ARTIFACT is a separate failure from a bad layout**, and it is reported
+# separately. The checks above all passed against the fresh render; these lines say
+# whether the file anybody else will open matches it.
+if _stale:
+    for _s in _stale:
+        print(f"  STALE: {_s}")
+    raise SystemExit(
+        f"{len(_stale)} sheet(s) do not match a fresh build. "
+        "Run `python scripts/build-diagram.py` and commit the result.")
+print(f"  All checks pass. {len(boxes)} tiles, {len(edges)} edges, {len(BADGES)} badges."
+      + ("  Committed sheets match a fresh build." if CHECK_ONLY else ""))
