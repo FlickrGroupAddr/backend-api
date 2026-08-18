@@ -1169,7 +1169,7 @@ SPREAD_ABOUT = [
 # A single badge sitting on a named tile's vertical axis.
 ON_AXIS_OF = {"n27": "dns", "n32": "dns"}
 # A badge centered between two named edges.
-BETWEEN_EDGES = [(["n2", "n7"], ("cfframe", left), ("netb", left))]
+BETWEEN_EDGES = [(["n2", "n7"], ("cfframe", "left"), ("netb", "left"))]
 
 # **Badges are also stacked VERTICALLY against each other**, which Terry named as a
 # relationship in its own right: *"or relative to something else: centerline of
@@ -1191,27 +1191,48 @@ BADGE_STACKS = [
 EXPECTED_BADGE_STACKS = 6
 
 print()
+# **RUN AGAINST ANY SHEET, which is the whole reason this is a function.** Terry's
+# rules were asserted on the AUTHORED canvas only, and the sheets a reader actually
+# prints are the reflowed ones. A rule that holds at 11x17 and quietly stops holding
+# at 8.5x14 is exactly the defect he reported by eye.
+def check_placement(xc: Callable[[str], float], tag: str = "") -> None:
+    """Every placement rule in BADGE-PLACEMENT.md, measured through one accessor.
+
+    `xc` returns a cell's center x on the sheet under test. Widths never change --
+    the reflow only ever translates -- so a center is enough to rebuild an edge.
+    """
+    def _l(cid: str) -> float: return xc(cid) - width(cid) / 2
+    def _r(cid: str) -> float: return xc(cid) + width(cid) / 2
+    for _a, _b2, _tile in CORNER_PAIRS:
+        _li, _ri = xc(_a) - _l(_tile), _r(_tile) - xc(_b2)
+        check(f"{_a}/{_b2} in {_tile}'s top corners{tag}",
+              abs(_li - CORNER_INSET) < EPS and abs(_ri - CORNER_INSET) < EPS,
+              f"inset {_li:.1f} / {_ri:.1f}, want {CORNER_INSET:.0f} both")
+    for _group, _tile in SPREAD_ABOUT:
+        _xs = sorted(xc(_g) for _g in _group)
+        _steps = [_xs[_i + 1] - _xs[_i] for _i in range(len(_xs) - 1)]
+        _mid = (_xs[0] + _xs[-1]) / 2
+        check(f"{'/'.join(_group)} spread about {_tile}{tag}",
+              abs(_mid - xc(_tile)) < EPS and (max(_steps) - min(_steps) < EPS if _steps else True),
+              f"midpoint {_mid:.1f} vs {xc(_tile):.1f}, step {_steps[0]:.1f}")
+    for _badge, _tile in ON_AXIS_OF.items():
+        check(f"{_badge} on {_tile}'s axis{tag}", abs(xc(_badge) - xc(_tile)) < EPS,
+              f"{xc(_badge):.1f} vs {xc(_tile):.1f}")
+    for _group, (_t1, _side1), (_t2, _side2) in BETWEEN_EDGES:
+        _mid = ((_l(_t1) if _side1 == "left" else _r(_t1))
+                + (_l(_t2) if _side2 == "left" else _r(_t2))) / 2
+        check(f"{'/'.join(_group)} centered between {_t1} and {_t2}{tag}",
+              all(abs(xc(_g) - _mid) < EPS for _g in _group),
+              f"midpoint {_mid:.1f}, badges {', '.join(f'{xc(_g):.1f}' for _g in _group)}")
+    _stacks = [_s for _s in BADGE_STACKS
+               if max(xc(_m) for _m in _s) - min(xc(_m) for _m in _s) > EPS]
+    check(f"badge stacks stay vertical{tag}", not _stacks,
+          f"{len(BADGE_STACKS)} stacks: "
+          + "; ".join(" over ".join(_s) for _s in BADGE_STACKS))
+
+
 note("Badge placement, per BADGE-PLACEMENT.md:")
-for _a, _b2, _tile in CORNER_PAIRS:
-    _li, _ri = cx(_a) - left(_tile), right(_tile) - cx(_b2)
-    check(f"{_a}/{_b2} in {_tile}'s top corners",
-          abs(_li - CORNER_INSET) < EPS and abs(_ri - CORNER_INSET) < EPS,
-          f"inset {_li:.1f} / {_ri:.1f}, want {CORNER_INSET:.0f} both")
-for _group, _tile in SPREAD_ABOUT:
-    _xs = sorted(cx(_g) for _g in _group)
-    _steps = [_xs[_i + 1] - _xs[_i] for _i in range(len(_xs) - 1)]
-    _mid = (_xs[0] + _xs[-1]) / 2
-    check(f"{'/'.join(_group)} spread about {_tile}",
-          abs(_mid - cx(_tile)) < EPS and (max(_steps) - min(_steps) < EPS if _steps else True),
-          f"midpoint {_mid:.1f} vs {cx(_tile):.1f}, step {_steps[0]:.1f}")
-for _badge, _tile in ON_AXIS_OF.items():
-    check(f"{_badge} on {_tile}'s axis", abs(cx(_badge) - cx(_tile)) < EPS,
-          f"{cx(_badge):.1f} vs {cx(_tile):.1f}")
-for _group, (_t1, _f1), (_t2, _f2) in BETWEEN_EDGES:
-    _mid = (_f1(_t1) + _f2(_t2)) / 2
-    check(f"{'/'.join(_group)} centered between {_t1} and {_t2}",
-          all(abs(cx(_g) - _mid) < EPS for _g in _group),
-          f"midpoint {_mid:.1f}, badges {', '.join(f'{cx(_g):.1f}' for _g in _group)}")
+check_placement(cx)
 check("badge stacks intact", len(BADGE_STACKS) == EXPECTED_BADGE_STACKS,
       f"{len(BADGE_STACKS)} against {EXPECTED_BADGE_STACKS} expected: "
       + "; ".join(" over ".join(_s) for _s in sorted(BADGE_STACKS, key=lambda s: cx(s[0]))))
@@ -2522,6 +2543,12 @@ for _sheet in SHEETS:
             note(f"    centerline broken: {_pair}")
         check("badge centerlines still share their tile's", not _broke,
               f"{len(CENTERLINE_PAIRS)} alignments held")
+
+        # **EVERY placement rule, re-measured on the sheet that was just written.**
+        # These were asserted on the authored canvas alone, and the sheets a reader
+        # prints are the reflowed ones -- so the rules were guaranteed exactly where
+        # nobody looks and unguarded everywhere they do.
+        check_placement(_moved_cx, tag=f" on {_sheet.slug}")
 
         # **The badge collision rules were only ever checked on the AUTHORED sheet.**
         # A reflow moves badges and tiles by different deltas, so an overlap can be
