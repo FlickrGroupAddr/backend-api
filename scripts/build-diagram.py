@@ -1245,6 +1245,29 @@ def check_placement(xc: Callable[[str], float], tag: str = "") -> None:
 
 note("Badge placement, per BADGE-PLACEMENT.md:")
 check_placement(cx)
+# **THREE badge diameters exist and all three are deliberate**, measured 2026-08-17:
+# 21 for the five in tight spots (`n2`, `n7`, `n11`, `n23`, `n24` -- the ones Terry
+# describes as dodging a conflict or needing breathing room), 24 for the ordinary
+# 24, and 30 for the three on the long bottom rail where there is room and the run
+# is far from everything else. **Size tracks how much space the badge has.**
+#
+# **Pinned as a SET so a fourth cannot appear silently.** A new badge dropped in at
+# whatever size the last copy-paste used is exactly the drift nobody notices.
+#
+# **One inconsistency is recorded rather than fixed**: the number-to-diameter ratio
+# is 0.500 at 24 and 30 and **0.524 at 21**, so the smallest badges carry a
+# proportionally larger digit. Matching it would mean `fontSize=10.5`. **That is
+# Terry's call, not a defect to correct**, and it is written down so it stops being
+# rediscovered.
+BADGE_DIAMETERS = {21.0, 24.0, 30.0}
+_odd_size = sorted({width(_n) for _n in _ALL_BADGES} - BADGE_DIAMETERS)
+check("badges use only the three intended diameters", not _odd_size,
+      f"{sorted(BADGE_DIAMETERS)}"
+      + (f"   UNEXPECTED: {_odd_size}" if _odd_size else ""))
+_not_round = sorted(_n for _n in _ALL_BADGES if abs(width(_n) - height(_n)) > EPS)
+check("every badge is circular", not _not_round,
+      f"{len(_ALL_BADGES)} badges" + (f"   OVAL: {_not_round}" if _not_round else ""))
+
 check("badge stacks intact", len(BADGE_STACKS) == EXPECTED_BADGE_STACKS,
       f"{len(BADGE_STACKS)} against {EXPECTED_BADGE_STACKS} expected: "
       + "; ".join(" over ".join(_s) for _s in sorted(BADGE_STACKS, key=lambda s: cx(s[0]))))

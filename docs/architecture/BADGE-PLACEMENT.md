@@ -53,6 +53,25 @@ could slide down inside its tile and nothing would notice.
 | **29, 30** | On their line, spread equally about the center of the FGA DNS tile | Centers 333.7 and 403.7, midpoint **368.7**. Step 70.0 |
 | **32** | On its line, aligned with the center of the FGA DNS tile | 368.7, exactly `dns` center |
 
+## Three badge sizes, and size tracks how much room there is
+
+**Measured 2026-08-17. All three are deliberate and the build pins the set**, so a fourth cannot
+arrive by copy-paste.
+
+| Diameter | Count | Which |
+|---|---|---|
+| **21** | 5 | `n2`, `n7`, `n11`, `n23`, `n24` — every badge whose own rule mentions dodging a conflict or needing breathing room |
+| **24** | 24 | The ordinary case |
+| **30** | 3 | `n16`, `n17`, `n18`, on the long bottom rail where there is room and nothing else is near |
+
+**The pattern is that the badge shrinks where the space is tight and grows where it is not**, which
+is why the five small ones are exactly the five with a clearance rule.
+
+**One inconsistency, recorded rather than fixed.** The digit-to-diameter ratio is 0.500 at 24 and
+30, and **0.524 at 21** — so the smallest badges carry a proportionally larger number. Matching it
+would mean `fontSize=10.5`. **That is Terry's call**, and it is written here so it stops being
+rediscovered as if it were new.
+
 ## The vertical stacks
 
 **Terry, 2026-08-17: *"or relative to something else: centerline of another tile, or stacked
