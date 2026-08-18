@@ -102,9 +102,23 @@ table is in the same column as the badges that point at it.** No rule reaches ac
 widening a gap cannot break one.
 
 **`scripts/build-diagram.py` defends EVERY rule in this file, on all three sheets.** The corner
-padding, the even-step spreads and their midpoints, the on-axis badges, the between-edges pair, the
-six vertical stacks, the centerline alignments and their pinned count. It also asserts that no badge
-crosses an arrow it does not label, and that the journey and the canvas name the same routes.
+padding on all four sides, the even-step spreads and their midpoints, the on-axis badges, the
+between-edges pair, badge 11's vertical centering, the six vertical stacks, and the centerline
+alignments with their pinned count.
+
+**It also guards five things that are not placement rules at all**, each of which would survive
+every geometric check ever written:
+
+| Guard | The defect it catches |
+|---|---|
+| Every badge displays its own number, and the set runs 1..N | `n7` showing "8" -- two 8s, no 7, and nothing else would notice |
+| No tile paints over a badge | draw.io paints in DOCUMENT ORDER, which is invisible to per-item checks. It once hid three whole tiles |
+| Fill, white ring and number color, read from each badge | The color-distance rule compared a CONSTANT against the tiles and never checked a badge carried it |
+| Only the three intended diameters, and every badge circular | A fourth size arriving by copy-paste |
+| No badge crosses an arrow it does not label | A badge across an unrelated line reads as a numbering error |
+
+**And the journey and the canvas must name the same routes** -- every path a step names exists on
+the canvas, and every route tile is named by some step.
 
 **The three clearance placements are the only rules it cannot reach**, for the reason below.
 
