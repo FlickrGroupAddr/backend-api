@@ -377,6 +377,12 @@ panel.** Four terms were wrong at once: an average character width instead of re
 advances, bold ignored entirely, the tile's padding hardcoded rather than read, and a line
 height rounded to an integer. It agrees with Chrome to about 3 units now.
 
+**Coverage was the estimator's real limitation, not accuracy.** It measured 3 of 25 text-bearing
+cells; it now measures every wrapped one, 19 of them, plus a header-clearance check on the two
+containers. The roster is derived from the artifact, so a new tile is covered the day it is drawn.
+**Only overflow fails** -- a roomy tile is usually sized by the arrows that must reach it, so the
+build names the tightest and the loosest and leaves that verdict to the eye.
+
 **THE LAST TENTH STILL BELONGS TO THE EYE.** Arial's `line-height: normal` measures 1.15 and
 mxGraph's own constant is 1.2; the rendered canvas sits between them, so no arithmetic here
 picks the final row size. Terry bracketed it across three renders -- 12.1 left white space,
@@ -394,11 +400,6 @@ estimator alone.
 - **Dead space bottom-right inside the Cloudflare frame**, right of the Retry Worker and below D1. It
   shrank with the 2026-08-16 relayout but did not close.
 - **The Nightly Event tile is cramped** — four wrapped lines in a small box.
-- **`text_height` now measures every wrapped text tile** -- 19 of them, plus a header-clearance
-  check on the two containers, where it used to measure three. The roster is derived from the
-  artifact, so a new tile is covered the day it is drawn. **Only overflow fails**; a roomy tile is
-  usually sized by the arrows that must reach it, so the build names the tightest and loosest and
-  leaves the verdict to the eye.
 - **The visible-run check still does not measure a ROUTED edge**, only a straight one. It reports
   `routed, measured by eye`, so it is an honest hole rather than a false pass. **The BADGE checks
   no longer share it** -- they walk the full polyline through an edge's waypoints, and refuse a
