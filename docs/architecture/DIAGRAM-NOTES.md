@@ -209,10 +209,19 @@ That structural rhyme is what finally made the right column read — your words 
 
 ### Line style and badge placement mean something. Decided 2026-08-17
 
-**Solid means SYNCHRONOUS DATA TRANSFER. Dotted means ASYNC TRIGGER.** Your definition, and it is
-better than what the Legend prints. The Legend says *"Request / response"* and *"Scheduled trigger"*,
-which are two examples rather than the rule -- a solid arrow on this canvas also covers a Worker
+**Solid means SYNCHRONOUS TRANSFER. Dotted means ASYNCHRONOUS TRIGGER.** Your definition, and the
+Legend now prints it -- it said *"Request / response"* and *"Scheduled trigger"* until 2026-08-18,
+which are two examples rather than the rule. A solid arrow on this canvas also covers a Worker
 reading its own storage and a Worker reading Secrets, and neither is a request/response pair.
+
+**The word "data" came out because the row WRAPPED, and the estimator could not see it.** The
+Legend's rule samples are `display:inline-block` spans, 39px wide plus 10px of margin, and
+`text_block` stripped every span before measuring width -- so both rows were measured against a
+column 49px wider than the browser lays out. *"Synchronous data transfer"* broke onto a second line
+that lost its hanging indent, while the build reported the identical line count and `key`'s slack
+never moved off 26. **The render caught it and the estimator now charges an inline-block's width**,
+which drops that slack to 11 and fails the band. *"Synchronous transfer"* fits on one line and sits
+within a unit of *"Asynchronous trigger"*, so the two rows read as a pair.
 
 **Badge placement is a language, and a reader learns it once:**
 

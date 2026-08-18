@@ -8,7 +8,7 @@
         <mxCell id="title" value="FlickrGroupAddr Architecture" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="39.4935" y="25.8395" width="700" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="date" value="2026-08-17" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="date" value="2026-08-18" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="39.4935" y="61.8395" width="399" height="36" as="geometry" />
         </mxCell>
 
@@ -111,7 +111,7 @@
           <mxGeometry x="1157.6894" y="115.8395" width="236" height="147.5" as="geometry" />
         </mxCell>
 
-        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px solid #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Request / response&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px dotted #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Scheduled trigger&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px;margin-top:13px&quot;&gt;Why it is built this way:&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px&quot;&gt;docs/architecture/DECISIONS.md&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px solid #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Synchronous transfer&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px dotted #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Asynchronous trigger&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px;margin-top:13px&quot;&gt;Why it is built this way:&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px&quot;&gt;docs/architecture/DECISIONS.md&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="1157.6894" y="285.7895" width="236" height="120" as="geometry" />
         </mxCell>
 

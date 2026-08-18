@@ -47,7 +47,7 @@ from diagram_sheets import AUTHORED, SHEETS, Sheet, sheet_path
 # **The date records when the CONTENT changed, and all three sheets carry the
 # same content.** They therefore carry the same date. Adding a sheet, or changing
 # a page size, is not a content change and MUST NOT bump this.
-DATE = "2026-08-17"
+DATE = "2026-08-18"
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SVG = ROOT / "docs" / "architecture" / "logos"
@@ -325,7 +325,7 @@ TEMPLATE = f"""<mxfile host="app.diagrams.net" agent="Claude Code" version="24.0
           <mxGeometry x="1065.5" y="106.35" width="236" height="147.5" as="geometry" />
         </mxCell>
 
-        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px solid #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Request / response&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px dotted #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Scheduled trigger&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px;margin-top:13px&quot;&gt;Why it is built this way:&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px&quot;&gt;docs/architecture/DECISIONS.md&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+        <mxCell id="key" value="&lt;b&gt;Legend&lt;/b&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px solid #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Synchronous transfer&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:13px&quot;&gt;&lt;span style=&quot;display:inline-block;width:39px;margin-right:10px;border-bottom:2px dotted #1A1A1A;vertical-align:middle&quot;&gt;&lt;/span&gt;Asynchronous trigger&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px;margin-top:13px&quot;&gt;Why it is built this way:&lt;/div&gt;&lt;div style=&quot;margin-left:26px;font-size:12px&quot;&gt;docs/architecture/DECISIONS.md&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B0B0B0;fontSize=14;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="1065.5" y="276.3" width="236" height="120" as="geometry" />
         </mxCell>
 
@@ -1860,6 +1860,29 @@ def text_block(cid: str) -> float:
         m = re.search(r"font-size:([\d.]+)px", chunk)
         if m:
             size = float(m.group(1))
+        # **AN INLINE-BLOCK SPAN TAKES REAL WIDTH, and stripping it charged none.**
+        # `outside_spans` above removes every `<span>` before the SPACING scan, which
+        # is right and is about the VERTICAL: spacing on a nested span does not raise
+        # the line box. **The horizontal is a different question and got the same
+        # answer by accident** -- `re.sub(r"<[^>]*>", "", chunk)` then deleted the
+        # span entirely, so its `width` and `margin-right` were never subtracted from
+        # the column.
+        #
+        # **Measured 2026-08-18: the Legend's two rule samples are 39px plus 10px of
+        # margin each, so both rows were measured against a column 49px wider than
+        # the browser lays out.** Rewording one to "Synchronous data transfer" wrapped
+        # it in the render -- with the continuation losing its hanging indent, which
+        # is what made it visible -- while this function reported the identical line
+        # count and the tile's slack did not move off 26.
+        #
+        # **It under-counts lines, so it reports slack that is not there.** Same
+        # direction and same shape as the table-cell bug directly below, which is
+        # the other half of this one.
+        span_indent = 0
+        for m_span in re.finditer(r"<span[^>]*style=\"[^\"]*display:\s*inline-block[^\"]*\"[^>]*>", chunk):
+            m_w = re.search(r"width:\s*(\d+)px", m_span.group(0))
+            m_mr = re.search(r"margin-right:\s*(\d+)px", m_span.group(0))
+            span_indent += (int(m_w.group(1)) if m_w else 0) + (int(m_mr.group(1)) if m_mr else 0)
         # **A FIXED-WIDTH TABLE CELL IS ITS OWN COLUMN, so its text MUST NOT join
         # the text beside it.** `text_lines` splits on `<tr>` and leaves `</td>`
         # alone, so a two-column row arrives as one chunk and the tags strip to
@@ -1893,8 +1916,16 @@ def text_block(cid: str) -> float:
         if not text:
             total += line_h(size)
             continue
+        # **The inline-block spans are dropped only AFTER their width is charged**,
+        # and dropping them is what keeps the search below honest: `m_ind` is an
+        # alternation that would otherwise match a span's own `width:39px` and count
+        # it a second time. Today `margin-left` happens to appear first in every
+        # affected chunk, so the double count is latent rather than live -- which is
+        # exactly the kind of thing that starts firing when somebody reorders a style.
+        chunk = re.sub(r"<span[^>]*display:\s*inline-block[^>]*>", "", chunk)
         m_ind = re.search(r"margin-left:\s*(\d+)px|width:\s*(\d+)px", chunk)
-        indent = cell_indent + (int(next(g for g in m_ind.groups() if g)) if m_ind else 0)
+        indent = (cell_indent + span_indent
+                  + (int(next(g for g in m_ind.groups() if g)) if m_ind else 0))
         total += wrapped_lines(styled_chars(chunk), size, usable - indent) * line_h(size)
     return total
 
