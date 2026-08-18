@@ -41,15 +41,21 @@ from diagram_sheets import arch_dir, authored_diagram
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ARCH = arch_dir(ROOT)
 
-# Matching the badges already on the canvas: 34 across, sitting 1.5 clear of a
-# 3-unit arrow when placed beside the line rather than on it.
+# Matching the badges already on the canvas, sitting 1.5 clear of a 3-unit arrow
+# when placed beside the line rather than on it.
+#
+# **24, because that is what 24 of the 32 badges measure.** This defaulted to 34 for
+# months and NO badge on the canvas has been 34 for just as long, so anyone running
+# the tool without `--diameter` was handed paste-ready geometry for a size that does
+# not exist. The three real sizes are 21, 24 and 30 -- see
+# `docs/architecture/BADGE-PLACEMENT.md`, which records why there are three.
 #
 # **1.5 is TERRY'S number, not a round one.** He placed the `e20` badge by eye and
 # called it a tight lockup; the tool defaulted to 3 and disagreed by 1.5 units.
 # **His eye is the reference here, so the default was moved to match him** rather
 # than the other way round. Same reasoning as the logo gap: a band that argues with
 # the approved render is the band that is wrong.
-DEFAULT_DIAMETER = 34.0
+DEFAULT_DIAMETER = 24.0
 DEFAULT_GAP = 1.5
 ARROW_STROKE = 3.0
 
