@@ -21,6 +21,11 @@ points somewhere authoritative.
 
 **That is the whole path.** Four steps, and step 4 is usually a single module.
 
+**Three tasks have a branch, and the rest stop at step 4:** the **DIAGRAM** takes the next section,
+the **LIGHTROOM CLIENT** starts at `docs/LRC-CLIENT-NOTES.md` and its "PICK UP HERE" section, and
+**CHANGING BEHAVIOR** goes through ADR-01 to `src/adds/classify.ts`. Look for your branch before
+reading further.
+
 ## If your task is the DIAGRAM, start the live preview before the first edit
 
 **We iterate on this canvas constantly, and the review loop is one command.**
