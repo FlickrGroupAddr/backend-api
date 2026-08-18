@@ -467,7 +467,7 @@ dependency, `compatibility_date` and the `biome.json` schema pin are current.**
 memory file, never from ADR-13's version table, never from this file. **A freshness check sourced
 from recall is worse than none, because it looks like a record and is not.**
 
-It runs as `~/.claude/hooks/npm-toolchain-check.py`. **That file's docstring is the specification** —
+It runs as `~/.claude/hooks/fga-toolchain-check.py`. **That file's docstring is the specification** —
 sources, loudness rules, and the traps. Do not restate it here. Run it by hand with `--probe`.
 
 **Three rules a future session will be tempted to break:**
