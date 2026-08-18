@@ -2747,15 +2747,192 @@ def owned_points(tree: ET.Element) -> list[tuple[str | None, ET.Element]]:
     return [(owner.get(id(el)), el) for el in absolute_points(tree)]
 
 
+# ---------------------------------------------------------------------------
+# SHRINKING A SHEET, and why it is the geometry rather than `pageScale`.
+#
+# **Terry, 2026-08-18: the legal PDF comes out 18.43 x 11.19 in, not 14 x 8.5.**
+# The aspect is right and the size is not, so printing needs *Fit on page*, which
+# he called *"minor but feels stupid"*.
+#
+# **The cause is arithmetic and there is no way around the shrink itself.** The
+# content is 1764 x 1030 units after the column spread; a legal page is 1400 x 850.
+# It does not fit, so SOMETHING has to scale. `pageScale` was that something --
+# draw.io sizes an exported page as `pageWidth * pageScale`, so a scale of 1.3165
+# buys a page big enough to hold the drawing and hands the shrink to the print
+# dialog.
+#
+# **Scaling the geometry instead puts the shrink in the file and leaves the page at
+# 14 x 8.5.** The rendered picture is IDENTICAL either way -- same content, same
+# proportions, same page aspect -- so this is purely about which number the PDF
+# declares.
+#
+# **The refusal to rescale still stands where it was aimed: the AUTHORED sheet.**
+# Every font size, every hand-set box height and every threshold in the check suite
+# is expressed in tabloid units, and all of them keep meaning what they meant --
+# the checks run before this, in authored units. **The scale is the very last thing
+# that happens on the way out.**
+#
+# **Every scale-sensitive term is enumerated rather than remembered**, because a
+# missed one is silent: the picture is subtly wrong and nothing errors. The list
+# came from a census of the artifact, not from recall.
+SCALED_STYLE_KEYS = (
+    "fontSize", "strokeWidth", "endSize", "startSize",
+    "spacing", "spacingLeft", "spacingRight", "spacingTop", "spacingBottom",
+    "exitDx", "exitDy", "entryDx", "entryDy",
+)
+# **These look numeric and MUST NOT be touched.** `arcSize` is a PERCENTAGE of the
+# smaller side, and the exit/entry pairs are FRACTIONS -- the same trap
+# `absolute_points` already documents for `mxGeometry relative="1"`.
+UNSCALED_STYLE_KEYS = ("arcSize", "exitX", "exitY", "entryX", "entryY",
+                       "exitPerimeter", "entryPerimeter", "imageAspect")
+# Inline CSS inside a `value=`, all in px. `line-height` is a length here, not a
+# unitless multiplier, so it scales like the rest.
+SCALED_CSS = ("font-size", "line-height", "margin-left", "margin-right",
+              "margin-top", "margin-bottom", "padding-bottom", "padding-right",
+              "padding-left", "padding-top", "border-bottom", "width", "height")
+
+
+def scale_style(style: str, s: float) -> str:
+    """Multiply every length in a style string, and nothing else."""
+    def repl(m: re.Match[str]) -> str:
+        key, value = m.group(1), m.group(2)
+        if key in SCALED_STYLE_KEYS:
+            return f"{key}={fmt(float(value) * s)}"
+        return m.group(0)
+
+    # **`-?` is load-bearing and its absence was a real defect.** The first version
+    # matched `([\d.]+)`, so `spacingTop=-6` on the browser glyph was never scaled --
+    # a caption offset that would have stayed at full size inside a shrunken tile.
+    # **Found by the round-trip check the moment it learned that an unchanged scaled
+    # key is a failure**, which is the pair of them working as intended.
+    out = re.sub(r"(?<![\w-])([A-Za-z]+)=(-?[\d.]+)(?=;|$)", repl, style)
+    # `dashPattern=1 4` is two lengths in one value, so it needs its own pass.
+    return re.sub(
+        r"dashPattern=([\d.]+) ([\d.]+)",
+        lambda m: f"dashPattern={fmt(float(m.group(1)) * s)} {fmt(float(m.group(2)) * s)}",
+        out)
+
+
+def scale_value(value: str, s: float) -> str:
+    """Multiply every inline CSS length in a cell's HTML label."""
+    return re.sub(
+        r"([a-z-]+)\s*:\s*(-?[\d.]+)px",
+        lambda m: (f"{m.group(1)}:{fmt(float(m.group(2)) * s)}px"
+                   if m.group(1) in SCALED_CSS else m.group(0)),
+        value)
+
+
+def scaled_alike(authored: str, written: str, s: float, tol: float = 5e-4) -> bool:
+    """Is `written` the authored string with every length multiplied by `s`?
+
+    **Compared NUMERICALLY, because `fmt` rounds to four decimals and a round trip
+    through it cannot be exact.** `strokeWidth=3` becomes `2.2788` and divides back
+    to `2.9999`. Demanding equal text made this check fail on its first run against
+    a correct sheet -- the mirror image of the failure it exists to catch, and the
+    reason the tolerance is stated rather than assumed.
+
+    **Everything that is not a scaled length must match EXACTLY.** A color, a
+    fraction, an `arcSize` percentage: those are the terms a scale must not touch,
+    so any difference in them is a real defect rather than rounding.
+    """
+    a_tokens = authored.split(";")
+    w_tokens = written.split(";")
+    if len(a_tokens) != len(w_tokens):
+        return False
+    for a, w in zip(a_tokens, w_tokens, strict=True):
+        if a == w:
+            # **AN UNCHANGED SCALED KEY IS A FAILURE, and missing that made this
+            # check blind.** The first version started with a plain `continue` here,
+            # so a term that was never scaled at all looked identical and passed --
+            # it only caught terms scaled WRONGLY. **Proven by mutation: dropping
+            # `fontSize` from `SCALED_STYLE_KEYS` left the check green**, which is
+            # exactly the assertion-that-passes-either-way this suite exists to
+            # refuse. A zero is exempt because zero times anything is zero.
+            key, _, val = a.partition("=")
+            if key in SCALED_STYLE_KEYS and s != 1.0:
+                try:
+                    if abs(float(val)) > tol:
+                        return False
+                except ValueError:
+                    return False
+            continue
+        if "=" not in a or "=" not in w:
+            return False
+        a_key, a_val = a.split("=", 1)
+        w_key, w_val = w.split("=", 1)
+        if a_key != w_key:
+            return False
+        # **`dashPattern` is TWO lengths in one value**, so it needs its own arm --
+        # `float("1 4")` raises, and an unguarded comparator reads that as a
+        # mismatch. It is the only multi-number style value on this canvas, and it
+        # was found by this check firing on `e6` alone.
+        if a_key == "dashPattern":
+            a_parts, w_parts = a_val.split(), w_val.split()
+            if (len(a_parts) != len(w_parts)
+                    or any(abs(float(wp) - float(ap) * s) > tol
+                           for ap, wp in zip(a_parts, w_parts, strict=True))):
+                return False
+            continue
+        if a_key not in SCALED_STYLE_KEYS:
+            return False
+        try:
+            if abs(float(w_val) - float(a_val) * s) > tol:
+                return False
+        except ValueError:
+            return False
+    return True
+
+
+def css_alike(authored: str, written: str, s: float, tol: float = 5e-4) -> bool:
+    """The same comparison for the inline CSS lengths inside a label."""
+    a_nums = re.findall(r"([a-z-]+)\s*:\s*(-?[\d.]+)px", authored)
+    w_nums = re.findall(r"([a-z-]+)\s*:\s*(-?[\d.]+)px", written)
+    if len(a_nums) != len(w_nums):
+        return False
+    for (a_prop, a_val), (w_prop, w_val) in zip(a_nums, w_nums, strict=True):
+        if a_prop != w_prop:
+            return False
+        want = float(a_val) * s if a_prop in SCALED_CSS else float(a_val)
+        if abs(float(w_val) - want) > tol:
+            return False
+    # With the numbers accounted for, the surrounding markup must be identical.
+    strip = r"([a-z-]+)\s*:\s*-?[\d.]+px"
+    return re.sub(strip, r"\1:#", authored) == re.sub(strip, r"\1:#", written)
+
+
+def unscaled(xml: str, s: float) -> ET.Element:
+    """The written sheet with every length divided by `s`, back in authored units.
+
+    **This exists so the per-sheet checks keep their thresholds.** `EPS` is 0.5
+    authored units; against a sheet shrunk to 76% it would silently mean 0.66, and
+    every geometric tolerance in the suite would drift with the paper size.
+
+    **It is also an independent test of the scale.** A term multiplied by the wrong
+    factor does not come back to its authored value, so the existing column and
+    delta checks catch it without knowing they are looking for it.
+    """
+    tree = ET.fromstring(xml)
+    for el in absolute_points(tree):
+        for attr in ("x", "y", "width", "height"):
+            if el.get(attr) is not None:
+                el.set(attr, fmt(attr_f(el, attr) / s))
+    return tree
+
+
 def moved_sheet(xml: str, sheet: Sheet, page_scale: float,
-                shift: Callable[[str | None, float], float],
-                yshift: Callable[[str | None], float]) -> str:
-    """Write one sheet. `shift` maps a cell id and an x to that point's dx.
+                place: Callable[[str | None, float], float],
+                place_y: Callable[[str | None, float], float],
+                content_scale: float = 1.0) -> str:
+    """Write one sheet. `place` maps a cell id and an x to its FINAL x.
 
     **Y is ALMOST one global delta**, because the reflow is purely horizontal: the
     columns keep every internal distance and only the gaps grow. The exception is a
     badge on a SLANTED run, whose two ends move by different deltas and therefore
-    tilt the line under it -- `yshift` puts it back on the line it labels.
+    tilt the line under it -- `place_y` puts it back on the line it labels.
+
+    `content_scale` below 1 shrinks the drawing so the page can be the real paper
+    size. **It is applied to lengths only** -- see the two constant lists above for
+    what that includes and, more importantly, what it excludes.
     """
     tree = ET.fromstring(xml)
     model = tree.find(".//mxGraphModel")
@@ -2772,14 +2949,24 @@ def moved_sheet(xml: str, sheet: Sheet, page_scale: float,
         for pt in g.iter("mxPoint") if g is not None else ():
             owner[id(pt)] = cell.get("id")
     for el in absolute_points(tree):
-        x = attr_f(el, "x")
-        el.set("x", fmt(x + shift(owner.get(id(el)), x)))
-        el.set("y", fmt(attr_f(el, "y") + yshift(owner.get(id(el)))))
+        cid = owner.get(id(el))
+        el.set("x", fmt(place(cid, attr_f(el, "x"))))
+        el.set("y", fmt(place_y(cid, attr_f(el, "y"))))
+        # width and height are lengths, so they take the scale and no offset.
+        for dim in ("width", "height"):
+            if el.get(dim) is not None:
+                el.set(dim, fmt(attr_f(el, dim) * content_scale))
+    if content_scale != 1.0:
+        for cell in tree.iter("mxCell"):
+            if cell.get("style"):
+                cell.set("style", scale_style(cell.get("style") or "", content_scale))
+            if cell.get("value"):
+                cell.set("value", scale_value(cell.get("value") or "", content_scale))
     return ET.tostring(tree, encoding="unicode") + "\n"
 
 
 print()
-note(f"Sheets. One drawing, {len(SHEETS)} pages, moved but never rescaled:")
+note(f"Sheets. One drawing, {len(SHEETS)} pages, each at its real paper size:")
 
 for _sheet in SHEETS:
     _prw = _sheet.width - 2 * _sheet.margin
@@ -2798,12 +2985,28 @@ for _sheet in SHEETS:
     _deltas = [_i * _d for _i in range(len(COLUMNS))]
     _new_w = CONTENT_W + _extra
 
+    # **`_fit` is how much of the content fits the printable area at 1:1**, and it
+    # is now applied to the GEOMETRY rather than handed to `pageScale`. So the page
+    # is always the real paper size and `pageScale` is always 1.
+    #
+    # **That is the whole 8.5x14 fix.** The picture is identical -- same content,
+    # same proportions -- and the only thing that changes is the number the exported
+    # PDF declares as its page size.
     _fit = min(_prw / _new_w, _prh / CONTENT_H)
-    _pscale = 1.0 if _fit >= 1.0 - 1e-9 else 1.0 / _fit
-    _printed = min(1.0, _fit)
-    _effw, _effh = _sheet.width * _pscale, _sheet.height * _pscale
-    _dx0 = (_effw - _new_w) / 2 - _x0
-    _dy = (_effh - CONTENT_H) / 2 - _y0
+    _cscale = min(1.0, _fit)
+    _pscale = 1.0
+    _printed = _cscale
+    _effw, _effh = _sheet.width, _sheet.height
+    # The content is scaled about the origin, so the centering offset is computed in
+    # SCALED units. `_x0` and `CONTENT_W` stay in authored units throughout, which is
+    # what keeps every check above readable.
+    _ox = (_effw - _new_w * _cscale) / 2 - _x0 * _cscale
+    _oy = (_effh - CONTENT_H * _cscale) / 2 - _y0 * _cscale
+    # **The same offsets expressed in AUTHORED units**, because every check below
+    # reasons about where a point lands before the scale is applied. `final = (x +
+    # dx0) * s`, so `dx0 = ox / s`.
+    _dx0 = _ox / _cscale
+    _dy = _oy / _cscale
 
     # A badge on a cross-column arrow rides the arrow, not a column. See the note
     # beside BADGE_EDGE -- and n14's edge lives inside one column, so it gets 0.
@@ -2848,12 +3051,21 @@ for _sheet in SHEETS:
     def _shift(cid: str | None, x: float, _dx0: float = _dx0,
                _deltas: list[float] = _deltas,
                _badge_dx: dict[str, float] = _badge_dx) -> float:
+        """The authored-space delta for one point. Checks reason in these units."""
         return _dx0 + (_badge_dx[cid] if cid in _badge_dx else _deltas[column_of(x)])
 
     def _yshift(cid: str | None, _dy: float = _dy,
                 _badge_dy: dict[str, float] = _badge_dy) -> float:
         """One global delta, plus the nudge that keeps a badge on a tilted run."""
         return _dy + _badge_dy.get(cid or "", 0.0)
+
+    # **The writer takes FINAL coordinates**, so the scale is applied once, here, on
+    # the way out -- after every check above has run in authored units.
+    def _place(cid: str | None, x: float, _s: float = _cscale) -> float:
+        return (x + _shift(cid, x)) * _s
+
+    def _place_y(cid: str | None, y: float, _s: float = _cscale) -> float:
+        return (y + _yshift(cid)) * _s
 
     print()
     note(f"  {_sheet.slug:8s} {_sheet.label}")
@@ -2862,17 +3074,47 @@ for _sheet in SHEETS:
               and _extra <= EPS, f"dx {_dx0:.2f}, dy {_dy:.2f}, spread {_extra:.2f}")
     else:
         _path = sheet_path(ROOT, DATE, _sheet)
-        _rendered = moved_sheet(TEMPLATE, _sheet, _pscale, _shift, _yshift)
+        _rendered = moved_sheet(TEMPLATE, _sheet, _pscale, _place, _place_y, _cscale)
         emit(_path, _rendered)
+        # **Every check below reads the file with the scale DIVIDED BACK OUT**, so
+        # its thresholds stay in authored units and keep meaning what they meant.
+        # That is not a convenience: it also makes the checks an independent test of
+        # the scale, because a term multiplied by the wrong factor fails to come back.
+        _check_tree = unscaled(_rendered, _cscale)
         note(f"    wrote {_path.name}")
         note(f"    spread {_extra:.2f} across {len(GAPS)} gaps, {_d:+.2f} each"
              f"   -> {'  '.join(f'{_g + _d:.2f}' for _g in GAPS)}")
+
+        # **EVERY SCALED TERM MUST COME BACK, and this is what proves none was
+        # missed.** The written style and label must be the authored one with every
+        # length multiplied by the scale, and everything else IDENTICAL. A term that
+        # was never scaled fails; one scaled twice fails; a color or a fraction that
+        # moved at all fails. **It catches what a length census cannot** -- the
+        # census only lists the terms somebody thought of, and this compares the
+        # whole string.
+        _written = {cell_id(c): c for c in ET.fromstring(_rendered).iter("mxCell")
+                    if c.get("id")}
+        _unscaled_mismatch = []
+        for _c in cells:
+            _cid = _c.get("id")
+            if not _cid or _cid not in _written:
+                continue
+            _w = _written[_cid]
+            if not scaled_alike(_c.get("style") or "", _w.get("style") or "", _cscale):
+                _unscaled_mismatch.append(f"{_cid} style")
+            if not css_alike(_c.get("value") or "", _w.get("value") or "", _cscale):
+                _unscaled_mismatch.append(f"{_cid} value")
+        for _m in _unscaled_mismatch[:6]:
+            note(f"    does not survive an unscale: {_m}")
+        check("every scaled length divides back to the authored one",
+              not _unscaled_mismatch,
+              f"{len(_written)} cells at scale {_cscale:.4f}")
 
         # **The columns are RE-DERIVED from the file just written**, then their
         # widths and gaps are compared to the authored ones. Nothing here replays
         # the writer's arithmetic, so a mis-assigned tile shows up as a column
         # that changed width rather than as an assertion that agrees with itself.
-        _got = column_spans(ET.fromstring(_rendered))
+        _got = column_spans(_check_tree)
         _wid_ok = len(_got) == len(COLUMNS) and all(
             abs((_g[1] - _g[0]) - (_c[1] - _c[0])) <= 1e-3
             for _g, _c in zip(_got, COLUMNS, strict=True))
@@ -2899,7 +3141,7 @@ for _sheet in SHEETS:
         # badges may deviate and by how much, so an accidental vertical shift
         # anywhere else still fails.
         _owner_a = owned_points(ET.fromstring(TEMPLATE))
-        _owner_w = owned_points(ET.fromstring(_rendered))
+        _owner_w = owned_points(_check_tree)
         _strays = []
         for (_oid, _p), (_, _q) in zip(_owner_a, _owner_w, strict=True):
             _want = _dy + _badge_dy.get(_oid or "", 0.0)
@@ -2992,16 +3234,24 @@ for _sheet in SHEETS:
         check("badges still clear every tile and each other", not (_mt or _mb),
               f"{len(BADGES)} badges after the spread")
 
-    _vx0, _vx1 = _x0 + _dx0, _x1 + _dx0 + _extra
-    _vy0, _vy1 = _y0 + _dy, _y1 + _dy
+    # **These are the REAL page numbers**, in the units the exported file declares.
+    # The content is scaled into the page rather than the page grown around it, so
+    # the margins here are the margins that print -- no `_printed` correction, and
+    # nothing left for a dialog to do.
+    _vx0 = (_x0 + _dx0) * _cscale
+    _vx1 = (_x1 + _dx0 + _extra) * _cscale
+    _vy0 = (_y0 + _dy) * _cscale
+    _vy1 = (_y1 + _dy) * _cscale
     check("ink centered on its page",
           abs(_vx0 - (_effw - _vx1)) <= EPS and abs(_vy0 - (_effh - _vy1)) <= EPS,
           f"x {_vx0:.2f}/{_effw - _vx1:.2f}   y {_vy0:.2f}/{_effh - _vy1:.2f}")
-    _least = min(_vx0, _effw - _vx1, _vy0, _effh - _vy1) * _printed
+    _least = min(_vx0, _effw - _vx1, _vy0, _effh - _vy1)
     check(f"printed margins >= {_sheet.margin:.0f}", _least >= _sheet.margin - EPS,
           f"{_least:.2f} at the tightest side")
-    check("the drawing sits on ONE page", _new_w <= _effw + EPS and _effh + EPS >= CONTENT_H,
-          f"page {_effw:.1f} x {_effh:.1f} units, pageScale {_pscale:.4f}")
+    check("the drawing sits on ONE page",
+          _new_w * _cscale <= _effw + EPS and _effh + EPS >= CONTENT_H * _cscale,
+          f"page {_effw:.0f} x {_effh:.0f} units = "
+          f"{_effw / 100:.2f} x {_effh / 100:.2f} in, pageScale {_pscale:.1f}")
 
     # **Not a check, because the verdict is Terry's.** The build states the size
     # and names his own measured floor; it does not refuse to write a sheet he
@@ -3017,12 +3267,12 @@ for _sheet in SHEETS:
     # cannot be fixed in the file** -- a 16.4 in drawing does not fit on 14 in paper,
     # so something has to scale it, and doing that in the geometry is the rescale
     # this whole design refuses. The scaling belongs in the print dialog.
-    if _pscale > 1.0 + 1e-9:
-        note(f"    EXPORT: page comes out {_sheet.width * _pscale / 100:.2f} x"
-             f" {_sheet.height * _pscale / 100:.2f} in. Print it on"
-             f" {_sheet.width / 100:.2f} x {_sheet.height / 100:.2f} WITH 'Fit to Page'.")
-    else:
-        note("    EXPORT: page is already the paper size. Print at 100%, no 'Fit to Page'.")
+    # **Every sheet now exports at its real paper size**, which is the whole point
+    # of scaling the geometry instead of `pageScale`. Terry, 2026-08-18, on the old
+    # behavior: the legal PDF came out 18.43 x 11.19 in and needed *Fit on page* --
+    # *"it's minor but feels stupid"*.
+    note(f"    EXPORT: page is {_sheet.width / 100:.2f} x {_sheet.height / 100:.2f} in, "
+         f"the real paper size. Print at 100%, no 'Fit to Page'.")
 
     # **How much of the paper the drawing actually covers.** The two figures
     # answer different questions and both are worth having: the scale says how

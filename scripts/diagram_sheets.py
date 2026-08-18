@@ -4,7 +4,7 @@ RFC 2119 keywords, and the capitals are load-bearing.
 
 **One drawing, three sheets.** `scripts/build-diagram.py` authors the content
 once, at tabloid size, and writes the other two as the SAME drawing translated so
-it sits centered on its sheet. **Nothing is ever rescaled** -- the page-size block
+it sits centered on its sheet. **The AUTHORED content is never rescaled** -- the page-size block
 in that file says why baking a scale into the coordinates is the wrong fix, and a
 rigid translation keeps every font size, every hand-set box height and every
 absolute threshold in the check suite meaning exactly what it meant before.

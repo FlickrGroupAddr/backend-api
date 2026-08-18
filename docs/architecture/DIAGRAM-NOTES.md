@@ -87,7 +87,7 @@ move the moment the content does.
 |---|---|---|---|---|
 | `11x17` | 100% | 10.1 pt | 100% | **The print.** The content fits this sheet exactly |
 | `16x9` | 100% | 10.1 pt | 100% | A 1920 x 1080 screen or a slide |
-| `8.5x14` | 76% | **7.7 pt** | 100% | Legal landscape, and read the warning below first |
+| `8.5x14` | 100% | **7.7 pt** | 100% | Legal landscape, and read the warning below first |
 
 **Each wider sheet spreads its extra width evenly between the four columns**, so all three now fill
 their printable area completely. `16x9` gains 240 units across 3 gaps, `8.5x14` gains 124.
@@ -120,7 +120,7 @@ columns on the right — `justification` / `journey` / `key` are independent pan
 wide gutter, where the arrows between the Worker and Flickr do not. **That is a design call and he
 holds the pen**; this note exists so the observation is not lost with the session that made it.
 
-**`pageScale` is how `8.5x14` says "print me at 76%".** draw.io's page in drawing units is
+**`pageScale` is 1 on every sheet now, and the geometry carries the scale instead.** draw.io's page in drawing units is
 `pageWidth * pageScale`, so a scale above 1 keeps the drawing on ONE page instead of spilling it
 across a 2x2 grid. **That figure is asserted by the build and has NOT been checked against a real
 print** — if an export dialog asks for a percentage, the build printed the number.
@@ -398,24 +398,55 @@ picks the final row size. Terry bracketed it across three renders -- 12.1 left w
 12.3 pushed step 32 outside the border, **12.2 is right.** Do not re-tune it from the
 estimator alone.
 
-## SETTLED 2026-08-17: the derived sheets export oversized, and that is FINE
+## SETTLED 2026-08-18: every sheet exports at its REAL paper size
 
-**Terry's call, after seeing the numbers: *"I'm fine with that -- aspect ratio is right which is
-all that matters."*** He is correct, and it is provable rather than a hope.
+**Terry, 2026-08-18: the legal PDF came out 18.43 x 11.19 in, not 14 x 8.5.** The aspect was right
+and the size was not, so printing needed *Fit on page* -- *"it's minor but feels stupid"*.
 
-**A sheet that cannot hold the drawing at 1:1 carries a `pageScale`, and draw.io multiplies the
-exported page by it.** So `8.5x14` exports at 18.44 x 11.19 in rather than 14 x 8.5. Measured from
-a real export, and matching `pageWidth * pageScale` exactly.
+**The cause was arithmetic, and the shrink itself is unavoidable.** The content is 1764 x 1030 units
+after the column spread and a legal page is 1400 x 850, so something has to scale. It used to be
+`pageScale`: draw.io sizes an exported page as `pageWidth * pageScale`, so a scale of 1.3165 bought
+a page big enough to hold the drawing and handed the shrink to the print dialog.
 
-**`pageScale` multiplies BOTH dimensions, so the exported aspect equals the paper aspect by
-construction** -- 1.6478 against legal's 1.6471, a difference of 0.0007 from rounding in the
-export. **Fit to Page therefore scales uniformly: no distortion, no letterboxing, no cropping.**
+**Now the GEOMETRY carries the scale and `pageScale` is always 1.** The rendered picture is
+identical -- same content, same proportions -- and the only thing that changed is the number the
+exported file declares.
 
-**This MUST NOT be "fixed".** The only ways to make the page legal-sized are to rescale the
-geometry -- the one thing this whole design refuses, because every font size and threshold would
-stop meaning what it means -- or to spill the drawing across a grid of pages. **Print `8.5x14` and
-`16x9` WITH Fit to Page. Print `11x17` at 100% without it.** The build prints the right recipe for
-each sheet on every run.
+| Sheet | Page declares | Content scale |
+|---|---|---|
+| `11x17` | **17.00 x 11.00 in** | 1.0000 |
+| `8.5x14` | **14.00 x 8.50 in** | 0.7596 |
+| `16x9` | **19.20 x 10.80 in** | 1.0000 |
+
+**Print every sheet at 100%, with Fit to Page OFF.** That instruction is now the same for all three,
+which is the point.
+
+### The refusal to rescale still stands, and it was never about this
+
+`diagram_sheets.py` says the content is authored once at tabloid and never resized. **That is about
+the AUTHORED canvas**, where every font size, every hand-set box height and every threshold in the
+check suite is expressed. All of them still mean what they meant: **the whole check suite runs in
+authored units, and the scale is the last thing that happens on the way out.**
+
+### Two checks make the scale safe, and one of them was blind at first
+
+**A census enumerated every scale-sensitive term from the artifact** -- nine style keys and nine
+inline CSS properties -- rather than from memory. `arcSize` is a percentage and the exit/entry pairs
+are fractions, so those are named as excluded.
+
+**A census can only list what somebody thought of**, so the build additionally proves the round
+trip: the written style and label must be the authored one with every length multiplied by the
+scale and **everything else identical**. That check found a real miss immediately -- `spacingTop=-6`
+on the browser glyph was never scaled, because the regex was `([\d.]+)` and did not match a
+negative.
+
+**It was blind in its first version, and the fix is the useful part.** It began with *"if the tokens
+are equal, move on"*, so a term that was never scaled AT ALL looked identical and passed -- it only
+caught terms scaled wrongly. **An unchanged scaled key is now a failure.**
+
+**One honest limit: a term deleted from `SCALED_STYLE_KEYS` is invisible to it**, because the check
+consults the same list. That is the checker's-configuration-is-part-of-the-instrument problem, and
+the defense against it is the census plus looking at the render.
 
 ## Open
 
