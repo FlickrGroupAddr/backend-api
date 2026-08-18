@@ -30,6 +30,33 @@ phrases. **The diagram build fails on a lowercase label.** Legitimately lowercas
 paths where case carries meaning, and the continuation of a wrapped sentence. A digit is a correct
 first character.
 
+## `docs/WORK-LOG.md` leads the task list, and they MUST NEVER diverge
+
+**Standing order, Terry, 2026-08-18, verbatim: *"having our two views of outstanding work out of
+sync is worse than not having any lists at all."*** RFC 2119 sense — **MUST NOT is absolute.**
+
+**`docs/WORK-LOG.md` is the single source of truth. The harness task list is a rendering of it.**
+
+| He says | Claude does |
+|---|---|
+| "Add to the task list" | **Write `docs/WORK-LOG.md` FIRST**, then sync the list to the file |
+| Anything that changes `docs/WORK-LOG.md` | **Re-sync the list in the SAME TURN** |
+| Starts a fresh session | **Rebuild the panel from the file** — the task list does not survive one |
+
+**The duty is entirely Claude's, and the reason is structural rather than a courtesy.** Terry sees
+the panel and cannot open the file mid-conversation. Claude writes the file and cannot see the
+panel. **A divergence is invisible to both of us**, so nobody will catch it and it will be believed.
+
+**Claude MUST verify by READING `~/.claude/tasks/<session-id>/<n>.json`** — one JSON file per task,
+session id being the most recently modified directory there. **A `TaskCreate` that returned success
+is not evidence the list matches the file**, which is this repository's oldest lesson wearing a new
+hat.
+
+**A heavyweight rebuild is ALWAYS acceptable** — delete every task, re-add from the file. Terry said
+so explicitly, and it is the right move whenever the cheap reconciliation is not obviously correct.
+
+**The contract, including what "synced" means exactly, lives at the top of `docs/WORK-LOG.md`.**
+
 ## Dates are versions
 
 No `v1`, `v2`, `draft` or `final`. **Artifacts are dated, and the filename and any in-document date
