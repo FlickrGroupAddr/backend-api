@@ -171,10 +171,16 @@ minutes. **Use it to hand him a durable link. Do not use it to iterate.**
   everything else only has to fit, because a roomy tile is usually sized by the arrows reaching
   it.
 
-### The defect class nothing checks: the picture contradicting the text
+### The defect class barely checked: the picture contradicting the text
 
 **Three defects in one session were the drawing making a claim the document denies.** These are not
-geometry, and no assertion compares the two.
+geometry, and almost nothing compares the two.
+
+**One slice of it IS asserted now**: every route path the journey names exists on the canvas, and
+every route tile is named by some step. **The obvious stronger version cries wolf** -- requiring a
+step's path to belong to an endpoint of its badge's edge fails honestly on step 18, where Flickr
+redirects the browser to FGA's callback. **Which arrow a step belongs to is still unasserted**, and
+so is everything below that is not a route.
 
 | The picture said | The text said |
 |---|---|

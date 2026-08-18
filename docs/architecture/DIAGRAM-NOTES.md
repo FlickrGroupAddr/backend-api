@@ -403,8 +403,12 @@ estimator alone.
   `routed, measured by eye`, so it is an honest hole rather than a false pass. **The BADGE checks
   no longer share it** -- they walk the full polyline through an edge's waypoints, and refuse a
   badge on an auto-routed edge whose drawn shape the file does not carry.
-- **No contradiction check exists.** Comparing an edge's endpoints against the journey step that
-  cites it is mechanical, and nobody has written it.
+- **A contradiction check exists now, in the only form that does not cry wolf.** The obvious
+  version -- *the step's named path must be owned by an endpoint of its badge's edge* -- fails
+  honestly on step 18, where Flickr redirects the browser to FGA's callback and the path named
+  belongs to neither end of that arrow. So the build asserts the two directions that hold without
+  exception: **every route the journey names exists on the canvas, and every route tile is named by
+  some step.** Which arrow a step belongs to is still unasserted, and that is the honest remainder.
 
 ---
 
