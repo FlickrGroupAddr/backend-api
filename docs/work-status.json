@@ -37,10 +37,24 @@
     {
       "id": "build-backend-api-diagram",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "ready_for_review",
       "subject": "Build the backend API the diagram designs",
       "detail": "**Terry, 2026-08-18, cleared hot for this session.** Whatever the Worker needs so the Auth Data Flow panel is TRUE rather than proposed. **The route rename LANDED 2026-08-18**: `src/` now serves `/auth/device-link/{start,poll,approve,deny}` and `/auth/flickr/{login,callback,logout}`, 71 replacements across 11 files, gate green and all 46 mutations caught. **It removed a real fragility** -- `start` used to be credential-free only because `deviceRoutes` mounted before `apiRoutes`' blanket `requireSession` on `/api/v001/*`, and an exemption bought by registration order is invisible in the route it protects. **What REMAINS: `enter-user-code`.** The diagram draws it inside the Worker; the code serves that page from the SPA at `/link`, because `verificationUri` is `new URL(\"/link\", UI_ORIGIN)`. **Both readings are defensible and Terry holds the pen** -- see `DIAGRAM-NOTES.md`, *\"ONE route label is still a proposal\"*. Pairs with the plug-in row: two ends of one flow, ADR-18 lockstep",
-      "history": []
+      "history": [
+        {
+          "at": "2026-08-18T14:46:40-04:00",
+          "to": "ready_for_review",
+          "by": "claude",
+          "from": "in_progress"
+        }
+      ],
+      "comments": [
+        {
+          "at": "2026-08-18T14:46:54-04:00",
+          "by": "claude",
+          "text": "Every route the canvas draws is now served. The rename landed earlier (/auth/device-link/*, /auth/flickr/*) and the last gap, enter-user-code, exists as of 897c560 -- it was not merely unnamed, it was a page that did not exist anywhere, so device linking could not complete. Gate green at 305 tests, all 46 mutations caught. WHAT IS NOT DONE: the 32 Auth Data Flow steps have never been walked end to end against a real Flickr login, only against the stub. That is the honest remaining gap."
+        }
+      ]
     },
     {
       "id": "bring-jamstack-client-onto",

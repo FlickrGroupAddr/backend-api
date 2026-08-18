@@ -35,19 +35,27 @@ registration order is invisible in the route it protects**, and this repository 
 that once — the same ordering silently took ADR-12's `no-store` header with it. The blanket rule now
 has no exceptions.
 
-### ONE route label is still a proposal, and it is `enter-user-code`
+### SETTLED 2026-08-18: `enter-user-code` is a Worker route, and it now exists
 
-**The diagram draws `/auth/device-link/enter-user-code` INSIDE the Worker. The code serves that page
-from the Svelte app at `/link`.** `deviceRoutes` builds `verificationUri` as
-`new URL("/link", c.env.UI_ORIGIN)`, so the browser lands on the SPA and never touches a Worker
-route by that name.
+**Every route label on the canvas is real.** The last one was
+`/auth/device-link/enter-user-code`, and until that day it was worse than a proposal — it was a
+page that did not exist anywhere. `deviceRoutes` handed the plug-in `new URL("/link", UI_ORIGIN)`,
+while `parse()` in `web/src/lib/router.ts` resolves exactly `/`, `/queue` and `/admin`. **So the
+last step of device linking told a person to visit a page that said there was no such page**, and
+the flow could not complete on either side. Nothing failed and 297 tests passed throughout.
 
-**Both readings are defensible and Terry holds the pen.** A Worker-served page would put the whole
-device-link flow behind one prefix; the SPA route keeps ADR-18's rule that `/` belongs to the app
-shell. **Nothing has been built either way**, and this section is the record that the picture and
-the code disagree here.
+**Terry ruled it belongs to the Worker, and the reason is the redirect.** The session cookie is
+`HttpOnly`, so a static SPA page cannot tell whether you are signed in. Only the server can — and
+journey step 9 requires exactly that: the page answers a signed-out visitor with a redirect to
+`/auth/flickr/login`, carrying `returnTo`.
 
-**Delete this section in the same commit that settles it.**
+**It is the one route here that cannot use `requireSession`**, which answers `401` with JSON. That
+is right for an API and useless to a person in a browser.
+
+**The page posts JSON rather than submitting a form, and that is a CSRF defense.** A urlencoded
+form post is a simple request — no preflight, sent cross-origin with cookies — so any site could
+approve a device link for a signed-in user. **A "simplification" back to a native form would hand
+that away silently.**
 
 ### The canvas is scoped to the Lightroom Classic journey, and the web UI is real
 
