@@ -1423,6 +1423,39 @@ def rgb(hexcolor: str) -> tuple[int, ...]:
 
 print()
 note("Badge color distinct from every tile fill:")
+
+# **THE BADGES THEMSELVES WERE NEVER CHECKED, which made everything below a claim
+# about a constant rather than about the canvas.** `BADGE_FILL` is compared against
+# every tile fill, and nothing asserted that a single badge actually carries it.
+#
+# **The ring is the worse half.** The block above says in capitals that the white
+# ring is load-bearing and MUST NOT be removed, and that the 90-unit threshold is
+# *only defensible because it exists* -- `lrc` at 105 and `oauthdo` at 108 both hold
+# a badge directly on the fill. **Delete the ring and every number below still
+# passes while three badges become unreadable.** That is precisely the shape
+# `assertions-that-pass-either-way` describes: a helper that says what a value ought
+# to be, which nothing ever compares to the real thing.
+_wrong_fill, _no_ring, _dim_text = [], [], []
+for _n in BADGES:
+    _st = by_id[_n].get("style") or ""
+    _f = re.search(r"fillColor=(#[0-9A-Fa-f]{6})", _st)
+    _s = re.search(r"strokeColor=(#[0-9A-Fa-f]{6})", _st)
+    _sw = re.search(r"strokeWidth=([\d.]+)", _st)
+    _fc = re.search(r"fontColor=(#[0-9A-Fa-f]{6})", _st)
+    if not _f or _f.group(1).upper() != BADGE_FILL.upper():
+        _wrong_fill.append(f"{_n}={_f.group(1) if _f else 'none'}")
+    if not _s or _s.group(1).upper() != "#FFFFFF" or not _sw or float(_sw.group(1)) <= 0:
+        _no_ring.append(_n)
+    if not _fc or _fc.group(1).upper() != "#FFFFFF":
+        _dim_text.append(f"{_n}={_fc.group(1) if _fc else 'none'}")
+check(f"every badge is filled {BADGE_FILL}", not _wrong_fill,
+      f"{len(BADGES)} badges" + (f"   WRONG: {', '.join(_wrong_fill[:5])}" if _wrong_fill else ""))
+check("every badge keeps its white ring", not _no_ring,
+      "the ring is what separates navy from a black arrow"
+      + (f"   MISSING: {', '.join(_no_ring[:5])}" if _no_ring else ""))
+check("every badge's number is white", not _dim_text,
+      f"against {BADGE_FILL}" + (f"   WRONG: {', '.join(_dim_text[:5])}" if _dim_text else ""))
+
 _badge_rgb = rgb(BADGE_FILL)
 for tile in ["dns", "secrets", "cron", "api", "retry", "oauthdo", "devicedo", "d1", "lrc",
              "lrcat", "apidevice", "apiplugin", "apirest", "apinew", "apioauth",
@@ -1659,7 +1692,7 @@ def text_block(cid: str) -> float:
     # could never be pointed at a route tile -- every one of them is a single line.
     if not chunks or not re.sub(r"<[^>]*>", "", raw).replace("&nbsp;", " ").strip():
         raise SystemExit(f"Text estimator parsed no text out of '{cid}' -- it would measure blind.")
-    pad_left, pad_right, _pad_top, _pad_bottom = spacing_of(cid)
+    pad_left, pad_right = spacing_of(cid)[:2]
     usable = width(cid) - pad_left - pad_right
     size, total = 12, 0.0
     for chunk in chunks:
@@ -2735,7 +2768,7 @@ for _sheet in SHEETS:
         # A reflow moves badges and tiles by different deltas, so an overlap can be
         # introduced on a wider sheet alone -- and nothing looked.
         def _moved_box(_c: str) -> tuple[float, float, float, float]:
-            _x, _y, _w, _h = boxes[_c]
+            _, _y, _w, _h = boxes[_c]
             return (_moved_cx(_c) - _w / 2, _y, _w, _h)
         def _hit(_a: str, _b2: str) -> bool:
             ax, ay, aw, ah = _moved_box(_a)
