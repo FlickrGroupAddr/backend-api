@@ -1172,6 +1172,11 @@ SPREAD_ABOUT = [
 ON_AXIS_OF = {"n27": "dns", "n32": "dns"}
 # A badge centered between two named edges.
 BETWEEN_EDGES = [(["n2", "n7"], ("cfframe", "left"), ("netb", "left"))]
+# **The same idea on the VERTICAL axis**, which BADGE-PLACEMENT.md records for `n11`
+# and nothing asserted: *"breathing room from its line, vertically centered between
+# FGA worker tile & App Secrets Store tile"*. Its own y never moves under the reflow,
+# so this is checked once rather than per sheet.
+CENTERED_BETWEEN_Y = [("n11", ("api", bottom), ("secrets", top))]
 
 # **Badges are also stacked VERTICALLY against each other**, which Terry named as a
 # relationship in its own right: *"or relative to something else: centerline of
@@ -1245,6 +1250,11 @@ def check_placement(xc: Callable[[str], float], tag: str = "") -> None:
 
 note("Badge placement, per BADGE-PLACEMENT.md:")
 check_placement(cx)
+for _badge, (_ta, _fa), (_tb, _fb) in CENTERED_BETWEEN_Y:
+    _mid = (_fa(_ta) + _fb(_tb)) / 2
+    check(f"{_badge} vertically centered between {_ta} and {_tb}",
+          abs(cy(_badge) - _mid) < EPS,
+          f"{cy(_badge):.1f} against midpoint {_mid:.1f}")
 # **THREE badge diameters exist and all three are deliberate**, measured 2026-08-17:
 # 21 for the five in tight spots (`n2`, `n7`, `n11`, `n23`, `n24` -- the ones Terry
 # describes as dodging a conflict or needing breathing room), 24 for the ordinary
