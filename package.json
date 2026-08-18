@@ -24,10 +24,11 @@
 		"lua:lint": "selene docs/lrc-spike/plugin",
 		"sql": "python -m sqlfluff lint migrations",
 		"typehints": "python -m ruff check --no-cache scripts/",
+		"argparse": "python scripts/argparse-check.py",
 		"types:py": "python -m pyright scripts/",
 		"lsp": "python scripts/lsp-check.py",
 		"lua:imports": "python scripts/lua-imports.py docs/lrc-spike/plugin",
-		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run sql && npm run diagram && npm run test && npm run trace && npm run build:web"
+		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run argparse && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run sql && npm run diagram && npm run test && npm run trace && npm run build:web"
 	},
 	"dependencies": {
 		"hono": "4.13.3",
@@ -36,14 +37,14 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.9",
-		"@cloudflare/vitest-pool-workers": "0.21.3",
+		"@cloudflare/vitest-pool-workers": "0.22.0",
 		"@fontsource-variable/inter": "5.3.0",
 		"@sveltejs/vite-plugin-svelte": "7.3.0",
 		"svelte": "5.56.9",
 		"typescript": "7.0.2",
 		"vite": "8.2.1",
 		"vitest": "4.1.10",
-		"wrangler": "4.123.0"
+		"wrangler": "4.124.0"
 	},
 	"allowScripts": {
 		"esbuild@0.28.1": true,

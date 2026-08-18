@@ -10,6 +10,7 @@ clean verdict has never been compared to a working file is a checker whose clean
 verdict means nothing.
 """
 
+import argparse
 import os
 import re
 import sys
@@ -196,7 +197,17 @@ def parse_check(luac: str, paths: list[str]) -> list[tuple[str, str]]:
 
 
 if __name__ == "__main__":
-    targets = expand(sys.argv[1:])
+    # **argparse rather than `sys.argv`.** Standing order, Terry, 2026-08-18: all
+    # Python cmdline arg parsing MUST go through argparse. `scripts/argparse-check.py`
+    # fails the gate on a hand-rolled read, and only Terry may authorize an exemption.
+    _parser = argparse.ArgumentParser(
+        description="Parse-check Lua files with luac 5.1, or fall back to a block-balance pass.")
+    _parser.add_argument(
+        "paths", nargs="+", metavar="PATH",
+        help="Lua files, or directories to search for them.")
+    _cli = _parser.parse_args()
+
+    targets = expand(_cli.paths)
     if not targets:
         print("No .lua files found -- refusing to report success on nothing.")
         sys.exit(1)
@@ -227,9 +238,7 @@ if __name__ == "__main__":
         else:
             print(f"{name}: balanced")
 
-    import os
-
-    for arg in sys.argv[1:]:
+    for arg in _cli.paths:
         if not os.path.isdir(arg):
             continue
         drift, compared = mirror_drift(arg)

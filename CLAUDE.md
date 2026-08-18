@@ -234,10 +234,16 @@ so is everything below that is not a route.
 npm run check
 ```
 
-**Thirteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
-`ruff`, `pyright`, **the LSP gate**, the Lua parse check, `selene`, **the ADR-23 Rule 3 import
-gate**, `sqlfluff`, **the diagram staleness check**, 297 tests, the traceability gate, and the web
-build. **It MUST be clean before a commit.**
+**Fourteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
+`ruff`, **the argparse gate**, `pyright`, **the LSP gate**, the Lua parse check, `selene`, **the
+ADR-23 Rule 3 import gate**, `sqlfluff`, **the diagram staleness check**, 297 tests, the
+traceability gate, and the web build. **It MUST be clean before a commit.**
+
+**`scripts/argparse-check.py` refuses any hand-rolled command-line parsing.** Terry's global
+standing order, 2026-08-18: all Python argument parsing MUST use `argparse`. It reads the AST rather
+than the text, so the prose describing the rule does not trip it, and it self-tests both polarities
+on every run. **`ARGV-EXEMPT:` is TERRY'S marker and Claude MUST NOT write one** -- convert the
+script, or leave the gate red and say so.
 
 **`npm run diagram` is `build-diagram.py --check`, and the `--check` is load-bearing.** It renders
 exactly what a build would produce, compares it to the committed sheets, and **writes nothing**. A

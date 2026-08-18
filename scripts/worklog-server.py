@@ -43,6 +43,13 @@ showing the old list.
 will happily keep showing what it already had until the file is next written. `touch`
 the log, or edit it, to force a repaint.
 
+**A change to the PAGE -- this file's HTML, CSS or JavaScript -- needs a BROWSER
+RELOAD on top of both.** The open tab is still running the script it was served. That
+produces a genuinely confusing halfway state, measured here: adding `ready_for_review`
+made the ROWS render correctly, because their labels come from `/data` on the server,
+while the counts line and the new border color did not, because those live in the
+page. **Half the change appearing is more disorienting than none of it.**
+
 **Both are the right trade for a review loop** -- polling the content on every tick
 would repaint over Terry's scroll position twice a second. They are written down
 because each one looks exactly like the server being broken.
@@ -91,6 +98,9 @@ STATUS_LABEL = {
     "in_progress": "IN PROGRESS",
     "not_started": "NOT STARTED",
     "blocked": "BLOCKED",
+    # **The one Terry acts on.** Claude cannot cross the edge into `completed`, so a
+    # row sitting here is waiting on him and nothing else will move it.
+    "ready_for_review": "NEEDS SIGNOFF",
     "completed": "COMPLETED",
 }
 
@@ -119,6 +129,7 @@ PAGE = """<!doctype html>
     --bg: #14161A; --panel: #1C1F25; --line: #2C313A;
     --ink: #E8EAED; --dim: #9AA0A6;
     --active: #F6821F; --idle: #6B7280; --blocked: #E5484D; --done: #3FB950;
+    --review: #58A6FF;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100%; background: var(--bg);
@@ -145,12 +156,17 @@ PAGE = """<!doctype html>
   .item.in_progress { border-left-color: var(--active); }
   .item.blocked { border-left-color: var(--blocked); }
   .item.completed { border-left-color: var(--done); }
+  /* Blue, because it is the one state that is waiting on TERRY rather than
+     on Claude. It should read as a different KIND of thing, not a busier
+     shade of in-progress. */
+  .item.ready_for_review { border-left-color: var(--review); }
   .num { color: var(--dim); font-variant-numeric: tabular-nums; font-size: 13px; }
   .pill { font-size: 10px; letter-spacing: .07em; font-weight: 700;
           color: var(--idle); align-self: start; padding-top: 2px; }
   .in_progress .pill { color: var(--active); }
   .blocked .pill { color: var(--blocked); }
   .completed .pill { color: var(--done); }
+  .ready_for_review .pill { color: var(--review); }
   .subject { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   .detail { font-size: 12.5px; line-height: 1.55; color: var(--dim); }
   .detail strong { color: var(--ink); font-weight: 600; }
@@ -231,8 +247,12 @@ function paint() {
   }
 
   const active = data.open.filter(r => r.status === 'in_progress').length;
+  const review = data.open.filter(r => r.status === 'ready_for_review').length;
+  // The signoff count leads when there is one, because it is the only number on
+  // this page that asks Terry to do something.
   document.getElementById('counts').textContent =
-    data.open.length + ' open, ' + active + ' in progress, ' + data.landed.length + ' landed';
+    (review ? review + ' NEED SIGNOFF · ' : '')
+    + data.open.length + ' open, ' + active + ' in progress, ' + data.landed.length + ' landed';
 }
 
 async function tick() {

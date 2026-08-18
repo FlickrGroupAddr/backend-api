@@ -28,6 +28,7 @@ behind something that takes two minutes.
     python docs/lrc-spike/probe-catalog.py [path-to.lrcat]
 """
 
+import argparse
 import pathlib
 import re
 import sqlite3
@@ -158,7 +159,17 @@ def pass_3_find(con: sqlite3.Connection, needle: str = "flickr") -> None:
 
 
 def main() -> int:
-    catalog = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT
+    # **argparse rather than `sys.argv`.** Standing order, Terry, 2026-08-18: all
+    # Python cmdline arg parsing MUST go through argparse, and only he may authorize
+    # an exemption. This file is archived spike evidence rather than a live tool, so
+    # it was the obvious thing to grandfather -- converting it was cheaper than
+    # asking him for the exemption, and it gained a `--help` on the way.
+    parser = argparse.ArgumentParser(
+        description="Read a Lightroom Classic catalog read-only and report its shape.")
+    parser.add_argument(
+        "catalog", nargs="?", type=pathlib.Path, default=DEFAULT,
+        help=f"Path to the .lrcat. Defaults to {DEFAULT}.")
+    catalog = parser.parse_args().catalog
 
     if not catalog.exists():
         print(f"catalog not found: {catalog}")

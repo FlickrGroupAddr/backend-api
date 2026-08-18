@@ -28,12 +28,12 @@ this system actually depends on. users.svg is Font Awesome Free 5.2.0 by
 attribution comment travels inside the SVG itself.
 """
 
+import argparse
 import base64
 import itertools
 import math
 import pathlib
 import re
-import sys
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 
@@ -75,7 +75,22 @@ OUT = sheet_path(ROOT, DATE, AUTHORED)
 # characters. A byte compare would fail on every Windows checkout and teach
 # everybody to ignore the check -- the same trap `traceability.py` documents.
 # ===========================================================================
-CHECK_ONLY = "--check" in sys.argv
+#
+# **Parsed with `argparse`, not `sys.argv`.** Standing order, Terry, 2026-08-18:
+# *"all Python cmdline arg parsing RFC-MUST be done with argparse module, zero
+# exceptions."* `scripts/argparse-check.py` fails the gate on a hand-rolled read.
+#
+# **This runs at import time, and that is forced rather than chosen.** The whole
+# script is top-level: it writes the diagram at line ~520 and then runs the checks
+# below it, so there is no `main()` to park a parser in. Wrapping the module in one
+# would be a large refactor of a working generator to satisfy a style, and the flag
+# has to be known before the first `emit`.
+_parser = argparse.ArgumentParser(
+    description="Generate the FGA architecture diagram, and validate what it writes.")
+_parser.add_argument(
+    "--check", action="store_true",
+    help="Render and compare against the committed sheets. Writes nothing.")
+CHECK_ONLY = _parser.parse_args().check
 _stale: list[str] = []
 
 

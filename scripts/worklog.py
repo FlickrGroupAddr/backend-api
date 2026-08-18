@@ -43,15 +43,32 @@ END_HEADINGS = ("## Landed", "## Not an item yet", "## Open")
 # A log state maps to a panel status plus a subject prefix. **`completed` is absent
 # on purpose** -- it never reaches the panel, and a lookup miss is how the checker
 # notices a completed row left sitting in the Open table.
+#
+# **`ready_for_review` shows as `in_progress` in Terry's panel, with NO prefix.**
+# His call, 2026-08-18: *"leave them marked in progress on my view, ready for review
+# in yours."* And it is the right reading -- from his side the ITEM is still in
+# flight until he signs it off, and the review state is Claude's bookkeeping about
+# whose turn it is. **He learns a row is waiting on him by being told, not by
+# decoding a prefix.**
+#
+# **`blocked` keeps its prefix**, because that one IS a fact about the item rather
+# than about whose turn it is, and the panel has no status for it.
 PANEL: dict[str, tuple[str, str]] = {
     "not_started": ("pending", ""),
     "in_progress": ("in_progress", ""),
     "blocked": ("pending", "BLOCKED: "),
+    "ready_for_review": ("in_progress", ""),
 }
 
 # Every state the Open table may legally carry, including the one that means the row
 # should have moved to Landed.
 STATES = (*PANEL, "completed")
+
+# **The three states that bounce freely.** Terry, 2026-08-18: *"no one way arrows on
+# state transition diagram for following three."* `not_started` reaches any of them,
+# and they reach each other. **Only the edge INTO `completed` is one-way, and only
+# Terry may take it.**
+FLUID = frozenset({"in_progress", "blocked", "ready_for_review"})
 
 
 class Row(NamedTuple):
