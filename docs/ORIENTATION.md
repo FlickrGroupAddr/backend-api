@@ -45,6 +45,7 @@ cheap.
 |---|---|
 | `CLAUDE.md`, "The diagram is generated, and it is gospel" | The loop's traps, and why `#U` cannot load loopback |
 | `docs/architecture/DIAGRAM-NOTES.md` | **What the picture CLAIMS about the system, how it prints, and the draw.io traps.** It holds no coordinates on purpose — the build prints those |
+| `docs/architecture/BADGE-PLACEMENT.md` | **Why each step badge sits where it does.** Terry placed all 32 by hand against other tiles, and the `.drawio` records none of it. **Read it before moving one** |
 
 **Two rules that cost real time to learn, both on 2026-08-16:**
 
