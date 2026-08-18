@@ -101,6 +101,12 @@ stopped being true.
 **While it is off, Claude MUST say so when reporting a diagram change.** An unvalidated render and a
 validated one look identical in a screenshot.
 
+**And while it is off, the GATE's diagram step goes vacuous — deliberately, and it says so.**
+`npm run diagram` cannot compare the committed sheets against a build that never validated them, so
+it prints `CHECKS ARE OFF, so the committed sheets cannot be verified` and passes. **It MUST NOT
+reach the unlink that a real build performs here**: that would make every gate run during a design
+pass delete two sheets and report success. A check that mutates what it checks is not a check.
+
 **The text estimator now agrees with Chrome to about 3 units, and it STILL does not get the last
 word.** It was out by 110 on one panel until 2026-08-17, and every earlier version was wrong in a
 way that read as plausible. **When a box looks wrong on screen, the screen is right.** Changing
