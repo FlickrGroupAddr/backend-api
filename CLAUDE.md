@@ -268,7 +268,7 @@ so is everything below that is not a route.
 npm run check
 ```
 
-**Fourteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
+**Fifteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
 `ruff`, **the argparse gate**, `pyright`, **the LSP gate**, the Lua parse check, `selene`, **the
 ADR-23 Rule 3 import gate**, `sqlfluff`, **the diagram staleness check**, 305 tests, the
 traceability gate, and the web build. **It MUST be clean before a commit.**
@@ -594,12 +594,13 @@ best-of-breed linter at best-practice pedantry, XOR a written override in this f
 there by Terry and only Terry.** The full order and the method are in `~/.claude/CLAUDE.md`.
 **Claude MUST NOT write an override**, and MUST report a gap rather than proceeding past it.
 
-Tracked file counts as of 2026-08-17.
+Tracked file counts as of 2026-08-18, taken from `git ls-files` rather than from the previous
+version of this table.
 
 | Language | Files | Linter | LSP | State |
 |---|---|---|---|---|
 | TypeScript | 50 | `biome`, 8 rules past `recommended` | **pending** | Version-gated to TS 7.1; `npm run lsp` turns red on its own |
-| Python | 13 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
+| Python | 14 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
 | Lua | 9 | `selene` + `lua-balance.py` + `lua-imports.py` | `lua-lsp` | **Equipped** |
 | SQL | 6 | `sqlfluff`, parser only | — | **Equipped**, and read why below |
 | **Svelte** | **4** | none — Biome cannot read the template | none | **NOT COMPLIANT** — blocked by the same TS 7 pin, ADR-13 |
