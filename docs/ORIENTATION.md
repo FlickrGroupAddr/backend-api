@@ -113,6 +113,7 @@ shape, probe the real runtime for runtime capability, and scan the CLI binary fo
 | What was decided, and why? | `docs/architecture/DECISIONS.md` |
 | What is decided but NOT built? | That file's **"Still open"** section |
 | What was rejected, and why? | That file's **"Considered and rejected"** table |
+| What is not a decision yet? | **`docs/TODO.md`** — open items with no ADR, each row pointing at its detail rather than restating it |
 | What does Flickr really do? | `docs/FLICKR.md` — several rows contradict Flickr's own docs |
 | How do I run it? | `docs/SETUP.md` |
 | Where did the Lightroom client get to? | `docs/LRC-CLIENT-NOTES.md` — **its "PICK UP HERE" section is the first thing to read** |
