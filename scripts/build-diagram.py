@@ -1398,6 +1398,22 @@ _painted_over = [
 ]
 for _p in _painted_over:
     note(f"    {_p}")
+# **A badge's id and the number it DISPLAYS are two different things**, and every
+# other check in this file reads the id. `n7` showing "8" would satisfy the
+# placement rules, the stacks, the clearances and the journey parity, and the
+# drawing would silently carry two 8s and no 7 -- a numbering error that only a
+# reader counting badges would ever find.
+_mislabeled = [f"{_n} shows {(by_id[_n].get('value') or '').strip()!r}"
+               for _n in BADGES
+               if (by_id[_n].get("value") or "").strip() != _n[1:]]
+for _m in _mislabeled:
+    note(f"    {_m}")
+check("every badge displays its own number", not _mislabeled,
+      f"{len(BADGES)} badges")
+_shown = sorted(int((by_id[_n].get("value") or "0").strip() or 0) for _n in BADGES)
+check("the numbers run 1..N with no gap or repeat", _shown == list(range(1, len(BADGES) + 1)),
+      f"1..{len(BADGES)}" + ("" if _shown == list(range(1, len(BADGES) + 1)) else f"   GOT {_shown}"))
+
 check("no tile paints over a badge", not _painted_over,
       f"badges occupy document positions "
       f"{min(_DOC_ORDER[_b] for _b in BADGES)}-{max(_DOC_ORDER[_b] for _b in BADGES)}")
