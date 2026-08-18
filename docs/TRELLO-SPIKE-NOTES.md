@@ -92,6 +92,48 @@ notice or a deprecation window.
 
 ---
 
+## SETTLED 2026-08-18, and the recommendation below was OVERTAKEN
+
+**Terry connected the server, then shut it off. Standing order, verbatim: *"do not read OR write
+from trello."*** RFC 2119 sense — **MUST NOT is absolute**, and it covers the read tools too.
+
+**The blocker is identity, and it was invisible until the connection existed.** The OAuth grant
+**makes Claude the user**. `trelloReadMember` with `action: "get_me"` returned `terrydott`, Terry
+Ott, timezone `America/New_York` — his own account, not a bot member.
+
+| What we assumed | What is true |
+|---|---|
+| A private board is the boundary | Privacy limits which PEOPLE see a board. Claude is authenticated as an owner |
+| The grant can be scoped to one board | **Workspace-scoped only.** All 25 boards in `Terry Personal` were reachable |
+| Terry's signoff would be provable | A card Claude moves and a card Terry moves are **the same event by the same member** |
+
+**That last row kills the recommendation below on its own terms.** The whole design rested on Terry
+alone owning the `ready_for_review` to `completed` edge. Trello cannot tell us apart, so the edge
+stops being provable and becomes an honor system — which is exactly the property the design existed
+to buy.
+
+**He created the private board FIRST and expected it to be the boundary.** It is not, and nobody
+could have read that off the documentation: the README's *"workspace-scoped access"* line describes
+the grant, and says nothing about the assistant borrowing the granting user's identity.
+
+**The unfinished thread, if this is ever reopened:** give Claude its OWN free Trello account, then
+invite it to one board as a guest rather than a workspace member. That would buy a real boundary and
+real attribution at once. **It was NOT verified** — the safety classifier went down before the check
+ran, and this file MUST NOT be read as evidence that the feature exists.
+
+**The server stays registered** in `~/.claude.json` under user scope. **Registered is not
+permission.** Nothing was created on any board; only reads happened, and those stopped when the
+order landed.
+
+**`docs/WORK-LOG.md` remains the single source of truth.**
+
+---
+
+## The recommendation as it stood before that, kept for the reasoning
+
+**It was written before the identity problem surfaced, and its four arguments all still hold.**
+They are the reason the fallback is comfortable rather than a consolation prize.
+
 ## The recommendation: Trello for SIGNOFF, not for the log
 
 **The file stays the source of truth. Trello carries exactly one transition.**
