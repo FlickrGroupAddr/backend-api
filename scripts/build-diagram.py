@@ -1327,10 +1327,27 @@ for _badge, (_ta, _fa), (_tb, _fb) in CENTERED_BETWEEN_Y:
 # Terry's call, not a defect to correct**, and it is written down so it stops being
 # rediscovered.
 BADGE_DIAMETERS = {21.0, 24.0, 30.0}
+# **Each diameter carries one font size**, so a badge copied from a neighbor and
+# then resized cannot keep the old digit. The 21s really do run a hair larger
+# relatively -- 11/21 is 0.524 against 0.500 for the other two -- and that is the
+# inconsistency recorded above rather than a typo to round away.
+BADGE_FONT_FOR = {21.0: 11, 24.0: 12, 30.0: 15}
 _odd_size = sorted({width(_n) for _n in _ALL_BADGES} - BADGE_DIAMETERS)
 check("badges use only the three intended diameters", not _odd_size,
       f"{sorted(BADGE_DIAMETERS)}"
       + (f"   UNEXPECTED: {_odd_size}" if _odd_size else ""))
+_wrong_font = []
+for _n in _ALL_BADGES:
+    _want = BADGE_FONT_FOR.get(width(_n))
+    _got = re.search(r"fontSize=(\d+)", by_id[_n].get("style") or "")
+    if _want is not None and (not _got or int(_got.group(1)) != _want):
+        _wrong_font.append(f"{_n} is {width(_n):.0f} across with fontSize "
+                           f"{_got.group(1) if _got else 'none'}, want {_want}")
+for _w in _wrong_font:
+    note(f"    {_w}")
+check("each badge's number is sized for its diameter", not _wrong_font,
+      ", ".join(f"{int(_d)}->{_f}" for _d, _f in sorted(BADGE_FONT_FOR.items())))
+
 _not_round = sorted(_n for _n in _ALL_BADGES if abs(width(_n) - height(_n)) > EPS)
 check("every badge is circular", not _not_round,
       f"{len(_ALL_BADGES)} badges" + (f"   OVAL: {_not_round}" if _not_round else ""))
