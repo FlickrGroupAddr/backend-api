@@ -356,6 +356,36 @@ others. On 2026-08-15 the build passed every assertion over a diagram you called
 
 ---
 
+## NEXT SESSION STARTS HERE: re-arm the check suite
+
+**Terry, 2026-08-17, at the end of the restructure session:** *"we are going to fix all checks. My
+bet is they get largely ripped out and rewritten with the massive restructure."*
+
+**His bet is almost certainly right, and the reason is recorded elsewhere in this file: a suite
+switched back on after a redesign asserts the OLD design.** The work is not flipping
+`CHECKS_ENABLED`. It is re-reading every assertion against the layout that now exists and rewriting
+the ones that have stopped being true.
+
+**What changed under them during that session**, so nobody has to diff it by eye:
+
+- **Every column moved.** All three column gaps went to 20 du, and columns 1 through 3 shifted left.
+- **The panel owns column 3 outright** at 347.5 wide, and the Legend moved to column 2.
+- **A second Durable Object stack exists** -- `devicedo` and its two cascades -- and `e3` was
+  retargeted to it from `oauthdo`.
+- **`e9` moved from y 534.5 to 640**, because it crossed the space the second stack needed.
+- **The browser glyph grew** from 130x104 to 183x146.4.
+- **Every route tile gained a badge**, and the browser group was reordered chronologically.
+- **The panel is 32 steps** where the suite's row-versus-badge note still describes a 13-row
+  browser-first journey.
+
+**The one failure already identified:** the `lrcat`/`lrc`/`users` axis check asserts a shared WIDTH
+of 130, and `users` is 183. **The requirement was never width** -- it is the shared center axis at
+121.5, which is what keeps `e19` and `e20` plumb, and that still holds.
+
+**Re-arming is also what will catch the drift nobody has looked for.** The checks were off for a
+full day of layout work, and this file's own rule says a green build is not evidence a diagram is
+good -- but a build with no checks at all is not evidence of anything.
+
 ## Open
 
 **None of this blocks anything. It is written down so it is not rediscovered.**
