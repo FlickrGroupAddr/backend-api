@@ -20,6 +20,45 @@
 # exists in the pinned SDK -- a check selene cannot do, because selene does not
 # know what Adobe ships. **The two tools do different jobs and neither replaces
 # the other.**
+#
+# ## THE LANGUAGE SERVER NEEDS TELLING SEPARATELY, and it went untold for two days
+#
+# **This file teaches `selene`. It teaches `lua-language-server` nothing**, and
+# there is no shared format between them. Until 2026-08-19 the repository had no
+# `.luarc.json` at all, so the server reported `Undefined global 'import'` on all
+# twelve plug-in files and read them as Lua 5.4, which additionally flagged working
+# 5.1 idioms in `CheckboxPicker.lua` as deprecated.
+#
+# **`.luarc.json` at the repository root now carries the same two facts** -- the
+# runtime is Lua 5.1, and `import` is the one legitimate global. It is strict JSON
+# and cannot hold this reasoning, which is why the reasoning is here beside the
+# measurement that produced it.
+#
+# **The lesson generalizes past Lua.** A linter and a language server are SIBLINGS,
+# and configuring one proves nothing about the other. A server installed and left
+# unconfigured reads as compliant from a distance while crying wolf on every file,
+# which is how a real finding gets scrolled past.
+#
+# ## `deprecated` IS OFF, and the server's own message is the argument
+#
+# **`unpack` is a correct Lua 5.1 global.** It became `table.unpack` in 5.2, and
+# Lightroom runs 5.1, so `factory:column({ spacing = 2, unpack(leftRows) })` in
+# `CheckboxPicker.lua` is right and MUST NOT be "fixed".
+#
+# **The server flags it anyway, with the runtime already pinned to 5.1**, and the
+# text it prints refutes itself: `Deprecated. (Defined in Lua 5.1/LuaJIT, current is
+# Lua 5.1.)` It reports the definition matching the runtime and calls it deprecated
+# in the same breath.
+#
+# **The whole workspace is twelve files that all target 5.1**, so nothing here can
+# ever hit a post-5.1 deprecation legitimately. Switching the family off costs no
+# real coverage and stops two permanent false findings.
+#
+# **Measured 2026-08-19**: `lua-language-server --check` on the plug-in directory
+# reported 46 problems with no config, 2 with the globals set, and 0 with this
+# family off. **Pass `--configpath` when re-running that check** -- `--check` treats
+# its path argument as the workspace root, so pointing it at the plug-in directory
+# alone finds no `.luarc.json` and reports all 46 again.
 
 [selene]
 base = "lua51"

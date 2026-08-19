@@ -93,13 +93,35 @@ local function run()
 	     re-runs this by accident should not silently mint a second credential. ]]
 	local existing = DeviceLink.loadToken()
 	if existing ~= nil then
+		--[[ **Three answers, because two of them are not the same "no".** Leaving it
+		     alone and forgetting it are opposite intentions, and a dialog that offers
+		     only "link again" or "cancel" gives a person no way to sign out at all --
+		     which would leave `DeviceLink.clearToken` unreachable. ]]
 		local again = LrDialogs.confirm(
 			"Lightroom is already linked",
 			"This plug-in already holds an FGA credential."
 				.. "\n\nLinking again replaces it. The old one keeps working until it expires.",
 			"Link again",
-			"Leave it alone"
+			"Leave it alone",
+			"Forget the stored credential"
 		)
+
+		if again == "other" then
+			DeviceLink.clearToken()
+			--[[ **Local only, and the wording MUST say so.** Clearing the keychain
+			     entry does not revoke the session server-side, and telling somebody
+			     they are signed out everywhere would be false. Revocation is a
+			     different endpoint and this plug-in does not call it. ]]
+			LrDialogs.message(
+				"Forgotten on this computer",
+				"Lightroom no longer holds the credential."
+					.. "\n\nThe session itself is not revoked, and it stays valid until it"
+					.. " expires. Sign out on the FlickrGroupAddr website to end it everywhere.",
+				"info"
+			)
+			return
+		end
+
 		if again ~= "ok" then
 			return
 		end
