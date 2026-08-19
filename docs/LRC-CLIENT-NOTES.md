@@ -283,7 +283,7 @@ carrying it, and exchanges the frob for a durable token afterwards. **That IS a 
 | Adobe → Flickr | FGA plug-in → FGA |
 |---|---|
 | `flickr.auth.getFrob` | `POST /auth/device-link/start` |
-| `LrHttp.openUrlInBrowser( auth?frob=… )` | `LrHttp.openUrlInBrowser( /link?userCode=… )` |
+| `LrHttp.openUrlInBrowser( auth?frob=... )` | `LrHttp.openUrlInBrowser( /link?userCode=... )` |
 | User approves at flickr.com | User approves at flickrgroupaddr.com |
 | Exchange frob → `auth_token` | Poll → FGA plug-in token |
 
@@ -304,7 +304,7 @@ surface.
 ### The phishing weakness is real, and FGA's version is worse than most
 
 **Every device flow has this hole.** An attacker starts a flow, sends the victim
-`flickrgroupaddr.com/link?userCode=…`, and the victim — already signed in — approves it. **PKCE does
+`flickrgroupaddr.com/link?userCode=...`, and the victim — already signed in — approves it. **PKCE does
 not close it**, because the attacker started the flow and holds the verifier.
 
 **The usual "the blast radius is small" consolation does not apply.** ADR-01 says a request that

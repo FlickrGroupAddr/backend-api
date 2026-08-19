@@ -168,6 +168,66 @@ SHA_TOKEN = re.compile(r"(?<![\"'.\w-])SHA[-0-9]*(?![A-Za-z_])")  # DIRTY-WORDS-
 SHA_VALID = re.compile(r"^SHA[123]-\d+$")  # DIRTY-WORDS-EXEMPT: the pattern must spell what it accepts
 TERMS = {"SHA": "family AND size, every time -- SHA2-256, SHA3-512, SHA1-160"}
 
+# **BANNED CHARACTERS. Terry's standing order, 2026-08-05**, in his words: *"that charset
+# shortcut bothers my old school DOS ANSI UI eyes -- even if it's right, that doesn't mean
+# I like it."* It applies everywhere he might see it: program output, prose, docs, code
+# comments, commit messages.
+#
+# **NOTHING ENFORCED IT UNTIL 2026-08-19, and the product had drifted.** A sweep found the
+# character in NINE user-visible strings -- `Loading`, `Adding`, `Sending`, `Withdrawing`,
+# `Checking your session` -- which is exactly the "program output" the order names, plus
+# six elisions in docs.
+#
+# **This is deliberately a table of CHARACTERS rather than a Unicode category.** A rule
+# like "no punctuation outside Latin-1" would fire on the em dash, the middle dot and the
+# box-drawing rules Terry called great in the same breath. **He banned ONE character**, so
+# the check bans one character.
+#
+# **The KEY is written as an escape, and that is not decoration.** A literal glyph here
+# would make the table itself unreadable in the terminal it exists to protect, and would
+# put the banned character in the file that bans it.
+GLYPHS: dict[str, tuple[str, str]] = {
+    "…": ("U+2026 HORIZONTAL ELLIPSIS", "three periods, ..."),  # DIRTY-WORDS-EXEMPT: the table
+}
+
+
+def glyph_hits_in(text: str) -> list[tuple[int, str, str]]:
+    """Return (line number, character name, replacement) for one file's text."""
+    found = []
+    for number, line in enumerate(text.splitlines(), 1):
+        if EXEMPT.search(line):
+            continue
+        for glyph, (name, better) in GLYPHS.items():
+            if glyph in line:
+                found.append((number, name, better))
+    return found
+
+
+def glyph_self_test() -> None:
+    """Prove it fires, and that the exemption marker still works.
+
+    **Both polarities, because a checker validated in one direction is half-validated.**
+    The fixture line MUST carry the banned character, so it carries the marker too --
+    the same shape every other table in this file uses.
+    """
+    ellipsis = "…"  # DIRTY-WORDS-EXEMPT: the fixture must carry it
+    cases = [
+        (f"Loading{ellipsis}", True),
+        (f"a{ellipsis}b", True),
+        ("Loading...", False),
+        ("No punctuation at all here", False),
+        # An em dash and a middle dot are explicitly FINE and MUST NOT fire.
+        ("A -- B · C", False),
+        (f"{ellipsis} DIRTY-WORDS-EXEMPT: quoted", False),
+    ]
+    for text, expected in cases:
+        got = bool(glyph_hits_in(text))
+        if got != expected:
+            raise SystemExit(
+                f"GLYPH SELF-TEST FAILED: {text!r} -> got {got}, want {expected}"
+            )
+    print(f"  Glyph self-test: {len(cases)}/{len(cases)} passed")
+
 
 def hits_in(text: str) -> list[tuple[int, str, str]]:
     """Return (line number, offending word, replacement) for one file's text."""
@@ -336,6 +396,7 @@ def main() -> int:
     self_test()
     phrase_self_test()
     term_self_test()
+    glyph_self_test()
 
     scanned = files()
     problems = []
@@ -352,9 +413,12 @@ def main() -> int:
             house.append(f"{rel}:{number}  {phrase!r} should be {better!r}")
         for number, term, better in term_hits_in(text):
             house.append(f"{rel}:{number}  {term!r} should be {better!r}")
+        for number, name, better in glyph_hits_in(text):
+            house.append(f"{rel}:{number}  {name} should be {better}")
 
     print(f"  Checked {len(scanned)} files against {len(BRITISH)} words,"
-          f" {len(PHRASES)} house phrases and {len(TERMS)} house terms")
+          f" {len(PHRASES)} house phrases, {len(TERMS)} house terms"
+          f" and {len(GLYPHS)} banned character")
 
     if problems:
         print(f"\n{len(problems)} British spelling(s):")

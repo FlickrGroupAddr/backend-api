@@ -785,7 +785,7 @@ read succeeds, and the comparison quietly means something else.
 |---|---|
 | `CHECK` on `requests` | A resolved row MUST carry an outcome; a pending row MUST NOT |
 | `idx_requests_one_pending_per_pair` | ADR-05's idempotence, enforced rather than checked |
-| `REFERENCES … ON DELETE CASCADE` | A session MUST NOT outlive the account it names |
+| `REFERENCES ... ON DELETE CASCADE` | A session MUST NOT outlive the account it names |
 | `NOT NULL` and `UNIQUE` on `public_id` | ADR-16's opaque handle cannot be null or shared |
 
 **Application code can be bypassed by the next code path; a constraint cannot.** The sessions
@@ -797,7 +797,7 @@ measured, not assumed, by that same six-test failure.
 
 ### Adopt it from the first migration, because retrofitting is expensive
 
-**There is no `ALTER TABLE … SET STRICT`.** Converting an existing table means the full rebuild:
+**There is no `ALTER TABLE ... SET STRICT`.** Converting an existing table means the full rebuild:
 create a replacement, copy every row, drop the original, rename it, and recreate every index.
 `migrations/0002` and `0003` both perform that dance for other reasons, so the cost is visible in
 this repository rather than theoretical.

@@ -54,7 +54,7 @@ const others = $derived(
 </script>
 
 {#if loading}
-	<p class="small muted">Loading…</p>
+	<p class="small muted">Loading...</p>
 {:else if forbidden}
 	<h2>No such page</h2>
 	<p class="muted">Nothing lives at <code>/admin</code>.</p>
@@ -114,7 +114,7 @@ const others = $derived(
 			<dd class="mono">{data.context.usersNeedingRelink}</dd>
 			<dt>Pairs a moderator has seen</dt>
 			<dd class="mono">{data.context.moderatedPairsTotal}</dd>
-			<dt>…seen more than once</dt>
+			<dt>...seen more than once</dt>
 			<dd class="mono">{data.context.reachedModeratorTwice}</dd>
 		</dl>
 

@@ -86,7 +86,7 @@ async function signOut(): Promise<void> {
 	</header>
 
 	{#if session.kind === "checking"}
-		<p class="muted small">Checking your session…</p>
+		<p class="muted small">Checking your session...</p>
 	{:else if session.kind === "out"}
 		<!--
 			The only page a person READS rather than uses, so it is the only place that

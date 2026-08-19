@@ -127,7 +127,7 @@ function chipNote(status: PreflightStatus | undefined): string | null {
 }
 
 const hint = $derived.by(() => {
-	if (checking) return "Checking…";
+	if (checking) return "Checking...";
 	const parts: string[] = [];
 	if (moderatedCount > 0) parts.push(`${moderatedCount} moderated`);
 	const skipping = picked.size - willSend;
@@ -254,7 +254,7 @@ function railOf(kind: string): string {
 		<p class="eyebrow">Groups</p>
 
 		{#if loading}
-			<div class="panel panel-quiet"><p class="small muted" style="margin:0">Loading your groups…</p></div>
+			<div class="panel panel-quiet"><p class="small muted" style="margin:0">Loading your groups...</p></div>
 		{:else if loadError !== null}
 			<div class="panel panel-quiet railed s-stopped">
 				<p class="small" style="margin:0">{loadError}</p>
@@ -334,7 +334,7 @@ function railOf(kind: string): string {
 			<div class="actions">
 				<button class="commit" disabled={!canSubmit} onclick={() => send()}>
 					{running
-						? "Adding…"
+						? "Adding..."
 						: picked.size === 0
 							? "Add to groups"
 							: `Add to ${picked.size} group${picked.size === 1 ? "" : "s"}`}
@@ -385,7 +385,7 @@ function railOf(kind: string): string {
 							{#if state.kind === "waiting"}
 								<span class="muted">Waiting</span>
 							{:else if state.kind === "sending"}
-								<span class="muted">Sending…</span>
+								<span class="muted">Sending...</span>
 							{:else if state.kind === "queued"}
 								<span class="s-waiting">In line — we keep trying nightly</span>
 							{:else if state.kind === "resolved"}

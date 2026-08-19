@@ -578,7 +578,7 @@ old one — because a marker naming a scope the file no longer has is the same d
 
 **The hash rule is Terry's, 2026-08-16**, and `SHA-256` does not satisfy it: SHA3-256 exists, so   <!-- DIRTY-WORDS-EXEMPT: naming the banned form -->
 the family is implied by convention rather than stated. **The check refuses a match preceded by a
-quote, a dot or a hyphen**, which leaves `crypto.subtle.digest("SHA-256", …)`, `LrDigest.SHA256`
+quote, a dot or a hyphen**, which leaves `crypto.subtle.digest("SHA-256", ...)`, `LrDigest.SHA256`
 and RFC 5849's `HMAC-SHA1` alone — rewriting any of those would break a call or a wire value.
 
 **Terry is American and the rule covers prose, comments, docs, commit messages and identifiers.**
@@ -706,8 +706,8 @@ the moment anything is inserted between them, and the two edits that broke it we
 working.** A mutation whose anchor has drifted defends nothing, and a silent skip would have read
 as coverage. **A SKIPPED mutation is a SURVIVOR**; treat it as a hole, not as a warning.
 
-So anchor on the thing the mutation is actually about. `got.byteLength !== want.byteLength || …`
-survives an edit two lines away; `return …;\n}\n\nif (attempt.denied) {` does not.
+So anchor on the thing the mutation is actually about. `got.byteLength !== want.byteLength || ...`
+survives an edit two lines away; `return ...;\n}\n\nif (attempt.denied) {` does not.
 
 **A green suite proves it AGREES with the code, never that it would NOTICE the code being wrong.**
 Those are different claims, and only the second one matters when tests are being deleted or
@@ -848,7 +848,7 @@ written override or the same 7.1 release everything else is waiting on.**
 **A bare run on 6 migrations reported 375 findings, and not one was a defect.** 373 were
 `layout` — including 82 objecting to the hand-aligned column formatting that makes these
 files readable — and the other 2 were false positives: `AL03` on an
-`INSERT INTO t (cols…) SELECT …`, where the target columns come from the INSERT list so a
+`INSERT INTO t (cols...) SELECT ...`, where the target columns come from the INSERT list so a
 SELECT alias names nothing.
 
 **Terry's reaction is the right one: *"we have like 20 lines of SQL. That's hilarious."***

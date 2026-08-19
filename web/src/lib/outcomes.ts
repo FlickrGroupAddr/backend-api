@@ -86,7 +86,7 @@ export function explain(request: QueuedRequest): Explanation {
 				headline: "With a moderator",
 				// Three sentences got truncated mid-word in a table row -- found by
 				// looking at the render, where the single most important promise in the
-				// product read "...and your photo is in the…". Two sentences fit and
+				// product read "...and your photo is in the...". Two sentences fit and
 				// keep both halves that matter: a person has it, and we stopped.
 				detail:
 					"A volunteer has it in their review queue. Flickr never reports their decision, so we stop here rather than send it to the same person twice.",

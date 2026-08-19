@@ -102,7 +102,7 @@ const rail = (tone: Tone): string => `s-${tone}`;
 {/if}
 
 {#if loading && page === null}
-	<p class="small muted">Loading…</p>
+	<p class="small muted">Loading...</p>
 {:else if error !== null}
 	<div class="panel panel-quiet railed s-stopped">
 		<p class="small" style="margin:0 0 .5rem">{error}</p>
@@ -168,7 +168,7 @@ const rail = (tone: Tone): string => `s-${tone}`;
 							<!--
 								Deliberately NOT truncated. Clipping is right for a photo id
 								and wrong for the sentence that carries ADR-01 -- the render
-								showed "…your photo is in the…" and cut the promise in half.
+								showed "...your photo is in the..." and cut the promise in half.
 								Only a few rows per page carry a detail, so wrapping costs
 								nothing the dense layout was protecting.
 							-->
@@ -195,7 +195,7 @@ const rail = (tone: Tone): string => `s-${tone}`;
 								disabled={busy === request.publicId}
 								onclick={() => withdraw(request.publicId)}
 							>
-								{busy === request.publicId ? "Withdrawing…" : "Withdraw"}
+								{busy === request.publicId ? "Withdrawing..." : "Withdraw"}
 							</button>
 						{:else}
 							<span class="withdraw-slot"></span>
