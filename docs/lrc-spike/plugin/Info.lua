@@ -47,6 +47,28 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
+	-- **0.17 ADDS THE DEVICE LINK, and it is the first thing here that WRITES.**
+	--
+	-- Every earlier menu item is a probe: it reads, reports, and changes nothing.
+	-- This one calls the live Worker, opens a browser, and stores a session token in
+	-- the OS keychain through `LrPasswords`. It still touches no photo, no
+	-- collection and no catalog field, and it never speaks to Flickr.
+	--
+	-- ADR-24 is the design and `src/routes/device.ts` serves it. The four steps are
+	-- start, open the browser, poll, store -- and `DeviceLink.lua` carries all four
+	-- with no dialog in it, while `DeviceLinkProbe.lua` carries every dialog and no
+	-- HTTP. Same split as HostVersion / HostVersionProbe below.
+	--
+	-- **ADR-01 governs the poll loop.** `denied` means a person pressed deny. It is
+	-- terminal: no retry, no fresh attempt, no reopened browser. It is also reported
+	-- as INFORMATION rather than as an error, because telling somebody their own
+	-- decision went wrong would be a lie.
+	--
+	-- **0.17 also vendors `json.lua`** -- rxi's, MIT, one file, pinned to commit
+	-- 11077824d7cfcd28a4b2f152518036b295e7e4ce. The LrC SDK ships no JSON parser,
+	-- and Terry chose a surveyed library over a hand-rolled decoder under the
+	-- integrate-before-innovate standing order. It is excluded from `selene` and
+	-- still parse-checked by the real luac.
 	-- **0.16 ADDS THE HOST VERSION BADGE. ADR-25, and it is a NUDGE rather than a
 	-- gate.**
 	--
@@ -221,6 +243,10 @@ return {
 			title = "FGA: Lightroom version -- tested against? (Library)",
 			file = "HostVersionProbe.lua",
 		},
+		{
+			title = "FGA: link this Lightroom to FGA (Library)",
+			file = "DeviceLinkProbe.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -252,7 +278,11 @@ return {
 			title = "FGA: Lightroom version -- tested against? (File)",
 			file = "HostVersionProbe.lua",
 		},
+		{
+			title = "FGA: link this Lightroom to FGA (File)",
+			file = "DeviceLinkProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 16, revision = 0 },
+	VERSION = { major = 0, minor = 17, revision = 0 },
 }

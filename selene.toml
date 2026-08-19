@@ -12,6 +12,20 @@
 
 std = "lrc"
 
+# **`json.lua` is rxi's, not ours, and a style linter MUST NOT be pointed at it.**
+# It reported exactly 2 warnings -- an unused `val` in `encode_nil` and an unused
+# loop index in `encode_list` -- and both are correct observations about code we
+# have no business editing. **Patching a vendored file turns every future update
+# into a merge**, so the honest move is to exclude it and say so.
+#
+# **It is still CHECKED, by the instrument that matters here.**
+# `scripts/lua-balance.py` parse-checks it with the real luac 5.1 out of the
+# vendored SDK, so a file that could not load into Lightroom still fails the gate.
+# What is switched off is house style, not validity.
+#
+# Provenance, license and the update procedure live in `docs/LRC-CLIENT-NOTES.md`.
+exclude = ["docs/lrc-spike/plugin/json.lua"]
+
 [lints]
 # **`mixed_table` is OFF, and it is the one exclusion that is really about the
 # SDK rather than about taste.** It reported 17 hits. A LrView layout is a table

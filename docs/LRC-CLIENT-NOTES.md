@@ -11,11 +11,56 @@ file and an ADR disagree, **the ADR wins.**
 
 ## PICK UP HERE
 
-**The backend is FINISHED as of 2026-08-18. One thing is left, and it is the Lua.**
+**The backend was FINISHED on 2026-08-18. The Lua client was WRITTEN on 2026-08-19 and
+NOBODY HAS RUN IT.**
 
-| Gap | Where it lives |
+| | |
 |---|---|
-| **The Lua client** — `start`, `openUrlInBrowser`, the poll loop, `LrPasswords` storage | `docs/lrc-spike/plugin/` |
+| **The Lua client** | **Written, plug-in 0.17.** `DeviceLink.lua` holds the flow, `DeviceLinkProbe.lua` holds the dialogs |
+| **What is proven** | It parses under the real `luac` 5.1, `selene` is clean, and every SDK member it calls is documented in the pinned archive |
+| **What is NOT proven** | **Every single runtime claim.** No `LrHttp.post` has been watched, no browser has opened, no token has reached the keychain |
+
+**That distinction is the whole point of this section.** A gate-clean plug-in and a working
+plug-in are different claims, and this project has already paid for confusing them — the
+publish-service premise only became a fact when somebody ran it.
+
+**The menu item is `FGA: link this Lightroom to FGA`, in both menus.**
+
+**`Info.lua` changed, so REMOVE AND ADD.** Lightroom re-reads `Info.lua` only on Add; disable
+and re-enable leaves the new menu item missing and everything else looking fine.
+
+### The JSON library, and where it came from
+
+**`json.lua` is rxi's, MIT, vendored beside the plug-in rather than in `vendor/`.**
+
+| | |
+|---|---|
+| Source | `github.com/rxi/json.lua`, commit `11077824d7cfcd28a4b2f152518036b295e7e4ce` |
+| Size | 9,638 bytes |
+| SHA2-256 | `0EACCDA57FABC0330736DE25F45CF589821A42B5E0FE02E4E3125F7DC0BF2B7E` |
+| License | MIT, copied verbatim to `json.LICENSE.txt` beside it |
+
+**It is committed, and the Adobe SDK is not, and the difference is the license.** MIT permits
+redistribution with the notice attached. Adobe's archive does not, which is why `.gitignore`
+line 275 excludes `vendor/*` and MUST keep doing so.
+
+**It lives in the plug-in folder because Lightroom loads plug-in files from there.** A copy in
+`vendor/` would have to be copied in at build time, which is the same fact stored twice.
+
+**`selene` excludes it and `luac` still parse-checks it.** Patching a vendored file turns every
+future update into a merge, so the two warnings it produces are excluded rather than fixed —
+`selene.toml` carries the reasoning.
+
+**Why a library rather than a hand-rolled decoder.** Terry, 2026-08-19: *"the API surface is
+simple enough we should be able to hand roll JSON. If there is an open source Lua library for
+JSON, that is in line with integrate-before-innovate standing order."* The survey on board card
+#14 found one, so the standing order settles it.
+
+**AN EARLIER SESSION GOT THIS WRONG AND IT IS WORTH REMEMBERING.** Card #14 recorded a decision
+of *"XML on the wire for the plug-in"*, and a session acted on it by adding `Accept:
+application/xml` negotiation to the Worker. **Terry's actual position was that XML is for
+ON-DISK state.** His approval of `LrXml` as a TOOL had been read as a choice of where to point
+it. The Worker change was reverted the same turn.
 
 **The approval page shipped**, in the Worker rather than in Svelte. An earlier version of this table
 said *"Svelte. ADR-18 gives `/` to the app shell"* and pointed at `/link` — **a page that was never
