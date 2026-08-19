@@ -135,6 +135,32 @@ which `serve.py` itself calls *"the one thing on this page the SERVER does not h
 so it would reintroduce #0029's P0 through a door the repaint guard does not watch. **Any
 self-healing action MUST be gated on there being no unsent text.**
 
+### TICKET COMMENTS GET THE ELI5 TREATMENT, AND THEY MUST BE SHORT
+
+**Standing order, Terry, 2026-08-19, verbatim: *"Do the /eli5 type writing in ticket
+comments. ASD-STE100 and don't be afraid to add blank lines to break things up. Your
+tickets are almost exclusively massive, overwhelming walls of text that I never read in
+full. Keep it VERY concise and use blank lines to help me digest."***
+
+**This EXTENDS the output style to a surface it did not cover.** The global scope table
+governs conversation and carves out documents; a ticket comment now follows the
+conversation rules.
+
+**DURABLE IS NOT THE SAME AS EXHAUSTIVE.** The board is his institutional memory, which
+is why the reasoning belongs there — and a comment he does not finish reading has
+recorded nothing.
+
+**Four rules, and they are checkable:**
+
+- **Short.** If it does not change what he does or decides, cut it.
+- **Blank lines between every idea.** He reads in paragraph blocks; see
+  [[terry-thinks-in-paragraph-blocks]].
+- **One instruction per sentence**, active voice, simple tenses.
+- **Lead with the answer.** Bad news and the decision go first, never in paragraph four.
+
+**Keep the exact identifiers.** ASD-STE100 restricts general vocabulary and exempts
+technical names — `may_create`, `codeStale`, `WinError 5` stay as they are.
+
 ### BOARD MUTATIONS ARE P0 FROM 1970-01-01, AND THEY LAND IN THE TURN RECEIVED
 
 **Standing order, Terry, 2026-08-19, verbatim: *"Terry guidance to alter board state (Create,
