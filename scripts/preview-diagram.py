@@ -29,7 +29,7 @@ import pathlib
 import urllib.parse
 import zlib
 
-from diagram_sheets import arch_dir, authored_diagram
+from diagram_sheets import arch_dir, canonical_diagram
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ARCH = arch_dir(ROOT)
@@ -38,13 +38,16 @@ VIEWER = "https://viewer.diagrams.net/?lightbox=1&nav=1#R"
 
 
 def newest_diagram() -> pathlib.Path:
-    """The AUTHORED sheet of the newest date -- the tabloid one.
+    """The CANONICAL sheet of the newest date -- legal since 2026-08-19.
 
-    A `#R` URL carries the drawing itself, so this picks which drawing. The other
-    sheets hold the same picture moved onto another page, and previewing one of
-    those answers a question nobody asked.
+    A `#R` URL carries the drawing itself, so this picks which drawing.
+
+    **This one hands Terry a LINK, so it takes the canonical sheet rather than the
+    canvas.** A durable link should open the thing he prints; the canvas is a
+    coordinate system, and sending him a page sized to a paper he retired would be
+    the same mistake under a new name.
     """
-    return authored_diagram(ROOT)
+    return canonical_diagram(ROOT)
 
 
 def compress(xml: str) -> str:

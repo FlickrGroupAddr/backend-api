@@ -39,7 +39,13 @@ import json
 import pathlib
 import urllib.parse
 
-from diagram_sheets import AUTHORED, SHEETS, arch_dir, authored_diagram, found_sheets
+from diagram_sheets import (
+    CANONICAL,
+    SHEETS,
+    arch_dir,
+    canonical_diagram,
+    found_sheets,
+)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ARCH = arch_dir(ROOT)
@@ -88,7 +94,7 @@ const Q = SHEET ? '?sheet=' + encodeURIComponent(SHEET) : '';
 let seen = null, builds = 0;
 
 for (const a of document.querySelectorAll('#sheets a')) {
-  if (a.dataset.slug === (SHEET || '%AUTHORED%')) { a.classList.add('on'); }
+  if (a.dataset.slug === (SHEET || '%CANONICAL%')) { a.classList.add('on'); }
 }
 
 async function tick() {
@@ -122,29 +128,35 @@ setInterval(tick, %POLL%);
 
 
 def newest_diagram() -> pathlib.Path:
-    """The AUTHORED sheet of the newest date -- the tabloid one.
+    """The CANONICAL sheet of the newest date -- legal since 2026-08-19.
 
     **This used to be `sorted(glob)[-1]`, and that broke the day the filenames
-    grew a sheet suffix.** ASCII sorts `-8.5x14` last, so the preview silently
-    showed the legal sheet: the same drawing, translated, with a page scale on
-    it. **That is not a prediction -- the running server was caught doing it on
-    2026-08-17**, and the picture looked almost right, which is the worst kind of
-    wrong for a review loop. `diagram_sheets.authored_diagram()` is the one place
+    grew a sheet suffix.** ASCII sorted the suffixes into an order nobody intended,
+    so the preview silently showed a different sheet: the same drawing, translated,
+    with a page scale on it. **That is not a prediction -- the running server was
+    caught doing it on 2026-08-17**, and the picture looked almost right, which is
+    the worst kind of wrong for a review loop. `diagram_sheets` is the one place
     that decision now lives.
+
+    **THE DEFAULT MOVED FROM THE CANVAS TO LEGAL, and that is the point of the
+    card rather than a side effect.** Terry judges the drawing here, and he prints
+    legal. **Reviewing an unscaled canvas is what let 7.7 pt type pass for months**
+    -- the defect that made the first print an eyechart is only visible at the size
+    it will be read. The canvas is still one tab away for a 1:1 look.
     """
-    return authored_diagram(ROOT)
+    return canonical_diagram(ROOT)
 
 
 def sheet_diagram(slug: str) -> pathlib.Path:
-    """The named sheet of the newest date, or the authored one when unnamed.
+    """The named sheet of the newest date, or the canonical one when unnamed.
 
-    **The design loop still wants the authored sheet and nothing else**, so that
-    stays the default and the URL stays `http://127.0.0.1:8791/`. This exists to
-    answer one narrower question: does a newly written sheet parse and render at
-    all. The drawing on it is the same drawing.
+    **The unnamed case is what `http://127.0.0.1:8791/` opens**, so it answers the
+    question Terry asks most: what does the diagram look like. The named cases exist
+    to answer a narrower one -- does a newly written sheet parse and render at all.
+    **Every one of them carries the same drawing.**
     """
     if not slug:
-        return authored_diagram(ROOT)
+        return canonical_diagram(ROOT)
     newest = max(date for date, _, _ in found_sheets(ROOT))
     for date, found, path in found_sheets(ROOT):
         if date == newest and found == slug:
@@ -199,7 +211,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 )
                 page = (PAGE.replace("%POLL%", str(POLL_MS))
                             .replace("%SHEETS%", links)
-                            .replace("%AUTHORED%", AUTHORED.slug))
+                            .replace("%CANONICAL%", CANONICAL.slug))
                 self._send(page.encode("utf-8"), "text/html; charset=utf-8")
             else:
                 self.send_error(404)

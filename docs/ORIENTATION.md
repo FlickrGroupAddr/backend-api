@@ -39,9 +39,11 @@ afterwards redraws that tab within 400 ms — no commit, no push, no CDN, nothin
 the top prints the file name, the build time and a **reload counter**, because a diagram that did not
 change and a build that never ran produce the identical screenshot.
 
-**The bar also carries one link per sheet, and the default is the authored `11x17` one.** The design
-loop wants that sheet and nothing else — the others hold the same drawing moved onto another page,
-so switching answers only "does this sheet still parse and render".
+**The bar also carries one link per sheet, and the default is `8.5x14` — the canonical print since
+2026-08-19.** Terry judges the drawing here and he prints legal, so the default shows it at the size
+it will be read. **Reviewing an unscaled canvas is what let 7.7 pt type pass for months.** The
+`canvas` tab is one click away for a 1:1 look, and the others answer only "does this sheet still
+parse and render".
 
 **Arm it FIRST.** Starting it after two edits has already cost the iterations it existed to make
 cheap.

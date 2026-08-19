@@ -127,9 +127,12 @@ WORKSTATION = embed("workstation.svg")
 LRC_MARK = embed("lightroom-classic-mark.svg")
 
 # ---------------------------------------------------------------------------
-# THREE SHEETS, ONE DRAWING. The sheets themselves are in `diagram_sheets.py`.
+# ONE DRAWING, ONE CANVAS, TWO DELIVERABLES. The roster is in `diagram_sheets.py`.
 #
-# **The content is authored for tabloid, 11x17, and it fits that sheet exactly.**
+# **The content is authored into the 1700 x 1100 unit `canvas` and fits it exactly.**
+# **That canvas is NOT a paper size**, and it was called `11x17` until 2026-08-19,
+# which is exactly why it kept being mistaken for one. Terry retired tabloid after
+# printing legal in color; nothing writes an 11x17 sheet now.
 # The other two sheets carry the SAME drawing, moved -- never resized. Each one
 # gets a rigid translation so the ink sits centered on it, and legal additionally
 # gets a `pageScale`, which is draw.io's own mechanism for "print this drawing
@@ -1300,8 +1303,8 @@ EXPECTED_BADGE_STACKS = 6
 print()
 # **RUN AGAINST ANY SHEET, which is the whole reason this is a function.** Terry's
 # rules were asserted on the AUTHORED canvas only, and the sheets a reader actually
-# prints are the reflowed ones. A rule that holds at 11x17 and quietly stops holding
-# at 8.5x14 is exactly the defect he reported by eye.
+# prints are the reflowed ones. A rule that holds on the canvas and quietly stops
+# holding at 8.5x14 is exactly the defect he reported by eye.
 def check_placement(xc: Callable[[str], float], tag: str = "") -> None:
     """Every placement rule in BADGE-PLACEMENT.md, measured through one accessor.
 
@@ -2416,10 +2419,13 @@ check("every label line starts with a capital", not _bad_case,
 # reported top margin at 16.35 while the ink sat on 30. And a stroke has never
 # been counted at all until now.
 #
-# **MARGIN is 30, for a print at a FedEx Office 11x17 color laser.** 0.25in
-# clears the 4-5mm unprintable border those engines carry, but not 6mm plus the
-# ~1mm of image-placement drift a sheet-fed engine is allowed. 0.30in absorbs
-# both and costs 0.1in of a 17in sheet.
+# **MARGIN is 30, for a print at a FedEx Office color laser.** 0.25in clears the
+# 4-5mm unprintable border those engines carry, but not 6mm plus the ~1mm of
+# image-placement drift a sheet-fed engine is allowed. 0.30in absorbs both.
+#
+# **It was measured against tabloid and it still holds**, because the margin is a
+# property of the ENGINE rather than of the paper. The sheet Terry prints is legal
+# as of 2026-08-19 and the unprintable border did not move.
 #
 # **THIS BLOCK FAILS THE BUILD.** The content fits exactly, so there is no slack
 # for a driver to absorb an overflow by scaling a percent or two.
@@ -3019,7 +3025,7 @@ for _sheet in SHEETS:
     # special rule at all, and two earlier ones were both wrong: the mean of the two
     # endpoint deltas (assumes the badge sits at the midpoint) and then the fraction
     # along the run (keeps it ON the line and lets it drift AWAY from the tile it
-    # annotates -- `n2` sat 65.7 off `lrc` on 11x17 and 90.0 on legal, and Terry saw
+    # annotates -- `n2` sat 65.7 off `lrc` on the canvas and 90.0 on legal, and Terry saw
     # it as the badges not landing where the canonical sheet puts them).
     #
     # **Measured 2026-08-17: not one badge center sits in a gap.** Every one is

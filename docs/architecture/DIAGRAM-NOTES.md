@@ -7,10 +7,20 @@ overrule. MAY is optional.**
 `FlickrGroupAddr-Architecture-<date>-<sheet>.drawio`, and a hand edit is lost on the next build.
 **Edit the generator.**
 
-**It is ONE drawing on three sheets** — `11x17`, `8.5x14` and `16x9`. The content is authored for
-tabloid and the other two carry the same picture moved, never resized, so they share one date.
-`scripts/diagram_sheets.py` is the roster. **Everything that reads the diagram wants the `11x17`
-sheet**, because it is the only one whose coordinates are the authored ones.
+**It is ONE drawing, on ONE canvas, written to TWO deliverable sheets** — `8.5x14` and `16x9`. The
+content is authored into a 1700 x 1100 unit `canvas`, and both sheets carry the same picture moved,
+never resized, so all three files share one date. `scripts/diagram_sheets.py` is the roster.
+
+**`canvas` IS NOT A PRINT, and it was called `11x17` until 2026-08-19.** Terry retired tabloid after
+printing legal in color at a FedEx Office. **No 11x17 is produced.** The canvas kept its dimensions
+because the content is 1640 x 1030 units and only a 1700 x 1100 space holds it at 1:1 — shrinking it
+would rescale every coordinate and every threshold in the check suite, which this file refuses by
+name below.
+
+**Two questions, two answers, and they were the same file for months.** `AUTHORED` is the canvas and
+answers *where is a shape*; `CANONICAL` is legal and answers *what does Terry print*. **A tool MUST
+call the one that matches its question** — `badge-positions.py` hands Terry geometry to paste back
+into the generator, so it reads the canvas and nothing else.
 
 **This file holds the things the generator cannot tell you: what the picture claims about the
 system, how to print it, and the draw.io behaviors that will waste your afternoon.** It holds no
@@ -84,29 +94,34 @@ routes there, one being `POST /api/v001/requests/batch` -- the reason the plug-i
 
 ## Printing it
 
-**This is the part you will come back for. Print the `11x17` sheet.**
+**This is the part you will come back for. Print the `8.5x14` sheet.**
 
 ```
-Page          1700 x 1100 drawing units = 17 x 11 inches
+Page          1400 x 850 drawing units = 14 x 8.5 inches
 Margins       30 units a side = 0.30 in, all four
-Content       1640 x 1040 of INK, which is exactly the printable area
+Content       fills the 1340 x 790 printable area exactly, at 100% coverage
 Export at     100%.  NEVER "Fit to Page"
 ```
 
-**Fit to Page is the likeliest way this print goes wrong**, and it has nothing to do with margins.
-The content fits the printable area exactly, so any fit pass shrinks it and puts white space back on
-all four sides. Adobe Reader defaults to it. **Say "actual size, 100%" at the counter.**
+**Legal is the canonical print as of 2026-08-19**, after Terry printed it in color at a FedEx
+Office: *"it reads great and isn't unwieldy huge like 11x17."* **The `canvas` is 1700 x 1100 units
+and is NOT a print** — it is the space the drawing is authored in, and nothing writes an 11x17 sheet
+any more.
 
-### The other two sheets, and what each one costs
+**Fit to Page is the likeliest way this print goes wrong**, and it has nothing to do with margins.
+The content fills the printable area exactly, so any fit pass shrinks it and puts white space back
+on all four sides. Adobe Reader defaults to it. **Say "actual size, 100%" at the counter.**
+
+### The sheets, and what each one costs
 
 **The build prints these for every sheet on every run.** Read them there rather than here — they
 move the moment the content does.
 
 | Sheet | Prints at | Body type | Covers | Use it for |
 |---|---|---|---|---|
-| `11x17` | 100% | 10.1 pt | 100% | **The print.** The content fits this sheet exactly |
+| `8.5x14` | 100% | **7.7 pt** | 100% | **THE PRINT.** Legal landscape, and it reads well on paper — measured at a FedEx Office 2026-08-19 |
 | `16x9` | 100% | 20.2 px | 100% | **A 4K monitor.** 3840 x 2160 at 100% zoom — see below |
-| `8.5x14` | 100% | **7.7 pt** | 100% | **Terry's print.** Legal landscape, and it reads well on paper — 2026-08-19 |
+| `canvas` | — | 10.1 pt | — | **NOT A PRINT.** The authored coordinate space, 1700 x 1100 units. `badge-positions.py` reads this and nothing else |
 
 **Each wider sheet spreads its extra width evenly between the four columns**, so all three now fill
 their printable area completely. `16x9` gains 239.99 units across 3 gaps, `8.5x14` gains 124.04.
@@ -243,10 +258,10 @@ than trusting the ratio.**
 - **Body type is 10.1 pt, and that number is calibrated rather than chosen.** 7.9 pt made the first
   print an eyechart; 12.2 pt was *"comically huge"*. Ten is the center between two misses in opposite
   directions. **Justify any departure from it.**
-- **For a raster export, scale the EXPORT — never the coordinates.** 300 DPI on 11x17 is 5100x3300,
-  which you get by exporting this page at 300%. Rewriting the canvas to those numbers would make
-  draw.io report a 51x33 inch page and would silently invalidate every absolute threshold in the
-  generator. PDF is vector, so none of this applies to it.
+- **For a raster export, scale the EXPORT — never the coordinates.** 300 DPI on legal landscape is
+  4200x2550, which you get by exporting that sheet at 300%. Rewriting the canvas to those numbers
+  would make draw.io report a 42x25.5 inch page and would silently invalidate every absolute
+  threshold in the generator. PDF is vector, so none of this applies to it.
 
 ---
 
@@ -472,13 +487,15 @@ exported file declares.
 
 | Sheet | Page declares | Content scale |
 |---|---|---|
-| `11x17` | **17.00 x 11.00 in** | 1.0000 |
+| `canvas` | 1700 x 1100 units | 1.0000 |
 | `8.5x14` | **14.00 x 8.50 in** | 0.7596 |
 | `16x9` | **3840 x 2160 px** | 2.0000 |
 
-**Print every paper sheet at 100%, with Fit to Page OFF.** That instruction is now the same for
-both, which is the point. **`16x9` is glass rather than paper** — export it as PNG at 100% and it
-comes out 3840 x 2160.
+**`canvas` declares no inches on purpose.** It is the authored coordinate space, not a page, and
+reading 1700 x 1100 as 17 x 11 inches is what made it a "sheet" for months.
+
+**Print `8.5x14` at 100%, with Fit to Page OFF.** **`16x9` is glass rather than paper** — export it
+as PNG at 100% and it comes out 3840 x 2160.
 
 **The two paper sheets MUST NOT be allowed to scale up**, and `Sheet.scale_up` is what keeps them
 1:1 or smaller. Lifting the cap for the screen sheet is the whole change; lifting it everywhere

@@ -179,12 +179,17 @@ feeling.
 started, and an empty `In progress` lane while work happens tells Terry something false.
 
 **`ready_for_claude` -> `in_progress` and `in_progress` -> `ready_for_review` both carry a Claude
-actor, so Claude does this alone.** A `backlog` card CANNOT be started directly — its only Claude
-exit is `needs_terry_action`, and promotion is Terry's alone.
+actor, so Claude does this alone.** **A `backlog` card MUST NOT be started by Claude** — the
+promotion edge exists and is gated by the per-ticket rule above, so the honest exit for a backlog
+card that has become interesting is `needs_terry_action`.
 
-**The full reasoning, the mechanics and the one gap it exposes are in `docs/ORIENTATION.md`.** That
-gap: **every `in_progress` edge names `claude` only**, so the Terry half of this order has no lane
-on the board yet.
+**`in_progress` IS TERRY'S LANE TOO, as of 2026-08-19.** *"'in progress' is work for either of
+us."* He gained an actor on eight edges — four in from `backlog`, `needs_terry_action`, `blocked`
+and `ready_for_review`, and four out to `blocked`, `ready_for_claude`, `needs_terry_action` and
+`ready_for_review`. **`completed` was deliberately not widened**, so his own work exits through
+review like everything else.
+
+**The full reasoning and the mechanics are in `docs/ORIENTATION.md`.**
 
 ### The data left this repository because this repository is PUBLIC
 
@@ -216,12 +221,24 @@ MUST come from one source.** Bumping a date renames the file — use `git mv`.
 
 **Edit `scripts/build-diagram.py`, never the `.drawio`.** A hand edit is lost on the next build.
 
-**It is ONE drawing on three sheets** — `11x17`, `8.5x14` and `16x9`, named in
-`scripts/diagram_sheets.py`. The content is authored for tabloid. The other two hold the same four
-columns with **the extra width spread evenly between them — moved, never rescaled**, so every font
-size and every threshold in the check suite still means what it meant. **Anything that reads the
-diagram MUST call `authored_diagram()`** — four scripts globbed the filename by hand and
-`sorted(glob)[-1]` silently became the legal sheet.
+**It is ONE drawing, on ONE canvas, written to TWO deliverable sheets.** `scripts/diagram_sheets.py`
+is the roster. The content is authored into a 1700 x 1100 unit `canvas`, and `8.5x14` and `16x9`
+hold the same four columns with **the extra width spread evenly between them — moved, never
+rescaled**, so every font size and every threshold in the check suite still means what it meant.
+
+**`canvas` IS NOT A PRINT, and it was called `11x17` until 2026-08-19.** Terry retired tabloid after
+printing legal in color: *"legal is the right size for this diagram... switch the Canonical size to
+legal and stop producing 11x17."* **No 11x17 is produced.** The canvas keeps its dimensions because
+shrinking it would rescale every coordinate — the operation `DIAGRAM-NOTES.md` refuses by name.
+
+**Anything that reads the diagram MUST call `authored_diagram()` or `canonical_diagram()`, and MUST
+pick the one that answers its question** — four scripts globbed the filename by hand and
+`sorted(glob)[-1]` silently became the wrong sheet.
+
+| The question | Call |
+|---|---|
+| Where is a shape, in authored units | **`authored_diagram()`** — the canvas |
+| What does Terry print, open or link | **`canonical_diagram()`** — legal |
 
 **Spreading columns raises COVERAGE and never type size.** Height binds on both wider sheets, so the
 print scale is `printable_height / content_height`. Legal reached 100% of the paper and stayed at
