@@ -107,6 +107,35 @@ and its contract prose. Editing that markdown now reaches no reader.
 **Arm it at the start of a session**, for the same reason the diagram preview says so:
 started after two edits, it has already missed the thing it existed to show.
 
+## A QUESTION FOR TERRY MOVES THE CARD, and Needs Terry is not Blocked
+
+**Standing order, Terry, 2026-08-19, verbatim: *"If you comment on a ticket that is a direct
+question to terry and that ticket is NOT in Needs Terry, move that ticket to Needs Terry. That
+swimlane is my best — and only! — indication that a ticket is blocked on me."***
+
+**The top bar counts three things and all three are calls to action** — `BLOCKED`, `WAITING FOR
+TERRY`, `NEEDS SIGNOFF`. **A question in a comment thread lights none of them.** The lane is the
+notification; the comment is only the content.
+
+**Ask and move in the SAME action.** A comment now and a move once the looking is finished leaves a
+silent window, which is the whole failure.
+
+**The limit matters as much as the rule.** `needs_terry_action` means Claude is STOPPED. **Work
+everything that does not depend on the answer FIRST**, then move the card carrying only what
+remains. A lane holding six cards Claude could still be working is the diluted signal the
+build-chain banner rules exist to protect.
+
+**These three lanes are NOT synonyms, and Terry drew the lines himself:**
+
+| Lane | Means |
+|---|---|
+| **Needs Terry** | **Blocked ON Terry.** He can move it — a judgment call, an answer, a signoff |
+| **Blocked** | **NEITHER of us can move it.** His example: *"awaiting vendor response to bug report"* |
+| **In progress** | **Being worked NOW, by EITHER of us.** Terry gained an actor here on 2026-08-19 |
+
+**Blocked MUST NOT mean "waiting on a decision", and MUST NOT mean "hard".** `rules.json` carries
+both rules in the lanes' own notes, and a session that reads only the code will find them there.
+
 ## WORK THAT OUTLIVES A TURN BELONGS ON A TICKET
 
 **Standing order, Terry, 2026-08-19, verbatim: *"If at any point Terry OR claude are doing active
