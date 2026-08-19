@@ -52,7 +52,7 @@ has no exceptions.
 page that did not exist anywhere. `deviceRoutes` handed the plug-in `new URL("/link", UI_ORIGIN)`,
 while `parse()` in `web/src/lib/router.ts` resolves exactly `/`, `/queue` and `/admin`. **So the
 last step of device linking told a person to visit a page that said there was no such page**, and
-the flow could not complete on either side. Nothing failed and 297 tests passed throughout.
+the flow could not complete on either side. Nothing failed and 297 tests passed throughout.   <!-- STALE-COUNT-EXEMPT: the suite size during that specific run -->
 
 **Terry ruled it belongs to the Worker, and the reason is the redirect.** The session cookie is
 `HttpOnly`, so a static SPA page cannot tell whether you are signed in. Only the server can — and

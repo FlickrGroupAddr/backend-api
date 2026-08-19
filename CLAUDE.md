@@ -489,10 +489,15 @@ so is everything below that is not a route.
 npm run check
 ```
 
-**Sixteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
-`ruff`, **the argparse gate**, `pyright`, **the LSP gate**, the Lua parse check, `selene`, **the
+**Seventeen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
+**the stale-count gate**, `ruff`, **the argparse gate**, `pyright`, **the LSP gate**, the Lua parse
+check, `selene`, **the
 ADR-23 Rule 3 import gate**, **the Lua unit tests**, `sqlfluff`, **the diagram staleness check**,
-305 tests, the traceability gate, and the web build. **It MUST be clean before a commit.**
+the Vitest suite, the traceability gate, and the web build. **It MUST be clean before a commit.**
+
+**The step count above is VERIFIED and the test count is FORBIDDEN**, and the difference is the
+whole design. `scripts/stale-counts.py` reads `package.json` and fails if that number disagrees, so
+it cannot rot. No document may state how many tests run -- see below.
 
 **`npm run lua:test` runs the plug-in's PURE logic under LuaJIT**, which implements Lua 5.1 --
 the version Lightroom runs. `DEVCOM.Lua` on winget is 5.4 and would have been the wrong language.
@@ -501,7 +506,7 @@ and **it MUST NOT grow into a Lightroom emulator** — a test that needs a real 
 the host, and the probes in `Info.lua` are that.
 
 **It found redundant code on its first mutation run.** `QueueAdds.submit` narrowed the
-acknowledgement list twice, and deleting the first pass left all 53 checks green — because every
+acknowledgement list twice, and deleting the first pass left all 53 checks green — because every   <!-- STALE-COUNT-EXEMPT: one historical mutation run, not a live claim -->
 slice is a subset of `groupIds`, so the per-slice filter already did the whole job. **A guard that
 survives its own deletion is not a guard**, and the second mutation, on the surviving filter, drew
 5 failures.
@@ -522,7 +527,7 @@ artifact reached a commit on 2026-08-17 under a fully green gate.
 /dev/null` exits 1 while the identical run to a file exits 0. It is `sqlfluff`, it reproduces with
 no wrapper, and it prints `All Finished!` either way — a green gate that reads as red.
 
-**This list was STALE for three days and nobody noticed** — it still said "290 tests" and named
+**This list was STALE for three days and nobody noticed** — it still said "290 tests" and named   <!-- STALE-COUNT-EXEMPT: quoting the defect -->
 neither `ruff`, `pyright`, `selene`, `sqlfluff` nor the LSP gate, all added 2026-08-17. **A
 description of a gate is not the gate**, and it rots exactly like any other number in prose. Quote
 what the runner prints.
@@ -613,21 +618,30 @@ produce. Same guard `scripts/build-diagram.py` puts on its collision detector.
 written. **Those are the surfaces this rule actually slips on most**, so its silence MUST NOT be
 read as full coverage.
 
-**This count has now been wrong FOUR times, which is why the rule below is absolute rather than a
-reminder.** It was documented as 178, the suite rebuild took it to 156, and neither this file nor
-the README was updated. It then read 160 while the runner printed 201 — found 2026-08-14 while
-catching a cleared session up. **It then read 205 while the runner printed 239** — found 2026-08-15,
-during a documentation pass, by running the gate rather than by reading anything. **It then read
-297 while the runner printed 305** — found 2026-08-18, again by running the gate.
+**This count was wrong SIX times. It is now UNWRITABLE, and the history is what earned that.** It
+was documented as 178, the suite rebuild took it to 156, and neither this file nor the README was
+updated. It then read 160 while the runner printed 201 — found 2026-08-14 while catching a cleared
+session up. **It then read 205 while the runner printed 239** — found 2026-08-15, during a
+documentation pass, by running the gate rather than by reading anything. **It then read 297 while
+the runner printed 305** — found 2026-08-18, again by running the gate. **On 2026-08-19 this file
+said 305 and the README said 297 while the runner printed 303** — two live claims, wrong in opposite
+directions at the same moment.
 
-**Quote the number the runner prints, never one read from a document, and that includes this line.**
-**The third miss is the informative one:** two sessions wrote the rule and then updated the count
-from a stale document anyway. A number in prose has no mechanism keeping it true, so **the honest
-options are to run `npm run check` before quoting it or to not quote it at all.**
+**The sixth miss is the one that settles it.** The README's very next sentence said *"quote the
+number the runner prints, never one read from a document — including this one"*, and the number
+above it was still wrong. **A rule stated beside the thing it governs did not keep that thing true.**
 
-**The fourth miss says the rule is not enough on its own.** Four corrections have all been made BY
-RUNNING THE GATE, and none by anybody noticing the prose. **A number nothing can check drifts on a
-schedule set by how often somebody happens to look.**
+**So `scripts/stale-counts.py` now REFUSES a live count in any tracked markdown**, and the number is
+deleted rather than corrected. An absent number cannot rot. A historical sentence keeps its number
+by carrying `STALE-COUNT-EXEMPT: <reason>` on its line, the same shape `DIRTY-WORDS-EXEMPT` uses.
+
+**The gate's STEP count is treated the opposite way, on purpose.** That one is derivable from
+`package.json`, so the same script VERIFIES it instead of forbidding it. **Forbid what nothing can
+check. Verify what something can.**
+
+**All six corrections were made BY RUNNING THE GATE, and none by anybody noticing the prose.** That
+is the measurement behind the design: **a number nothing can check drifts on a schedule set by how
+often somebody happens to look.**
 
 **Tests run inside real `workerd`** against real D1 and real Durable Objects. Outbound `fetch` is
 stubbed in `vitest.config.ts`, so **a test reaching the real Flickr fails loudly.**

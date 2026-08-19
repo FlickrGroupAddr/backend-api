@@ -331,7 +331,11 @@ npm run check
 ```
 
 **Quote the number the runner prints, never one read from a document** — including from this
-file. That count has been wrong FOUR times, most recently on 2026-08-15.
+file. That count was wrong SIX times, most recently on 2026-08-19, when `CLAUDE.md` and `README.md`
+disagreed with the runner in opposite directions on the same afternoon.
+
+**`npm run counts` now refuses a live count in any tracked markdown**, so the number is deleted
+rather than corrected. `scripts/stale-counts.py` carries the reasoning and the exemption marker.
 
 ```
 python scripts/mutation-check.py

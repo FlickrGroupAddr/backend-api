@@ -1035,7 +1035,7 @@ four values to update.
 
 **Mounting `deviceRoutes` before `apiRoutes` is what keeps `start` reachable without a session.** It
 skipped ADR-12's `no-store` too, and that was a real defect found by re-reading the file after it had
-passed 24 tests. **Every reply from these four routes carries a bearer credential in its body**, so a
+passed 24 tests. **Every reply from these four routes carries a bearer credential in its body**, so a   <!-- STALE-COUNT-EXEMPT: the suite size on the day the defect was found -->
 cached copy is a credential sitting somewhere nobody watches. `deviceRoutes` now restates the cache
 rule itself, defended by a mutation.
 
