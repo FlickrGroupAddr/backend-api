@@ -19,12 +19,19 @@ NOBODY HAS RUN IT.**
 | **The device link** | **Written, plug-in 0.17.** `DeviceLink.lua` holds the flow, `DeviceLinkProbe.lua` holds the dialogs |
 | **The API client** | **Written, plug-in 0.18.** `FgaApi.lua` wraps the seven allowed routes, `FgaApiProbe.lua` exercises the three read-only ones |
 | **The photo-ID join** | **Written, plug-in 0.20.** `PhotoIds.lua` turns a Lightroom selection into Flickr photo IDs, `PhotoIdsProbe.lua` reports what it found |
+| **ADR-20's warn-then-commit** | **Written, plug-in 0.21.** `QueueAdds.lua` slices and merges both calls, `PreflightProbe.lua` runs the warning half and commits nothing |
+| **THE PRODUCT** | **Written, plug-in 0.22.** `QueueAddsDialog.lua` — `FGA: ADD THIS PHOTO TO GROUPS`. **The first thing here that can reach a volunteer** |
 | **What is proven** | It parses under the real `luac` 5.1, `selene` is clean, and every SDK member it calls is documented in the pinned archive |
 | **What is NOT proven** | **Every single runtime claim.** No `LrHttp.post` has been watched, no browser has opened, no token has reached the keychain |
 
-**Four menu items to drive.** `FGA: link this Lightroom to FGA` first, then
-`FGA: does my credential work?`, then `FGA: can a checkbox title be bound?` and
-`FGA: what Flickr IDs is my selection?` in either order.
+**Six menu items to drive, and the LAST one writes.** `FGA: link this Lightroom to FGA` first,
+then `FGA: does my credential work?`, then `FGA: can a checkbox title be bound?`,
+`FGA: what Flickr IDs is my selection?` and `FGA: preflight — what would be warned?`.
+
+**`FGA: ADD THIS PHOTO TO GROUPS` is the product, and it QUEUES REAL REQUESTS.** The nightly
+sweep sends them to Flickr, and a moderated pool puts a photo in front of an unpaid volunteer.
+**Run the five read-only ones first** — every layer under it is unproven, and ADR-01 makes a
+mistake here one that cannot be taken back.
 
 **Select a MIXED set of photos before the last one** — some published to Flickr, one never
 published. The rows that produce no ID are the interesting ones.
