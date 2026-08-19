@@ -271,6 +271,10 @@ return {
 			title = "FGA: does my credential work? (Library)",
 			file = "FgaApiProbe.lua",
 		},
+		{
+			title = "FGA: can a checkbox title be bound? (Library)",
+			file = "BindTitleProbe.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -310,7 +314,11 @@ return {
 			title = "FGA: does my credential work? (File)",
 			file = "FgaApiProbe.lua",
 		},
+		{
+			title = "FGA: can a checkbox title be bound? (File)",
+			file = "BindTitleProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 18, revision = 0 },
+	VERSION = { major = 0, minor = 19, revision = 0 },
 }

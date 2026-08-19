@@ -104,6 +104,29 @@ cause.
 **Does `checkbox.title` accept `LrView.bind`?** If it does not, the slot-based rendering design below
 is impossible and the picker needs rethinking. **Check before building.**
 
+**THERE IS NOW A PROBE FOR IT, and it needs one run.** `FGA: can a checkbox title be bound?`,
+plug-in 0.19. Five rows, a Next button, and one sentence to report back: the labels changed, or
+they did not.
+
+**The archive was searched first, and the answer is suggestive rather than decisive.** Every
+`.lua` in the vendored SDK was scanned on 2026-08-19:
+
+| | |
+|---|---|
+| Checkboxes binding `value` | **13 of 13** |
+| Checkboxes binding `title` | **0** |
+| Checkboxes binding some OTHER non-`value` property | **Yes** — `FlickrExportServiceProvider.lua` carries `enabled = LrBinding.keyEquals( 'privacy', 'private' )` |
+
+**So the control is not restricted to binding `value` alone**, which is the encouraging half.
+**And Adobe never binds a title anywhere**, which is the discouraging half.
+
+**Neither half settles it, and this project has been here before.** Absence from the
+documentation is not absence from the runtime — that is the `LrUUID` lesson and the `luac`
+lesson, both recorded in this repository.
+
+**A FAIL is the more valuable outcome.** It kills the slot design before a picker gets built on
+top of it, which is the same reason the entropy probe was worth running.
+
 **What works today**, measured on your machine: batch add across non-adjacent rows, unchecking,
 pruning (364 candidates from 372, the 8 already-in groups removed), **744 views built in 9–12 ms**,
 and `LrHttp` reaching the live Worker.
