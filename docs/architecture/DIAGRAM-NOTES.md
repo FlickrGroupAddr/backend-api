@@ -106,7 +106,7 @@ move the moment the content does.
 |---|---|---|---|---|
 | `11x17` | 100% | 10.1 pt | 100% | **The print.** The content fits this sheet exactly |
 | `16x9` | 100% | 20.2 px | 100% | **A 4K monitor.** 3840 x 2160 at 100% zoom — see below |
-| `8.5x14` | 100% | **7.7 pt** | 100% | Legal landscape, and read the warning below first |
+| `8.5x14` | 100% | **7.7 pt** | 100% | **Terry's print.** Legal landscape, and it reads well on paper — 2026-08-19 |
 
 **Each wider sheet spreads its extra width evenly between the four columns**, so all three now fill
 their printable area completely. `16x9` gains 239.99 units across 3 gaps, `8.5x14` gains 124.04.
@@ -119,10 +119,31 @@ to prove no column changed width.
 both new sheets, so the print scale is `printable_height / content_height` and no amount of width
 touches it. **Legal went from 92.97% of the paper to 100% and stayed at 7.7 pt.**
 
-**So `8.5x14` still reproduces the eyechart.** Legal landscape carries 7.9 in of printable height
-against tabloid's 10.4. **7.7 pt is below the 7.9 pt that made the first print unreadable.** The
-sheet holds 62% of tabloid's printable *area*, so even a redesign that traded height for width tops
-out at `sqrt(0.62)` = 78.8%, or 7.96 pt. **Making legal readable means cutting content.**
+> ### ⚠ RETRACTED 2026-08-19 BY A REAL PRINT, and the reasoning error is the valuable part
+>
+> **This section used to conclude: *"So `8.5x14` still reproduces the eyechart... 7.7 pt is
+> below the 7.9 pt that made the first print unreadable... Making legal readable means cutting
+> content."* Terry printed the legal sheet in color at a FedEx Office and it reads great** — his
+> words, *"it reads great and isn't unwieldy huge like 11x17."* He then asked to make legal the
+> canonical size. See board card #0036.
+>
+> **The MEASUREMENTS were all correct. The conclusion drawn from them was not.** Legal carries
+> 7.9 in of printable height against tabloid's 10.4, it holds 62% of tabloid's printable *area*,
+> and a redesign trading height for width really does top out near 7.96 pt. Every one of those
+> numbers still stands.
+>
+> **The error: one earlier print was unreadable at about 7.9 pt, and that single observation
+> became a THRESHOLD.** A threshold needs more than one point. The unreadable print differed in
+> paper size, in what it was printed on, and in how the reader held it — and none of those were
+> controlled for before the number was written down as a limit that governs the whole design.
+>
+> **The generalizable rule, and this file already states it one section further down:** *when a
+> box looks wrong on screen, the screen is right.* The print is the same authority for a printed
+> sheet. **A readability limit inferred from one bad print is a limit nobody measured**, and it
+> spent months blocking the sheet Terry now wants as canonical.
+>
+> **Kept rather than deleted, because a future session will re-derive the same arithmetic** and
+> needs to find the reason it does not settle the question.
 
 **The one useful shortcut:** when a dimension binds exactly, the fraction of printable area used is
 the ratio of the two aspect ratios. Content 1.5769 against legal's 1.6962 gave 92.97% before the
