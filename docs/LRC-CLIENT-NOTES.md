@@ -18,11 +18,35 @@ NOBODY HAS RUN IT.**
 |---|---|
 | **The device link** | **Written, plug-in 0.17.** `DeviceLink.lua` holds the flow, `DeviceLinkProbe.lua` holds the dialogs |
 | **The API client** | **Written, plug-in 0.18.** `FgaApi.lua` wraps the seven allowed routes, `FgaApiProbe.lua` exercises the three read-only ones |
+| **The photo-ID join** | **Written, plug-in 0.20.** `PhotoIds.lua` turns a Lightroom selection into Flickr photo IDs, `PhotoIdsProbe.lua` reports what it found |
 | **What is proven** | It parses under the real `luac` 5.1, `selene` is clean, and every SDK member it calls is documented in the pinned archive |
 | **What is NOT proven** | **Every single runtime claim.** No `LrHttp.post` has been watched, no browser has opened, no token has reached the keychain |
 
-**Two menu items to drive, in order.** `FGA: link this Lightroom to FGA` first, then
-`FGA: does my credential work?`.
+**Four menu items to drive.** `FGA: link this Lightroom to FGA` first, then
+`FGA: does my credential work?`, then `FGA: can a checkbox title be bound?` and
+`FGA: what Flickr IDs is my selection?` in either order.
+
+**Select a MIXED set of photos before the last one** — some published to Flickr, one never
+published. The rows that produce no ID are the interesting ones.
+
+### The photo-ID join checks the SERVICE, and skipping that would be a real bug
+
+**`photo:getContainedPublishedCollections()` returns collections from EVERY publish service** —
+SmugMug, Zenfolio, a hard-drive publisher. Each records its own `remoteId` in its own namespace.
+**A SmugMug ID handed to Flickr is nonsense that looks exactly like a valid request**, so every
+collection is filtered on `collection:getService():getPluginId()` against
+`com.adobe.lightroom.export.flickr`.
+
+**Two IDs live one call apart and only one is right.** `publishedPhoto:getRemoteId()` is the
+Flickr PHOTO id; `collection:getRemoteId()` is the photoSET id.
+
+**Photos are matched by `photo.localIdentifier`, never by comparing `LrPhoto` objects with
+`==`.** The SDK may hand back a different wrapper for the same underlying photo. Adobe's own
+`HttpHandler.lua` sample uses `localIdentifier` as an identity key, which is the precedent.
+
+**A photo carrying two different Flickr IDs is REPORTED, never resolved by guessing.** That
+means it was published to two Flickr accounts, and picking one would queue somebody's photo into
+a stranger's groups.
 
 **The second one checks `clientType`, not the status code, and that is the finding it exists
 for.** A device link that silently minted a BROWSER session would answer `200` here and be

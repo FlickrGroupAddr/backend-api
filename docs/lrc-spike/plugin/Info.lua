@@ -275,6 +275,10 @@ return {
 			title = "FGA: can a checkbox title be bound? (Library)",
 			file = "BindTitleProbe.lua",
 		},
+		{
+			title = "FGA: what Flickr IDs is my selection? (Library)",
+			file = "PhotoIdsProbe.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -318,7 +322,11 @@ return {
 			title = "FGA: can a checkbox title be bound? (File)",
 			file = "BindTitleProbe.lua",
 		},
+		{
+			title = "FGA: what Flickr IDs is my selection? (File)",
+			file = "PhotoIdsProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 19, revision = 0 },
+	VERSION = { major = 0, minor = 20, revision = 0 },
 }
