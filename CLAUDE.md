@@ -75,6 +75,37 @@ catches a direct write.
 **Claude MUST NOT move a card to `completed`.** That edge carries no Claude actor in `rules.json`,
 because Claude marked its own work complete twice on 2026-08-18 and was wrong both times.
 
+### A QUESTION FOR TERRY MOVES THE CARD. Every time
+
+**Standing order, Terry, 2026-08-19, verbatim: *"If you comment on a ticket that is a direct
+question to terry and that ticket is NOT in Needs Terry, move that ticket to Needs Terry. That
+swimlane is my best -- and only! -- indication that a ticket is blocked on me."***
+
+**A question left in a comment thread on a card in any other lane is a question Terry never sees.**
+The lane IS the notification; the comment is only the content.
+
+**`rules.json` grants Claude the edge from EVERY lane it can reach**, so there is never a mechanical
+excuse. From `backlog` it is Claude's ONLY exit, built for exactly this.
+
+**Ask the question and move the card in the SAME action.** A comment posted now and a move
+"once I finish looking" is the failure -- the window between them is silent.
+
+**This does NOT mean every uncertainty goes to Terry.** `needs_terry_action` means *"Claude is
+STOPPED until Terry answers"*. **Work everything that does not depend on the answer FIRST**, then
+move the card with the remaining question on it. A lane holding six cards Claude could still be
+working on is the same diluted signal the build-chain banner rules exist to protect.
+
+**`needs_terry_action` and `blocked` are NOT synonyms, and Terry drew the line himself on
+2026-08-19:**
+
+| Lane | Means |
+|---|---|
+| **Needs Terry** | **Blocked ON Terry.** He can move it. A judgment call, an answer, a signoff |
+| **Blocked** | **NEITHER of us can move it.** His example: *"awaiting vendor response to bug report"* |
+
+**Blocked MUST NOT be used for "waiting on a decision"** — that is Needs Terry — **and MUST NOT be
+used for "hard".** `rules.json` carries both rules in the lanes' own notes.
+
 ### Work that outlives a turn belongs on a ticket
 
 **Standing order, Terry, 2026-08-19, verbatim: *"If at any point Terry OR claude are doing active
