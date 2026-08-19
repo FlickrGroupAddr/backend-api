@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**25 decisions · 62 test blocks · 46 mutations**
+**25 decisions · 61 test blocks · 46 mutations**
 
 ## Forward: decision to verification
 
@@ -66,7 +66,6 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `classify.test.ts` | classifyAdd | ADR-01, ADR-02 |
 | `classify.test.ts` | classifyResult | ADR-01, ADR-02 |
 | `classify.test.ts` | outcomeColumn | ADR-01, ADR-02 |
-| `crypto-bench.test.ts` | crypto costs, for KEY-ROTATION-NOTES.md | *exempt — a benchmark measures cost, it does not verify a decision.* |
 | `crypto.test.ts` | round trip | ADR-09 |
 | `crypto.test.ts` | nonce handling | ADR-09 |
 | `crypto.test.ts` | rejection | ADR-09 |
