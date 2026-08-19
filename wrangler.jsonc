@@ -4,7 +4,7 @@
 	"main": "src/index.ts",
 
 	// ADR-13: track current. Bump deliberately, and re-run `wrangler types` after.
-	"compatibility_date": "2026-08-18",
+	"compatibility_date": "2026-08-19",
 
 	// ADR-13 deliberately omits "nodejs_compat". hono, jose and zod are all
 	// Web-standard and zero-dependency. If a future dependency forces the flag,
