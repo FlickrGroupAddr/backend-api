@@ -975,20 +975,38 @@ for _name, _a, _b, _want in _cases:
         raise SystemExit(f"SELF-TEST FAILED: {_name}")
 
 print()
-note("Straight edges cross nothing they do not touch:")
+note("Edges cross nothing they do not touch:")
 check("collision detector self-test", True, f"{len(_cases)}/{len(_cases)}")
+
+# **THIS CHECK SKIPPED EVERY ROUTED EDGE UNTIL 2026-08-19, and that hole shipped a
+# defect.** Card #0067. The loop read `if routed: continue` with the note "waypoints are
+# not modeled here", which was true when it was written and stopped being true the day
+# `paths` was added for badge clearance.
+#
+# **`browsernote` was drawn with `e11` running straight through it and the build passed
+# all 68 checks.** `e11` carries `orthogonalEdgeStyle`, so this -- the one check that
+# could have caught it -- skipped it by name.
+#
+# **The check was HONEST about its scope and nobody read it.** It printed "N straight
+# edges checked" on every run. A count that quietly excludes the interesting half is the
+# assertion-that-cannot-fail shape wearing a label that admits it.
+#
+# **`paths[eid]` is the full drawn polyline**, first and last point plus every waypoint,
+# and the comment beside it already explains why the chord between the ends describes a
+# line draw.io never draws.
 _hits = []
-for eid, (src, tgt, p, q, routed) in segments.items():
-    if routed:
-        continue          # waypoints are not modeled here
+for eid, path in paths.items():
+    src, tgt = segments[eid][0], segments[eid][1]
     for bid, rect in boxes.items():
         if bid in (src, tgt) or bid in NOT_OBSTACLES:
             continue
-        if seg_hits_rect(p, q, rect):
+        if any(seg_hits_rect(a, b, rect) for a, b in itertools.pairwise(path)):
             _hits.append(f"{eid} ({src}->{tgt}) crosses {bid}")
 for h in _hits:
     note(f"    {h}")
-check("no crossings", not _hits, f"{len(segments)} straight edges checked")
+_routed_n = sum(1 for _s in segments.values() if _s[4])
+check("no crossings", not _hits,
+      f"{len(segments)} edges checked, {_routed_n} of them routed")
 
 
 # ---------------------------------------------------------------------------
