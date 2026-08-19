@@ -16,9 +16,18 @@ NOBODY HAS RUN IT.**
 
 | | |
 |---|---|
-| **The Lua client** | **Written, plug-in 0.17.** `DeviceLink.lua` holds the flow, `DeviceLinkProbe.lua` holds the dialogs |
+| **The device link** | **Written, plug-in 0.17.** `DeviceLink.lua` holds the flow, `DeviceLinkProbe.lua` holds the dialogs |
+| **The API client** | **Written, plug-in 0.18.** `FgaApi.lua` wraps the seven allowed routes, `FgaApiProbe.lua` exercises the three read-only ones |
 | **What is proven** | It parses under the real `luac` 5.1, `selene` is clean, and every SDK member it calls is documented in the pinned archive |
 | **What is NOT proven** | **Every single runtime claim.** No `LrHttp.post` has been watched, no browser has opened, no token has reached the keychain |
+
+**Two menu items to drive, in order.** `FGA: link this Lightroom to FGA` first, then
+`FGA: does my credential work?`.
+
+**The second one checks `clientType`, not the status code, and that is the finding it exists
+for.** A device link that silently minted a BROWSER session would answer `200` here and be
+wrong in a way nothing else in this plug-in could see. The report says `correct` or `WRONG` in
+those words.
 
 **That distinction is the whole point of this section.** A gate-clean plug-in and a working
 plug-in are different claims, and this project has already paid for confusing them — the

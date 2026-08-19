@@ -47,6 +47,26 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
+	-- **0.18 SPENDS the credential 0.17 obtained, and one check is the whole point.**
+	--
+	-- `FgaApi.lua` wraps the seven routes `PLUGIN_ALLOWED` in
+	-- `src/middleware/session.ts` permits a plug-in token to call. It is UI-free like
+	-- `DeviceLink.lua`; `FgaApiProbe.lua` holds the dialogs and makes only the three
+	-- READ-ONLY calls -- me, groups, queue. No preflight, no batch, no catalog write.
+	--
+	-- **The probe asserts `clientType`, not the status code, and that is the finding
+	-- it exists for.** "Am I authenticated" and "did I end up with the credential I
+	-- THINK I did" are different questions. A device link that silently minted a
+	-- BROWSER session would answer 200 and be wrong in a way nothing else in this
+	-- plug-in could see.
+	--
+	-- **Every failure gets a NAME rather than a number.** A caller that only sees
+	-- "it did not work" guesses what to tell the user, and it guesses wrong --
+	-- offering a re-link when Flickr is down. Only `notAuthenticated` means link
+	-- again. A 502 splits into `tooManyGroups` and `flickrDown`, because telling
+	-- somebody with 6,000 groups to try again later would be advice that never comes
+	-- true.
+	--
 	-- **0.17 ADDS THE DEVICE LINK, and it is the first thing here that WRITES.**
 	--
 	-- Every earlier menu item is a probe: it reads, reports, and changes nothing.
@@ -247,6 +267,10 @@ return {
 			title = "FGA: link this Lightroom to FGA (Library)",
 			file = "DeviceLinkProbe.lua",
 		},
+		{
+			title = "FGA: does my credential work? (Library)",
+			file = "FgaApiProbe.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -282,7 +306,11 @@ return {
 			title = "FGA: link this Lightroom to FGA (File)",
 			file = "DeviceLinkProbe.lua",
 		},
+		{
+			title = "FGA: does my credential work? (File)",
+			file = "FgaApiProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 17, revision = 0 },
+	VERSION = { major = 0, minor = 18, revision = 0 },
 }
