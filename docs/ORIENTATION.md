@@ -107,6 +107,31 @@ and its contract prose. Editing that markdown now reaches no reader.
 **Arm it at the start of a session**, for the same reason the diagram preview says so:
 started after two edits, it has already missed the thing it existed to show.
 
+## CLAUDE MUST NOT PROMOTE OUT OF `backlog` ON ITS OWN JUDGMENT
+
+**Standing order, Terry, 2026-08-19, verbatim: *"If something changes on a ticket in backlog that
+suddenly makes it eligible for work, Terry can grant *per-ticket* permission to move from backlog
+to RFW. Note that claude MUST NOT move out of backlog until/unless Terry gives explicit guidance
+for one specific ticket."*** RFC 2119 sense — **MUST NOT is absolute.**
+
+**`rules.json` DOES grant the edge.** `backlog -> ready_for_claude` carries a `claude` actor, so
+the tool will allow it. **The mechanism exists so Terry can say *"promote #0027"* and it happens
+without him reaching for the mouse.**
+
+**THIS IS THE ONE EDGE WHERE READING `rules.json` ALONE GIVES THE WRONG ANSWER**, and that is why
+it is written in four places. A permission model grants an edge or it does not; it cannot say
+*"only when he says so, and only for that one card."*
+
+**The grant is PER TICKET and does not generalize.** Being told to promote one card is not
+permission to promote the next.
+
+**The stakes are larger than one row.** Every other edge in that table is shaped to stop Claude
+advancing its own queue — `ready_for_claude`'s own note says *"CREATING here is not PROMOTING
+here."* **A standing self-promotion right undoes all of it in one line.**
+
+**Claude's own exit from backlog is `needs_terry_action`.** A backlog card that has become
+interesting gets a question there, never a promotion.
+
 ## A QUESTION FOR TERRY MOVES THE CARD, and Needs Terry is not Blocked
 
 **Standing order, Terry, 2026-08-19, verbatim: *"If you comment on a ticket that is a direct
