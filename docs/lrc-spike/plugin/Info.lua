@@ -47,6 +47,34 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
+	-- **0.22 IS THE PRODUCT. `FGA: ADD THIS PHOTO TO GROUPS`.**
+	--
+	-- Terry's north star, in his words: *"If after I publish I could open up a dialog
+	-- in LR and add the new photo to my FGA queues per pool/group, that speeds up my
+	-- workflow. No need to pop out of LR and use my browser."*
+	--
+	-- **IT WRITES, and it is the first thing here that can reach a PERSON.** Queued
+	-- requests go to Flickr overnight, and a moderated pool puts a photo in front of
+	-- an unpaid volunteer. ADR-01 is why the confirmation step is not decoration.
+	--
+	-- **Preflight runs BEFORE the picker opens, which is the cheap way round.** It
+	-- costs one Flickr call per slice no matter how many groups it carries, because
+	-- `getAllContexts` is per-photo. So asking about everything up front costs the
+	-- same as asking about a subset and buys three things: the picker prunes groups
+	-- the photo is already in (Terry's add-only rule), it prunes groups already
+	-- queued, and ADR-20's warnings are known before anything is on screen.
+	--
+	-- **THE WARNED SECTION IS THE ACKNOWLEDGEMENT.** Groups that already had one of
+	-- your photos reach a moderator sit in their own list under a heading that says
+	-- what that means, and checking a box there is the per-group consent. Only those
+	-- ids go into `acknowledgedModeration`. A single "I understand" for the whole
+	-- dialog would be the blanket flag ADR-20 refuses.
+	--
+	-- **ONE PHOTO PER RUN, stated rather than overlooked.** `/requests/batch` is one
+	-- photo into many groups, and multi-select would need a warning MATRIX -- ten
+	-- photos across forty groups is four hundred separate decisions. Doing that
+	-- half-way would be worse than not doing it.
+	--
 	-- **0.21 STACKS THE LAYERS, and ADR-20 is the rule it is built around.**
 	--
 	-- `QueueAdds.lua` is preflight-then-commit as two calls, UI-free. `PreflightProbe.lua`
@@ -316,6 +344,10 @@ return {
 			title = "FGA: preflight -- what would be warned? (Library)",
 			file = "PreflightProbe.lua",
 		},
+		{
+			title = "FGA: ADD THIS PHOTO TO GROUPS (Library)",
+			file = "QueueAddsDialog.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -367,7 +399,11 @@ return {
 			title = "FGA: preflight -- what would be warned? (File)",
 			file = "PreflightProbe.lua",
 		},
+		{
+			title = "FGA: ADD THIS PHOTO TO GROUPS (File)",
+			file = "QueueAddsDialog.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 21, revision = 0 },
+	VERSION = { major = 0, minor = 22, revision = 0 },
 }
