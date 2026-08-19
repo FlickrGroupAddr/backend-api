@@ -47,6 +47,39 @@ return {
 	--
 	-- It makes no network call and touches no catalog. The 372 groups are
 	-- generated in the file.
+	-- **0.21 STACKS THE LAYERS, and ADR-20 is the rule it is built around.**
+	--
+	-- `QueueAdds.lua` is preflight-then-commit as two calls, UI-free. `PreflightProbe.lua`
+	-- runs the first half against a real photo and real groups and COMMITS NOTHING --
+	-- it never calls /requests/batch.
+	--
+	-- **`acknowledgedModeration` is a LIST and `submit` takes it as a SEPARATE
+	-- argument from the group ids.** Passing the same list for both would
+	-- acknowledge every warning automatically, which is the blanket-flag failure
+	-- ADR-20 exists to refuse -- one character to write and impossible to see in
+	-- review.
+	--
+	-- **Both endpoints cap at 200 group ids**, so both calls slice and merge.
+	-- `poolsKnown` is ANDed across slices rather than ORed: ADR-04 says absence of a
+	-- pool record proves nothing, so one lucky slice MUST NOT present an unknown as
+	-- a clean answer. A failed slice stops the run and reports HOW FAR IT GOT,
+	-- because retrying an already-submitted slice puts photos in front of a
+	-- moderator twice.
+	--
+	-- **0.20 JOINS THE CATALOG TO FLICKR.** `PhotoIds.lua` turns a selection into
+	-- Flickr photo ids. It filters every published collection on
+	-- `collection:getService():getPluginId()` -- a SmugMug id handed to Flickr is
+	-- nonsense that looks exactly like a valid request. Photos are matched on
+	-- `photo.localIdentifier` rather than by comparing LrPhoto objects with `==`,
+	-- because the SDK may return a different wrapper for the same photo. A photo
+	-- carrying two different Flickr ids is REPORTED, never guessed at.
+	--
+	-- **0.19 ASKS THE SDK THE PICKER'S BLOCKING QUESTION.** `BindTitleProbe.lua`:
+	-- does `checkbox.title` accept `LrView.bind`? The slot-based picker design is
+	-- impossible if it does not. Adobe binds `value` on 13 of 13 sample checkboxes
+	-- and `title` on none, but does bind `enabled` on one -- suggestive both ways,
+	-- decisive neither, so only the application can answer it.
+	--
 	-- **0.18 SPENDS the credential 0.17 obtained, and one check is the whole point.**
 	--
 	-- `FgaApi.lua` wraps the seven routes `PLUGIN_ALLOWED` in
@@ -279,6 +312,10 @@ return {
 			title = "FGA: what Flickr IDs is my selection? (Library)",
 			file = "PhotoIdsProbe.lua",
 		},
+		{
+			title = "FGA: preflight -- what would be warned? (Library)",
+			file = "PreflightProbe.lua",
+		},
 	},
 
 	LrExportMenuItems = {
@@ -326,7 +363,11 @@ return {
 			title = "FGA: what Flickr IDs is my selection? (File)",
 			file = "PhotoIdsProbe.lua",
 		},
+		{
+			title = "FGA: preflight -- what would be warned? (File)",
+			file = "PreflightProbe.lua",
+		},
 	},
 
-	VERSION = { major = 0, minor = 20, revision = 0 },
+	VERSION = { major = 0, minor = 21, revision = 0 },
 }
