@@ -75,6 +75,29 @@ catches a direct write.
 **Claude MUST NOT move a card to `completed`.** That edge carries no Claude actor in `rules.json`,
 because Claude marked its own work complete twice on 2026-08-18 and was wrong both times.
 
+### Work that outlives a turn belongs on a ticket
+
+**Standing order, Terry, 2026-08-19, verbatim: *"If at any point Terry OR claude are doing active
+work that won't land in a single turn, it RFC-sense-SHOULD be work tracked in a ticket. If work has
+been under way for more than 10 minutes of wall clocks it RFC-MUST be work tracked in a ticket. RFC
+words chosen intentionally."***
+
+**Work that will not land in ONE turn SHOULD have a card. Work under way past TEN MINUTES of wall
+clock MUST have one.** The second is a backstop on the first: judging a task to be one turn is
+legitimate, and **ten minutes is when that judgment expires.** Measure it against a clock, not a
+feeling.
+
+**Tracked means the card sits in `in_progress`.** A card in `ready_for_claude` is queued, not
+started, and an empty `In progress` lane while work happens tells Terry something false.
+
+**`ready_for_claude` -> `in_progress` and `in_progress` -> `ready_for_review` both carry a Claude
+actor, so Claude does this alone.** A `backlog` card CANNOT be started directly — its only Claude
+exit is `needs_terry_action`, and promotion is Terry's alone.
+
+**The full reasoning, the mechanics and the one gap it exposes are in `docs/ORIENTATION.md`.** That
+gap: **every `in_progress` edge names `claude` only**, so the Terry half of this order has no lane
+on the board yet.
+
 ### The data left this repository because this repository is PUBLIC
 
 **`docs/work-status.json` is DELETED, and MUST NOT be recreated here.**
