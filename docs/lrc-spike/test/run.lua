@@ -202,6 +202,33 @@ do
 	check("every group comes back", #result.groups, 450)
 end
 
+section("A JSON null in the reply does NOT truncate the merge")
+do
+	--[[ **The bug this was written for, card #0087.** `/requests/batch` answers
+	     `groupIds.map(g => byGroup.get(g))`, and a miss is `undefined`, which
+	     `JSON.stringify` writes as `null` INSIDE the array. rxi decodes that to Lua
+	     `nil`, and `ipairs` stops at the hole -- measured: an array of four with a null
+	     at index 2 lets `ipairs` visit exactly ONE element.
+
+	     Before the fix, everything after the first hole silently vanished. ]]
+	fake.reset()
+	local holed = fake.batch
+	fake.batch = function(photoId, groupIds, acks)
+		local reply = holed(photoId, groupIds, acks)
+		-- Punch a hole exactly as a `byGroup` miss would.
+		reply.groups[2] = nil
+		return reply
+	end
+
+	local result = QueueAdds.submit("photo1", { "a", "b", "c", "d" }, nil)
+	check("every asked-for slot comes back", #result.groups, 4)
+	check("the group AFTER the hole survives", result.groups[3].groupId, "c")
+	check("and so does the last one", result.groups[4].groupId, "d")
+	check("the hole itself stays nil", result.groups[2], nil)
+
+	fake.batch = holed
+end
+
 section("PhotoIds filters on the publish SERVICE")
 do
 	local PhotoIds = require("PhotoIds")

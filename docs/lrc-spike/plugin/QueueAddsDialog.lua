@@ -349,8 +349,15 @@ local function run()
 		return
 	end
 
+	--[[ **Counted by INDEX over the list we sent, never with `ipairs`.** The reply array
+	     can carry a `null` for a group the server neither decided nor minted, that
+	     decodes to Lua `nil`, and `ipairs` stops dead at the hole -- so an `ipairs`
+	     count here would silently report only the groups before the first gap. See
+	     `appendAnswers` in `QueueAdds.lua` for the measurement. ]]
+	local answers = submitted.groups or {}
 	local resolved = 0
-	for _, entry in ipairs(submitted.groups or {}) do
+	for index = 1, #picked do
+		local entry = answers[index]
 		if entry ~= nil and entry.status == "resolved" then
 			resolved = resolved + 1
 		end
