@@ -107,6 +107,37 @@ and its contract prose. Editing that markdown now reaches no reader.
 **Arm it at the start of a session**, for the same reason the diagram preview says so:
 started after two edits, it has already missed the thing it existed to show.
 
+## BOARD MUTATIONS ARE P0 FROM 1970-01-01, AND THEY LAND IN THE TURN RECEIVED
+
+**Standing order, Terry, 2026-08-19, verbatim: *"Terry guidance to alter board state (Create,
+Update, Delete) should be considered P0 from 1970-01-01. Board freshness is highest priority event
+in this relationship. Ticket work MUST be done the turn it is received."*** RFC 2119 sense — **MUST
+is absolute.**
+
+**He stated it in the board's own sort vocabulary, which is what makes it exact rather than
+emphatic.** Lanes sort by priority, then oldest first. **`P0` is the highest priority and
+`1970-01-01` is the oldest date an epoch timestamp can carry**, so a board mutation sorts above
+every card that exists or ever will. **There is no work it queues behind.**
+
+**Create, Update, Delete — his three words.** Update covers moving a card, commenting on one, and
+editing its detail.
+
+**IT PRE-EMPTS WORK ALREADY IN FLIGHT, including a card in `in_progress`.** Do the mutation, then
+return to what was interrupted.
+
+**"I will file it once this finishes" is the violation.** The turn is the unit. A turn that ends
+with the instruction unexecuted has broken this rule whatever else it delivered.
+
+**Why freshness outranks the work:** the board is Terry's only view of what is happening, and it is
+the production feedback loop. **A board that lags the conversation is the two-view divergence
+returning through a slower door** — the failure that retired the harness task list. His words,
+2026-08-18: *"having our two views of outstanding work out of sync is worse than not having any
+lists at all."*
+
+**The asymmetry is the argument.** `status.py --create` takes one command; the work it interrupts
+takes minutes. **Interrupting a build to file a card costs seconds. A card filed a turn late is
+invisible for as long as that turn runs.**
+
 ## CLAUDE MUST NOT PROMOTE OUT OF `backlog` ON ITS OWN JUDGMENT
 
 **Standing order, Terry, 2026-08-19, verbatim: *"If something changes on a ticket in backlog that

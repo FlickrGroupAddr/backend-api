@@ -75,6 +75,41 @@ catches a direct write.
 **Claude MUST NOT move a card to `completed`.** That edge carries no Claude actor in `rules.json`,
 because Claude marked its own work complete twice on 2026-08-18 and was wrong both times.
 
+### BOARD MUTATIONS ARE P0 FROM 1970-01-01, AND THEY LAND IN THE TURN RECEIVED
+
+**Standing order, Terry, 2026-08-19, verbatim: *"Terry guidance to alter board state (Create,
+Update, Delete) should be considered P0 from 1970-01-01. Board freshness is highest priority event
+in this relationship. Ticket work MUST be done the turn it is received."*** RFC 2119 sense — **MUST
+is absolute.**
+
+**He stated the priority in the board's OWN sort vocabulary, and that is what makes it exact.** The
+lane sorts by priority, then oldest first. **`P0` is the highest priority and `1970-01-01` is the
+oldest date any epoch timestamp can carry**, so a board mutation sorts above every card that exists
+or ever will. There is no work it queues behind.
+
+**What counts, and the three words are his:**
+
+| | |
+|---|---|
+| **Create** | File the card |
+| **Update** | Move it, comment on it, edit its detail |
+| **Delete** | Remove it |
+
+**IT PRE-EMPTS WORK ALREADY IN FLIGHT, including a card sitting in `in_progress`.** Finish the board
+mutation, then return. **"I will file it once this build finishes" is the violation** — the turn is
+the unit, and a turn that ends with the instruction unexecuted has broken this rule whatever else it
+delivered.
+
+**Why board freshness outranks the work itself:** the board is Terry's only view of what is
+happening, and it is the production feedback loop. **A board that lags the conversation is the
+two-view divergence returning through a slower door** — the exact failure that retired the harness
+task list. Terry, 2026-08-18: *"having our two views of outstanding work out of sync is worse than
+not having any lists at all."*
+
+**A mutation is cheap and the work it interrupts is not.** `status.py --create` takes one command.
+The asymmetry is the whole argument: interrupting a build to file a card costs seconds, and a card
+filed a turn late is invisible for however long that turn runs.
+
 ### CLAUDE MUST NOT PROMOTE OUT OF `backlog` WITHOUT A PER-TICKET GRANT
 
 **Standing order, Terry, 2026-08-19, verbatim: *"If something changes on a ticket in backlog that
