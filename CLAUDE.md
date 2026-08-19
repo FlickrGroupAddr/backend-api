@@ -75,6 +75,28 @@ catches a direct write.
 **Claude MUST NOT move a card to `completed`.** That edge carries no Claude actor in `rules.json`,
 because Claude marked its own work complete twice on 2026-08-18 and was wrong both times.
 
+### CLAUDE MUST NOT PROMOTE OUT OF `backlog` WITHOUT A PER-TICKET GRANT
+
+**Standing order, Terry, 2026-08-19, verbatim: *"If something changes on a ticket in backlog that
+suddenly makes it eligible for work, Terry can grant *per-ticket* permission to move from backlog
+to RFW. Note that claude MUST NOT move out of backlog until/unless Terry gives explicit guidance
+for one specific ticket."*** RFC 2119 sense — **MUST NOT is absolute.**
+
+**`rules.json` now carries `backlog -> ready_for_claude` with a `claude` actor.** The mechanism
+exists so Terry can say *"promote #0027"* and Claude can do it without him reaching for the mouse.
+
+**THE TABLE CANNOT EXPRESS THE CONSTRAINT, WHICH IS WHY IT IS WRITTEN HERE.** A permission model
+grants an edge or it does not; it has no way to say *"only when he says so, and only for that
+one card."* **So this is the one edge where the table is more permissive than the rule**, and a
+future session reading `rules.json` alone would get it wrong.
+
+**The grant is PER TICKET and it does not generalize.** Being told to promote one card is not
+permission to promote the next one, and it expires with the card.
+
+**Why it matters more than it looks:** every other edge in that table is shaped to stop Claude
+advancing its own queue — `ready_for_claude`'s own note says *"CREATING here is not PROMOTING
+here."* **A standing self-promotion right would undo all of it in one line.**
+
 ### A QUESTION FOR TERRY MOVES THE CARD. Every time
 
 **Standing order, Terry, 2026-08-19, verbatim: *"If you comment on a ticket that is a direct
