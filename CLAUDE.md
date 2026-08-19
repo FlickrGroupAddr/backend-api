@@ -82,6 +82,13 @@ python X:\Projects\claude-status\serve.py "X:\Projects\claude-status-data\flickr
 field rather than from a flag, so one bookmark per project cannot open the wrong board. Seven
 swimlanes, `P0` through `P5` sorted top-down within each, and Terry DRAGS the edges he owns.
 
+**THE BOARD PUSHES ITSELF, and Claude MUST NOT push it by hand.** Since 2026-08-19 `serve.py`
+runs an autopush thread: five quiet seconds after any board write it commits and pushes to the
+PRIVATE `TerryOtt/claude-status-project-state-store`. **Measured: 5 writes in 5 seconds produce 1
+commit.** A failed push raises a red pill in the status bar and nothing else does. **The TOOL
+repository is different** -- `X:\Projects\claude-status` is ordinary code and the global
+commit-then-push rule applies to it in full.
+
 **Arm it at the start of every session, together with a Monitor on the board file.** The server
 survives a Claude restart because it is its own process; a Monitor does not. **The Monitor's filter
 MUST cover the server dying as well as the cards moving** — a quiet healthy board and a dead server
