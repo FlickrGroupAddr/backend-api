@@ -76,6 +76,20 @@ $effect(() => {
 
 	if (id === null || ids.length === 0) {
 		advice = new Map();
+		/*
+		 * **BOTH of these reset here, and neither did.**
+		 *
+		 * The `finally` that clears `checking` lives inside the debounce callback. Clear
+		 * the photo URL while that timer is pending and the cleanup below cancels it --
+		 * so the callback never runs, this guard returns early, and `checking` stays true
+		 * for the life of the page. The hint then reads "Checking..." forever, hiding the
+		 * moderated count and the time estimate behind it.
+		 *
+		 * `poolsKnown` is the same shape one step quieter: a stale `false` from a previous
+		 * photo would warn about a pool lookup that never happened for this one.
+		 */
+		checking = false;
+		poolsKnown = true;
 		return;
 	}
 
