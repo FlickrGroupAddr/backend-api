@@ -28,7 +28,8 @@
 		"types:py": "python -m pyright scripts/",
 		"lsp": "python scripts/lsp-check.py",
 		"lua:imports": "python scripts/lua-imports.py docs/lrc-spike/plugin",
-		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run argparse && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run sql && npm run diagram && npm run test && npm run trace && npm run build:web"
+		"lua:test": "luajit docs/lrc-spike/test/run.lua",
+		"check": "npm run typecheck && npm run lint && npm run dirty-words && npm run typehints && npm run argparse && npm run types:py && npm run lsp && npm run lua && npm run lua:lint && npm run lua:imports && npm run lua:test && npm run sql && npm run diagram && npm run test && npm run trace && npm run build:web"
 	},
 	"dependencies": {
 		"hono": "4.13.3",

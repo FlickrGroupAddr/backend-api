@@ -133,21 +133,17 @@ end
      retrying an already-submitted slice puts photos in front of a moderator twice.
      ADR-01 is why that matters more here than the usual retry argument. ]]
 function QueueAdds.submit(photoId, groupIds, askedFor)
-	local acknowledged = {}
-	if type(askedFor) == "table" then
-		--[[ Only ids that are actually being submitted. An acknowledgement for a
-		     group the caller then dropped is meaningless, and passing it on would
-		     widen the list beyond what the person saw. ]]
-		local submitting = {}
-		for _, id in ipairs(groupIds) do
-			submitting[id] = true
-		end
-		for _, id in ipairs(askedFor) do
-			if submitting[id] then
-				acknowledged[#acknowledged + 1] = id
-			end
-		end
-	end
+	--[[ **The narrowing happens ONCE, per slice, in the loop below.**
+
+	     An earlier version narrowed twice: first against `groupIds`, then again
+	     against each slice. **The first pass was dead code**, because every slice is
+	     a subset of `groupIds` and the slices union back to it -- so the second pass
+	     already removed everything the first one would have.
+
+	     **Found by mutation, not by reading.** Deleting the first filter's condition
+	     left all 53 checks passing, which is what a redundant guard looks like from
+	     the outside. Card #0078. ]]
+	local acknowledged = type(askedFor) == "table" and askedFor or {}
 
 	local merged = {}
 	local queuedCount = 0

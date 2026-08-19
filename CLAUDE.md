@@ -489,10 +489,22 @@ so is everything below that is not a route.
 npm run check
 ```
 
-**Fifteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
+**Sixteen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
 `ruff`, **the argparse gate**, `pyright`, **the LSP gate**, the Lua parse check, `selene`, **the
-ADR-23 Rule 3 import gate**, `sqlfluff`, **the diagram staleness check**, 305 tests, the
-traceability gate, and the web build. **It MUST be clean before a commit.**
+ADR-23 Rule 3 import gate**, **the Lua unit tests**, `sqlfluff`, **the diagram staleness check**,
+305 tests, the traceability gate, and the web build. **It MUST be clean before a commit.**
+
+**`npm run lua:test` runs the plug-in's PURE logic under LuaJIT**, which implements Lua 5.1 --
+the version Lightroom runs. `DEVCOM.Lua` on winget is 5.4 and would have been the wrong language.
+`docs/lrc-spike/test/lrc-stubs.lua` fakes `import` and the four namespaces the pure modules touch,
+and **it MUST NOT grow into a Lightroom emulator** — a test that needs a real `LrView` belongs on
+the host, and the probes in `Info.lua` are that.
+
+**It found redundant code on its first mutation run.** `QueueAdds.submit` narrowed the
+acknowledgement list twice, and deleting the first pass left all 53 checks green — because every
+slice is a subset of `groupIds`, so the per-slice filter already did the whole job. **A guard that
+survives its own deletion is not a guard**, and the second mutation, on the surviving filter, drew
+5 failures.
 
 **`scripts/argparse-check.py` refuses any hand-rolled command-line parsing.** Terry's global
 standing order, 2026-08-18: all Python argument parsing MUST use `argparse`. It reads the AST rather
@@ -822,7 +834,7 @@ version of this table.
 |---|---|---|---|---|
 | TypeScript | 50 | `biome`, 8 rules past `recommended` | **pending** | Version-gated to TS 7.1; `npm run lsp` turns red on its own |
 | Python | 14 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
-| Lua | 9 | `selene` + `lua-balance.py` + `lua-imports.py` | `lua-lsp` | **Equipped** |
+| Lua | 16 | `selene` + `lua-balance.py` + `lua-imports.py` + **LuaJIT unit tests** | `lua-lsp`, `.luarc.json` | **Equipped** |
 | SQL | 6 | `sqlfluff`, parser only | — | **Equipped**, and read why below |
 | **Svelte** | **4** | none — Biome cannot read the template | none | **NOT COMPLIANT** — blocked by the same TS 7 pin, ADR-13 |
 | CSS / HTML | 1 each | `biome` covers CSS | — | One file each |
