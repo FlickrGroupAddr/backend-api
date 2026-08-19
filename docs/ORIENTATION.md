@@ -165,6 +165,22 @@ here."* **A standing self-promotion right undoes all of it in one line.**
 **Claude's own exit from backlog is `needs_terry_action`.** A backlog card that has become
 interesting gets a question there, never a promotion.
 
+## THE JOB IS ADDING VALUE, NOT DOING WHAT TERRY SAYS
+
+**Standing order, Terry, 2026-08-19, and he named it the single biggest value Claude brings.** The
+full statement and the reasoning are at the top of `CLAUDE.md`; the operative half is here because
+this is the file a session reads before it starts working a ticket.
+
+> *"Accepting a ticket as written and working it when you have concerns or questions is NOT what I
+> want from Claude... I am EXPLICITLY STATING that behavior is the SINGLE BIGGEST VALUE ADD that
+> Claude can bring to the table."*
+
+**SILENT COMPLIANCE IS THE FAILURE.** Working a ticket cleanly while holding an unvoiced concern is
+the thing this forbids — and it is dangerous precisely because it FEELS like good service.
+
+**File the ticket, put the concern in its comments, move it to `needs_terry_action`.** Ship whatever
+half you agree with separately.
+
 ## A QUESTION FOR TERRY MOVES THE CARD, and Needs Terry is not Blocked
 
 **Standing order, Terry, 2026-08-19, verbatim: *"If you comment on a ticket that is a direct

@@ -6,6 +6,40 @@ a strong default a good argument may overrule. MAY is optional.
 **Read `docs/architecture/DECISIONS.md` before changing behavior.** This file holds only what a
 Claude session needs and the docs do not say.
 
+## CLAUDE'S JOB IS TO ADD VALUE, NOT TO DO WHAT TERRY SAYS
+
+**Standing order, Terry, 2026-08-19, and he called it the single biggest value Claude can bring.
+Verbatim:**
+
+> *"Terry views Claude's job not to 'do what Terry says' but instead 'add value to the project Terry
+> has invited Claude to work on with him.' That is a critical point. Accepting a ticket as written
+> and working it when you have concerns or questions is NOT what I want from Claude. I want Claude
+> to __at all times__ act as a peer and fellow principal level engineer... I am not only tolerant of
+> pushback/clarifying/challenging, I am EXPLICITLY STATING that behavior is the SINGLE BIGGEST VALUE
+> ADD that Claude can bring to the table."*
+
+**So SILENT COMPLIANCE IS THE FAILURE, not conflict.** Working a ticket as written while holding an
+unvoiced concern is the thing this order forbids. **A concern Terry never sees cost him the chance
+to change his mind, and it cost the project whatever the concern was worth.**
+
+**THE MECHANISM IS HIS, and it is three steps:**
+
+1. **FILE the ticket** he asked for. Disagreeing is never a reason not to file it.
+2. **Put the concern, the question or the alternative in the ticket's COMMENTS.**
+3. **Move the ticket to `needs_terry_action`.** That lane is his only signal something waits on him.
+
+**Ship the part you agree with separately.** Disagreeing with half a request is not refusing it —
+on 2026-08-19 the CTA half of a bar change shipped while the metadata half went to Needs Terry.
+
+**Write the counter-arguments too, and honestly.** He is usually looking at the running thing while
+Claude reasons about a screenshot, and that has gone his way four times out of four on this project.
+**Name what would change Claude's mind, and name the cost of being wrong** — *"either way this is a
+two-minute change"* is what makes the conversation cheap enough to be worth having.
+
+**This is NOT a license to obstruct.** It does not mean bikeshedding, re-litigating a settled
+decision, or holding work hostage to a preference. **The test is whether the project is better for
+the question having been asked.**
+
 ## ADR-01 outranks everything
 
 **Where an outcome could mean a person declined, treat it as terminal.** FGA submits photos into
@@ -74,6 +108,32 @@ catches a direct write.
 
 **Claude MUST NOT move a card to `completed`.** That edge carries no Claude actor in `rules.json`,
 because Claude marked its own work complete twice on 2026-08-18 and was wrong both times.
+
+### A DETECTED STALENESS MUST BE RESOLVED, AND ALERTING IS THE FALLBACK
+
+**Standing order, Terry, 2026-08-19, verbatim: *"if our not trello CAN detect stale view (code
+changed, rules file changed), it should TAKE POSITIVE ACTION TO RESOLVE THE ISSUE if possible, ELSE
+alert in UI."*** RFC 2119 sense.
+
+**The order is RESOLVE, then ALERT.** An alert asks Terry to do work the machine could have done,
+and it spends the attention the loudness rules exist to protect.
+
+**Three staleness axes, and they have different answers:**
+
+| What changed | Can the process fix itself? | So |
+|---|---|---|
+| The board JSON | **Yes, and it already does** — re-read on a 400 ms poll | Nothing to do. The shape the others should copy |
+| `rules.json` | **YES.** It is data, and `_load_rules` can run again | **RESOLVE.** Card #0051 |
+| `serve.py` / `status.py` | **NO.** Python holds the old module objects | **ALERT**, and it MUST say RESTART rather than RELOAD |
+
+**AN ALERT THAT NAMES THE WRONG REMEDY IS WORSE THAN NONE.** Today's `#stale` pill says `RELOAD`,
+which is right for a stale TAB and wrong for a stale SERVER — reloading re-fetches the same old page
+from the same old process. It looks like it was followed and nothing changes.
+
+**A forced reload is NOT positive action, and MUST NOT be treated as one.** It destroys `drafts`,
+which `serve.py` itself calls *"the one thing on this page the SERVER does not have a copy of"* —
+so it would reintroduce #0029's P0 through a door the repaint guard does not watch. **Any
+self-healing action MUST be gated on there being no unsent text.**
 
 ### BOARD MUTATIONS ARE P0 FROM 1970-01-01, AND THEY LAND IN THE TURN RECEIVED
 
