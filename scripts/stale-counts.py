@@ -26,6 +26,7 @@ import json
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 REPO_ROOT: Path = Path(__file__).resolve().parent.parent
@@ -109,6 +110,18 @@ def hits_in(text: str) -> list[tuple[int, str, str]]:
             (number, match.group(0), line.strip()) for match in COUNT.finditer(line)
         )
     return found
+
+
+#: How many rule families `ruff.toml` selects, as CLAUDE.md states it. Derivable, so it
+#: is verified rather than deleted -- it said 20 against a real 21 on 2026-08-19.
+RUFF_CLAIM: re.Pattern[str] = re.compile(r"`ruff`,\s*(\d+)\s+families")
+
+
+def ruff_families() -> int:
+    """How many rule families `ruff.toml` selects."""
+    config = tomllib.loads((REPO_ROOT / "ruff.toml").read_text(encoding="utf-8"))
+    select = config.get("lint", config).get("select", [])
+    return len(select)
 
 
 def tracked_count(patterns: tuple[str, ...]) -> int:
@@ -281,6 +294,25 @@ def main() -> int:
             )
     if rows and problems == 0:
         print(f"Language file counts agree: {len(rows)} row(s) match git ls-files.")
+
+    families = ruff_families()
+    claims = [
+        (number, int(match.group(1)))
+        for number, line in enumerate(claude_md.splitlines(), start=1)
+        if (match := RUFF_CLAIM.search(line)) is not None
+    ]
+    if not claims:
+        problems += 1
+        print("CLAUDE.md: no `ruff`, N families claim found. The wording changed.")
+    for line_number, stated in claims:
+        if stated != families:
+            problems += 1
+            print(
+                f"CLAUDE.md:{line_number}: says ruff selects {stated} families, "
+                f"ruff.toml selects {families}."
+            )
+        else:
+            print(f"Ruff family count agrees: {families} in ruff.toml and CLAUDE.md.")
 
     if problems:
         print()

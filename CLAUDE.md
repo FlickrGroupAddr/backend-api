@@ -647,7 +647,12 @@ often somebody happens to look.**
 stubbed in `vitest.config.ts`, so **a test reaching the real Flickr fails loudly.**
 
 **The lint step is type-aware.** Biome 2.x has a `types` domain, so `npm run check` does analysis
-that usually needs `typescript-eslint`. Five such rules are on; `biome.json` is the record.
+that usually needs `typescript-eslint`. Five such rules are on; **`biome.jsonc`** is the record.
+
+**The file is `biome.jsonc`, and the `c` is load-bearing.** Two lines of this document named
+`biome.json`, which does not exist here, and a reader who went looking for it would find nothing.
+**The extension is not cosmetic** — `biome.json` rejects comments, and every rule in that file
+carries its reason as one.
 
 **Adding a lint rule MUST include proving it can fire.** Write a throwaway file with one deliberate
 violation, confirm the rule reports it, delete the file. **A clean run from an inert rule is
@@ -785,7 +790,7 @@ The global `CLAUDE.md` carries the full table and the reasoning.
 ## The daily toolchain check
 
 **Standing order: on the first build of each day, confirm `node`, `npm`, `tsc`, every direct
-dependency, `compatibility_date` and the `biome.json` schema pin are current.**
+dependency, `compatibility_date` and the `biome.jsonc` schema pin are current.**
 
 **Every answer MUST come from the network, on every run.** Never from training data, never from a
 memory file, never from ADR-13's version table, never from this file. **A freshness check sourced
@@ -852,7 +857,7 @@ drifts; this one is derivable, so it is verified rather than deleted.** The glob
 | Language | Files | Linter | LSP | State |
 |---|---|---|---|---|
 | TypeScript | 56 | `biome`, 8 rules past `recommended` | **pending** | Version-gated to TS 7.1; `npm run lsp` turns red on its own |
-| Python | 15 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
+| Python | 15 | `ruff`, 21 families | `pyright-lsp` | **Equipped** |
 | Lua | 22 | `selene` + `lua-balance.py` + `lua-imports.py` + **LuaJIT unit tests** | `lua-lsp`, `.luarc.json` | **Equipped** |
 | SQL | 6 | `sqlfluff`, parser only | — | **Equipped**, and read why below |
 | **Svelte** | **4** | **the Svelte compiler's own warnings**, gated by `npm run svelte` | none | **STILL NOT COMPLIANT** — a compiler is not a linter, and there is no language server |
