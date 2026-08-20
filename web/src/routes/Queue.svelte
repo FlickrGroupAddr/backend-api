@@ -19,22 +19,51 @@ let error = $state<string | null>(null);
 let showAll = $state(false);
 let busy = $state<string | null>(null);
 
+/*
+ * **LAST CALLER WINS, not last REPLY.**
+ *
+ * `load` is started from two places -- the `$effect` below on every `showAll` change,
+ * and `withdraw` -- and nothing cancelled the previous one. Two calls in flight resolve
+ * in whatever order the network decides, so toggling "Include finished" on and off
+ * quickly could leave `page` holding the "all" reply while the checkbox reads unchecked.
+ *
+ * **That is worse than a stale spinner: the screen shows the wrong SET of requests and
+ * says nothing about it.** This is the one screen where ADR-01 becomes visible, so a
+ * quietly wrong list is exactly the thing it cannot afford.
+ *
+ * The counter is the whole fix. A stale call still completes -- there is no aborting a
+ * `fetch` already sent -- it just declines to write anything, including `loading` and
+ * `error`. Clearing `loading` from a superseded call is the same defect one step
+ * quieter: the spinner would vanish while the real request was still out.
+ */
+let generation = 0;
+
 async function load(): Promise<void> {
+	const mine = ++generation;
 	loading = true;
 	error = null;
 	try {
-		page = await api.queue(null, showAll ? "all" : "pending");
+		const got = await api.queue(null, showAll ? "all" : "pending");
+		if (mine !== generation) return;
+		page = got;
 	} catch (caught) {
+		if (mine !== generation) return;
 		console.error("GET /api/v001/queue failed", caught);
 		error = describeError(caught, "loading your queue");
 	} finally {
-		loading = false;
+		if (mine === generation) loading = false;
 	}
 }
 
 async function loadMore(): Promise<void> {
 	if (page === null || page.nextCursor === null) return;
+
+	// **Same guard, for the same reason.** A `load` that starts while this page is in
+	// flight bumps the counter, and merging a second page of `all` into a freshly
+	// loaded `pending` list would produce a list that matches no filter at all.
+	const mine = generation;
 	const next = await api.queue(page.nextCursor, showAll ? "all" : "pending");
+	if (mine !== generation || page === null) return;
 
 	// Merge by group, so a group split across a page boundary stays one card.
 	const merged = new Map(page.queues.map((q) => [q.groupId, [...q.requests]]));
