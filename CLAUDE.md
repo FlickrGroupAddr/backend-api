@@ -843,14 +843,17 @@ best-of-breed linter at best-practice pedantry, XOR a written override in this f
 there by Terry and only Terry.** The full order and the method are in `~/.claude/CLAUDE.md`.
 **Claude MUST NOT write an override**, and MUST report a gap rather than proceeding past it.
 
-Tracked file counts as of 2026-08-18, taken from `git ls-files` rather than from the previous
-version of this table.
+**The Files column is CHECKED, not stamped with a date.** `npm run counts` compares every row
+against `git ls-files` and fails on a mismatch — it found 50, 14 and 16 against a real 56, 15
+and 22 on 2026-08-19, and the Lua figure had been wrong for a day. **A count nobody derives
+drifts; this one is derivable, so it is verified rather than deleted.** The globs live in
+`scripts/stale-counts.py`, and TypeScript counts `.mjs` because Biome lints it.
 
 | Language | Files | Linter | LSP | State |
 |---|---|---|---|---|
-| TypeScript | 50 | `biome`, 8 rules past `recommended` | **pending** | Version-gated to TS 7.1; `npm run lsp` turns red on its own |
-| Python | 14 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
-| Lua | 16 | `selene` + `lua-balance.py` + `lua-imports.py` + **LuaJIT unit tests** | `lua-lsp`, `.luarc.json` | **Equipped** |
+| TypeScript | 56 | `biome`, 8 rules past `recommended` | **pending** | Version-gated to TS 7.1; `npm run lsp` turns red on its own |
+| Python | 15 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
+| Lua | 22 | `selene` + `lua-balance.py` + `lua-imports.py` + **LuaJIT unit tests** | `lua-lsp`, `.luarc.json` | **Equipped** |
 | SQL | 6 | `sqlfluff`, parser only | — | **Equipped**, and read why below |
 | **Svelte** | **4** | **the Svelte compiler's own warnings**, gated by `npm run svelte` | none | **STILL NOT COMPLIANT** — a compiler is not a linter, and there is no language server |
 | CSS / HTML | 1 each | `biome` covers CSS | — | One file each |

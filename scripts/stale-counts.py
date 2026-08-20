@@ -54,6 +54,21 @@ COUNT: re.Pattern[str] = re.compile(
 
 STEPS: re.Pattern[str] = re.compile(r"\*\*([A-Za-z]+|\d+) steps, in this order\.\*\*")
 
+# **CLAUDE.md's language-tooling table, which is DERIVABLE and therefore verified rather
+# than forbidden.** It claimed 50 TypeScript, 14 Python and 16 Lua files on 2026-08-19
+# against a real 55, 15 and 22 -- the Lua figure had been wrong for a day and nobody
+# noticed, because a number in a table has nothing keeping it true.
+#
+# **The globs are the definition, not an approximation of one.** TypeScript counts `.mjs`
+# because Biome lints it and the row is about what that linter covers.
+LANGUAGE_FILES: dict[str, tuple[str, ...]] = {
+    "TypeScript": ("*.ts", "*.mjs"),
+    "Python": ("*.py",),
+    "Lua": ("*.lua",),
+    "SQL": ("*.sql",),
+    "Svelte": ("*.svelte",),
+}
+
 NUMBER_WORDS: dict[str, int] = {
     word: value
     for value, word in enumerate(
@@ -94,6 +109,39 @@ def hits_in(text: str) -> list[tuple[int, str, str]]:
             (number, match.group(0), line.strip()) for match in COUNT.finditer(line)
         )
     return found
+
+
+def tracked_count(patterns: tuple[str, ...]) -> int:
+    """How many git-tracked files match any of `patterns`."""
+    result = subprocess.run(
+        ["git", "ls-files", *patterns],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return len([line for line in result.stdout.splitlines() if line.strip()])
+
+
+def language_rows(text: str) -> list[tuple[int, str, int]]:
+    """Every language-table row in `text` as (line number, language, stated count).
+
+    **Rows whose count cell is not a plain number are skipped**, which is how the
+    `CSS / HTML` row survives saying "1 each". A checker that demanded a number there
+    would be asking the table to be less clear than it is.
+    """
+    rows: list[tuple[int, str, int]] = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip().strip("*").strip() for cell in line.split("|")]
+        if len(cells) < 3:
+            continue
+        language, stated = cells[1], cells[2]
+        if language not in LANGUAGE_FILES or not stated.isdigit():
+            continue
+        rows.append((number, language, int(stated)))
+    return rows
 
 
 def tracked_markdown() -> list[str]:
@@ -218,6 +266,21 @@ def main() -> int:
             )
         else:
             print(f"Gate step count agrees: {expected} steps in package.json and CLAUDE.md.")
+
+    rows = language_rows(claude_md)
+    if not rows:
+        problems += 1
+        print("CLAUDE.md: no language-table rows found. The table moved or its shape changed.")
+    for line_number, language, stated in rows:
+        real = tracked_count(LANGUAGE_FILES[language])
+        if stated != real:
+            problems += 1
+            print(
+                f"CLAUDE.md:{line_number}: says {stated} {language} file(s), "
+                f"git tracks {real}."
+            )
+    if rows and problems == 0:
+        print(f"Language file counts agree: {len(rows)} row(s) match git ls-files.")
 
     if problems:
         print()
