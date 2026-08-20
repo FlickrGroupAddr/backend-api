@@ -53,9 +53,9 @@ It is ADR-01. See [docs/architecture/DECISIONS.md](docs/architecture/DECISIONS.m
 npm run check
 ```
 
-Typecheck, lint, the US English and house-vocabulary checks, a real `luac 5.1` parse of every
-plug-in file, the ADR-23 SDK import gate, the Vitest suite, the traceability gate, and the web
-build. **It MUST be clean before a commit.**
+Typecheck, lint, the Svelte compiler check, the US English and house-vocabulary checks, a real
+`luac 5.1` parse of every plug-in file, the ADR-23 SDK import gate, the Vitest suite, the
+traceability gate, and the web build. **It MUST be clean before a commit.**
 
 **No test count appears here, and its absence is the fix.** This line carried one for days, it was
 wrong, and the sentence directly under it already said to quote the runner instead.

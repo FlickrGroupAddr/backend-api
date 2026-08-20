@@ -489,9 +489,9 @@ so is everything below that is not a route.
 npm run check
 ```
 
-**Seventeen steps, in this order.** Typecheck (both tsconfigs), Biome, the dirty-words check,
-**the stale-count gate**, `ruff`, **the argparse gate**, `pyright`, **the LSP gate**, the Lua parse
-check, `selene`, **the
+**Eighteen steps, in this order.** Typecheck (both tsconfigs), Biome, **the Svelte compiler
+check**, the dirty-words check, **the stale-count gate**, `ruff`, **the argparse gate**, `pyright`,
+**the LSP gate**, the Lua parse check, `selene`, **the
 ADR-23 Rule 3 import gate**, **the Lua unit tests**, `sqlfluff`, **the diagram staleness check**,
 the Vitest suite, the traceability gate, and the web build. **It MUST be clean before a commit.**
 
@@ -850,12 +850,27 @@ version of this table.
 | Python | 14 | `ruff`, 20 families | `pyright-lsp` | **Equipped** |
 | Lua | 16 | `selene` + `lua-balance.py` + `lua-imports.py` + **LuaJIT unit tests** | `lua-lsp`, `.luarc.json` | **Equipped** |
 | SQL | 6 | `sqlfluff`, parser only | — | **Equipped**, and read why below |
-| **Svelte** | **4** | none — Biome cannot read the template | none | **NOT COMPLIANT** — blocked by the same TS 7 pin, ADR-13 |
+| **Svelte** | **4** | **the Svelte compiler's own warnings**, gated by `npm run svelte` | none | **STILL NOT COMPLIANT** — a compiler is not a linter, and there is no language server |
 | CSS / HTML | 1 each | `biome` covers CSS | — | One file each |
 
 **Svelte is the one gap left, and it is the only one with no tool to install.**
 `svelte-check` peers on TypeScript `^5 || ^6` against ADR-13's 7.0.2. **It needs Terry's
 written override or the same 7.1 release everything else is waiting on.**
+
+**One slice of it closed on 2026-08-19, and the slice matters less than what it proves.**
+`scripts/svelte-compile-check.mjs` compiles every tracked component with **this project's own
+Svelte 5.56.9** and fails on any warning. **That is not a second compiler** — it is the one
+`vite build` already runs on every gate pass. **Measured the same day: a `<div onclick={...}>`
+with no keyboard handler makes `vite build` print `a11y_click_events_have_key_events`,
+`a11y_no_static_element_interactions`, and exit 0.** The warnings existed, reached the log, and
+enforced nothing.
+
+**It reports zero findings today, and that is the expected shape.** Same as `sqlfluff`: the yield
+is a ratchet against tomorrow, not a haul today. **Proven to fire** before it was wired in.
+
+**It MUST NOT be described as typechecking.** A template expression with the wrong type still
+passes, and the script's own success line says so out loud — a step that overstated its coverage
+would be worse than the gap it half-closes.
 
 ### `sqlfluff` earns its place as a PARSER, and the numbers are funny
 
