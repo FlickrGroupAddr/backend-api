@@ -208,16 +208,31 @@ async function send(only?: ReadonlySet<string>): Promise<void> {
 	if (targets.length === 0) return;
 
 	running = true;
-	batch = await runBatch(
-		api.submit,
-		id,
-		targets,
-		only ?? new Set<string>(),
-		(progress) => {
-			batch = progress;
-		},
-	);
-	running = false;
+	try {
+		batch = await runBatch(
+			api.submit,
+			id,
+			targets,
+			only ?? new Set<string>(),
+			(progress) => {
+				batch = progress;
+			},
+		);
+	} finally {
+		/*
+		 * **`running` MUST be cleared on every path, and it was cleared on one.**
+		 *
+		 * `running` disables the photo field, the picker and the submit button. Without
+		 * this `finally`, anything thrown out of `runBatch` would leave all three
+		 * disabled for the life of the page, and the only way out is a reload.
+		 *
+		 * `runBatch` catches per group today, so this is insurance rather than a live
+		 * bug -- and it is the same shape as the `checking` flag that DID stick, in this
+		 * same file, found the same day. A flag set outside a `try` is one throw away
+		 * from being permanent.
+		 */
+		running = false;
+	}
 }
 
 const nameOf = (groupId: string): string =>
