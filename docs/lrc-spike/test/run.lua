@@ -317,6 +317,77 @@ do
 	check("the SAME id twice is not a conflict", rows[1].flickrId, "111")
 end
 
+--[[ **Card #0107. The per-collection index is cached on the collection OBJECT**, and
+     `PhotoIds.lua` warns two comments earlier that SDK object identity is not safe:
+     *"the SDK may hand back a different wrapper for the same underlying photo."* It
+     applied that lesson to photos and not to collections.
+
+     **This measures both halves rather than arguing about one.** The only difference
+     between the two runs below is whether `getContainedPublishedCollections` returns the
+     same wrapper or a fresh one; the underlying collection is identical.
+
+     **It does NOT establish what Lightroom does.** Only Terry's probe run can, and
+     `PhotoIdsProbe` already prints the elapsed milliseconds that would show it. What this
+     pins is the CONSEQUENCE: if identity does not hold, the scan count goes from one to
+     one per photo, which is the `834 x N` the comment says indexing exists to avoid. ]]
+section("PhotoIds caches on the collection OBJECT, so identity decides the cost")
+do
+	local PhotoIds = require("PhotoIds")
+
+	local scans = 0
+
+	local a = { localIdentifier = 1 }
+	local b = { localIdentifier = 2 }
+	local c = { localIdentifier = 3 }
+
+	local function entry(p, remoteId)
+		return {
+			getPhoto = function() return p end,
+			getRemoteId = function() return remoteId end,
+			getRemoteUrl = function() return "https://flickr/" .. remoteId end,
+		}
+	end
+
+	local published = { entry(a, "111"), entry(b, "222"), entry(c, "333") }
+
+	--[[ A wrapper over one underlying collection. Calling this twice models the SDK
+	     handing back two different objects for the same thing. ]]
+	local function wrapper()
+		return {
+			getName = function() return "Flickr set" end,
+			getService = function()
+				return { getPluginId = function() return PhotoIds.FLICKR_PLUGIN_ID end }
+			end,
+			getPublishedPhotos = function()
+				scans = scans + 1
+				return published
+			end,
+		}
+	end
+
+	local stable = wrapper()
+	for _, p in ipairs({ a, b, c }) do
+		p.getContainedPublishedCollections = function() return { stable } end
+	end
+
+	scans = 0
+	local rows = PhotoIds.forPhotos({ a, b, c })
+	check("stable wrapper: every photo still resolves", rows[3].flickrId, "333")
+	check("stable wrapper: the collection is scanned ONCE", scans, 1)
+
+	for _, p in ipairs({ a, b, c }) do
+		p.getContainedPublishedCollections = function() return { wrapper() } end
+	end
+
+	scans = 0
+	rows = PhotoIds.forPhotos({ a, b, c })
+	check("fresh wrapper: every photo STILL resolves", rows[3].flickrId, "333")
+	--[[ **The answers are identical and the work is not.** This is a cost defect, never
+	     a correctness one, which is why the card is P4 and why nothing was changed before
+	     the probe run. ]]
+	check("fresh wrapper: the collection is scanned once PER PHOTO", scans, 3)
+end
+
 section("Every named failure and reason has a sentence")
 do
 	package.loaded["FgaApi"] = nil
