@@ -414,6 +414,31 @@ MUTATIONS = [
             "\t\t\treturn { kind: \"slow_down\" };"
         ),
     ),
+    (
+        # **`sweep` says one queue failing MUST NOT abandon the others, and for months it
+        # guarded only the ATTEMPT.** A D1 error in `resolveRequest` escaped the function
+        # entirely, so every queue behind it was skipped -- and `scheduled` logs the
+        # structured line AFTER `sweep` returns, so the night was never logged either.
+        # **ADR-06 built that log so a BAD night is queryable, and it was the bad nights
+        # it lost.**
+        "ADR-06: let a failed write escape the sweep and take the report with it",
+        "src/sweep.ts",
+        (
+            "\t\t\ttry {\n"
+            "\t\t\t\tawait resolveRequest(db, current, disposition);\n"
+            "\t\t\t\tresolved++;\n"
+            "\t\t\t\thead = await nextInQueue(db, current.nsid, current.groupId);\n"
+            "\t\t\t} catch (cause) {\n"
+            "\t\t\t\terrors.push(describeFailure(current, cause));\n"
+            "\t\t\t\tbreak;\n"
+            "\t\t\t}"
+        ),
+        (
+            "\t\t\tawait resolveRequest(db, current, disposition);\n"
+            "\t\t\tresolved++;\n"
+            "\t\t\thead = await nextInQueue(db, current.nsid, current.groupId);"
+        ),
+    ),
     # ------------------------------------------------------------------------------
     # THE BROWSER HALF. Added 2026-08-19, the day `web/src/lib/` gained its first test.
     #

@@ -115,6 +115,52 @@ describe("queues are independent", () => {
 		// ADR-01: we do not know what happened, so it MUST NOT resolve.
 		expect((await stateOf("boom"))?.state).toBe("pending");
 	});
+
+	/**
+	 * **The same promise, for the WRITE half, which went unguarded for months.**
+	 *
+	 * `sweep`'s own comment says one queue failing MUST NOT abandon the others, and the
+	 * `catch` above only ever covered the attempt. A D1 error in `resolveRequest` escaped
+	 * `sweep` entirely -- so every queue behind it was skipped, and `scheduled` never
+	 * reached the `console.log` that makes a night queryable. **ADR-06 built that log for
+	 * bad nights, and it was the bad nights it lost.**
+	 *
+	 * `db.batch` is what `resolveRequest` calls and nothing else in this path does, so
+	 * failing it targets exactly the write.
+	 */
+	it("survives a FAILED WRITE, keeps walking, and still returns a report", async () => {
+		await enqueue(env.DB, USER, "p1", "g1");
+		await enqueue(env.DB, OTHER, "p2", "g1");
+
+		let batches = 0;
+		const flaky = new Proxy(env.DB, {
+			get(target, property, receiver) {
+				if (property === "batch") {
+					return async (statements: D1PreparedStatement[]) => {
+						batches++;
+						if (batches === 1) throw new Error("D1_ERROR: storage");
+						return await target.batch(statements);
+					};
+				}
+				return Reflect.get(target, property, receiver);
+			},
+		});
+
+		const { attempt } = scripted({ p1: null, p2: null });
+		const report = await sweep(flaky, attempt);
+
+		// It RETURNED. Before the fix this threw, and the caller logged nothing at all.
+		expect(report.errors).toHaveLength(1);
+		expect(report.errors[0]).toContain("D1_ERROR");
+
+		// The queue behind the failure was still walked.
+		expect(report.resolved).toBe(1);
+		expect((await stateOf("p2"))?.state).toBe("resolved");
+
+		// ADR-01. A write that failed is an unknown outcome, so the row stays pending
+		// and gets attempted again rather than resolved on a guess.
+		expect((await stateOf("p1"))?.state).toBe("pending");
+	});
 });
 
 describe("ADR-04, the permanent record", () => {
