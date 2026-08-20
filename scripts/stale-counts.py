@@ -281,9 +281,20 @@ def main() -> int:
             print(f"Gate step count agrees: {expected} steps in package.json and CLAUDE.md.")
 
     rows = language_rows(claude_md)
-    if not rows:
+
+    # **EVERY language MUST be found, not merely some.** Checking only that the list is
+    # non-empty is the silent-inertness shape this repository keeps paying for: one row
+    # reformatted, or a language renamed in the table, and that row simply stops being
+    # checked while the run still prints a reassuring line. Card #0033 exists because a
+    # probe went inert exactly this way.
+    missing = sorted(set(LANGUAGE_FILES) - {language for _, language, _ in rows})
+    if missing:
         problems += 1
-        print("CLAUDE.md: no language-table rows found. The table moved or its shape changed.")
+        print(
+            "CLAUDE.md: the language table is missing a checkable row for "
+            f"{', '.join(missing)}. The table moved, or its shape changed."
+        )
+
     for line_number, language, stated in rows:
         real = tracked_count(LANGUAGE_FILES[language])
         if stated != real:
