@@ -699,9 +699,9 @@ endpoint should, not because a decision asked for it.
 python scripts/mutation-check.py
 ```
 
-**It breaks the source in 46 specific ways and checks the suite screams at each.**
-**This count drifts exactly like the test count above.** It read 25 while the harness ran 34,
-found 2026-08-15. Quote what the runner prints. Every mutation is
+**It breaks the source in a fixed list of specific ways and checks the suite screams at each.**
+**No count appears here, for the reason the stale-count gate now enforces above.** This one read 25
+while the harness ran 34, found 2026-08-15. Quote what the runner prints. Every mutation is
 a decision this project made against — retry a photo a moderator saw, drop `HttpOnly`, reflect the
 CORS origin, reuse a crypto nonce.
 
@@ -830,7 +830,9 @@ their architecture.** Precedent is the weakest argument available here.
 | `migrations/` | The schema. Constraints carry the rules, not application code |
 | `scripts/build-diagram.py` | The diagram generator and its assertions |
 | `scripts/diagram_sheets.py` | **The sheet roster, and the one place that resolves a diagram path.** Underscored because it is imported, not run |
-| `web/src/lib/*.ts` | **Where the UI's real logic MUST live.** `tsc` checks these |
+| `web/src/lib/*.ts` | **Where the UI's real logic MUST live.** `tsc` checks these, and since 2026-08-19 the suite does too |
+| `web/src/lib/navigate.ts` | **The ONLY module here that may touch `window`.** Anything with a rule in it belongs in a module a test can load — see below |
+| `web/src/lib/contract.ts` | The browser's hand-written copy of the API shapes. **`test/contract-conformance.test.ts` is what stops it drifting from `src/routes/api.ts`** |
 | `web/src/**/*.svelte` | Markup and wiring only. Nothing here is typechecked — see below |
 | `web/src/lib/outcomes.ts` | **ADR-01's promise, as the sentences a user reads.** Still-open copy |
 
@@ -927,6 +929,25 @@ ruff structurally cannot: **ruff checks that an annotation EXISTS, pyright check
 **The mitigation is placement, not tooling.** Logic goes in `web/src/lib/*.ts` where `tsc --noEmit
 -p web` reads it properly, and components stay thin enough that a mistake is visible. **A component
 growing real branching logic is a signal to move it into `lib/`.**
+
+### PLACEMENT ONLY WORKS IF THE PLACED CODE CAN BE LOADED, and for months it could not
+
+**Nothing under `web/src/lib/` was imported by a single test until 2026-08-19.** The mitigation
+above was in force, the logic really was in `lib/`, and the payoff was never collected.
+
+**TWO ONE-LINE BLOCKERS, and the second is the instructive one:**
+
+| Where | What | How it announced itself |
+|---|---|---|
+| `api.ts` | `beginLogin` read `window.location` | `tsc --noEmit` said `Cannot find name 'window'` |
+| `router.ts` | `window.addEventListener("popstate", ...)` **at module load** | **Nothing. No typechecker objects to a side effect at import time** |
+
+**So `web/src/lib/navigate.ts` is now the one module that may touch `window`**, and everything with
+a rule in it lives in a module a test can load. **Claude MUST NOT put a browser binding back into a
+logic module** — the cost is not a lint error, it is the silent loss of the whole file's coverage.
+
+**The general form: a module with no tests deserves a look at its IMPORT GRAPH before anybody
+concludes the logic is hard to test.** Twice here it was one line, and neither was in the logic.
 
 `web/src/shims.d.ts` declares `*.svelte` loosely because Svelte ships no ambient declaration —
 verified against `node_modules/svelte` 5.56.9, not assumed.

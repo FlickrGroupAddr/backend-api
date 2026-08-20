@@ -29,10 +29,12 @@ ROOT = Path(__file__).resolve().parent.parent
 # the matrix then reports `-` for a decision that IS mutation-covered. The name is also
 # what the operator reads when one survives, so the tag earns its place twice.
 #
-# **Two are deliberately untagged, and that is honest rather than an oversight.** No ADR
-# states that one user MUST NOT withdraw another's request, and none states the
-# `needs_relink` exclusion -- both are described in code comments only. A forced link is
-# worse than an admitted gap, which is the same rule TRACE-EXEMPT follows for tests.
+# **Three are deliberately untagged, and that is honest rather than an oversight.** No ADR
+# states that one user MUST NOT withdraw another's request, none states the
+# `needs_relink` exclusion, and none states that the browser's hand-written contract must
+# match the server's replies -- all three are described in code comments only. A forced
+# link is worse than an admitted gap, which is the same rule TRACE-EXEMPT follows for
+# tests.
 MUTATIONS = [
     (
         "ADR-01: retry a photo that reached a moderator",
@@ -411,6 +413,76 @@ MUTATIONS = [
             "\t\t\t\t...attempt,\n\t\t\t\tlastPolledAt: now,\n\t\t\t});\n"
             "\t\t\treturn { kind: \"slow_down\" };"
         ),
+    ),
+    # ------------------------------------------------------------------------------
+    # THE BROWSER HALF. Added 2026-08-19, the day `web/src/lib/` gained its first test.
+    #
+    # **Every mutation below was run by hand before it was written down**, which is the
+    # only reason they are here: a test written and never seen to fail is a test nobody
+    # has checked. Encoding the proofs makes them permanent rather than anecdotal.
+    #
+    # **These files are the reason the harness is not confined to `src/`.** ADR-01 is a
+    # promise about other people's patience, and half of it is kept in the browser --
+    # the batch that stays sequential, and the sentence that never claims a moderator
+    # decided.
+    # ------------------------------------------------------------------------------
+    (
+        # **The comment on `runBatch` says this MUST NOT be "optimized" into parallel
+        # requests, and until today nothing enforced it.** Forty parallel posts are forty
+        # simultaneous calls to Flickr on one user's credentials, which is the same
+        # discourtesy in a performance costume.
+        #
+        # Dropping the `await` is the smallest edit that does it: the loop stops yielding,
+        # so every submission starts in the same tick.
+        "ADR-01: stop waiting for each submission before starting the next",
+        "web/src/lib/submission.ts",
+        "\t\t\tconst reply = await submit(photoId, groupId, acknowledged.has(groupId));",
+        (
+            "\t\t\tconst reply = submit(\n"
+            "\t\t\t\tphotoId,\n\t\t\t\tgroupId,\n\t\t\t\tacknowledged.has(groupId),\n"
+            "\t\t\t) as unknown as Submitted;"
+        ),
+    ),
+    (
+        # **A failure MUST NOT abort the batch.** The groups after it are independent, and
+        # stopping leaves the person unable to tell which ones were even attempted -- the
+        # state that sends somebody to Flickr to add photos by hand.
+        "ADR-01: abandon the rest of the batch after one group fails",
+        "web/src/lib/submission.ts",
+        "\t\t\tbatch.set(groupId, { kind: \"failed\", error });",
+        "\t\t\tbatch.set(groupId, { kind: \"failed\", error });\n\t\t\tbreak;",
+    ),
+    (
+        # **The single most important string in the product.** Flickr reports no rejection
+        # signal, so claiming one is a lie the schema deliberately refuses to store. The
+        # test scans every outcome the contract can carry for `reject`, `declin`, `denied`.
+        "ADR-01: tell the user a moderator declined their photo",
+        "web/src/lib/outcomes.ts",
+        "A volunteer has it in their review queue.",
+        "A volunteer declined it in their review queue.",
+    ),
+    (
+        # **`/admin` resolves for everybody, and that is correct.** The route is not a
+        # permission; the server is. Hiding it here would only look like security while
+        # ADR-19's 404 did the actual work -- and it would break the deep link for the
+        # admin who is allowed in.
+        "ADR-19: hide /admin in the router, which only LOOKS like security",
+        "web/src/lib/router.ts",
+        (
+            "\tif (segments.length === 1 && segments[0] === \"admin\")\n"
+            "\t\treturn { name: \"admin\" };"
+        ),
+        "\t// mutation",
+    ),
+    (
+        # **The browser restates the API contract by hand**, because a generated client was
+        # rejected on purpose. `test/contract-conformance.test.ts` is what makes that safe,
+        # and this is the drift it exists to catch: a server field renamed under a client
+        # that still asks for the old name.
+        "contract: rename a field the browser's schema still asks for",
+        "src/routes/api.ts",
+        "\t\tnsid: c.get(\"nsid\"),",
+        "\t\tuserNsid: c.get(\"nsid\"),",
     ),
 ]
 

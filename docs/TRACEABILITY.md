@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**25 decisions · 71 test blocks · 46 mutations**
+**25 decisions · 71 test blocks · 51 mutations**
 
 ## Forward: decision to verification
 
@@ -171,3 +171,8 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR-24: let an approval override a denial | ADR-24 |
 | ADR-12: let a credential-bearing device reply be cached | ADR-12 |
 | ADR-24: let a throttled poll push the window forward | ADR-24 |
+| ADR-01: stop waiting for each submission before starting the next | ADR-01 |
+| ADR-01: abandon the rest of the batch after one group fails | ADR-01 |
+| ADR-01: tell the user a moderator declined their photo | ADR-01 |
+| ADR-19: hide /admin in the router, which only LOOKS like security | ADR-19 |
+| contract: rename a field the browser's schema still asks for | — |
