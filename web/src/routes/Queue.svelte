@@ -89,7 +89,11 @@ async function withdraw(publicId: string): Promise<void> {
 		console.error("POST withdraw failed", caught);
 		error = describeError(caught, "withdrawing that request");
 	} finally {
-		busy = null;
+		// **Only clear the flag if it is still mine.** `busy` holds one id, so two
+		// withdrawals in flight meant the first to finish cleared the second one's
+		// spinner and re-enabled its button while its request was still out. Same
+		// last-writer-wins shape as `load` above, one row smaller.
+		if (busy === publicId) busy = null;
 	}
 }
 
