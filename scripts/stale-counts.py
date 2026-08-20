@@ -8,12 +8,20 @@ corrections was made by running the gate. Not one was caught by reading.**
 
 So this check does not verify the number. It forbids it. An absent number cannot rot.
 
-Two checks run here, and they work in opposite directions on purpose:
+Four checks run here, and the split between them is the whole design: **forbid what
+nothing can derive, verify what something can.**
 
 1. **FORBID** a live count in tracked markdown. A historical sentence carries
    `STALE-COUNT-EXEMPT: <reason>` on the line, the same shape `DIRTY-WORDS-EXEMPT` uses.
-2. **VERIFY** the gate's step count in `CLAUDE.md` against `package.json`. That one is
-   derivable, so forbidding it would throw away a fact the repository can prove.
+2. **VERIFY** the gate's step count in `CLAUDE.md` against `package.json`.
+3. **VERIFY** the language table's file counts against `git ls-files`. It said 50, 14 and
+   16 against a real 56, 15 and 22, and the Lua figure had been wrong for a day.
+4. **VERIFY** every route path the documents name against the routes `src/` declares. The
+   README named a deleted device-link prefix for a day, in the row describing the
+   protected surface.
+
+**Deleting a derivable number would throw away a fact the repository can prove**, which
+is why only the first is a prohibition.
 
 Both polarities self-test on every run. A checker validated in one direction is
 half-validated -- prove it stays silent on good input as well as loud on bad.
