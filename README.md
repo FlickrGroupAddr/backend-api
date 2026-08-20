@@ -11,17 +11,23 @@ coming back every day for weeks.
 |---|---|
 | Site and API | <https://flickrgroupaddr.com> — one origin serves both. See ADR-18 |
 | Health | `/health` answers `{"status":"ok"}` |
-| Auth | Every `/api/v001/*` route answers `401` without a session, **except the two device-link routes below** |
-| Device link | `POST /api/v001/device/{start,poll,approve,deny}`. **Built 2026-08-16, not yet deployed.** See ADR-24 |
+| Auth | **Every `/api/v001/*` route answers `401` without a session. No exceptions** — re-read against the routes 2026-08-19 |
+| Device link | `POST /auth/device-link/{start,poll,approve,deny}`, plus `GET /auth/device-link/enter-user-code`. **Built 2026-08-16, not yet deployed.** See ADR-24 |
 | Nightly sweep | Cron `15 0 * * *` |
 | Frontend | Svelte, served by the same Worker. See ADR-18 |
 | Admin | `/admin`, gated by the `ADMIN_NSIDS` allowlist. Reports findings, not figures. See ADR-19 |
 | Domain | `flickrgroupaddr.com`, registered 2026-08-14, nameservers on Cloudflare |
 
-**The two exceptions are `device/start` and `device/poll`, and they are deliberate.** At `start`
-nobody has authorized anything, so there is no session to require — obtaining one is the point.
-`poll` is authenticated by its `deviceCode` instead. **`approve` and `deny` require a BROWSER
-session**, which is what stops a stolen plug-in token minting a fresh one.
+**THE DEVICE-LINK ROUTES ARE NOT EXCEPTIONS. They live on a different prefix entirely**, and this
+table said otherwise until 2026-08-19 — it still named `POST /api/v001/device/{...}`, which the
+2026-08-18 move to `/auth/device-link/*` had deleted. **A stale path in the AUTH row is the worst
+place in this document to be wrong**, because it describes the shape of the protected surface.
+
+**Two of the four are deliberately unauthenticated, and that is a property of those routes rather
+than a hole in the `/api/v001/*` rule.** At `start` nobody has authorized anything, so there is no
+session to require — obtaining one is the point. `poll` is authenticated by its `deviceCode`
+instead. **`approve` and `deny` require a BROWSER session**, which is what stops a stolen plug-in
+token minting a fresh one.
 
 ## Read this before anything else
 
