@@ -45,6 +45,40 @@ function trackedSvelte() {
 		.filter((line) => line.length > 0);
 }
 
+/**
+ * Prove the instrument can still fire, before trusting it to say "clean".
+ *
+ * **`result.warnings ?? []` is a silent-inertness hazard, and this closes it.** If a
+ * future Svelte renames or moves that field, every component would report zero warnings
+ * forever and the step would pass while checking nothing. Nothing else here would
+ * notice: no test covers this script, and its normal output is exactly the same words.
+ *
+ * The fixture is a `<div>` with a click handler and no keyboard handler, which is the
+ * same violation this gate was proven to catch when it was added.
+ */
+function selfTest() {
+	const bad = `<script lang="ts">\nlet n = 0;\n</script>\n\n<div onclick={() => { n += 1; }}>{n}</div>\n`;
+	const warnings =
+		compile(bad, { filename: "self-test.svelte" }).warnings ?? [];
+	if (warnings.length === 0) {
+		console.error("Self-test FAILED: the compiler reported no warning for a");
+		console.error("<div> with a click handler and no keyboard handler.");
+		console.error(
+			"Either Svelte moved `result.warnings`, or that rule is gone.",
+		);
+		console.error("Until this is understood, a clean run here means nothing.");
+		return false;
+	}
+	console.log(
+		`Self-test passed: a deliberate a11y defect drew ${warnings.length} warning(s).`,
+	);
+	return true;
+}
+
+if (!selfTest()) {
+	process.exit(1);
+}
+
 const files = trackedSvelte();
 
 if (files.length === 0) {
