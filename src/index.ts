@@ -184,15 +184,38 @@ UI origin <code>${c.env.UI_ORIGIN}</code></p>`,
 export default {
 	fetch: app.fetch,
 
-	/** ADR-06. **Logged as structured JSON so a bad night is queryable**, rather than
-	 *  readable-if-somebody-happens-to-look. `stoppedOnThrottle` is expected and is not
-	 *  an error -- it is the product working. */
+	/**
+	 * ADR-06. **Logged as structured JSON so a bad night is queryable**, rather than
+	 * readable-if-somebody-happens-to-look. `stoppedOnThrottle` is expected and is not an
+	 * error -- it is the product working.
+	 *
+	 * **THE CATCH IS THE OTHER HALF OF THAT PROMISE.** `sweep` catches per queue, so what
+	 * reaches here is the failure that happened before any queue was walked -- D1 refusing
+	 * `queueHeads`, a missing binding, a key that will not import. **Those are the worst
+	 * nights, and without this they were the ones that logged nothing at all**: the
+	 * `console.log` below runs only after `sweep` returns.
+	 *
+	 * **It rethrows.** The line is for the human reading logs; the throw is what makes the
+	 * platform record the invocation as failed. Swallowing it would trade one silence for
+	 * a quieter one.
+	 */
 	async scheduled(
 		_controller: ScheduledController,
 		env: Env,
 		_ctx: ExecutionContext,
 	): Promise<void> {
-		const report = await sweep(env.DB, createAttempt(env));
-		console.log(JSON.stringify({ event: "nightly_sweep", ...report }));
+		try {
+			const report = await sweep(env.DB, createAttempt(env));
+			console.log(JSON.stringify({ event: "nightly_sweep", ...report }));
+		} catch (cause) {
+			console.log(
+				JSON.stringify({
+					event: "nightly_sweep",
+					failed: true,
+					error: cause instanceof Error ? cause.message : String(cause),
+				}),
+			);
+			throw cause;
+		}
 	},
 } satisfies ExportedHandler<Env>;

@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**25 decisions · 71 test blocks · 52 mutations**
+**25 decisions · 72 test blocks · 54 mutations**
 
 ## Forward: decision to verification
 
@@ -24,7 +24,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`outcomes.test.ts` explain, against the three rules the file states about itself<br>`outcomes.test.ts` describeError<br>`outcomes.test.ts` ticksFor, ADR-03's ordering made visible<br>`outcomes.test.ts` ago<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`submission.test.ts` photoIdFromUrl<br>`submission.test.ts` emptyBatch<br>`submission.test.ts` runBatch<br>`submission.test.ts` awaitingAcknowledgement<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
 | **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`contract-conformance.test.ts` the browser contract still parses the Worker's replies<br>`outcomes.test.ts` explain, against the three rules the file states about itself<br>`outcomes.test.ts` describeError<br>`outcomes.test.ts` ticksFor, ADR-03's ordering made visible<br>`outcomes.test.ts` ago<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`submission.test.ts` photoIdFromUrl<br>`submission.test.ts` emptyBatch<br>`submission.test.ts` runBatch<br>`submission.test.ts` awaitingAcknowledgement<br>`sweep.test.ts` ADR-04, the permanent record | yes |
 | **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
-| **ADR-06** | The work engine is a nightly cron over D1 | Test | `sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
+| **ADR-06** | The work engine is a nightly cron over D1 | Test | `scheduled.test.ts` ADR-06, the nightly entry point<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
 | **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
 | **ADR-08** | OAuth state lives in a Durable Object | Test | `oauth.test.ts` protocolParams<br>`oauth.test.ts` authorizationHeader<br>`oauth.test.ts` buildAuthorizeUrl<br>`oauth.test.ts` parseFormResponse<br>`oauth.test.ts` the login attempt, ADR-08<br>`oauth.test.ts` sends a login to Flickr carrying a request token<br>`oauth.test.ts` ADR-11: returnTo can never leave our origin<br>`oauth.test.ts` ADR-11: the callback returns where the login STARTED | yes |
 | **ADR-09** | Tokens are AES-GCM encrypted in D1, under a separate key | Test | `crypto.test.ts` round trip<br>`crypto.test.ts` nonce handling<br>`crypto.test.ts` rejection<br>`schema.test.ts` ADR-07 and ADR-09, users | yes |
@@ -92,6 +92,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `plugin-scope.test.ts` | ADR-19, a plug-in token reaches only its allow-list | ADR-17, ADR-19 |
 | `preflight.test.ts` | ADR-20, the batch preflight | ADR-04, ADR-05, ADR-20 |
 | `router.test.ts` | parse | ADR-14, ADR-18, ADR-19 |
+| `scheduled.test.ts` | ADR-06, the nightly entry point | ADR-06 |
 | `schema.test.ts` | ADR-22, STRICT tables refuse a wrong type | ADR-01, ADR-04, ADR-07, ADR-22 |
 | `schema.test.ts` | ADR-03 and ADR-16, requests: ordering | ADR-03, ADR-16 |
 | `schema.test.ts` | ADR-02, requests: the resolution invariant | ADR-02 |
@@ -171,6 +172,8 @@ by reading code or config, because there is no runtime behavior to exercise.
 | ADR-24: let an approval override a denial | ADR-24 |
 | ADR-12: let a credential-bearing device reply be cached | ADR-12 |
 | ADR-24: let a throttled poll push the window forward | ADR-24 |
+| ADR-06: let the worst night log nothing at all | ADR-06 |
+| ADR-06: rename the log event a query looks for | ADR-06 |
 | ADR-06: let a failed write escape the sweep and take the report with it | ADR-06 |
 | ADR-01: stop waiting for each submission before starting the next | ADR-01 |
 | ADR-01: abandon the rest of the batch after one group fails | ADR-01 |

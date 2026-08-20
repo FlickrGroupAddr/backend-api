@@ -415,6 +415,35 @@ MUTATIONS = [
         ),
     ),
     (
+        # **The worst night is the one that logs nothing.** `sweep` catches per queue, so
+        # what reaches the handler is a failure BEFORE any queue was walked -- D1 refusing
+        # `queueHeads`, a missing binding. `console.log` sits after `sweep` returns, so
+        # without this catch that night left no trace at all and ADR-06's promise was
+        # exactly inverted: the log built for bad nights only ever recorded good ones.
+        "ADR-06: let the worst night log nothing at all",
+        "src/index.ts",
+        (
+            "\t\t\tconsole.log(\n"
+            "\t\t\t\tJSON.stringify({\n"
+            "\t\t\t\t\tevent: \"nightly_sweep\",\n"
+            "\t\t\t\t\tfailed: true,\n"
+            "\t\t\t\t\terror: cause instanceof Error ? cause.message : String(cause),\n"
+            "\t\t\t\t}),\n"
+            "\t\t\t);"
+        ),
+        "\t\t\t// mutation",
+    ),
+    (
+        # **A query that cannot find its event name finds nothing.** Nobody watches this
+        # run, so the name in the log IS the interface. Renaming it is indistinguishable
+        # from the sweep never running, which is the failure ADR-06 chose structured JSON
+        # to avoid.
+        "ADR-06: rename the log event a query looks for",
+        "src/index.ts",
+        '\t\t\tconsole.log(JSON.stringify({ event: "nightly_sweep", ...report }));',
+        '\t\t\tconsole.log(JSON.stringify({ event: "sweep", ...report }));',
+    ),
+    (
         # **`sweep` says one queue failing MUST NOT abandon the others, and for months it
         # guarded only the ATTEMPT.** A D1 error in `resolveRequest` escaped the function
         # entirely, so every queue behind it was skipped -- and `scheduled` logs the
