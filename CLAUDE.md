@@ -659,6 +659,29 @@ violation, confirm the rule reports it, delete the file. **A clean run from an i
 indistinguishable from a clean run from a satisfied one**, and a silent rule is worse than no rule
 because it counts as coverage.
 
+### EVERY GATE STEP MUST CARRY ONE OF THREE GUARDS, and a new one MUST pick one
+
+**Audited 2026-08-19, all eighteen steps.** The question was not "does it pass" but **"what would a
+FALSE green look like here"**. Three legitimate answers exist and every step has one:
+
+| Guard | Steps |
+|---|---|
+| **A self-test, both polarities, on every run** | `claude-dirty-words.py`, `argparse-check.py`, `lsp-check.py`, `lua-imports.py`, `stale-counts.py`, `svelte-compile-check.mjs`, `build-diagram.py` |
+| **It announces which instrument ran** | `lua-balance.py` — a real `luac 5.1` parse and a block-balance fallback are very different assurances, and it says which |
+| **The generator IS the checker** | `traceability.py` — `build()` produces the exact text and `--check` compares it to disk, so there is no second implementation to drift |
+
+**`mutation-check.py` is the odd one and it is guarded by its own design.** A mutation whose anchor
+has drifted reports `SKIPPED, anchor appears 0 times`, and **a SKIPPED mutation is a SURVIVOR** —
+the harness refuses to let an unapplied mutation read as a caught one.
+
+**TWO STEPS SHIPPED WITHOUT A GUARD ON 2026-08-19 AND BOTH WERE MINE, hours old.**
+`stale-counts.py` checked that the language table produced SOME rows rather than every row it
+claims to cover; `svelte-compile-check.mjs` read `result.warnings ?? []` and would have reported
+clean forever if Svelte moved that field. **Both looked correct, both passed, and neither could
+have failed for the right reason.** That is why this is a table rather than a sentence.
+
+**Claude MUST NOT add a gate step without naming which guard it carries.**
+
 **Recall about installed package APIs is unreliable and has been wrong five times here.** Read
 `node_modules/<pkg>/package.json` and the `.d.ts`. Generate config with the tool's own `init`.
 
