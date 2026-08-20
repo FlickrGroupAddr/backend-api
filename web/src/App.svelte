@@ -1,5 +1,6 @@
 <script lang="ts">
-import { api, beginLogin, NotAuthenticated } from "./lib/api.js";
+import { api, NotAuthenticated } from "./lib/api.js";
+import { beginLogin } from "./lib/navigate.js";
 import {
 	currentPath,
 	handleLinkClick,

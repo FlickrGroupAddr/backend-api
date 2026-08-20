@@ -124,7 +124,14 @@ export const api = {
 	logout: () => fetch("/auth/flickr/logout", { method: "POST" }),
 };
 
-/** A full navigation, not a fetch -- the OAuth leg ends in a redirect chain. */
-export function beginLogin(): void {
-	window.location.href = "/auth/flickr/login";
-}
+/**
+ * **`beginLogin` moved to `./navigate.js` on 2026-08-19, and it MUST NOT come back.**
+ *
+ * It was the only line in this file that touched `window`, and that one reference made
+ * the module unloadable from a Worker-side test -- `tsc --noEmit` reported
+ * `Cannot find name 'window'` as soon as a test imported `ApiError`. Everything else
+ * here uses `fetch`, `Response` and `RequestInit`, which both runtimes have.
+ *
+ * **So this file is now environment-neutral, and that is what made
+ * `test/outcomes.test.ts` possible at all.**
+ */

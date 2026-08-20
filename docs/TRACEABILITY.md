@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**25 decisions · 61 test blocks · 46 mutations**
+**25 decisions · 69 test blocks · 46 mutations**
 
 ## Forward: decision to verification
 
@@ -19,10 +19,10 @@ by reading code or config, because there is no runtime behavior to exercise.
 
 | ADR | Decision | Method | Verified by | Mutation |
 |---|---|---|---|---|
-| **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`device.test.ts` ADR-24: polling refuses everything it should<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`sweep.test.ts` queues are independent | yes |
-| **ADR-02** | Classify by Flickr's error code. Unknown means terminal. | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`schema.test.ts` ADR-02, requests: the resolution invariant | yes |
-| **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
-| **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`sweep.test.ts` ADR-04, the permanent record | yes |
+| **ADR-01** | Fail-polite. This one outranks the rest. | Test | `api.test.ts` withdrawing a request<br>`api.test.ts` ADR-01, the queue view is where fail-polite becomes visible<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`device.test.ts` ADR-24: polling refuses everything it should<br>`outcomes.test.ts` explain, against the three rules the file states about itself<br>`outcomes.test.ts` describeError<br>`outcomes.test.ts` ticksFor, ADR-03's ordering made visible<br>`outcomes.test.ts` ago<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`submission.test.ts` photoIdFromUrl<br>`submission.test.ts` emptyBatch<br>`submission.test.ts` runBatch<br>`submission.test.ts` awaitingAcknowledgement<br>`sweep.test.ts` queues are independent | yes |
+| **ADR-02** | Classify by Flickr's error code. Unknown means terminal. | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`classify.test.ts` classifyAdd<br>`classify.test.ts` classifyResult<br>`classify.test.ts` outcomeColumn<br>`outcomes.test.ts` explain, against the three rules the file states about itself<br>`schema.test.ts` ADR-02, requests: the resolution invariant | yes |
+| **ADR-03** | FIFO per (user, group). The queue is never jumped. | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`outcomes.test.ts` explain, against the three rules the file states about itself<br>`outcomes.test.ts` describeError<br>`outcomes.test.ts` ticksFor, ADR-03's ordering made visible<br>`outcomes.test.ts` ago<br>`schema.test.ts` ADR-03 and ADR-16, requests: ordering<br>`submission.test.ts` photoIdFromUrl<br>`submission.test.ts` emptyBatch<br>`submission.test.ts` runBatch<br>`submission.test.ts` awaitingAcknowledgement<br>`sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | yes |
+| **ADR-04** | A pair that reached a moderator is remembered forever | Test | `admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-04, the moderation warning<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`outcomes.test.ts` explain, against the three rules the file states about itself<br>`outcomes.test.ts` describeError<br>`outcomes.test.ts` ticksFor, ADR-03's ordering made visible<br>`outcomes.test.ts` ago<br>`preflight.test.ts` ADR-20, the batch preflight<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-04, requests: one outstanding request per pair<br>`schema.test.ts` moderated_pairs<br>`submission.test.ts` photoIdFromUrl<br>`submission.test.ts` emptyBatch<br>`submission.test.ts` runBatch<br>`submission.test.ts` awaitingAcknowledgement<br>`sweep.test.ts` ADR-04, the permanent record | yes |
 | **ADR-05** | Adds are idempotent per (photo, group) | Test | `api.test.ts` ADR-03 and ADR-05, queueing a request<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
 | **ADR-06** | The work engine is a nightly cron over D1 | Test | `sweep.test.ts` the queue is never jumped<br>`sweep.test.ts` queues are independent<br>`sweep.test.ts` ADR-04, the permanent record<br>`sweep.test.ts` does nothing on an empty night, and says so | — |
 | **ADR-07** | The Flickr account is the identity | Test | `oauth.test.ts` buildAuthorizeUrl<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type<br>`schema.test.ts` ADR-07 and ADR-09, users<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | — |
@@ -35,7 +35,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
 | **ADR-15** | Which store holds what | Inspection | *by inspection* | — |
 | **ADR-16** | A request has two identifiers | Test | `schema.test.ts` ADR-03 and ADR-16, requests: ordering | — |
-| **ADR-17** | No list is unbounded, whoever owns its size | Test | `api.test.ts` ADR-17, pagination<br>`api.test.ts` ADR-17, a list FGA cannot bound: the Flickr group list<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`plugin-scope.test.ts` ADR-19, a plug-in token reaches only its allow-list | yes |
+| **ADR-17** | No list is unbounded, whoever owns its size | Test | `api.test.ts` ADR-17, pagination<br>`api.test.ts` ADR-17, a list FGA cannot bound: the Flickr group list<br>`outcomes.test.ts` explain, against the three rules the file states about itself<br>`outcomes.test.ts` describeError<br>`outcomes.test.ts` ticksFor, ADR-03's ordering made visible<br>`outcomes.test.ts` ago<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`plugin-scope.test.ts` ADR-19, a plug-in token reaches only its allow-list | yes |
 | **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
 | **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication<br>`plugin-scope.test.ts` ADR-19, a plug-in token reaches only its allow-list | yes |
 | **ADR-20** | The warning arrives before the commitment | Test | `batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`batch.test.ts` the batch endpoint's shape<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
@@ -83,6 +83,10 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `oauth.test.ts` | sends a login to Flickr carrying a request token | ADR-08 |
 | `oauth.test.ts` | ADR-11: returnTo can never leave our origin | ADR-08, ADR-11 |
 | `oauth.test.ts` | ADR-11: the callback returns where the login STARTED | ADR-08, ADR-11 |
+| `outcomes.test.ts` | explain, against the three rules the file states about itself | ADR-01, ADR-02, ADR-03, ADR-04, ADR-17 |
+| `outcomes.test.ts` | describeError | ADR-01, ADR-03, ADR-04, ADR-17 |
+| `outcomes.test.ts` | ticksFor, ADR-03's ordering made visible | ADR-01, ADR-03, ADR-04, ADR-17 |
+| `outcomes.test.ts` | ago | ADR-01, ADR-03, ADR-04, ADR-17 |
 | `photo-groups.test.ts` | ADR-17, the groups a photo is already in | ADR-01, ADR-12, ADR-17, ADR-22 |
 | `plugin-scope.test.ts` | ADR-19, a plug-in token reaches only its allow-list | ADR-17, ADR-19 |
 | `preflight.test.ts` | ADR-20, the batch preflight | ADR-04, ADR-05, ADR-20 |
@@ -102,6 +106,10 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `signature.test.ts` | signatureBaseString | ADR-14 |
 | `signature.test.ts` | signingKey | ADR-14 |
 | `signature.test.ts` | signHmacSha1 | ADR-14 |
+| `submission.test.ts` | photoIdFromUrl | ADR-01, ADR-03, ADR-04 |
+| `submission.test.ts` | emptyBatch | ADR-01, ADR-03, ADR-04 |
+| `submission.test.ts` | runBatch | ADR-01, ADR-03, ADR-04 |
+| `submission.test.ts` | awaitingAcknowledgement | ADR-01, ADR-03, ADR-04 |
 | `sweep.test.ts` | the queue is never jumped | ADR-03, ADR-06 |
 | `sweep.test.ts` | queues are independent | ADR-01, ADR-03, ADR-06 |
 | `sweep.test.ts` | ADR-04, the permanent record | ADR-03, ADR-04, ADR-06 |
