@@ -117,6 +117,94 @@ def hits_in(text: str) -> list[tuple[int, str, str]]:
 RUFF_CLAIM: re.Pattern[str] = re.compile(r"`ruff`,\s*(\d+)\s+families")
 
 
+#: Where the Worker declares its routes, and the shape of a declaration.
+ROUTE_SOURCES: tuple[str, ...] = ("src/routes/*.ts", "src/index.ts")
+ROUTE_DEF: re.Pattern[str] = re.compile(r'\.(?:get|post|put|delete|all)\(\s*"(/[^"]*)"')
+
+#: A path-looking token in prose.
+#:
+#: **THE TRAILING SLASH ON EACH PREFIX IS LOAD-BEARING, and a version without it cried
+#: wolf ten times out of eleven.** Anchoring on `/api` matched seven sentences about the
+#: prefix itself; anchoring on `/auth` swallowed Flickr's own `/authorize` in FLICKR.md
+#: and `/api/upload` in a spike note. Requiring `/api/v001/` and `/auth/` names only
+#: paths this Worker could possibly own. Trailing punctuation is trimmed for `/api,`.
+DOC_PATH: re.Pattern[str] = re.compile(
+    r"(/(?:api/v001|auth)/[A-Za-z0-9_/:{},*-]*|/health\b)"
+)
+
+
+def expand_braces(candidate: str) -> list[str]:
+    """Turn `/a/{b,c}/d` into `/a/b/d` and `/a/c/d`.
+
+    **Documents write route families as one token**, and a checker that read
+    `{start,poll}` as a literal segment would report two defects for a correct line.
+    """
+    match = re.search(r"\{([^{}]*)\}", candidate)
+    if match is None:
+        return [candidate]
+    out: list[str] = []
+    for option in match.group(1).split(","):
+        replaced = candidate[: match.start()] + option.strip() + candidate[match.end() :]
+        out.extend(expand_braces(replaced))
+    return out
+
+
+def path_segments(path: str) -> list[str]:
+    """Path segments, with every parameter form collapsed to one placeholder."""
+    parts: list[str] = []
+    for raw in path.strip("/").split("/"):
+        if raw.startswith(":") or (raw.startswith("{") and raw.endswith("}")):
+            parts.append("*")
+        else:
+            parts.append(raw)
+    return parts
+
+
+def matches_route(candidate: str, routes: list[str]) -> bool:
+    """Whether `candidate` names a route that exists.
+
+    **A trailing `*` or `/` is PREFIX notation, not a path.** `/api/v001/*` is how every
+    document here refers to the authenticated surface, and demanding that it name a
+    route would make the check unusable.
+    """
+    trimmed = candidate.rstrip(",.;:)")
+    prefix = trimmed.endswith(("*", "/"))
+    want = path_segments(trimmed.rstrip("*").rstrip("/"))
+    if not want or want == [""]:
+        return True
+
+    for route in routes:
+        have = path_segments(route)
+        if prefix:
+            if len(have) < len(want):
+                continue
+            have = have[: len(want)]
+        elif len(have) != len(want):
+            continue
+        if all(a == b or "*" in (a, b) for a, b in zip(have, want, strict=True)):
+            return True
+    return False
+
+
+def defined_routes() -> list[str]:
+    """Every route path the Worker declares."""
+    found: list[str] = []
+    for pattern in ROUTE_SOURCES:
+        result = subprocess.run(
+            ["git", "ls-files", pattern],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        for relative in result.stdout.splitlines():
+            if not relative.strip():
+                continue
+            text = (REPO_ROOT / relative.strip()).read_text(encoding="utf-8")
+            found.extend(ROUTE_DEF.findall(text))
+    return sorted(set(found))
+
+
 def ruff_families() -> int:
     """How many rule families `ruff.toml` selects."""
     config = tomllib.loads((REPO_ROOT / "ruff.toml").read_text(encoding="utf-8"))
@@ -214,7 +302,43 @@ def self_test() -> bool:
         "Read `scripts/lrc-sdk-api.json`, 355 members across 38 namespaces.",
     ]
 
+    # **Every one of these false positives was produced by a real earlier version.**
+    fake_routes = [
+        "/api/v001/photos/:photoId/preflight",
+        "/auth/device-link/start",
+        "/auth/device-link/poll",
+        "/health",
+    ]
+    route_ok = [
+        "/api/v001/*",
+        "/api/v001/",
+        "/auth/device-link/{start,poll}",
+        "/api/v001/photos/{photoId}/preflight",
+        "/api/v001/photos/:photoId/preflight",
+        "/health",
+        "/api/v001/photos/:photoId/preflight,",
+    ]
+    route_bad = ["/api/v001/device/start", "/api/v001/nope"]
+    # Tokens an earlier anchor swallowed. None may even be EXTRACTED as a candidate.
+    not_a_path = ["the /api prefix", "Flickr's /authorize leg", "POST /api/upload here"]
+
     failures: list[str] = [f"MISSED: {case}" for case in must_fire if not hits_in(case)]
+    failures.extend(
+        f"ROUTE FALSE POSITIVE on {one!r}"
+        for case in route_ok
+        for one in expand_braces(case)
+        if not matches_route(one, fake_routes)
+    )
+    failures.extend(
+        f"ROUTE MISSED: {case!r} matched a route that does not exist"
+        for case in route_bad
+        if matches_route(case, fake_routes)
+    )
+    failures.extend(
+        f"ROUTE OVER-MATCH: {case!r} is prose, not a path"
+        for case in not_a_path
+        if DOC_PATH.findall(case)
+    )
     for case in must_not_fire:
         found = hits_in(case)
         if found:
@@ -305,6 +429,37 @@ def main() -> int:
             )
     if rows and problems == 0:
         print(f"Language file counts agree: {len(rows)} row(s) match git ls-files.")
+
+    # **A route path in a document is derivable, so it is VERIFIED.** The README named
+    # `POST /api/v001/device/{...}` for a day after that prefix was deleted, in the row
+    # describing the protected surface. Card #0114.
+    routes = defined_routes()
+    if not routes:
+        problems += 1
+        print("No routes found in src/. The declaration shape changed, or the files moved.")
+    checked_paths = 0
+    for relative in tracked_markdown():
+        if relative in SKIP:
+            continue
+        for number, line in enumerate(
+            (REPO_ROOT / relative).read_text(encoding="utf-8").splitlines(), start=1
+        ):
+            if MARKER in line:
+                continue
+            for token in DOC_PATH.findall(line):
+                for candidate in expand_braces(token):
+                    checked_paths += 1
+                    if not matches_route(candidate, routes):
+                        problems += 1
+                        print(
+                            f"{relative}:{number}: names {candidate!r}, "
+                            "which no route defines."
+                        )
+    if routes:
+        print(
+            f"Documented routes resolve: {checked_paths} path(s) checked "
+            f"against {len(routes)} route(s)."
+        )
 
     families = ruff_families()
     claims = [

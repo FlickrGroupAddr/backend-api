@@ -19,7 +19,7 @@ coming back every day for weeks.
 | Domain | `flickrgroupaddr.com`, registered 2026-08-14, nameservers on Cloudflare |
 
 **THE DEVICE-LINK ROUTES ARE NOT EXCEPTIONS. They live on a different prefix entirely**, and this
-table said otherwise until 2026-08-19 — it still named `POST /api/v001/device/{...}`, which the
+table said otherwise until 2026-08-19 — it still named `POST /api/v001/device/{...}`, which the   <!-- STALE-COUNT-EXEMPT: quoting the deleted path on purpose -->
 2026-08-18 move to `/auth/device-link/*` had deleted. **A stale path in the AUTH row is the worst
 place in this document to be wrong**, because it describes the shape of the protected surface.
 
