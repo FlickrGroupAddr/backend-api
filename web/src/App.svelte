@@ -1,13 +1,12 @@
 <script lang="ts">
 import { api, NotAuthenticated } from "./lib/api.js";
-import { beginLogin } from "./lib/navigate.js";
 import {
+	beginLogin,
 	currentPath,
 	handleLinkClick,
 	onNavigate,
-	parse,
-	type Route,
-} from "./lib/router.js";
+} from "./lib/navigate.js";
+import { parse, type Route } from "./lib/router.js";
 import AddToGroups from "./routes/AddToGroups.svelte";
 import Admin from "./routes/Admin.svelte";
 import Queue from "./routes/Queue.svelte";

@@ -21,6 +21,15 @@
  * Deep links work because `wrangler.jsonc` sets
  * `not_found_handling: "single-page-application"`, so a cold load of `/queue` receives
  * `index.html` and `parse` reads the path back out. That replaces five `_redirects` rules.
+ *
+ * **THE BROWSER HALF LIVES IN `./navigate.js`, and the split is what makes `parse`
+ * testable.** This module used to call `window.addEventListener("popstate", ...)` at
+ * module load, so importing it ANYWHERE outside a browser threw before a single test
+ * ran -- a side effect at import time, which is worse than the `window` reference that
+ * kept `api.ts` untestable, because no typechecker objects to it.
+ *
+ * **What is left here is a pure function from a path to a route**, and that is the part
+ * with the decisions in it.
  */
 
 export type Route =
@@ -45,50 +54,4 @@ export function parse(pathname: string): Route {
 		return { name: "admin" };
 
 	return { name: "notFound", path: pathname };
-}
-
-export function currentPath(): string {
-	return window.location.pathname;
-}
-
-type Listener = (path: string) => void;
-const listeners = new Set<Listener>();
-
-/** Returns its own unsubscribe, so a caller cannot leak one by forgetting the handle. */
-export function onNavigate(listener: Listener): () => void {
-	listeners.add(listener);
-	return () => listeners.delete(listener);
-}
-
-function announce(path: string): void {
-	for (const listener of listeners) listener(path);
-}
-
-/** Push a new history entry. Use for an in-app click. */
-export function navigate(path: string): void {
-	if (path === window.location.pathname) return;
-	window.history.pushState(null, "", path);
-	announce(path);
-}
-
-/**
- * Back and forward. **Registered once, at module load.** This single listener is what
- * the old UI spent three copies on.
- */
-window.addEventListener("popstate", () => {
-	announce(window.location.pathname);
-});
-
-/**
- * Ctrl/cmd/shift-click and middle-click MUST still reach the browser.
- *
- * The 2021 UI handled this and dropping it would be a regression: a router that eats
- * modified clicks is a router people stop trusting with links.
- */
-export function handleLinkClick(event: MouseEvent, path: string): void {
-	if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
-		return;
-	}
-	event.preventDefault();
-	navigate(path);
 }

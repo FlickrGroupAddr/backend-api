@@ -10,7 +10,7 @@ it does not. **`--check` fails the build on either gap.**
 | Verified by | Does anything actually check this decision? |
 | Mutation | Would the test NOTICE the code breaking it? |
 
-**25 decisions · 69 test blocks · 46 mutations**
+**25 decisions · 70 test blocks · 46 mutations**
 
 ## Forward: decision to verification
 
@@ -32,12 +32,12 @@ by reading code or config, because there is no runtime behavior to exercise.
 | **ADR-11** | The session cookie is host-only, and `Origin` is never reflected | Test | `device.test.ts` ADR-24: the confirmation page, and what it refuses<br>`oauth.test.ts` ADR-11: returnTo can never leave our origin<br>`oauth.test.ts` ADR-11: the callback returns where the login STARTED<br>`session.test.ts` mint and verify<br>`session.test.ts` revocation, which ADR-10 could not do<br>`session.test.ts` cookie attributes on a real login<br>`session.test.ts` clears with attributes that match, or the deletion is a no-op<br>`worker.test.ts` ADR-11, CORS | yes |
 | **ADR-12** | No cache in front of D1 | Test | `admin.test.ts` ADR-19, the admin gate<br>`api.test.ts` ADR-12, nothing behind a session reaches a shared cache<br>`device.test.ts` ADR-24: starting a link needs no credential<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in | yes |
 | **ADR-13** | TypeScript, on the current stable toolchain | Inspection | *by inspection* | — |
-| **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
+| **ADR-14** | Integrate when feasible, innovate otherwise | Inspection | `router.test.ts` parse<br>`signature.test.ts` percentEncode<br>`signature.test.ts` baseStringUri<br>`signature.test.ts` normalizeParameters<br>`signature.test.ts` signatureBaseString<br>`signature.test.ts` signingKey<br>`signature.test.ts` signHmacSha1<br>`worker.test.ts` ADR-14 and ADR-07, the diagnostic page | yes |
 | **ADR-15** | Which store holds what | Inspection | *by inspection* | — |
 | **ADR-16** | A request has two identifiers | Test | `schema.test.ts` ADR-03 and ADR-16, requests: ordering | — |
 | **ADR-17** | No list is unbounded, whoever owns its size | Test | `api.test.ts` ADR-17, pagination<br>`api.test.ts` ADR-17, a list FGA cannot bound: the Flickr group list<br>`outcomes.test.ts` explain, against the three rules the file states about itself<br>`outcomes.test.ts` describeError<br>`outcomes.test.ts` ticksFor, ADR-03's ordering made visible<br>`outcomes.test.ts` ago<br>`photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`plugin-scope.test.ts` ADR-19, a plug-in token reaches only its allow-list | yes |
-| **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
-| **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication<br>`plugin-scope.test.ts` ADR-19, a plug-in token reaches only its allow-list | yes |
+| **ADR-18** | One origin, an `/api` prefix, and a Svelte app shell | Test | `router.test.ts` parse<br>`worker.test.ts` ADR-18, one origin split by an /api prefix | yes |
+| **ADR-19** | The admin surface reports findings, not figures | Test | `admin.test.ts` ADR-19, the admin gate<br>`admin.test.ts` ADR-19, the allowlist fails closed<br>`admin.test.ts` ADR-19, findings only appear when there is something to do<br>`api.test.ts` ADR-10, authentication<br>`plugin-scope.test.ts` ADR-19, a plug-in token reaches only its allow-list<br>`router.test.ts` parse | yes |
 | **ADR-20** | The warning arrives before the commitment | Test | `batch.test.ts` ADR-03, the batch endpoint does NOT attempt at batch scale<br>`batch.test.ts` ADR-20 and ADR-04, the batch endpoint refuses per group, not per batch<br>`batch.test.ts` the batch endpoint's shape<br>`preflight.test.ts` ADR-20, the batch preflight | yes |
 | **ADR-21** | The web sourcemap ships, and reopening this needs an extreme bar | Inspection | *by inspection* | — |
 | **ADR-22** | The schema enforces the rules, and every table is `STRICT` | Test | `photo-groups.test.ts` ADR-17, the groups a photo is already in<br>`schema.test.ts` ADR-22, STRICT tables refuse a wrong type | — |
@@ -90,6 +90,7 @@ by reading code or config, because there is no runtime behavior to exercise.
 | `photo-groups.test.ts` | ADR-17, the groups a photo is already in | ADR-01, ADR-12, ADR-17, ADR-22 |
 | `plugin-scope.test.ts` | ADR-19, a plug-in token reaches only its allow-list | ADR-17, ADR-19 |
 | `preflight.test.ts` | ADR-20, the batch preflight | ADR-04, ADR-05, ADR-20 |
+| `router.test.ts` | parse | ADR-14, ADR-18, ADR-19 |
 | `schema.test.ts` | ADR-22, STRICT tables refuse a wrong type | ADR-01, ADR-04, ADR-07, ADR-22 |
 | `schema.test.ts` | ADR-03 and ADR-16, requests: ordering | ADR-03, ADR-16 |
 | `schema.test.ts` | ADR-02, requests: the resolution invariant | ADR-02 |

@@ -95,10 +95,24 @@ export const api = {
 		return contract.submitted.parse(await response.json());
 	},
 
+	/**
+	 * **Every interpolated value is encoded, and today not one of them needs it.**
+	 *
+	 * The cursor is a request's `publicId`, and `enqueue` mints that with
+	 * `crypto.randomUUID()` -- `[0-9a-f-]` only. So this is insurance, not a fix.
+	 *
+	 * **ADR-16 calls `publicId` the OPAQUE handle that appears in URLs, and opaque means
+	 * the format is free to change.** Move it to base64url and a `+` in a query string
+	 * decodes to a SPACE on the server, so the cursor arrives corrupted and the route
+	 * answers `unknown_cursor`. **That reads as an expired page rather than as a bug**,
+	 * which is the kind of failure nobody traces back to a template literal.
+	 */
 	queue: (cursor: string | null = null, state: "pending" | "all" = "pending") =>
 		call(
 			contract.queuePage,
-			`/api/v001/queue?state=${state}&limit=50${cursor ? `&after=${cursor}` : ""}`,
+			`/api/v001/queue?state=${state}&limit=50${
+				cursor ? `&after=${encodeURIComponent(cursor)}` : ""
+			}`,
 		),
 
 	/**
@@ -115,10 +129,13 @@ export const api = {
 	adminOverview: (days = 7) =>
 		call(contract.adminOverview, `/api/v001/admin/overview?days=${days}`),
 
+	/** Encoded for the same reason as the cursor above: the handle is opaque. */
 	withdraw: (publicId: string) =>
-		call(contract.withdrawn, `/api/v001/requests/${publicId}/withdraw`, {
-			method: "POST",
-		}),
+		call(
+			contract.withdrawn,
+			`/api/v001/requests/${encodeURIComponent(publicId)}/withdraw`,
+			{ method: "POST" },
+		),
 
 	/** POST, not GET. It changes state, and a link prefetcher MUST NOT log anyone out. */
 	logout: () => fetch("/auth/flickr/logout", { method: "POST" }),
